@@ -1305,21 +1305,28 @@
                         return 0;
                     }
 
-                    // Create TradingView compatible format (one symbol per line)
-                    const content = tradingViewStocks.map(stock => stock.symbol).join('\n');
+                    // Create TradingView compatible format with exchange prefixes
+                    const symbols = tradingViewStocks.map(stock => {
+                        const symbol = stock.symbol.toUpperCase();
+                        
+                        // Determine exchange prefix based on common patterns
+                        let exchange = 'NASDAQ'; // Default
+                        
+                        // Add logic for other exchanges if needed
+                        if (this.isNYSEStock(symbol)) {
+                            exchange = 'NYSE';
+                        } else if (this.isAMEXStock(symbol)) {
+                            exchange = 'AMEX';
+                        }
+                        
+                        return `${exchange}:${symbol}`;
+                    });
                     
-                    // Add header comment
-                    const header = `# TP Strategy Pro v6.0 - TradingView Watchlist
-# Generated: ${new Date().toLocaleString()}
-# Total symbols: ${tradingViewStocks.length}
-# Filters: Buy signals, A-grade momentum stocks
-#
-`;
-                    
-                    const finalContent = header + content;
+                    // TradingView format: comma-separated on single line
+                    const content = symbols.join(',');
                     
                     // Create and download file
-                    const blob = new Blob([finalContent], { type: 'text/plain;charset=utf-8' });
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                     const url = URL.createObjectURL(blob);
                     
                     const a = document.createElement('a');
@@ -1337,6 +1344,28 @@
                     showNotification(`❌ Export failed: ${error.message}`, 'error');
                     return 0;
                 }
+            }
+
+            static isNYSEStock(symbol) {
+                // Common NYSE stock patterns (you can expand this list)
+                const nysePatterns = [
+                    'BRK', 'JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'USB', 'PNC', 'TFC', 'COF',
+                    'XOM', 'CVX', 'COP', 'EOG', 'SLB', 'HAL', 'BKR', 'VLO', 'MPC', 'PSX',
+                    'JNJ', 'PFE', 'ABT', 'TMO', 'DHR', 'BMY', 'ABBV', 'LLY', 'MRK', 'AMGN',
+                    'KO', 'PEP', 'WMT', 'PG', 'UL', 'CL', 'KMB', 'GIS', 'K', 'CPB',
+                    'MMM', 'GE', 'CAT', 'BA', 'HON', 'LMT', 'RTX', 'UPS', 'FDX', 'EMR'
+                ];
+                return nysePatterns.some(pattern => symbol.startsWith(pattern));
+            }
+
+            static isAMEXStock(symbol) {
+                // Common AMEX patterns (ETFs and some specialty stocks)
+                const amexPatterns = [
+                    'SPY', 'QQQ', 'IWM', 'EFA', 'VTI', 'VEA', 'VWO', 'AGG', 'BND', 'TLT',
+                    'GLD', 'SLV', 'USO', 'UNG', 'XLE', 'XLF', 'XLK', 'XLI', 'XLV', 'XLP'
+                ];
+                return amexPatterns.some(pattern => symbol.startsWith(pattern)) || 
+                       symbol.length <= 3; // Many AMEX stocks are 3 characters or less
             }
 
             static exportEnhancedCSV(stocks, filename = 'Enhanced_Stock_Analysis') {
