@@ -761,6 +761,9 @@
                         <button class="btn btn-secondary" onclick="showDebugInfo()">
                             🐛 Debug
                         </button>
+                        <button class="btn btn-warning" onclick="manageDuplicates()">
+                            🔄 Remove Duplicates
+                        </button>
                     </div>
                 </div>
 
@@ -1395,6 +1398,75 @@
         
         const apiManager = new EnhancedAPIManager();
 
+        // ========================= DUPLICATE REMOVAL =========================
+        
+        // ========================= DUPLICATE REMOVAL =========================
+        
+        function removeDuplicateStocks(strategy = 'highest_score') {
+            const originalCount = appState.allStocks.length;
+            const seenSymbols = new Map();
+            const uniqueStocks = [];
+
+            appState.allStocks.forEach(stock => {
+                const symbol = stock.symbol.toUpperCase();
+                
+                if (!seenSymbols.has(symbol)) {
+                    // First occurrence of this symbol
+                    seenSymbols.set(symbol, stock);
+                    uniqueStocks.push(stock);
+                } else {
+                    // Duplicate found - apply strategy
+                    const existingStock = seenSymbols.get(symbol);
+                    let shouldReplace = false;
+                    
+                    switch (strategy) {
+                        case 'highest_score':
+                            shouldReplace = stock.score > existingStock.score;
+                            break;
+                        case 'highest_grade':
+                            shouldReplace = stock.gradeNumber > existingStock.gradeNumber;
+                            break;
+                        case 'highest_price':
+                            shouldReplace = stock.price > existingStock.price;
+                            break;
+                        case 'best_signal':
+                            const signalPriority = {
+                                '🟢 MOMENTUM BUY': 7,
+                                '🔵 PULLBACK BUY': 6,
+                                '🟡 MOMENTUM FORMING': 5,
+                                '🟠 VOLUME SURGE': 4,
+                                '🟣 CONSOLIDATING': 3,
+                                '⚪ UPTREND - NO SETUP': 2,
+                                '⚫ NO SETUP': 1
+                            };
+                            const existingPriority = signalPriority[existingStock.signal] || 0;
+                            const newPriority = signalPriority[stock.signal] || 0;
+                            shouldReplace = newPriority > existingPriority;
+                            break;
+                        default:
+                            shouldReplace = stock.score > existingStock.score;
+                    }
+                    
+                    if (shouldReplace) {
+                        // Replace existing with this better stock
+                        const index = uniqueStocks.indexOf(existingStock);
+                        if (index !== -1) {
+                            uniqueStocks[index] = stock;
+                            seenSymbols.set(symbol, stock);
+                        }
+                    }
+                    // If not replacing, keep the existing one (do nothing)
+                }
+            });
+
+            appState.allStocks = uniqueStocks;
+            const duplicatesRemoved = originalCount - uniqueStocks.length;
+            
+            console.log(`🔄 Duplicate removal (${strategy}): ${originalCount} → ${uniqueStocks.length} (removed ${duplicatesRemoved})`);
+            
+            return duplicatesRemoved;
+        }
+
         // ========================= CORE FUNCTIONS =========================
 
         async function handleFiles(files) {
@@ -1426,6 +1498,12 @@
 
                 if (appState.allStocks.length === 0) {
                     throw new Error('No valid stock data found in uploaded files');
+                }
+
+                // Remove duplicates before processing
+                const duplicatesRemoved = removeDuplicateStocks('highest_score');
+                if (duplicatesRemoved > 0) {
+                    showNotification(`🔄 Removed ${duplicatesRemoved} duplicate stocks`, 'info');
                 }
 
                 // Enhanced data processing
@@ -1483,8 +1561,9 @@
                         <strong>Files Processed:</strong><br>
                         ${processedFiles.map(f => `• ${f}`).join('<br>')}
                         <br><br>
-                        <strong>Enhanced Data:</strong><br>
-                        • 📊 ${appState.allStocks.length} stocks with grades<br>
+                        <strong>Data Processing:</strong><br>
+                        • 🔄 ${duplicatesRemoved > 0 ? `Removed ${duplicatesRemoved} duplicates` : 'No duplicates found'}<br>
+                        • 📊 ${appState.allStocks.length} unique stocks with grades<br>
                         • 📰 ${appState.allStocks.filter(s => s.news && s.news.length > 0).length} with news<br>
                         • 💰 ${appState.allStocks.filter(s => s.splits && s.splits.length > 0).length} with splits<br>
                         • 📈 Ready for TradingView export
@@ -1858,7 +1937,8 @@ This would send to your configured trading platform.`);
                 apiErrors: appState.apiErrors,
                 signalBreakdown: {},
                 gradeBreakdown: {},
-                csvHeaders: appState.csvHeaders
+                csvHeaders: appState.csvHeaders,
+                duplicateCheck: checkForRemainingDuplicates()
             };
 
             // Calculate signal breakdown
@@ -1878,8 +1958,61 @@ This would send to your configured trading platform.`);
 ❌ API Errors: ${debugInfo.apiErrors.count}
 📊 Signals: ${Object.keys(debugInfo.signalBreakdown).length} types
 📗 Grades: ${Object.keys(debugInfo.gradeBreakdown).length} types
+🔄 Duplicates: ${debugInfo.duplicateCheck.hasDuplicates ? 'FOUND!' : 'None detected'}
 
 Check console for detailed breakdown.`);
+        }
+
+        function manageDuplicates() {
+            if (appState.allStocks.length === 0) {
+                showNotification('❌ No stocks loaded', 'warning');
+                return;
+            }
+
+            const duplicateCheck = checkForRemainingDuplicates();
+            
+            if (!duplicateCheck.hasDuplicates) {
+                showNotification('✅ No duplicates found in current data', 'success');
+                return;
+            }
+
+            const strategy = prompt(`Found duplicates: ${duplicateCheck.duplicateSymbols.join(', ')}
+
+Choose duplicate removal strategy:
+1. highest_score (default) - Keep stock with highest score
+2. highest_grade - Keep stock with highest grade
+3. highest_price - Keep stock with highest price  
+4. best_signal - Keep stock with best trading signal
+
+Enter strategy (or press Cancel):`, 'highest_score');
+
+            if (strategy && ['highest_score', 'highest_grade', 'highest_price', 'best_signal'].includes(strategy)) {
+                const removed = removeDuplicateStocks(strategy);
+                
+                if (removed > 0) {
+                    // Update display
+                    appState.currentData = [...appState.allStocks];
+                    renderEnhancedTable(appState.currentData);
+                    updateEnhancedStats(appState.currentData);
+                    
+                    showNotification(`✅ Removed ${removed} duplicates using ${strategy} strategy`, 'success');
+                } else {
+                    showNotification('ℹ️ No duplicates were removed', 'info');
+                }
+            }
+        }
+
+        function checkForRemainingDuplicates() {
+            const symbols = appState.allStocks.map(s => s.symbol.toUpperCase());
+            const uniqueSymbols = new Set(symbols);
+            const hasDuplicates = symbols.length !== uniqueSymbols.size;
+            
+            if (hasDuplicates) {
+                const duplicates = symbols.filter((symbol, index) => symbols.indexOf(symbol) !== index);
+                return { hasDuplicates: true, duplicateSymbols: [...new Set(duplicates)] };
+            }
+            
+            return { hasDuplicates: false, duplicateSymbols: [] };
         }
 
         function showNotification(message, type = 'info') {
