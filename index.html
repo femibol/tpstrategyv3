@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TP Strategy Pro v3.0 - ML Training Edition</title>
+    <title>TP Strategy Pro v4.0 - PWA Edition</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVFAgU3RyYXRlZ3kgUHJvIHY0LjAiLCJzaG9ydF9uYW1lIjoiU3RvY2tBbmFseXplciIsImRlc2NyaXB0aW9uIjoiTUwtRW5oYW5jZWQgU3RvY2sgQW5hbHlzaXMgVG9vbCIsInN0YXJ0X3VybCI6Ii8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMGQxMTE3IiwidGhlbWVfY29sb3IiOiIjMjM4NjM2IiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjNhV1IwYUQwaU1qUXdJaUJvWldsbmFIUTlJakkwTUNJZ2RtbGxkMEp2ZUQwaU1DQXdJakkwTUNBeU5EQWlJSGh0Ykc1elBTSm9kSFJ3T2k4dmQzZDNMbmN6TG05eVp5OHlNREF3TDNOMlp5SStQSEpsWTNRZ2VEMGlOREFpSUhrOUlqUXdJaUIzYVdSMGFEMGlNVFl3SWlCb1pXbG5hSFE5SWpFMk1DSWdabWxzYkQwaUl6SXpPRFkwTmlJdlBqeDBaWGgwSUhnOUlqRXlNQ0lnZVQwaU1USTBJaUJtYVd4c1BTSWpabVF3YmpkaVl5SWdabTl1ZEMxbVlXMXBiSGs5SW0xdmJtOXpjR0ZqWlNJZ1ptOXVkQzF6YVhwbFBTSXpNQ0lnZG1Gc2FXZHVMV0poYzJWc2FXNWxQU0p0YVdSa2JHVWlQa2xCTzBBOEwzUmxlSFErUEM5emRtYytJaUJ6YVhwbGN6MGlNall6ZUdNek9ESWlJSFI1Y0dVOUlrbHRZV2RsSWl3aWMzSmpJam9pWkdGMFlUcHBiV0ZuWlM5emRtY3JlRzFzTzJKaGMyVTJOQ3dpUUZCRWVqOW5lR0puU3VncVlpZ3diV05oY0VwN1VHSkVUM0pGWmlOZSIsInNpemVzIjoiMjQweDI0MCIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
+    
+    <!-- Meta tags for mobile -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="StockAnalyzer">
+    <meta name="theme-color" content="#238636">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -20,15 +33,28 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .logo {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
+
+        .status-indicators {
+            display: flex;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .status-online { color: #238636; }
+        .status-offline { color: #da3633; }
+        .status-loading { color: #ffd700; }
 
         .container {
             max-width: 1600px;
@@ -39,7 +65,7 @@
         .upload-zone {
             border: 2px dashed #30363d;
             border-radius: 8px;
-            padding: 3rem 2rem;
+            padding: 2rem 1rem;
             text-align: center;
             cursor: pointer;
             margin: 1rem 0;
@@ -59,8 +85,8 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.5rem;
             margin: 1rem 0;
         }
 
@@ -68,31 +94,94 @@
             background: #21262d;
             border: 1px solid #30363d;
             border-radius: 8px;
-            padding: 1rem;
+            padding: 0.8rem;
             text-align: center;
         }
 
         .stat-number {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: #58a6ff;
         }
 
         .stat-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #8b949e;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .chart-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 1rem;
+            position: relative;
+            height: 300px;
+        }
+
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f0f6fc;
+        }
+
+        .real-time-panel {
+            background: #161b22;
+            border: 1px solid #238636;
+            border-radius: 8px;
+            margin: 1rem 0;
+            padding: 1rem;
+        }
+
+        .real-time-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .price-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 0.8rem;
+            text-align: center;
+        }
+
+        .price-symbol {
+            font-weight: 600;
+            color: #58a6ff;
+            font-size: 0.9rem;
+        }
+
+        .price-current {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 0.2rem 0;
+        }
+
+        .price-change {
+            font-size: 0.8rem;
         }
 
         .filters {
             display: flex;
-            gap: 0.75rem;
+            gap: 0.5rem;
             margin: 1rem 0;
             flex-wrap: wrap;
             align-items: center;
         }
         
-        .filters select {
-            min-width: 140px;
+        .filters select, .filters input {
+            min-width: 120px;
+            font-size: 0.8rem;
         }
 
         .btn {
@@ -100,9 +189,9 @@
             color: white;
             border: none;
             border-radius: 6px;
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
         }
 
         .btn:hover {
@@ -116,6 +205,15 @@
 
         .btn-secondary:hover {
             background: #30363d;
+        }
+
+        .btn-api {
+            background: #1f6feb;
+            border: 1px solid #1f6feb;
+        }
+
+        .btn-api:hover {
+            background: #1a56db;
         }
 
         .btn-danger {
@@ -141,19 +239,19 @@
             color: #f0f6fc;
             border: 1px solid #30363d;
             border-radius: 6px;
-            padding: 0.5rem;
+            padding: 0.4rem;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         th, td {
             text-align: left;
-            padding: 0.4rem;
+            padding: 0.3rem;
             border-bottom: 1px solid #30363d;
             white-space: nowrap;
         }
@@ -166,7 +264,7 @@
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
-            padding: 0.6rem 0.4rem;
+            padding: 0.5rem 0.3rem;
         }
 
         th:hover {
@@ -201,10 +299,10 @@
         .neutral { color: #8b949e; }
 
         .signal-badge {
-            padding: 0.2rem 0.4rem;
+            padding: 0.15rem 0.3rem;
             border-radius: 4px;
             font-weight: 600;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             white-space: nowrap;
         }
 
@@ -217,8 +315,8 @@
         .no-setup { background: #30363d; color: #8b949e; }
 
         .trade-btn {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.7rem;
+            padding: 0.15rem 0.3rem;
+            font-size: 0.65rem;
             border-radius: 4px;
             border: none;
             cursor: pointer;
@@ -346,6 +444,7 @@
             gap: 0.5rem;
             margin-bottom: 1rem;
             border-bottom: 1px solid #30363d;
+            overflow-x: auto;
         }
 
         .tab {
@@ -353,6 +452,7 @@
             cursor: pointer;
             border-bottom: 2px solid transparent;
             color: #8b949e;
+            white-space: nowrap;
         }
 
         .tab.active {
@@ -382,9 +482,9 @@
 
         .performance-indicator {
             display: inline-block;
-            padding: 0.2rem 0.4rem;
+            padding: 0.15rem 0.3rem;
             border-radius: 3px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: bold;
         }
 
@@ -395,67 +495,167 @@
         .perf-strong-loss { background: #da3633; color: white; }
 
         .signal-transition {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #8b949e;
         }
 
         .days-since {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #ffd700;
         }
 
         /* Signal History Mini Chart */
         .signal-history {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #8b949e;
+        }
+
+        /* PWA Install button */
+        .install-prompt {
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            display: none;
+        }
+
+        .install-prompt:hover {
+            background: #2ea043;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .logo {
+                font-size: 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            .filters {
+                gap: 0.3rem;
+            }
+            
+            .filters select, .filters input {
+                min-width: 100px;
+                font-size: 0.75rem;
+            }
+            
+            .btn {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.75rem;
+            }
+            
+            table {
+                font-size: 0.7rem;
+            }
+            
+            th, td {
+                padding: 0.2rem;
+            }
+        }
+
+        /* Offline indicator */
+        .offline-banner {
+            background: #da3633;
+            color: white;
+            text-align: center;
+            padding: 0.5rem;
+            display: none;
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-radius: 50%;
+            border-top-color: #58a6ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
+    <div class="offline-banner" id="offlineBanner">
+        📱 You're offline. Some features may be limited.
+    </div>
+
     <div class="header">
         <div class="logo">
-            <span>🤖</span>
-            <span>TP Strategy Pro v3.0 - ML Training Edition</span>
+            <span>🚀</span>
+            <span>TP Strategy Pro v4.0 - PWA Edition</span>
         </div>
-        <div>
-            <span style="color: #a855f7;">🧠 ML Analytics Active</span>
+        <div class="status-indicators">
+            <span id="apiStatus" class="status-offline">📡 API: Offline</span>
+            <span id="dataStatus" class="status-offline">💾 Data: Ready</span>
+            <button class="install-prompt" id="installBtn">📱 Install App</button>
         </div>
     </div>
 
     <div class="container">
         <!-- Tabs for different views -->
         <div class="tabs">
-            <div class="tab active" onclick="showTab('analysis')">📊 Current Analysis</div>
-            <div class="tab" onclick="showTab('history')">📈 Historical Data</div>
+            <div class="tab active" onclick="showTab('analysis')">📊 Analysis</div>
+            <div class="tab" onclick="showTab('realtime')">📡 Real-time</div>
+            <div class="tab" onclick="showTab('charts')">📈 Charts</div>
+            <div class="tab" onclick="showTab('history')">🗄️ History</div>
             <div class="tab" onclick="showTab('ml')">🤖 ML Analytics</div>
-            <div class="tab" onclick="showTab('comparison')">⚖️ Compare Uploads</div>
+            <div class="tab" onclick="showTab('comparison')">⚖️ Compare</div>
         </div>
 
         <!-- Analysis Tab -->
         <div id="analysisTab" class="tab-content">
             <div class="info-box">
-                <strong>🤖 ML-Enhanced Stock Analysis with Signal History:</strong>
+                <strong>🚀 TP Strategy Pro v4.0 - PWA Edition Features:</strong>
                 <div style="margin-top: 0.5rem; font-size: 0.875rem;">
-                    <strong>New v3.0 ML Features:</strong>
+                    <strong>New v4.0 Features:</strong>
                     <ul style="margin: 0.5rem 0;">
-                        <li><strong>🧠 Signal History Tracking</strong> - Track all signal changes per stock</li>
-                        <li><strong>📈 Performance Since Last Signal</strong> - Calculate returns from signal triggers</li>
-                        <li><strong>🎯 Signal Accuracy Metrics</strong> - Win/loss ratios for each signal type</li>
-                        <li><strong>🔄 Signal Transition Analysis</strong> - How signals evolve over time</li>
-                        <li><strong>📊 ML Dataset Export</strong> - Export training data for algorithms</li>
-                        <li><strong>⏱️ Time-based Analytics</strong> - Performance over different timeframes</li>
+                        <li><strong>📱 Progressive Web App</strong> - Install as mobile/desktop app, works offline</li>
+                        <li><strong>📡 Real-time Data</strong> - Live prices via Alpha Vantage API</li>
+                        <li><strong>📊 Advanced Charts</strong> - Interactive visualizations with Chart.js</li>
+                        <li><strong>🔔 Smart Notifications</strong> - Alerts for signal changes</li>
+                        <li><strong>⚡ Enhanced Performance</strong> - Optimized for large datasets</li>
+                        <li><strong>📱 Mobile Optimized</strong> - Perfect touch interface</li>
                     </ul>
-                    <strong>✨ Perfect for developing and backtesting trading algorithms!</strong>
+                    <strong>✨ Install as an app and get push notifications!</strong>
                 </div>
             </div>
 
             <div class="upload-zone" id="uploadZone">
                 <input type="file" id="csvFile" style="display: none;" accept=".csv" multiple />
                 <div style="margin-bottom: 1rem;">
-                    <span style="font-size: 2rem;">🤖</span>
+                    <span style="font-size: 1.5rem;">🚀</span>
                 </div>
-                <p style="font-size: 1.25rem; margin: 0;">Drop CSV files here or click to browse</p>
-                <p style="color: #8b949e; margin-top: 0.5rem;">ML-Enhanced Analysis • Signal History • Performance Tracking</p>
+                <p style="font-size: 1rem; margin: 0;">Drop CSV files here or click to browse</p>
+                <p style="color: #8b949e; margin-top: 0.5rem;">PWA Enhanced • Real-time Data • Advanced Charts</p>
                 <p style="color: #fb8500; font-size: 0.75rem; margin-top: 0.5rem;">⚠️ Company names with commas must be in quotes</p>
             </div>
 
@@ -491,6 +691,10 @@
                         <div class="stat-number" style="color: #fb8500;" id="signalChanges">0</div>
                         <div class="stat-label">Signal Changes</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #1f6feb;" id="realTimeSymbols">0</div>
+                        <div class="stat-label">Real-time Tracked</div>
+                    </div>
                 </div>
 
                 <div class="filters">
@@ -521,9 +725,10 @@
                         <option value="weak-loss">Weak Losers (-5% to 0%)</option>
                         <option value="strong-loss">Strong Losers (<-5%)</option>
                     </select>
-                    <button class="btn" onclick="applyFilters()">Apply Filters</button>
+                    <button class="btn" onclick="applyFilters()">Apply</button>
                     <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
-                    <button class="btn btn-ml" onclick="MLAnalytics.exportMLDataset()">🤖 Export ML Dataset</button>
+                    <button class="btn btn-api" onclick="RealTimeAPI.refreshAllPrices()">🔄 Refresh Prices</button>
+                    <button class="btn btn-ml" onclick="MLAnalytics.exportMLDataset()">🤖 Export ML</button>
                 </div>
 
                 <div class="table-wrapper">
@@ -533,27 +738,79 @@
                                 <th onclick="sortTable('rank')">Rank ↕</th>
                                 <th onclick="sortTable('symbol')">Symbol ↕</th>
                                 <th>Charts</th>
-                                <th onclick="sortTable('signal')">Current Signal ↕</th>
+                                <th onclick="sortTable('signal')">Signal ↕</th>
+                                <th onclick="sortTable('realTimePrice')">Live Price ↕</th>
+                                <th onclick="sortTable('realTimeChange')">Live Change ↕</th>
                                 <th onclick="sortTable('lastSignal')">Last Signal ↕</th>
-                                <th onclick="sortTable('signalChange')">Signal Change ↕</th>
                                 <th onclick="sortTable('performanceSinceSignal')">Performance ↕</th>
                                 <th onclick="sortTable('daysSinceSignal')">Days ↕</th>
                                 <th onclick="sortTable('strength')">Strength ↕</th>
                                 <th onclick="sortTable('grade')">Grade ↕</th>
-                                <th onclick="sortTable('price')">Price ↕</th>
-                                <th onclick="sortTable('change')">Change % ↕</th>
+                                <th onclick="sortTable('price')">CSV Price ↕</th>
+                                <th onclick="sortTable('change')">CSV Change ↕</th>
                                 <th onclick="sortTable('volume')">Volume ↕</th>
-                                <th onclick="sortTable('volSurge')">Vol Surge ↕</th>
-                                <th onclick="sortTable('yearPosition')">52W Pos ↕</th>
-                                <th onclick="sortTable('trend')">Trend ↕</th>
-                                <th onclick="sortTable('risk')">Risk ↕</th>
                                 <th onclick="sortTable('score')">Score ↕</th>
-                                <th onclick="sortTable('signalHistory')">Signal History</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="stockTable"></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Tab -->
+        <div id="realtimeTab" class="tab-content" style="display: none;">
+            <div class="real-time-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>📡 Real-time Market Data</h3>
+                    <div>
+                        <button class="btn btn-api" onclick="RealTimeAPI.addSymbolToTracking()">➕ Add Symbol</button>
+                        <button class="btn btn-secondary" onclick="RealTimeAPI.refreshAllPrices()">🔄 Refresh All</button>
+                        <button class="btn btn-secondary" onclick="RealTimeAPI.toggleAutoRefresh()">⏱️ Auto Refresh</button>
+                    </div>
+                </div>
+                
+                <div class="real-time-grid" id="realTimeGrid">
+                    <!-- Real-time price cards will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Tab -->
+        <div id="chartsTab" class="tab-content" style="display: none;">
+            <div style="margin-bottom: 1rem;">
+                <h3>📈 Interactive Charts & Analytics</h3>
+                <div style="display: flex; gap: 0.5rem; margin: 1rem 0;">
+                    <button class="btn btn-secondary" onclick="ChartsAPI.updateAllCharts()">🔄 Update Charts</button>
+                    <button class="btn btn-secondary" onclick="ChartsAPI.exportCharts()">💾 Export Charts</button>
+                </div>
+            </div>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Signal Distribution</div>
+                    <canvas id="signalChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Performance by Signal Type</div>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Risk vs Return Scatter</div>
+                    <canvas id="riskReturnChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Sector Allocation</div>
+                    <canvas id="sectorChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Grade Distribution</div>
+                    <canvas id="gradeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Volume vs Price Change</div>
+                    <canvas id="volumePriceChart"></canvas>
                 </div>
             </div>
         </div>
@@ -605,11 +862,11 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem; margin: 1rem 0;">
-                    <button class="btn btn-ml" onclick="MLAnalytics.generateSignalReport()">📊 Signal Performance Report</button>
-                    <button class="btn btn-ml" onclick="MLAnalytics.analyzeSignalTransitions()">🔄 Signal Transition Analysis</button>
-                    <button class="btn btn-ml" onclick="MLAnalytics.exportMLDataset()">💾 Export ML Training Data</button>
-                    <button class="btn btn-ml" onclick="MLAnalytics.exportBacktestData()">📈 Export Backtest Data</button>
+                <div style="display: flex; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap;">
+                    <button class="btn btn-ml" onclick="MLAnalytics.generateSignalReport()">📊 Signal Report</button>
+                    <button class="btn btn-ml" onclick="MLAnalytics.analyzeSignalTransitions()">🔄 Transitions</button>
+                    <button class="btn btn-ml" onclick="MLAnalytics.exportMLDataset()">💾 Export ML Data</button>
+                    <button class="btn btn-ml" onclick="MLAnalytics.exportBacktestData()">📈 Export Backtest</button>
                 </div>
 
                 <div id="mlResults"></div>
@@ -642,12 +899,611 @@
     </div>
 
     <script>
+        // Global variables
         let allStocks = [];
         let currentData = [];
         let csvHeaders = [];
         let sortColumn = 'rank';
         let sortDirection = 'asc';
         let currentUploadId = null;
+        let charts = {};
+        let autoRefreshInterval = null;
+
+        // Alpha Vantage API configuration
+        const API_CONFIG = {
+            key: 'SGRM0AOJDG9N9OKI',
+            baseUrl: 'https://www.alphavantage.co/query',
+            rateLimit: 5, // calls per minute for free tier
+            lastCall: 0,
+            queue: []
+        };
+
+        // PWA functionality
+        let deferredPrompt;
+        let isAppInstalled = false;
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(
+                'data:text/javascript;base64,' + btoa(`
+                    const CACHE_NAME = 'stock-analyzer-v4';
+                    const urlsToCache = [
+                        '/',
+                        'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js'
+                    ];
+
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
+
+                    self.addEventListener('fetch', event => {
+                        if (event.request.url.includes('alphavantage.co')) {
+                            // Don't cache API requests
+                            return;
+                        }
+                        
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => {
+                                    if (response) {
+                                        return response;
+                                    }
+                                    return fetch(event.request);
+                                })
+                        );
+                    });
+                `)
+            ).then(() => {
+                console.log('✅ Service Worker registered');
+            }).catch(err => {
+                console.log('❌ Service Worker registration failed:', err);
+            });
+        }
+
+        // PWA install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'inline-block';
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('✅ PWA installed');
+                    showNotification('App installed successfully!', 'success');
+                }
+                deferredPrompt = null;
+                document.getElementById('installBtn').style.display = 'none';
+            }
+        });
+
+        // Check if app is installed
+        window.addEventListener('appinstalled', () => {
+            isAppInstalled = true;
+            document.getElementById('installBtn').style.display = 'none';
+            showNotification('Welcome to TP Strategy Pro PWA!', 'success');
+        });
+
+        // Online/offline detection
+        window.addEventListener('online', () => {
+            document.getElementById('offlineBanner').style.display = 'none';
+            document.getElementById('apiStatus').className = 'status-online';
+            document.getElementById('apiStatus').textContent = '📡 API: Online';
+        });
+
+        window.addEventListener('offline', () => {
+            document.getElementById('offlineBanner').style.display = 'block';
+            document.getElementById('apiStatus').className = 'status-offline';
+            document.getElementById('apiStatus').textContent = '📡 API: Offline';
+        });
+
+        // Real-time API functionality
+        const RealTimeAPI = {
+            trackedSymbols: new Set(),
+            lastPrices: new Map(),
+            
+            // Rate limited API call
+            async makeAPICall(params) {
+                const now = Date.now();
+                const timeSinceLastCall = now - API_CONFIG.lastCall;
+                const minInterval = 60000 / API_CONFIG.rateLimit; // 12 seconds for 5 calls/minute
+                
+                if (timeSinceLastCall < minInterval) {
+                    await new Promise(resolve => setTimeout(resolve, minInterval - timeSinceLastCall));
+                }
+                
+                API_CONFIG.lastCall = Date.now();
+                
+                const url = new URL(API_CONFIG.baseUrl);
+                Object.entries(params).forEach(([key, value]) => {
+                    url.searchParams.append(key, value);
+                });
+                url.searchParams.append('apikey', API_CONFIG.key);
+                
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data['Error Message']) {
+                        throw new Error(data['Error Message']);
+                    }
+                    
+                    if (data['Note'] && data['Note'].includes('call frequency')) {
+                        throw new Error('API rate limit exceeded');
+                    }
+                    
+                    return data;
+                } catch (error) {
+                    console.error('API Error:', error);
+                    throw error;
+                }
+            },
+            
+            async getQuote(symbol) {
+                try {
+                    document.getElementById('apiStatus').className = 'status-loading';
+                    document.getElementById('apiStatus').textContent = '📡 API: Loading...';
+                    
+                    const data = await this.makeAPICall({
+                        function: 'GLOBAL_QUOTE',
+                        symbol: symbol
+                    });
+                    
+                    const quote = data['Global Quote'];
+                    if (!quote) {
+                        throw new Error('No quote data found');
+                    }
+                    
+                    const result = {
+                        symbol: quote['01. symbol'],
+                        price: parseFloat(quote['05. price']),
+                        change: parseFloat(quote['09. change']),
+                        changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
+                        volume: parseInt(quote['06. volume']),
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    this.lastPrices.set(symbol, result);
+                    document.getElementById('apiStatus').className = 'status-online';
+                    document.getElementById('apiStatus').textContent = '📡 API: Online';
+                    
+                    return result;
+                } catch (error) {
+                    document.getElementById('apiStatus').className = 'status-offline';
+                    document.getElementById('apiStatus').textContent = '📡 API: Error';
+                    console.error(`Failed to get quote for ${symbol}:`, error);
+                    throw error;
+                }
+            },
+            
+            async refreshAllPrices() {
+                if (this.trackedSymbols.size === 0) {
+                    // Add current stocks to tracking
+                    allStocks.slice(0, 10).forEach(stock => {
+                        this.trackedSymbols.add(stock.symbol);
+                    });
+                }
+                
+                for (const symbol of this.trackedSymbols) {
+                    try {
+                        await this.getQuote(symbol);
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Brief delay between calls
+                    } catch (error) {
+                        console.error(`Failed to refresh ${symbol}:`, error);
+                    }
+                }
+                
+                this.updateRealTimeDisplay();
+                this.updateStockTable();
+                document.getElementById('realTimeSymbols').textContent = this.trackedSymbols.size;
+            },
+            
+            addSymbolToTracking() {
+                const symbol = prompt('Enter stock symbol to track (e.g., AAPL):');
+                if (symbol) {
+                    this.trackedSymbols.add(symbol.toUpperCase());
+                    this.getQuote(symbol.toUpperCase()).then(() => {
+                        this.updateRealTimeDisplay();
+                        document.getElementById('realTimeSymbols').textContent = this.trackedSymbols.size;
+                    }).catch(error => {
+                        alert(`Failed to add ${symbol}: ${error.message}`);
+                        this.trackedSymbols.delete(symbol.toUpperCase());
+                    });
+                }
+            },
+            
+            updateRealTimeDisplay() {
+                const grid = document.getElementById('realTimeGrid');
+                grid.innerHTML = Array.from(this.lastPrices.entries()).map(([symbol, data]) => `
+                    <div class="price-card">
+                        <div class="price-symbol">${symbol}</div>
+                        <div class="price-current">$${data.price.toFixed(2)}</div>
+                        <div class="price-change ${data.change >= 0 ? 'positive' : 'negative'}">
+                            ${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%)
+                        </div>
+                        <div style="font-size: 0.7rem; color: #8b949e;">
+                            Vol: ${formatVolume(data.volume)}
+                        </div>
+                    </div>
+                `).join('');
+            },
+            
+            updateStockTable() {
+                // Add real-time data to current stocks
+                allStocks.forEach(stock => {
+                    const realTimeData = this.lastPrices.get(stock.symbol);
+                    if (realTimeData) {
+                        stock.realTimePrice = realTimeData.price;
+                        stock.realTimeChange = realTimeData.changePercent;
+                        stock.realTimeVolume = realTimeData.volume;
+                    } else {
+                        stock.realTimePrice = null;
+                        stock.realTimeChange = null;
+                        stock.realTimeVolume = null;
+                    }
+                });
+                
+                renderTable(currentData);
+            },
+            
+            toggleAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                    showNotification('Auto-refresh disabled', 'info');
+                } else {
+                    autoRefreshInterval = setInterval(() => {
+                        this.refreshAllPrices();
+                    }, 300000); // 5 minutes
+                    showNotification('Auto-refresh enabled (5 min intervals)', 'success');
+                }
+            }
+        };
+
+        // Charts API functionality  
+        const ChartsAPI = {
+            createSignalChart() {
+                const ctx = document.getElementById('signalChart').getContext('2d');
+                const signalCounts = {};
+                allStocks.forEach(stock => {
+                    const signal = stock.signal.replace(/🟢|🔵|🟡|🟠|🟣|⚪|⚫/g, '').trim();
+                    signalCounts[signal] = (signalCounts[signal] || 0) + 1;
+                });
+                
+                charts.signalChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(signalCounts),
+                        datasets: [{
+                            data: Object.values(signalCounts),
+                            backgroundColor: [
+                                '#238636', '#1f6feb', '#ffd700', '#fb8500', 
+                                '#a855f7', '#8b949e', '#30363d'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#f0f6fc', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            createPerformanceChart() {
+                const ctx = document.getElementById('performanceChart').getContext('2d');
+                const signalPerformance = {};
+                
+                allStocks.forEach(stock => {
+                    if (stock.performanceSinceSignal !== null) {
+                        const signal = stock.signal.replace(/🟢|🔵|🟡|🟠|🟣|⚪|⚫/g, '').trim();
+                        if (!signalPerformance[signal]) {
+                            signalPerformance[signal] = [];
+                        }
+                        signalPerformance[signal].push(stock.performanceSinceSignal);
+                    }
+                });
+                
+                const avgPerformance = Object.entries(signalPerformance).map(([signal, perfs]) => ({
+                    signal,
+                    avg: perfs.reduce((sum, p) => sum + p, 0) / perfs.length
+                }));
+                
+                charts.performanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: avgPerformance.map(p => p.signal),
+                        datasets: [{
+                            label: 'Avg Performance %',
+                            data: avgPerformance.map(p => p.avg),
+                            backgroundColor: avgPerformance.map(p => p.avg >= 0 ? '#238636' : '#da3633')
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#f0f6fc' } }
+                        },
+                        scales: {
+                            y: { 
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            },
+                            x: { 
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            createRiskReturnChart() {
+                const ctx = document.getElementById('riskReturnChart').getContext('2d');
+                const data = allStocks.filter(s => s.performanceSinceSignal !== null).map(stock => ({
+                    x: this.getRiskScore(stock.risk),
+                    y: stock.performanceSinceSignal,
+                    label: stock.symbol
+                }));
+                
+                charts.riskReturnChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Risk vs Return',
+                            data: data,
+                            backgroundColor: '#58a6ff',
+                            borderColor: '#1f6feb'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#f0f6fc' } }
+                        },
+                        scales: {
+                            y: { 
+                                title: { display: true, text: 'Performance %', color: '#f0f6fc' },
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            },
+                            x: { 
+                                title: { display: true, text: 'Risk Score', color: '#f0f6fc' },
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            createSectorChart() {
+                const ctx = document.getElementById('sectorChart').getContext('2d');
+                const sectorCounts = {};
+                allStocks.forEach(stock => {
+                    const sector = stock.sector || 'Unknown';
+                    sectorCounts[sector] = (sectorCounts[sector] || 0) + 1;
+                });
+                
+                charts.sectorChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(sectorCounts),
+                        datasets: [{
+                            data: Object.values(sectorCounts),
+                            backgroundColor: [
+                                '#238636', '#1f6feb', '#ffd700', '#fb8500', 
+                                '#a855f7', '#8b949e', '#da3633', '#2ea043'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#f0f6fc', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            createGradeChart() {
+                const ctx = document.getElementById('gradeChart').getContext('2d');
+                const gradeCounts = {};
+                allStocks.forEach(stock => {
+                    gradeCounts[stock.grade] = (gradeCounts[stock.grade] || 0) + 1;
+                });
+                
+                charts.gradeChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['A', 'B', 'C', 'D', 'E', 'F'],
+                        datasets: [{
+                            label: 'Number of Stocks',
+                            data: ['A', 'B', 'C', 'D', 'E', 'F'].map(grade => gradeCounts[grade] || 0),
+                            backgroundColor: ['#238636', '#2ea043', '#ffd700', '#fb8500', '#f85149', '#da3633']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#f0f6fc' } }
+                        },
+                        scales: {
+                            y: { 
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            },
+                            x: { 
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            createVolumePriceChart() {
+                const ctx = document.getElementById('volumePriceChart').getContext('2d');
+                const data = allStocks.map(stock => ({
+                    x: stock.volSurge,
+                    y: stock.change,
+                    label: stock.symbol
+                }));
+                
+                charts.volumePriceChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Volume Surge vs Price Change',
+                            data: data,
+                            backgroundColor: data.map(d => d.y >= 0 ? '#238636' : '#da3633'),
+                            borderColor: data.map(d => d.y >= 0 ? '#2ea043' : '#f85149')
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#f0f6fc' } }
+                        },
+                        scales: {
+                            y: { 
+                                title: { display: true, text: 'Price Change %', color: '#f0f6fc' },
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            },
+                            x: { 
+                                title: { display: true, text: 'Volume Surge', color: '#f0f6fc' },
+                                ticks: { color: '#f0f6fc' },
+                                grid: { color: '#30363d' }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            updateAllCharts() {
+                if (allStocks.length === 0) {
+                    showNotification('No data to chart. Upload CSV first.', 'warning');
+                    return;
+                }
+                
+                // Destroy existing charts
+                Object.values(charts).forEach(chart => {
+                    if (chart) chart.destroy();
+                });
+                
+                // Create new charts
+                this.createSignalChart();
+                this.createPerformanceChart();
+                this.createRiskReturnChart();
+                this.createSectorChart();
+                this.createGradeChart();
+                this.createVolumePriceChart();
+                
+                showNotification('Charts updated successfully!', 'success');
+            },
+            
+            getRiskScore(risk) {
+                const riskScores = { 'Low': 1, 'Medium': 2, 'High': 3, 'Very High': 4 };
+                return riskScores[risk] || 2;
+            },
+            
+            exportCharts() {
+                const chartsData = {
+                    exportDate: new Date().toISOString(),
+                    charts: Object.keys(charts).map(chartName => ({
+                        name: chartName,
+                        image: charts[chartName].toBase64Image()
+                    }))
+                };
+                
+                const blob = new Blob([JSON.stringify(chartsData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `charts_export_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification('Charts exported successfully!', 'success');
+            }
+        };
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem;
+                border-radius: 8px;
+                color: white;
+                z-index: 1000;
+                font-size: 0.875rem;
+                max-width: 300px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            const colors = {
+                success: '#238636',
+                error: '#da3633',
+                warning: '#fb8500',
+                info: '#1f6feb'
+            };
+            
+            notification.style.backgroundColor = colors[type] || colors.info;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+            
+            // Add CSS animations if not already added
+            if (!document.getElementById('notificationCSS')) {
+                const style = document.createElement('style');
+                style.id = 'notificationCSS';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
 
         // Enhanced ML Analytics API
         const MLAnalytics = {
@@ -947,6 +1803,7 @@
                 URL.revokeObjectURL(url);
                 
                 console.log(`🤖 Exported ML dataset with ${dataset.length} training examples`);
+                showNotification(`ML dataset exported: ${dataset.length} examples`, 'success');
                 return dataset;
             },
             
@@ -987,6 +1844,7 @@
                 URL.revokeObjectURL(url);
                 
                 console.log(`📈 Exported backtest dataset with ${backtestData.length} data points`);
+                showNotification(`Backtest data exported: ${backtestData.length} points`, 'success');
                 return backtestData;
             },
             
@@ -1008,6 +1866,7 @@
                 URL.revokeObjectURL(url);
                 
                 console.log(`🧠 Exported signal history for ${allSymbols.length} symbols`);
+                showNotification(`Signal history exported: ${allSymbols.length} symbols`, 'success');
                 return signalHistory;
             },
             
@@ -1056,7 +1915,7 @@
         const StorageAPI = {
             saveCurrentData: (filename = null) => {
                 if (allStocks.length === 0) {
-                    alert('No data to save. Upload a CSV first.');
+                    showNotification('No data to save. Upload a CSV first.', 'warning');
                     return;
                 }
                 
@@ -1127,6 +1986,7 @@
                 updateStats();
                 
                 console.log(`📂 Loaded ${allStocks.length} stocks from ${uploadData.filename}`);
+                showNotification(`Loaded ${allStocks.length} stocks`, 'success');
                 return uploadData;
             },
             
@@ -1150,6 +2010,7 @@
                     localStorage.removeItem(uploadId);
                     updateHistoryDisplay();
                     updateHistoryCount();
+                    showNotification('Upload deleted', 'info');
                     console.log(`🗑️ Deleted upload: ${uploadId}`);
                 }
             },
@@ -1165,7 +2026,7 @@
                 
                 const exportData = {
                     exportDate: new Date().toISOString(),
-                    version: '3.0',
+                    version: '4.0',
                     uploads: allUploads,
                     signalHistory: allSignalHistory
                 };
@@ -1174,11 +2035,12 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `stock_analysis_ml_export_${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `stock_analysis_v4_export_${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
                 
                 console.log(`📤 Exported ${allUploads.length} uploads and signal history`);
+                showNotification(`Exported ${allUploads.length} uploads`, 'success');
             },
             
             importData: (event) => {
@@ -1191,7 +2053,7 @@
                         const importData = JSON.parse(e.target.result);
                         
                         if (!importData.uploads || !Array.isArray(importData.uploads)) {
-                            alert('Invalid import file format');
+                            showNotification('Invalid import file format', 'error');
                             return;
                         }
                         
@@ -1216,11 +2078,11 @@
                         updateHistoryDisplay();
                         updateHistoryCount();
                         updateMLStats();
-                        alert(`📥 Imported ${imported} uploads successfully`);
+                        showNotification(`Imported ${imported} uploads successfully`, 'success');
                         console.log(`📥 Imported ${imported} new uploads`);
                         
                     } catch (error) {
-                        alert('Error importing data: ' + error.message);
+                        showNotification('Error importing data: ' + error.message, 'error');
                         console.error('Import error:', error);
                     }
                 };
@@ -1239,6 +2101,7 @@
                     updateHistoryDisplay();
                     updateHistoryCount();
                     updateMLStats();
+                    showNotification(`Cleared ${uploadKeys.length} uploads and ${signalKeys.length} signal histories`, 'info');
                     console.log(`🗑️ Cleared ${uploadKeys.length} uploads and ${signalKeys.length} signal histories`);
                 }
             }
@@ -1251,7 +2114,7 @@
                 const upload2Id = document.getElementById('compareSelect2').value;
                 
                 if (!upload1Id || !upload2Id) {
-                    alert('Please select two uploads to compare');
+                    showNotification('Please select two uploads to compare', 'warning');
                     return;
                 }
                 
@@ -1267,7 +2130,7 @@
                 const upload2Id = document.getElementById('compareSelect2').value;
                 
                 if (!upload1Id || !upload2Id) {
-                    alert('Please select two uploads to compare');
+                    showNotification('Please select two uploads to compare', 'warning');
                     return;
                 }
                 
@@ -1473,6 +2336,10 @@
                 updateComparisonSelectors();
             } else if (tabName === 'ml') {
                 updateMLStats();
+            } else if (tabName === 'charts') {
+                ChartsAPI.updateAllCharts();
+            } else if (tabName === 'realtime') {
+                RealTimeAPI.updateRealTimeDisplay();
             }
         }
 
@@ -1538,19 +2405,30 @@
             setupDragDrop();
             updateHistoryCount();
             updateMLStats();
-            console.log('✅ TP Strategy Pro v3.0 - ML Training Edition Ready!');
+            
+            // Add current stocks to real-time tracking on load
+            if (allStocks.length > 0) {
+                allStocks.slice(0, 5).forEach(stock => {
+                    RealTimeAPI.trackedSymbols.add(stock.symbol);
+                });
+                document.getElementById('realTimeSymbols').textContent = RealTimeAPI.trackedSymbols.size;
+            }
+            
+            console.log('✅ TP Strategy Pro v4.0 - PWA Edition Ready!');
             console.log('');
-            console.log('🤖 NEW ML FEATURES:');
-            console.log('• Signal history tracking for each stock');
-            console.log('• Performance calculation since last signal');
-            console.log('• Signal accuracy and win/loss ratios');
-            console.log('• ML-ready dataset export');
-            console.log('• Signal transition analysis');
-            console.log('• Backtest data generation');
+            console.log('🚀 NEW PWA FEATURES:');
+            console.log('• Progressive Web App - install as desktop/mobile app');
+            console.log('• Real-time data via Alpha Vantage API');
+            console.log('• Interactive charts with Chart.js');
+            console.log('• Enhanced mobile optimization');
+            console.log('• Offline functionality with service worker');
+            console.log('• Smart notifications system');
             console.log('');
-            console.log('📁 Upload your CSV to begin ML-enhanced analysis');
-            console.log('💡 Run CSVAPI.help() after upload for all commands');
-            console.log('🤖 Run MLAnalytics.generateSignalReport() for performance analysis');
+            console.log('📁 Upload your CSV to begin enhanced analysis');
+            console.log('💡 Run CSVAPI.help() for all commands');
+            console.log('🚀 Install as PWA for best experience');
+            
+            showNotification('TP Strategy Pro v4.0 PWA Ready!', 'success');
         }
 
         function setupDragDrop() {
@@ -1644,6 +2522,11 @@
                 stock.signalHistoryText = history.slice(-3).map(h => h.signal.split(' ')[1] || h.signal.charAt(0)).join('→');
             });
             
+            // Add top stocks to real-time tracking
+            allStocks.slice(0, 10).forEach(stock => {
+                RealTimeAPI.trackedSymbols.add(stock.symbol);
+            });
+            
             document.getElementById('resultsSection').style.display = 'block';
             currentData = [...allStocks];
             renderTable(currentData);
@@ -1660,6 +2543,7 @@
             }
             statusMessage += `<div style="color: #58a6ff; margin-top: 0.5rem;">💾 Auto-saved to browser storage</div>`;
             statusMessage += `<div style="color: #a855f7; margin-top: 0.5rem;">🤖 Signal history updated for ML analytics</div>`;
+            statusMessage += `<div style="color: #1f6feb; margin-top: 0.5rem;">📡 Added ${Math.min(10, allStocks.length)} symbols to real-time tracking</div>`;
             fileList.innerHTML = statusMessage;
             
             console.log(`✅ Successfully loaded ${allStocks.length} stocks`);
@@ -1668,6 +2552,9 @@
             }
             console.log(`💾 Auto-saved as: ${filename}`);
             console.log(`🤖 Signal history updated for ML analytics`);
+            console.log(`📡 Added symbols to real-time tracking`);
+            
+            showNotification(`Loaded ${allStocks.length} stocks successfully!`, 'success');
         }
 
         function parseCSV(text) {
@@ -2007,318 +2894,3 @@
                     <td><a href="https://www.tradingview.com/chart/?symbol=${stock.tradingviewSymbol || stock.symbol}" target="_blank" style="color: #58a6ff;">${stock.symbol}</a></td>
                     <td>
                         <a href="https://www.tradingview.com/chart/?symbol=${stock.tradingviewSymbol || stock.symbol}" target="_blank" style="margin-right: 0.5rem;">📊</a>
-                        <a href="https://swingtradebot.com/equities/${stock.symbol}" target="_blank">📈</a>
-                    </td>
-                    <td><span class="signal-badge ${stock.signalClass}">${stock.signal}</span></td>
-                    <td>
-                        ${stock.lastSignal && stock.lastSignal !== 'NEW' ? 
-                            `<span class="signal-transition">${stock.lastSignal.split(' ')[1] || stock.lastSignal.charAt(0)}</span>` : 
-                            '<span class="signal-transition">NEW</span>'
-                        }
-                    </td>
-                    <td>
-                        ${stock.signalChange === 'CHANGED' ? '<span style="color: #ffd700;">CHANGED</span>' : 
-                          stock.signalChange === 'NEW' ? '<span style="color: #58a6ff;">NEW</span>' : 
-                          '<span style="color: #8b949e;">SAME</span>'}
-                    </td>
-                    <td>
-                        ${stock.performanceSinceSignal !== null ? 
-                            `<span class="performance-indicator ${getPerformanceClass(stock.performanceSinceSignal)}">
-                                ${stock.performanceSinceSignal >= 0 ? '+' : ''}${stock.performanceSinceSignal.toFixed(1)}%
-                            </span>` : 
-                            '<span class="neutral">-</span>'
-                        }
-                    </td>
-                    <td>
-                        ${stock.daysSinceSignal !== null ? 
-                            `<span class="days-since">${stock.daysSinceSignal}d</span>` : 
-                            '<span class="neutral">-</span>'
-                        }
-                    </td>
-                    <td><span class="${getStrengthClass(stock.strength)}">${stock.strength}</span></td>
-                    <td>${stock.grade}</td>
-                    <td>$${stock.price.toFixed(2)}</td>
-                    <td class="${stock.change >= 0 ? 'positive' : 'negative'}">${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(1)}%</td>
-                    <td>${formatVolume(stock.volume)}</td>
-                    <td>${stock.volSurge.toFixed(2)}x</td>
-                    <td>${stock.yearPosition}%</td>
-                    <td><span class="${getTrendClass(stock.trend)}">${stock.trend}</span></td>
-                    <td><span class="${getRiskClass(stock.risk)}">${stock.risk}</span></td>
-                    <td>${stock.score.toFixed(1)}</td>
-                    <td>
-                        <span class="signal-history" title="${stock.signalHistory} total signals">
-                            ${stock.signalHistoryText || '-'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="trade-btn buy-btn" onclick="alert('Buy ${stock.symbol}')">BUY</button>
-                        <button class="trade-btn sell-btn" onclick="alert('Sell ${stock.symbol}')">SELL</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function formatVolume(volume) {
-            if (volume >= 1000000) return (volume / 1000000).toFixed(1) + 'M';
-            if (volume >= 1000) return (volume / 1000).toFixed(1) + 'K';
-            return volume.toString();
-        }
-
-        function updateStats() {
-            const buySignals = currentData.filter(s => 
-                s.signal.includes('MOMENTUM BUY') || s.signal.includes('PULLBACK BUY')
-            ).length;
-            
-            const strongStocks = currentData.filter(s => 
-                s.strength === 'Strong' || s.strength === 'Bullish'
-            ).length;
-            
-            const highGradeStocks = currentData.filter(s => 
-                s.grade === 'A' || s.grade === 'B'
-            ).length;
-            
-            document.getElementById('totalStocks').textContent = currentData.length;
-            document.getElementById('buySignals').textContent = buySignals;
-            document.getElementById('strongStocks').textContent = strongStocks;
-            document.getElementById('highGrade').textContent = highGradeStocks;
-            updateHistoryCount();
-            updateMLStats();
-        }
-
-        function applyFilters() {
-            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-            const signalFilter = document.getElementById('signalFilter').value;
-            const strengthFilter = document.getElementById('strengthFilter').value;
-            const performanceFilter = document.getElementById('performanceFilter').value;
-            
-            currentData = allStocks.filter(stock => {
-                const matchesSearch = !searchTerm || stock.symbol.toLowerCase().includes(searchTerm);
-                const matchesSignal = !signalFilter || stock.signal.includes(signalFilter);
-                const matchesStrength = !strengthFilter || stock.strength === strengthFilter;
-                
-                let matchesPerformance = true;
-                if (performanceFilter && stock.performanceSinceSignal !== null) {
-                    const perf = stock.performanceSinceSignal;
-                    switch(performanceFilter) {
-                        case 'strong-win': matchesPerformance = perf > 5; break;
-                        case 'weak-win': matchesPerformance = perf > 0 && perf <= 5; break;
-                        case 'neutral': matchesPerformance = perf >= -2 && perf <= 2; break;
-                        case 'weak-loss': matchesPerformance = perf >= -5 && perf < 0; break;
-                        case 'strong-loss': matchesPerformance = perf < -5; break;
-                    }
-                } else if (performanceFilter) {
-                    matchesPerformance = false;
-                }
-                
-                return matchesSearch && matchesSignal && matchesStrength && matchesPerformance;
-            });
-            
-            renderTable(currentData);
-            updateStats();
-        }
-
-        function clearFilters() {
-            document.getElementById('searchBox').value = '';
-            document.getElementById('signalFilter').value = '';
-            document.getElementById('strengthFilter').value = '';
-            document.getElementById('performanceFilter').value = '';
-            currentData = [...allStocks];
-            renderTable(currentData);
-            updateStats();
-        }
-
-        function sortTable(column) {
-            // Toggle sort direction if same column
-            if (sortColumn === column) {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortColumn = column;
-                sortDirection = 'asc';
-            }
-
-            currentData.sort((a, b) => {
-                let aVal = a[column];
-                let bVal = b[column];
-                
-                // Handle special sorting for certain columns
-                if (column === 'strength') {
-                    const strengthOrder = { 'Strong': 5, 'Bullish': 4, 'Neutral': 3, 'Bearish': 2, 'Weak': 1 };
-                    aVal = strengthOrder[aVal] || 3;
-                    bVal = strengthOrder[bVal] || 3;
-                } else if (column === 'grade') {
-                    const gradeOrder = { 'A': 6, 'B': 5, 'C': 4, 'D': 3, 'E': 2, 'F': 1 };
-                    aVal = gradeOrder[aVal] || 3;
-                    bVal = gradeOrder[bVal] || 3;
-                } else if (column === 'risk') {
-                    const riskOrder = { 'Low': 1, 'Medium': 2, 'High': 3, 'Very High': 4 };
-                    aVal = riskOrder[aVal] || 2;
-                    bVal = riskOrder[bVal] || 2;
-                } else if (column === 'trend') {
-                    const trendOrder = { 'Up Strong': 5, 'Up': 4, 'Sideways': 3, 'Down': 2, 'Down Strong': 1 };
-                    aVal = trendOrder[aVal] || 3;
-                    bVal = trendOrder[bVal] || 3;
-                } else if (column === 'signalChange') {
-                    const changeOrder = { 'CHANGED': 3, 'NEW': 2, 'SAME': 1 };
-                    aVal = changeOrder[aVal] || 1;
-                    bVal = changeOrder[bVal] || 1;
-                }
-                
-                // Handle null values for performance columns
-                if (column === 'performanceSinceSignal' || column === 'daysSinceSignal') {
-                    if (aVal === null && bVal === null) return 0;
-                    if (aVal === null) return sortDirection === 'asc' ? 1 : -1;
-                    if (bVal === null) return sortDirection === 'asc' ? -1 : 1;
-                }
-                
-                // Handle string comparisons
-                if (typeof aVal === 'string' && typeof bVal === 'string') {
-                    aVal = aVal.toLowerCase();
-                    bVal = bVal.toLowerCase();
-                }
-                
-                // Sort logic
-                if (sortDirection === 'asc') {
-                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
-                } else {
-                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
-                }
-            });
-
-            // Update ranks after sorting
-            currentData.forEach((stock, index) => {
-                stock.rank = index + 1;
-            });
-
-            renderTable(currentData);
-        }
-
-        // Enhanced API with ML functions
-        window.CSVAPI = {
-            debugCSV: () => {
-                console.log('📋 CSV Debug Information:');
-                console.log('Headers found:', csvHeaders);
-                console.log('Total headers:', csvHeaders.length);
-                console.log('');
-                
-                if (allStocks.length > 0) {
-                    console.log('Sample parsed data (first stock):');
-                    const first = allStocks[0];
-                    console.log({
-                        symbol: first.symbol,
-                        price: first.price,
-                        change: first.change,
-                        volume: first.volume,
-                        volSurge: first.volSurge,
-                        gradeNumber: first.gradeNumber,
-                        score: first.score,
-                        performanceSinceSignal: first.performanceSinceSignal,
-                        daysSinceSignal: first.daysSinceSignal,
-                        signalChange: first.signalChange
-                    });
-                    
-                    console.log('');
-                    console.log('Data quality check:');
-                    console.log(`- Total stocks: ${allStocks.length}`);
-                    console.log(`- Stocks with valid prices: ${allStocks.filter(s => s.price > 0).length}`);
-                    console.log(`- Stocks with performance data: ${allStocks.filter(s => s.performanceSinceSignal !== null).length}`);
-                    console.log(`- Stocks with signal changes: ${allStocks.filter(s => s.signalChange === 'CHANGED').length}`);
-                }
-                
-                return csvHeaders;
-            },
-            
-            getStrongStocks: () => {
-                const strong = allStocks.filter(s => 
-                    s.strength === 'Strong' || s.strength === 'Bullish'
-                );
-                console.table(strong.map(s => ({
-                    rank: s.rank,
-                    symbol: s.symbol,
-                    strength: s.strength,
-                    grade: s.grade,
-                    change: s.change + '%',
-                    performance: s.performanceSinceSignal ? s.performanceSinceSignal.toFixed(1) + '%' : '-',
-                    days: s.daysSinceSignal || '-'
-                })));
-                return strong;
-            },
-            
-            getBuySignals: () => {
-                const buys = allStocks.filter(s => 
-                    s.signal.includes('MOMENTUM BUY') || s.signal.includes('PULLBACK BUY')
-                );
-                console.table(buys.map(s => ({
-                    symbol: s.symbol,
-                    signal: s.signal,
-                    price: s.price,
-                    change: s.change + '%',
-                    performance: s.performanceSinceSignal ? s.performanceSinceSignal.toFixed(1) + '%' : '-',
-                    days: s.daysSinceSignal || '-',
-                    signalChange: s.signalChange
-                })));
-                return buys;
-            },
-            
-            getSignalChanges: () => {
-                const changed = allStocks.filter(s => s.signalChange === 'CHANGED');
-                console.table(changed.map(s => ({
-                    symbol: s.symbol,
-                    currentSignal: s.signal,
-                    lastSignal: s.lastSignal,
-                    performance: s.performanceSinceSignal ? s.performanceSinceSignal.toFixed(1) + '%' : '-',
-                    days: s.daysSinceSignal || '-'
-                })));
-                return changed;
-            },
-            
-            getTopPerformers: () => {
-                const performers = allStocks
-                    .filter(s => s.performanceSinceSignal !== null)
-                    .sort((a, b) => b.performanceSinceSignal - a.performanceSinceSignal)
-                    .slice(0, 20);
-                    
-                console.table(performers.map(s => ({
-                    symbol: s.symbol,
-                    signal: s.signal,
-                    performance: s.performanceSinceSignal.toFixed(1) + '%',
-                    days: s.daysSinceSignal,
-                    signalChange: s.signalChange
-                })));
-                return performers;
-            },
-            
-            help: () => {
-                console.log('🔧 CSVAPI Commands:');
-                console.log('');
-                console.log('📊 Data Analysis:');
-                console.log('CSVAPI.getTopStocks(n)     - Show top N stocks by score');
-                console.log('CSVAPI.getBuySignals()     - Show momentum/pullback buy signals');
-                console.log('CSVAPI.getStrongStocks()   - Show strong/bullish stocks');
-                console.log('CSVAPI.getSignalChanges()  - Show stocks with changed signals');
-                console.log('CSVAPI.getTopPerformers()  - Show best performing signals');
-                console.log('');
-                console.log('🤖 ML Analytics:');
-                console.log('MLAnalytics.generateSignalReport()    - Signal performance analysis');
-                console.log('MLAnalytics.analyzeSignalTransitions() - Signal transition patterns');
-                console.log('MLAnalytics.exportMLDataset()         - Export ML training data');
-                console.log('MLAnalytics.exportBacktestData()      - Export backtest dataset');
-                console.log('MLAnalytics.exportSignalHistory()     - Export signal history');
-                console.log('');
-                console.log('🗄️ Storage Commands:');
-                console.log('StorageAPI.saveCurrentData() - Manual save to storage');
-                console.log('StorageAPI.getAllUploads()   - View all stored uploads');
-                console.log('StorageAPI.loadUpload(id)    - Load specific upload');
-                console.log('StorageAPI.exportAll()       - Export all data to JSON');
-                console.log('StorageAPI.clearAll()        - Clear all stored data');
-                console.log('');
-                console.log('💡 Examples:');
-                console.log('MLAnalytics.generateSignalReport() - See which signals work best');
-                console.log('CSVAPI.getSignalChanges()          - Find evolving opportunities');
-                console.log('MLAnalytics.exportMLDataset()      - Get training data for algorithms');
-            }
-        };
-
-        init();
-    </script>
-</body>
-</html>
