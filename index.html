@@ -1612,4 +1612,839 @@
                         const content = await file.text();
                         const fileStocks = EnhancedDataProcessor.parseCSV(content);
                         appState.allStocks.push(...fileStocks);
-                        processedFiles.push(`${file.name}: ${fileStocks.length} sto
+                        processedFiles.push(`${file.name}: ${fileStocks.length} stocks`);
+                        
+                        showNotification(`✅ Processed ${fileStocks.length} stocks from ${file.name}`, 'success');
+                    } catch (error) {
+                        console.error(`Error processing ${file.name}:`, error);
+                        showNotification(`❌ Error in ${file.name}: ${error.message}`, 'error');
+                    }
+                }
+
+                if (appState.allStocks.length === 0) {
+                    throw new Error('No valid stock data found in uploaded files');
+                }
+
+                // Remove duplicates before processing
+                const duplicatesRemoved = removeDuplicateStocks('highest_score');
+                if (duplicatesRemoved > 0) {
+                    showNotification(`🔄 Removed ${duplicatesRemoved} duplicate stocks`, 'info');
+                }
+
+                // Enhanced data processing
+                showNotification('🔄 Enhancing data with news, splits, and grades...', 'info');
+                
+                // Process enhanced data for first 20 stocks
+                const stocksToEnhance = appState.allStocks.slice(0, 20);
+                
+                for (let i = 0; i < stocksToEnhance.length; i++) {
+                    const stock = stocksToEnhance[i];
+                    try {
+                        // Add news data
+                        stock.news = await apiManager.getStockNews(stock.symbol);
+                        
+                        // Add splits data
+                        stock.splits = apiManager.getStockSplits(stock.symbol);
+                        
+                        // Small delay to prevent overwhelming
+                        if (i < stocksToEnhance.length - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                        }
+                    } catch (error) {
+                        console.error(`Error enhancing ${stock.symbol}:`, error);
+                        stock.news = [];
+                        stock.splits = [];
+                    }
+                }
+
+                // Add empty enhanced data for remaining stocks
+                const remainingStocks = appState.allStocks.slice(20);
+                remainingStocks.forEach(stock => {
+                    stock.news = [];
+                    stock.splits = apiManager.getStockSplits(stock.symbol);
+                });
+
+                // Sort and rank
+                appState.allStocks.sort((a, b) => b.score - a.score);
+                appState.allStocks.forEach((stock, index) => {
+                    stock.rank = index + 1;
+                });
+
+                // Display results
+                appState.currentData = [...appState.allStocks];
+                renderEnhancedTable(appState.currentData);
+                updateEnhancedStats(appState.currentData);
+                
+                document.getElementById('resultsSection').style.display = 'block';
+                document.getElementById('emptyState').style.display = 'none';
+
+                // Check TradingView symbol usage
+                const withTVSymbols = appState.allStocks.filter(s => s.tradingview_symbol && s.tradingview_symbol.includes(':')).length;
+
+                fileListEl.innerHTML = `
+                    <div style="color: var(--success-color); font-weight: bold; margin-bottom: 1rem;">
+                        ✅ Enhanced processing complete!
+                    </div>
+                    <div style="font-size: 0.9rem; line-height: 1.6;">
+                        <strong>Files Processed:</strong><br>
+                        ${processedFiles.map(f => `• ${f}`).join('<br>')}
+                        <br><br>
+                        <strong>Data Processing:</strong><br>
+                        • 🔄 ${duplicatesRemoved > 0 ? `Removed ${duplicatesRemoved} duplicates` : 'No duplicates found'}<br>
+                        • 📊 ${appState.allStocks.length} unique stocks with grades<br>
+                        • 📈 ${withTVSymbols} stocks with TradingView symbols from CSV<br>
+                        • 📰 ${appState.allStocks.filter(s => s.news && s.news.length > 0).length} with news<br>
+                        • 💰 ${appState.allStocks.filter(s => s.splits && s.splits.length > 0).length} with splits<br>
+                        • ✅ Ready for TradingView export
+                    </div>
+                `;
+
+                showNotification(`✅ Enhanced data loaded for ${appState.allStocks.length} stocks!`, 'success');
+
+            } catch (error) {
+                console.error('File processing error:', error);
+                showNotification(`❌ Error: ${error.message}`, 'error');
+                fileListEl.innerHTML = `<div style="color: var(--error-color); font-weight: bold;">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function renderEnhancedTable(data) {
+            const tbody = document.getElementById('stockTable');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No stocks match current filters</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map((stock, index) => {
+                const newsHTML = renderNewsColumn(stock.news || []);
+                const splitsHTML = renderSplitsColumn(stock.splits || []);
+                const gradeClass = `grade-${stock.grade.toLowerCase()}`;
+
+                return `
+                    <tr>
+                        <td>${stock.rank}</td>
+                        <td>
+                            <a href="https://www.tradingview.com/chart/?symbol=${stock.symbol}" 
+                               target="_blank" 
+                               rel="noopener noreferrer" 
+                               style="color: var(--info-color); font-weight: bold; text-decoration: none;">
+                                ${stock.symbol}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="chart-links">
+                                <a href="https://www.tradingview.com/chart/?symbol=${stock.symbol}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="chart-link" 
+                                   title="TradingView Chart">📊</a>
+                                <a href="https://finance.yahoo.com/quote/${stock.symbol}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="chart-link" 
+                                   title="Yahoo Finance">📈</a>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="signal-badge ${stock.signalClass}">
+                                ${stock.signal}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="grade-cell">
+                                <div class="grade-letter ${gradeClass}">${stock.grade}</div>
+                                <div class="grade-number">${stock.gradeNumber.toFixed(0)}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="strength-${stock.strength.toLowerCase()}">${stock.strength}</span>
+                        </td>
+                        <td>$${stock.price.toFixed(2)}</td>
+                        <td class="${stock.change >= 0 ? 'price-positive' : 'price-negative'}">
+                            ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(1)}%
+                        </td>
+                        <td class="news-column">${newsHTML}</td>
+                        <td class="splits-column">${splitsHTML}</td>
+                        <td style="font-weight: bold; color: var(--info-color);">${stock.score.toFixed(1)}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn trade-btn" 
+                                        onclick="tradeStock('${stock.symbol}', ${stock.price})" 
+                                        title="Trade">📈</button>
+                                <button class="action-btn details-btn" 
+                                        onclick="viewStockDetails('${stock.symbol}')" 
+                                        title="Details">📊</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderNewsColumn(news) {
+            if (!news || news.length === 0) {
+                return '<div class="news-item" style="color: var(--text-secondary); font-size: 0.7rem;">No recent news</div>';
+            }
+
+            return news.slice(0, 2).map(item => `
+                <div class="news-item ${item.sentiment}" title="${item.headline}">
+                    <div style="font-size: 0.65rem; line-height: 1.2; margin-bottom: 0.2rem;">
+                        ${item.headline.substring(0, 35)}${item.headline.length > 35 ? '...' : ''}
+                    </div>
+                    <div style="font-size: 0.55rem; opacity: 0.8;">${item.timestamp}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderSplitsColumn(splits) {
+            if (!splits || splits.length === 0) {
+                return '<div style="color: var(--text-secondary); font-size: 0.7rem;">No splits (2Y)</div>';
+            }
+
+            const recentSplits = splits.filter(split => {
+                const splitDate = new Date(split.date);
+                const twoYearsAgo = new Date();
+                twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+                return splitDate >= twoYearsAgo;
+            });
+
+            if (recentSplits.length === 0) {
+                return '<div style="color: var(--text-secondary); font-size: 0.7rem;">No splits (2Y)</div>';
+            }
+
+            return recentSplits.slice(0, 2).map(split => `
+                <div class="split-item" title="${split.ratio} split on ${split.date}">
+                    <div style="font-weight: bold;">${split.ratio}</div>
+                    <div style="font-size: 0.6rem;">${new Date(split.date).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateEnhancedStats(data) {
+            const buySignals = data.filter(s => 
+                s.signal.includes('MOMENTUM BUY') || s.signal.includes('PULLBACK BUY')
+            ).length;
+            
+            const strongStocks = data.filter(s => 
+                s.strength === 'Strong' || s.strength === 'Bullish'
+            ).length;
+            
+            const topGrades = data.filter(s => s.grade === 'A' || s.grade === 'B').length;
+            
+            const avgGrade = data.length > 0 ? 
+                (data.reduce((sum, s) => sum + s.gradeNumber, 0) / data.length).toFixed(1) : 0;
+            
+            const withNews = data.filter(s => s.news && s.news.length > 0).length;
+            const recentSplits = data.filter(s => s.splits && s.splits.length > 0).length;
+
+            document.getElementById('totalStocks').textContent = data.length;
+            document.getElementById('buySignals').textContent = buySignals;
+            document.getElementById('strongStocks').textContent = strongStocks;
+            document.getElementById('topGrades').textContent = topGrades;
+            document.getElementById('avgGrade').textContent = avgGrade;
+            document.getElementById('withNews').textContent = withNews;
+            document.getElementById('recentSplits').textContent = recentSplits;
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const signalFilter = document.getElementById('signalFilter').value;
+            const gradeFilter = document.getElementById('gradeFilter').value;
+            
+            appState.currentData = appState.allStocks.filter(stock => {
+                const matchesSearch = !searchTerm || stock.symbol.toLowerCase().includes(searchTerm);
+                const matchesSignal = !signalFilter || stock.signal.includes(signalFilter);
+                const matchesGrade = !gradeFilter || stock.grade === gradeFilter;
+                
+                return matchesSearch && matchesSignal && matchesGrade;
+            });
+            
+            renderEnhancedTable(appState.currentData);
+            updateEnhancedStats(appState.currentData);
+            showNotification(`Filtered to ${appState.currentData.length} stocks`, 'info');
+        }
+
+        function clearFilters() {
+            document.getElementById('searchBox').value = '';
+            document.getElementById('signalFilter').value = '';
+            document.getElementById('gradeFilter').value = '';
+            appState.currentData = [...appState.allStocks];
+            renderEnhancedTable(appState.currentData);
+            updateEnhancedStats(appState.currentData);
+            showNotification('Filters cleared', 'info');
+        }
+
+        function sortTable(column) {
+            if (appState.sortColumn === column) {
+                appState.sortDirection = appState.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                appState.sortColumn = column;
+                appState.sortDirection = 'asc';
+            }
+
+            appState.currentData.sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+                
+                if (typeof aVal === 'string' && typeof bVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+                
+                if (appState.sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+
+            appState.currentData.forEach((stock, index) => {
+                stock.rank = index + 1;
+            });
+
+            renderEnhancedTable(appState.currentData);
+        }
+
+        async function refreshRealTimeData() {
+            if (appState.allStocks.length === 0) {
+                showNotification('❌ No stocks loaded. Upload CSV first.', 'warning');
+                return;
+            }
+
+            const refreshSpinner = document.getElementById('refreshSpinner');
+            refreshSpinner.style.display = 'inline-block';
+            
+            showNotification('🔄 Refreshing real-time data...', 'info');
+            
+            try {
+                // Refresh first 10 stocks to avoid rate limits
+                const stocksToRefresh = appState.allStocks.slice(0, 10);
+                let updated = 0;
+
+                for (const stock of stocksToRefresh) {
+                    try {
+                        const realTimeData = await apiManager.getStockPrice(stock.symbol);
+                        
+                        if (realTimeData) {
+                            stock.price = realTimeData.price;
+                            stock.change = realTimeData.changePercent;
+                            stock.volume = realTimeData.volume;
+                            stock.lastUpdate = realTimeData.timestamp;
+                            
+                            // Recalculate metrics
+                            stock.score = EnhancedDataProcessor.calculateScore(stock);
+                            stock.signal = EnhancedDataProcessor.generateSignal(stock);
+                            stock.signalClass = EnhancedDataProcessor.getSignalClass(stock.signal);
+                            
+                            updated++;
+                        }
+                        
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } catch (error) {
+                        console.error(`Error refreshing ${stock.symbol}:`, error);
+                    }
+                }
+
+                // Re-sort and re-rank
+                appState.allStocks.sort((a, b) => b.score - a.score);
+                appState.allStocks.forEach((stock, index) => {
+                    stock.rank = index + 1;
+                });
+
+                appState.currentData = [...appState.allStocks];
+                renderEnhancedTable(appState.currentData);
+                updateEnhancedStats(appState.currentData);
+                
+                showNotification(`✅ Updated ${updated} stocks with real-time data`, 'success');
+                
+            } catch (error) {
+                console.error('Real-time refresh error:', error);
+                showNotification(`❌ Refresh failed: ${error.message}`, 'error');
+            } finally {
+                refreshSpinner.style.display = 'none';
+            }
+        }
+
+        async function exportTradingViewWatchlist(exportAll = false) {
+            if (appState.currentData.length === 0) {
+                showNotification('❌ No stocks to export', 'warning');
+                return;
+            }
+
+            // Close the dropdown menu if it's open
+            const menu = document.getElementById('tradingViewMenu');
+            if (menu) {
+                menu.style.display = 'none';
+            }
+
+            const count = await ExportManager.exportTradingViewWatchlist(appState.currentData, 'TradingView_Watchlist', exportAll);
+            if (count > 0) {
+                const message = exportAll ? 
+                    `🎉 Exported ALL ${count} stocks for TradingView! Import the downloaded .txt file(s) into your TradingView watchlist.` :
+                    `🎉 Exported ${count} BUY SIGNAL stocks for TradingView! Import the downloaded .txt file into your TradingView watchlist.`;
+                showNotification(message, 'success');
+            }
+        }
+
+        function toggleTradingViewMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('tradingViewMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', function closeMenu(e) {
+                if (!menu.contains(e.target) && !e.target.closest('button[onclick*="toggleTradingViewMenu"]')) {
+                    menu.style.display = 'none';
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }
+
+        function exportEnhancedCSV() {
+            if (appState.currentData.length === 0) {
+                showNotification('❌ No stocks to export', 'warning');
+                return;
+            }
+
+            ExportManager.exportEnhancedCSV(appState.currentData);
+        }
+
+        function generateShareableLink() {
+            if (appState.allStocks.length === 0) {
+                showNotification('❌ No data to share', 'warning');
+                return;
+            }
+
+            // Generate a shareable summary
+            const summary = {
+                totalStocks: appState.allStocks.length,
+                buySignals: appState.allStocks.filter(s => s.signal.includes('BUY')).length,
+                topGrades: appState.allStocks.filter(s => s.grade === 'A' || s.grade === 'B').length,
+                timestamp: new Date().toISOString(),
+                version: '6.0'
+            };
+
+            const summaryText = `TP Strategy Pro v6.0 Analysis Summary:
+📊 Total Stocks: ${summary.totalStocks}
+🟢 Buy Signals: ${summary.buySignals}
+📗 A/B Grades: ${summary.topGrades}
+📅 Generated: ${new Date(summary.timestamp).toLocaleString()}
+
+Analyze your stocks with enhanced grades and TradingView integration!`;
+
+            navigator.clipboard.writeText(summaryText).then(() => {
+                showNotification('📋 Analysis summary copied to clipboard!', 'success');
+            }).catch(() => {
+                showNotification('❌ Could not copy to clipboard', 'error');
+            });
+        }
+
+        function tradeStock(symbol, price) {
+            const stock = appState.allStocks.find(s => s.symbol === symbol);
+            if (!stock) return;
+
+            const action = stock.signal.includes('BUY') ? 'BUY' : 
+                         stock.signal.includes('NO SETUP') ? 'SELL' : 'WATCH';
+
+            const confirmed = confirm(`Execute ${action} order for ${symbol} at $${price.toFixed(2)}?
+
+Signal: ${stock.signal}
+Grade: ${stock.grade} (${stock.gradeNumber.toFixed(0)})
+Strength: ${stock.strength}
+
+This would send to your configured trading platform.`);
+            
+            if (confirmed) {
+                showNotification(`📤 ${action} signal sent for ${symbol} at $${price.toFixed(2)}`, 'success');
+                // Here you would integrate with actual trading APIs
+            }
+        }
+
+        function viewStockDetails(symbol) {
+            const stock = appState.allStocks.find(s => s.symbol === symbol);
+            if (!stock) return;
+
+            console.log('📊 Stock Details for', symbol, ':', stock);
+            
+            const detailsText = `Stock Analysis: ${symbol}
+📊 Signal: ${stock.signal}
+📗 Grade: ${stock.grade} (${stock.gradeNumber.toFixed(0)}/100)
+💪 Strength: ${stock.strength}
+💰 Price: $${stock.price.toFixed(2)} (${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(1)}%)
+📈 Score: ${stock.score.toFixed(1)}
+🏭 Sector: ${stock.sector}
+🔧 Industry: ${stock.industry}
+📰 News Items: ${stock.news ? stock.news.length : 0}
+💰 Splits: ${stock.splits ? stock.splits.length : 0}`;
+
+            alert(detailsText);
+            showNotification(`📊 Details shown for ${symbol} - check console for full data`, 'info');
+        }
+
+        function showDebugInfo() {
+            const debugInfo = {
+                totalStocks: appState.allStocks.length,
+                currentData: appState.currentData.length,
+                apiErrors: appState.apiErrors,
+                signalBreakdown: {},
+                gradeBreakdown: {},
+                csvHeaders: appState.csvHeaders,
+                duplicateCheck: checkForRemainingDuplicates(),
+                tradingViewSymbols: {
+                    withTVSymbols: appState.allStocks.filter(s => s.tradingview_symbol && s.tradingview_symbol.includes(':')).length,
+                    total: appState.allStocks.length
+                }
+            };
+
+            // Calculate signal breakdown
+            appState.allStocks.forEach(stock => {
+                debugInfo.signalBreakdown[stock.signal] = (debugInfo.signalBreakdown[stock.signal] || 0) + 1;
+                debugInfo.gradeBreakdown[stock.grade] = (debugInfo.gradeBreakdown[stock.grade] || 0) + 1;
+            });
+
+            console.log('🐛 DEBUG INFO:', debugInfo);
+            
+            showNotification('🐛 Debug info logged to console', 'info');
+            
+            // Show summary in alert
+            alert(`Debug Summary:
+📊 Total Stocks: ${debugInfo.totalStocks}
+📋 Current Filtered: ${debugInfo.currentData}
+❌ API Errors: ${debugInfo.apiErrors.count}
+📊 Signals: ${Object.keys(debugInfo.signalBreakdown).length} types
+📗 Grades: ${Object.keys(debugInfo.gradeBreakdown).length} types
+🔄 Duplicates: ${debugInfo.duplicateCheck.hasDuplicates ? 'FOUND!' : 'None detected'}
+📈 TradingView Symbols: ${debugInfo.tradingViewSymbols.withTVSymbols}/${debugInfo.tradingViewSymbols.total} from CSV
+
+Check console for detailed breakdown.`);
+        }
+
+        function manageDuplicates() {
+            if (appState.allStocks.length === 0) {
+                showNotification('❌ No stocks loaded', 'warning');
+                return;
+            }
+
+            const duplicateCheck = checkForRemainingDuplicates();
+            
+            if (!duplicateCheck.hasDuplicates) {
+                showNotification('✅ No duplicates found in current data', 'success');
+                return;
+            }
+
+            const strategy = prompt(`Found duplicates: ${duplicateCheck.duplicateSymbols.join(', ')}
+
+Choose duplicate removal strategy:
+1. highest_score (default) - Keep stock with highest score
+2. highest_grade - Keep stock with highest grade
+3. highest_price - Keep stock with highest price  
+4. best_signal - Keep stock with best trading signal
+
+Enter strategy (or press Cancel):`, 'highest_score');
+
+            if (strategy && ['highest_score', 'highest_grade', 'highest_price', 'best_signal'].includes(strategy)) {
+                const removed = removeDuplicateStocks(strategy);
+                
+                if (removed > 0) {
+                    // Update display
+                    appState.currentData = [...appState.allStocks];
+                    renderEnhancedTable(appState.currentData);
+                    updateEnhancedStats(appState.currentData);
+                    
+                    showNotification(`✅ Removed ${removed} duplicates using ${strategy} strategy`, 'success');
+                } else {
+                    showNotification('ℹ️ No duplicates were removed', 'info');
+                }
+            }
+        }
+
+        function checkForRemainingDuplicates() {
+            const symbols = appState.allStocks.map(s => s.symbol.toUpperCase());
+            const uniqueSymbols = new Set(symbols);
+            const hasDuplicates = symbols.length !== uniqueSymbols.size;
+            
+            if (hasDuplicates) {
+                const duplicates = symbols.filter((symbol, index) => symbols.indexOf(symbol) !== index);
+                return { hasDuplicates: true, duplicateSymbols: [...new Set(duplicates)] };
+            }
+            
+            return { hasDuplicates: false, duplicateSymbols: [] };
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                ${message}
+                <button onclick="this.parentElement.remove()" 
+                        style="float: right; background: none; border: none; color: inherit; cursor: pointer; margin-left: 1rem; font-size: 1.2rem;">×</button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease-in';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // ========================= TAB MANAGEMENT =========================
+        
+        function initTabManagement() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const tabName = e.target.getAttribute('data-tab');
+                    showTab(tabName);
+                });
+            });
+        }
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(tabName + 'Tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked tab
+            const clickedTab = document.querySelector(`[data-tab="${tabName}"]`);
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+            
+            // Load tab-specific content
+            loadTabContent(tabName);
+        }
+
+        function loadTabContent(tabName) {
+            switch (tabName) {
+                case 'performance':
+                    loadPerformanceTab();
+                    break;
+                case 'news':
+                    loadNewsTab();
+                    break;
+                case 'splits':
+                    loadSplitsTab();
+                    break;
+                case 'export':
+                    loadExportTab();
+                    break;
+            }
+        }
+
+        function loadPerformanceTab() {
+            const content = document.getElementById('performanceContent');
+            if (appState.allStocks.length === 0) {
+                content.innerHTML = '<p style="color: var(--text-secondary);">Upload data to view performance analytics.</p>';
+                return;
+            }
+
+            const signalCounts = {};
+            const gradeCounts = {};
+            
+            appState.allStocks.forEach(stock => {
+                signalCounts[stock.signal] = (signalCounts[stock.signal] || 0) + 1;
+                gradeCounts[stock.grade] = (gradeCounts[stock.grade] || 0) + 1;
+            });
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <div>
+                        <h4>📊 Signal Distribution</h4>
+                        <div style="background: var(--tertiary-bg); padding: 1rem; border-radius: 8px;">
+                            ${Object.entries(signalCounts).map(([signal, count]) => 
+                                `<div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                                    <span>${signal}</span>
+                                    <span style="color: var(--info-color); font-weight: bold;">${count}</span>
+                                </div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <h4>📗 Grade Distribution</h4>
+                        <div style="background: var(--tertiary-bg); padding: 1rem; border-radius: 8px;">
+                            ${Object.entries(gradeCounts).map(([grade, count]) => 
+                                `<div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                                    <span class="grade-${grade.toLowerCase()}" style="font-weight: bold;">Grade ${grade}</span>
+                                    <span style="color: var(--info-color); font-weight: bold;">${count}</span>
+                                </div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadNewsTab() {
+            const content = document.getElementById('newsContent');
+            if (appState.allStocks.length === 0) {
+                content.innerHTML = '<p style="color: var(--text-secondary);">Upload data to view news analysis.</p>';
+                return;
+            }
+
+            const allNews = appState.allStocks
+                .filter(stock => stock.news && stock.news.length > 0)
+                .flatMap(stock => stock.news.map(news => ({ ...news, symbol: stock.symbol })))
+                .slice(0, 20);
+
+            if (allNews.length === 0) {
+                content.innerHTML = '<p style="color: var(--text-secondary);">No news data available.</p>';
+                return;
+            }
+
+            content.innerHTML = `
+                <div style="display: grid; gap: 1rem;">
+                    ${allNews.map(news => `
+                        <div class="news-item ${news.sentiment}" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
+                            <div>
+                                <strong style="color: var(--info-color);">${news.symbol}</strong>
+                                <div style="margin: 0.5rem 0;">${news.headline}</div>
+                                <small style="color: var(--text-secondary);">${news.timestamp}</small>
+                            </div>
+                            <span style="padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.8rem; background: var(--${news.sentiment === 'positive' ? 'success' : news.sentiment === 'negative' ? 'error' : 'text-secondary'}-color); color: white;">
+                                ${news.sentiment}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function loadSplitsTab() {
+            const content = document.getElementById('splitsContent');
+            
+            const splitsData = Object.entries(STOCK_SPLITS_DATABASE)
+                .map(([symbol, splits]) => ({
+                    symbol,
+                    splits: splits.filter(split => {
+                        const splitDate = new Date(split.date);
+                        const twoYearsAgo = new Date();
+                        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+                        return splitDate >= twoYearsAgo;
+                    })
+                }))
+                .filter(item => item.splits.length > 0);
+
+            if (splitsData.length === 0) {
+                content.innerHTML = '<p style="color: var(--text-secondary);">No recent stock splits in database.</p>';
+                return;
+            }
+
+            content.innerHTML = `
+                <div style="display: grid; gap: 1rem;">
+                    ${splitsData.map(item => `
+                        <div style="background: var(--tertiary-bg); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--warning-color);">
+                            <h4 style="color: var(--info-color); margin: 0 0 0.5rem 0;">${item.symbol}</h4>
+                            ${item.splits.map(split => `
+                                <div style="margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center;">
+                                    <span><strong>${split.ratio}</strong> ${split.type} split</span>
+                                    <span style="color: var(--text-secondary);">${new Date(split.date).toLocaleDateString()}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function loadExportTab() {
+            // Content is already in the HTML
+        }
+
+        // ========================= DRAG & DROP SETUP =========================
+        
+        function setupDragDrop() {
+            const zone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('csvFile');
+
+            zone.addEventListener('click', () => fileInput.click());
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.add('dragover'));
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.remove('dragover'));
+            });
+
+            zone.addEventListener('drop', (e) => {
+                const files = Array.from(e.dataTransfer.files).filter(file => 
+                    file.type === 'text/csv' || file.name.endsWith('.csv')
+                );
+                if (files.length > 0) {
+                    handleFiles(files);
+                } else {
+                    showNotification('❌ Please upload CSV files only', 'error');
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        }
+
+        // ========================= INITIALIZATION =========================
+        
+        function init() {
+            console.log('🚀 Initializing TP Strategy Pro v6.0...');
+            
+            setupDragDrop();
+            initTabManagement();
+            
+            // Load saved data
+            if (appState.signalHistory) {
+                console.log('📊 Loaded signal history:', Object.keys(appState.signalHistory).length, 'symbols');
+            }
+            
+            console.log('');
+            console.log('🆕 Enhanced Features:');
+            console.log('  ✅ Security: API keys protected, encrypted storage');
+            console.log('  📊 Grade Analysis: A-F grading with color coding');
+            console.log('  📈 TradingView Export: Direct watchlist integration');
+            console.log('     • Export Buy Signals only (filtered)');
+            console.log('     • Export ALL stocks option');
+            console.log('     • Auto-split into multiple files if >200 stocks');
+            console.log('  📰 News Integration: Sentiment analysis');
+            console.log('  💰 Stock Splits: 2-year tracking');
+            console.log('  🎯 Performance: Historical signal tracking');
+            console.log('  📱 Mobile: Responsive design');
+            console.log('  🔧 Debug: Enhanced error handling');
+            console.log('');
+            console.log('📖 Usage:');
+            console.log('  1. Upload CSV files with stock data');
+            console.log('  2. View enhanced analysis with grades');
+            console.log('  3. Export buy signals to TradingView');
+            console.log('  4. Use filters to find specific opportunities');
+            console.log('');
+            
+            showNotification('🚀 TP Strategy Pro v6.0 Ready - Enhanced with Grades & TradingView Export!', 'success');
+            
+            // Add global debug functions
+            window.debugApp = () => showDebugInfo();
+            window.appState = appState;
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
