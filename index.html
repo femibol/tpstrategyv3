@@ -1164,6 +1164,7 @@
                     // Enhanced data validation and processing
                     const processedStock = {
                         symbol: this.sanitizeString(rawStock.symbol || ''),
+                        tradingview_symbol: this.sanitizeString(rawStock.tradingview_symbol || ''), // New field
                         price: this.parseNumber(rawStock.close_price, 0),
                         change: this.parseNumber(rawStock.change_in_percent, 0),
                         volume: this.parseNumber(rawStock.volume, 0, true),
@@ -1305,21 +1306,24 @@
                         return 0;
                     }
 
-                    // Create TradingView compatible format with exchange prefixes
+                    // Create TradingView compatible format using tradingview_symbol column
                     const symbols = tradingViewStocks.map(stock => {
-                        const symbol = stock.symbol.toUpperCase();
-                        
-                        // Determine exchange prefix based on common patterns
-                        let exchange = 'NASDAQ'; // Default
-                        
-                        // Add logic for other exchanges if needed
-                        if (this.isNYSEStock(symbol)) {
-                            exchange = 'NYSE';
-                        } else if (this.isAMEXStock(symbol)) {
-                            exchange = 'AMEX';
+                        // Use tradingview_symbol from CSV if available, otherwise construct it
+                        if (stock.tradingview_symbol && stock.tradingview_symbol.includes(':')) {
+                            return stock.tradingview_symbol.toUpperCase();
+                        } else {
+                            // Fallback to guessing exchange (for backwards compatibility)
+                            const symbol = stock.symbol.toUpperCase();
+                            let exchange = 'NASDAQ'; // Default
+                            
+                            if (this.isNYSEStock(symbol)) {
+                                exchange = 'NYSE';
+                            } else if (this.isAMEXStock(symbol)) {
+                                exchange = 'AMEX';
+                            }
+                            
+                            return `${exchange}:${symbol}`;
                         }
-                        
-                        return `${exchange}:${symbol}`;
                     });
                     
                     // TradingView format: comma-separated on single line
@@ -1337,7 +1341,13 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
 
-                    showNotification(`✅ TradingView watchlist exported: ${tradingViewStocks.length} symbols`, 'success');
+                    // Show additional info about source
+                    const usingCSVSymbols = tradingViewStocks.filter(s => s.tradingview_symbol && s.tradingview_symbol.includes(':')).length;
+                    const statusMsg = usingCSVSymbols > 0 ? 
+                        `✅ TradingView watchlist exported: ${tradingViewStocks.length} symbols (${usingCSVSymbols} from CSV tradingview_symbol column)` :
+                        `✅ TradingView watchlist exported: ${tradingViewStocks.length} symbols (using auto-detected exchanges)`;
+                    
+                    showNotification(statusMsg, 'success');
                     return tradingViewStocks.length;
                 } catch (error) {
                     console.error('TradingView export error:', error);
@@ -1347,7 +1357,7 @@
             }
 
             static isNYSEStock(symbol) {
-                // Common NYSE stock patterns (you can expand this list)
+                // Common NYSE stock patterns (fallback only)
                 const nysePatterns = [
                     'BRK', 'JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'USB', 'PNC', 'TFC', 'COF',
                     'XOM', 'CVX', 'COP', 'EOG', 'SLB', 'HAL', 'BKR', 'VLO', 'MPC', 'PSX',
@@ -1359,7 +1369,7 @@
             }
 
             static isAMEXStock(symbol) {
-                // Common AMEX patterns (ETFs and some specialty stocks)
+                // Common AMEX patterns (fallback only)
                 const amexPatterns = [
                     'SPY', 'QQQ', 'IWM', 'EFA', 'VTI', 'VEA', 'VWO', 'AGG', 'BND', 'TLT',
                     'GLD', 'SLV', 'USO', 'UNG', 'XLE', 'XLF', 'XLK', 'XLI', 'XLV', 'XLP'
@@ -1376,7 +1386,7 @@
                     }
 
                     const headers = [
-                        'Rank', 'Symbol', 'Signal', 'Grade', 'Grade_Number', 'Price', 'Change_%', 
+                        'Rank', 'Symbol', 'TradingView_Symbol', 'Signal', 'Grade', 'Grade_Number', 'Price', 'Change_%', 
                         'Volume', 'Vol_Surge', 'Score', 'Strength', 'Sector', 'Industry',
                         'News_Count', 'Split_History', 'Analysis_Date'
                     ];
@@ -1384,6 +1394,7 @@
                     const rows = stocks.map(stock => [
                         stock.rank,
                         stock.symbol,
+                        stock.tradingview_symbol || `NASDAQ:${stock.symbol}`, // Include TradingView symbol
                         stock.signal,
                         stock.grade,
                         stock.gradeNumber.toFixed(1),
@@ -1582,6 +1593,9 @@
                 document.getElementById('resultsSection').style.display = 'block';
                 document.getElementById('emptyState').style.display = 'none';
 
+                // Check TradingView symbol usage
+                const withTVSymbols = appState.allStocks.filter(s => s.tradingview_symbol && s.tradingview_symbol.includes(':')).length;
+
                 fileListEl.innerHTML = `
                     <div style="color: var(--success-color); font-weight: bold; margin-bottom: 1rem;">
                         ✅ Enhanced processing complete!
@@ -1593,9 +1607,10 @@
                         <strong>Data Processing:</strong><br>
                         • 🔄 ${duplicatesRemoved > 0 ? `Removed ${duplicatesRemoved} duplicates` : 'No duplicates found'}<br>
                         • 📊 ${appState.allStocks.length} unique stocks with grades<br>
+                        • 📈 ${withTVSymbols} stocks with TradingView symbols from CSV<br>
                         • 📰 ${appState.allStocks.filter(s => s.news && s.news.length > 0).length} with news<br>
                         • 💰 ${appState.allStocks.filter(s => s.splits && s.splits.length > 0).length} with splits<br>
-                        • 📈 Ready for TradingView export
+                        • ✅ Ready for TradingView export
                     </div>
                 `;
 
@@ -1967,7 +1982,11 @@ This would send to your configured trading platform.`);
                 signalBreakdown: {},
                 gradeBreakdown: {},
                 csvHeaders: appState.csvHeaders,
-                duplicateCheck: checkForRemainingDuplicates()
+                duplicateCheck: checkForRemainingDuplicates(),
+                tradingViewSymbols: {
+                    withTVSymbols: appState.allStocks.filter(s => s.tradingview_symbol && s.tradingview_symbol.includes(':')).length,
+                    total: appState.allStocks.length
+                }
             };
 
             // Calculate signal breakdown
@@ -1988,6 +2007,7 @@ This would send to your configured trading platform.`);
 📊 Signals: ${Object.keys(debugInfo.signalBreakdown).length} types
 📗 Grades: ${Object.keys(debugInfo.gradeBreakdown).length} types
 🔄 Duplicates: ${debugInfo.duplicateCheck.hasDuplicates ? 'FOUND!' : 'None detected'}
+📈 TradingView Symbols: ${debugInfo.tradingViewSymbols.withTVSymbols}/${debugInfo.tradingViewSymbols.total} from CSV
 
 Check console for detailed breakdown.`);
         }
