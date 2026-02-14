@@ -88,7 +88,7 @@ class TradingEngine:
     def initialize(self):
         """Initialize all components."""
         log.info("=" * 60)
-        log.info(f"ALGO TRADING BOT v1.0 - {self.config.mode.upper()} MODE")
+        log.info(f"ALGOBOT v1.0 - {self.config.mode.upper()} MODE")
         log.info(f"Starting Capital: ${self.config.starting_balance:,.2f}")
         log.info("=" * 60)
 

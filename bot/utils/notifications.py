@@ -76,7 +76,7 @@ class Notifier:
         try:
             payload = {
                 "content": message,
-                "username": "Trading Bot"
+                "username": "AlgoBot"
             }
             resp = requests.post(
                 self.discord_url,
