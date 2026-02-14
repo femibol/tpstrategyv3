@@ -233,6 +233,9 @@ class TradingEngine:
         log.info("Trading engine started - entering main loop")
         self.notifier.system_alert("Trading engine started", level="success")
 
+        # Run initial scan immediately so dashboard has data on load
+        self._run_scanner_cycle()
+
         try:
             self._main_loop()
         except Exception as e:
@@ -241,13 +244,28 @@ class TradingEngine:
         finally:
             self.stop()
 
+    def _run_scanner_cycle(self):
+        """Run data update + strategy scan (no trading). Populates scanner dashboard."""
+        try:
+            self._update_data()
+            self._run_strategies()
+            log.info(f"Scanner cycle complete - {sum(len(s.scan_results) for s in self.strategies.values())} symbols scanned")
+        except Exception as e:
+            log.error(f"Scanner cycle error: {e}", exc_info=True)
+
     def _main_loop(self):
         """Main trading loop - runs continuously during market hours."""
+        scan_timer = 0
         while self.running:
             try:
                 now = datetime.now(self.tz)
 
                 if not self._is_market_hours(now):
+                    # Still run scanner so dashboard shows live data
+                    scan_timer += 1
+                    if scan_timer >= 4:  # Every ~2 minutes (4 x 30s sleep)
+                        self._run_scanner_cycle()
+                        scan_timer = 0
                     time.sleep(30)
                     continue
 
