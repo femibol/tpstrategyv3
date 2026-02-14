@@ -165,16 +165,95 @@ increases to 8 max positions.
 
 ---
 
+## Deploy to Render (Mobile Access)
+
+Deploy to Render so you can monitor and control the bot from your phone anywhere.
+
+### Option 1: One-Click Deploy
+
+1. Push this repo to GitHub
+2. Go to [render.com](https://render.com) and sign up
+3. Click **New > Blueprint** and connect your GitHub repo
+4. Render reads `render.yaml` and auto-configures everything
+5. Set your environment variables in Render dashboard:
+   - `TRADING_MODE` = paper
+   - `IBKR_HOST`, `IBKR_PORT`
+   - `TRADERSPOST_WEBHOOK_URL` (if using)
+   - `DISCORD_WEBHOOK_URL` (if using)
+   - `TRADINGVIEW_WEBHOOK_SECRET` (if using)
+6. Deploy!
+
+### Option 2: Manual Setup
+
+1. Go to Render > **New > Web Service**
+2. Connect your GitHub repo
+3. Settings:
+   - **Runtime**: Python
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120`
+4. Set environment variables (same as above)
+5. Deploy
+
+### Mobile Dashboard
+
+Once deployed, your dashboard is at:
+```
+https://your-app-name.onrender.com
+```
+
+**Add to Home Screen** on your phone for app-like experience:
+- **iPhone**: Safari > Share > Add to Home Screen
+- **Android**: Chrome > Menu > Add to Home Screen
+
+### Mobile Controls (from your phone)
+
+The bottom control bar lets you:
+- **Pause** - Pause trading (keeps positions open)
+- **Resume** - Resume trading after pause
+- **Close All** - Close all positions at market
+- **STOP** - Emergency stop (closes everything + shuts down)
+
+You can also tap any individual position to close it.
+
+### Mobile API Endpoints
+
+If you want to control via shortcuts/automations:
+```
+POST /api/control/pause        # Pause bot
+POST /api/control/resume       # Resume bot
+POST /api/control/close/AAPL   # Close specific position
+POST /api/control/close-all    # Close all positions
+POST /api/control/emergency-stop  # Emergency stop
+```
+
+### TradingView Webhook URL (on Render)
+
+Once deployed, your TradingView webhook URL is:
+```
+https://your-app-name.onrender.com/webhook/tradingview
+```
+
+---
+
 ## Dashboard
 
-Access at `http://localhost:5000` when bot is running.
+Access locally at `http://localhost:5000` or via Render at your deployed URL.
 
 Shows:
 - Live balance and P&L
-- Open positions with stops/targets
-- Trade history
-- Drawdown monitoring
+- Equity curve chart
+- Open positions with stops/targets (tap to close)
+- Trade history with P&L per trade
+- Daily performance stats
 - System notifications
+- Bottom control bar (Pause/Resume/Close All/Emergency Stop)
+
+Mobile-optimized with:
+- Pull to refresh
+- Tab navigation (Positions / Trades / Alerts / Daily)
+- Touch-friendly buttons
+- Add-to-homescreen PWA support
+- Confirmation modals for dangerous actions
 
 ---
 

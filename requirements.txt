@@ -12,7 +12,8 @@ gunicorn>=21.2.0
 
 # Technical analysis
 ta>=0.11.0
-ta-lib>=0.4.28; sys_platform != 'win32'
+# ta-lib requires C library - install separately if needed locally
+# On Render: not needed, we use pure-python ta library + numpy
 
 # Market data
 yfinance>=0.2.30

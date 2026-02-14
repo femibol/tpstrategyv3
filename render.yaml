@@ -1,0 +1,41 @@
+# Render.com deployment blueprint
+# Deploys the trading bot + dashboard as a web service
+# Dashboard accessible from your phone at https://your-app.onrender.com
+
+services:
+  # Main trading bot + dashboard
+  - type: web
+    name: algo-trading-bot
+    runtime: python
+    plan: starter  # $7/mo - always on, no sleep
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+      - key: TRADING_MODE
+        value: paper
+      - key: IBKR_HOST
+        sync: false  # Set manually in Render dashboard
+      - key: IBKR_PORT
+        value: "7497"
+      - key: IBKR_CLIENT_ID
+        value: "1"
+      - key: TRADERSPOST_WEBHOOK_URL
+        sync: false
+      - key: TRADERSPOST_API_KEY
+        sync: false
+      - key: TRADINGVIEW_WEBHOOK_SECRET
+        sync: false
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: DASHBOARD_SECRET_KEY
+        generateValue: true
+      - key: DASHBOARD_HOST
+        value: "0.0.0.0"
+      - key: DASHBOARD_PORT
+        value: "10000"
+      - key: RENDER
+        value: "true"
