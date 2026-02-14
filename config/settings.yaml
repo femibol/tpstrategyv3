@@ -1,0 +1,89 @@
+# ============================================
+# ALGO TRADING BOT - MAIN CONFIGURATION
+# ============================================
+
+# --- Capital & Account ---
+capital:
+  starting_balance: 5000
+  max_portfolio_risk: 0.06        # Max 6% of capital at risk at any time
+  max_daily_loss: 0.02            # Stop trading if down 2% in a day ($100)
+  max_drawdown: 0.10              # Emergency stop if down 10% from peak ($500)
+  reserve_cash_pct: 0.20          # Always keep 20% cash ($1000 minimum)
+
+# --- Risk Management ---
+risk:
+  max_position_size_pct: 0.15     # Max 15% of capital per position ($750)
+  max_position_size_dollars: 750
+  max_positions: 5                # Max 5 concurrent positions
+  risk_per_trade_pct: 0.01        # Risk 1% per trade ($50)
+  max_correlated_positions: 2     # Max 2 positions in same sector
+  stop_loss_pct: 0.03             # 3% stop loss default
+  trailing_stop_pct: 0.02         # 2% trailing stop
+  take_profit_pct: 0.06           # 6% take profit (2:1 reward/risk)
+  max_slippage_pct: 0.005         # Max 0.5% slippage allowed
+  min_volume: 500000              # Minimum avg daily volume
+  min_price: 5.00                 # No penny stocks
+  max_price: 500.00               # Cap price for position sizing
+
+# --- Trading Schedule ---
+schedule:
+  market_open: "09:30"
+  market_close: "16:00"
+  timezone: "US/Eastern"
+  pre_market_scan: "09:15"       # Scan 15 min before open
+  avoid_first_minutes: 5          # Skip first 5 min (volatile)
+  avoid_last_minutes: 15          # Close positions 15 min before close
+  trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+# --- Scaling Plan ---
+# Bot auto-adjusts as account grows
+scaling:
+  enabled: true
+  tiers:
+    - min_balance: 5000
+      max_positions: 5
+      risk_per_trade: 0.01
+      max_position_pct: 0.15
+    - min_balance: 10000
+      max_positions: 8
+      risk_per_trade: 0.015
+      max_position_pct: 0.12
+    - min_balance: 25000
+      max_positions: 12
+      risk_per_trade: 0.015
+      max_position_pct: 0.10
+    - min_balance: 50000
+      max_positions: 15
+      risk_per_trade: 0.02
+      max_position_pct: 0.08
+    - min_balance: 100000
+      max_positions: 20
+      risk_per_trade: 0.02
+      max_position_pct: 0.06
+
+# --- Data Sources ---
+data:
+  primary: "ibkr"                 # Primary data from IBKR
+  fallback: "yfinance"            # Fallback to yfinance
+  bar_size: "5 mins"              # 5-minute bars for intraday
+  lookback_days: 30               # Historical data lookback
+
+# --- Execution ---
+execution:
+  order_type: "limit"             # limit orders only (no market orders)
+  limit_offset_pct: 0.001         # Place limit 0.1% from current price
+  retry_attempts: 3
+  retry_delay_seconds: 5
+  use_vwap: true                  # Use VWAP for better entries
+  partial_fills: true             # Accept partial fills
+  time_in_force: "DAY"            # Day orders only
+
+# --- Logging ---
+logging:
+  level: "INFO"
+  file: "logs/trading.log"
+  max_size_mb: 50
+  backup_count: 10
+  log_trades: true
+  log_signals: true
+  log_risk_checks: true

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algo Trading Bot - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', monospace; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
+        .header h1 { font-size: 1.4em; color: #58a6ff; }
+        .mode-badge { padding: 4px 12px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        .mode-paper { background: #f0883e33; color: #f0883e; border: 1px solid #f0883e; }
+        .mode-live { background: #f8514933; color: #f85149; border: 1px solid #f85149; }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .dot-green { background: #3fb950; }
+        .dot-red { background: #f85149; }
+        .dot-yellow { background: #d29922; }
+
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; }
+        .card-label { font-size: 0.75em; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .card-value { font-size: 1.8em; font-weight: bold; margin-top: 5px; }
+        .card-sub { font-size: 0.8em; color: #8b949e; margin-top: 3px; }
+        .positive { color: #3fb950; }
+        .negative { color: #f85149; }
+        .neutral { color: #8b949e; }
+
+        .section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        .section h2 { font-size: 1.1em; color: #58a6ff; margin-bottom: 15px; border-bottom: 1px solid #30363d; padding-bottom: 8px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { text-align: left; padding: 8px 12px; background: #0d1117; color: #8b949e; font-weight: 600; border-bottom: 1px solid #30363d; }
+        td { padding: 8px 12px; border-bottom: 1px solid #21262d; }
+        tr:hover { background: #1c2128; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .notification { padding: 8px 12px; border-left: 3px solid #30363d; margin-bottom: 8px; font-size: 0.85em; background: #0d1117; border-radius: 0 4px 4px 0; }
+        .notification .time { color: #8b949e; font-size: 0.8em; }
+
+        .refresh-info { text-align: center; color: #8b949e; font-size: 0.75em; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ALGO TRADING BOT</h1>
+        <div>
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Connecting...</span>
+            <span class="mode-badge" id="modeBadge">--</span>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-label">Balance</div>
+            <div class="card-value" id="balance">$0.00</div>
+            <div class="card-sub" id="totalReturn">--</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Today's P&L</div>
+            <div class="card-value" id="dailyPnl">$0.00</div>
+            <div class="card-sub" id="dailyTrades">0 trades</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Open Positions</div>
+            <div class="card-value" id="openPositions">0</div>
+            <div class="card-sub" id="strategies">--</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Max Drawdown</div>
+            <div class="card-value" id="drawdown">0.00%</div>
+            <div class="card-sub" id="peakBalance">Peak: $0</div>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <div class="section">
+            <h2>Open Positions</h2>
+            <table>
+                <thead>
+                    <tr><th>Symbol</th><th>Dir</th><th>Qty</th><th>Entry</th><th>Current</th><th>P&L</th><th>Strategy</th></tr>
+                </thead>
+                <tbody id="positionsTable">
+                    <tr><td colspan="7" style="text-align:center;color:#8b949e">No open positions</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Recent Trades</h2>
+            <table>
+                <thead>
+                    <tr><th>Symbol</th><th>Action</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Reason</th></tr>
+                </thead>
+                <tbody id="tradesTable">
+                    <tr><td colspan="6" style="text-align:center;color:#8b949e">No trades yet</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Notifications</h2>
+        <div id="notifications">
+            <div class="notification"><span class="time">--</span> Waiting for signals...</div>
+        </div>
+    </div>
+
+    <div class="refresh-info">Auto-refreshes every 10 seconds | Started: <span id="startTime">--</span></div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function fetchData(endpoint) {
+            try {
+                const resp = await fetch(`${API_BASE}/api/${endpoint}`);
+                return await resp.json();
+            } catch (e) { return null; }
+        }
+
+        function fmt(val, decimals = 2) {
+            return val !== null && val !== undefined ? val.toFixed(decimals) : '0.00';
+        }
+
+        function pnlClass(val) {
+            return val > 0 ? 'positive' : val < 0 ? 'negative' : 'neutral';
+        }
+
+        async function updateDashboard() {
+            // Status
+            const status = await fetchData('status');
+            if (status) {
+                document.getElementById('statusDot').className = `status-dot ${status.running ? (status.paused ? 'dot-yellow' : 'dot-green') : 'dot-red'}`;
+                document.getElementById('statusText').textContent = status.running ? (status.paused ? 'Paused' : 'Running') : 'Stopped';
+                document.getElementById('modeBadge').textContent = status.mode.toUpperCase();
+                document.getElementById('modeBadge').className = `mode-badge mode-${status.mode}`;
+
+                document.getElementById('balance').textContent = `$${status.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                const retClass = pnlClass(status.total_return_pct);
+                document.getElementById('totalReturn').innerHTML = `<span class="${retClass}">${status.total_return_pct >= 0 ? '+' : ''}${fmt(status.total_return_pct)}% total</span>`;
+
+                const dpClass = pnlClass(status.daily_pnl);
+                document.getElementById('dailyPnl').innerHTML = `<span class="${dpClass}">$${fmt(status.daily_pnl)}</span>`;
+                document.getElementById('dailyTrades').textContent = `${status.daily_trades} trades today`;
+
+                document.getElementById('openPositions').textContent = status.positions;
+                document.getElementById('strategies').textContent = status.strategies_active.join(', ');
+
+                document.getElementById('drawdown').innerHTML = `<span class="${status.drawdown_pct > 5 ? 'negative' : 'neutral'}">${fmt(status.drawdown_pct)}%</span>`;
+                document.getElementById('peakBalance').textContent = `Peak: $${status.peak_balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            }
+
+            // Positions
+            const positions = await fetchData('positions');
+            const posTable = document.getElementById('positionsTable');
+            if (positions && positions.length > 0) {
+                posTable.innerHTML = positions.map(p => `
+                    <tr>
+                        <td><strong>${p.symbol}</strong></td>
+                        <td>${p.direction}</td>
+                        <td>${p.quantity}</td>
+                        <td>$${fmt(p.entry_price)}</td>
+                        <td>$${fmt(p.current_price)}</td>
+                        <td class="${pnlClass(p.pnl_pct)}">${fmt(p.pnl_pct)}%</td>
+                        <td>${p.strategy}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Trades
+            const trades = await fetchData('trades');
+            const tradeTable = document.getElementById('tradesTable');
+            if (trades && trades.length > 0) {
+                tradeTable.innerHTML = trades.slice(-10).reverse().map(t => `
+                    <tr>
+                        <td><strong>${t.symbol}</strong></td>
+                        <td>${t.direction}</td>
+                        <td>$${fmt(t.entry_price)}</td>
+                        <td>$${fmt(t.exit_price)}</td>
+                        <td class="${pnlClass(t.pnl)}">$${fmt(t.pnl)}</td>
+                        <td>${t.reason}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Notifications
+            const notifs = await fetchData('notifications');
+            const notifDiv = document.getElementById('notifications');
+            if (notifs && notifs.length > 0) {
+                notifDiv.innerHTML = notifs.slice(-8).reverse().map(n => `
+                    <div class="notification">
+                        <span class="time">${new Date(n.time).toLocaleTimeString()}</span>
+                        ${n.message}
+                    </div>
+                `).join('');
+            }
+        }
+
+        document.getElementById('startTime').textContent = new Date().toLocaleString();
+        updateDashboard();
+        setInterval(updateDashboard, 10000);
+    </script>
+</body>
+</html>
