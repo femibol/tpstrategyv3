@@ -78,6 +78,10 @@ class TradingEngine:
         self.equity_curve = []
         self.daily_stats = []
 
+        # Analysis log - records every signal/scan cycle for visibility
+        self.analysis_log = []
+        self.max_analysis_log = 200
+
         # Timezone
         self.tz = pytz.timezone(self.config.timezone)
 
@@ -429,6 +433,26 @@ class TradingEngine:
             except Exception as e:
                 log.error(f"Strategy {name} error: {e}", exc_info=True)
 
+        # Log analysis cycle
+        if all_signals:
+            for sig in all_signals:
+                entry = {
+                    "time": datetime.now(self.tz).isoformat(),
+                    "strategy": sig.get("strategy", "unknown"),
+                    "symbol": sig.get("symbol"),
+                    "action": sig.get("action"),
+                    "price": sig.get("price"),
+                    "confidence": sig.get("confidence"),
+                    "reason": sig.get("reason", ""),
+                    "stop_loss": sig.get("stop_loss"),
+                    "take_profit": sig.get("take_profit"),
+                }
+                self.analysis_log.append(entry)
+
+            # Trim log
+            if len(self.analysis_log) > self.max_analysis_log:
+                self.analysis_log = self.analysis_log[-self.max_analysis_log:]
+
         return all_signals
 
     def _execute_signal(self, signal):
@@ -705,6 +729,19 @@ class TradingEngine:
 
         self.notifier.system_alert("Trading engine stopped", level="warning")
         log.info("Engine stopped")
+
+    def get_scanner_data(self):
+        """Get live scanner data from all strategies for dashboard."""
+        scanner = {}
+        for name, strategy in self.strategies.items():
+            scan = strategy.get_scan_results()
+            if scan:
+                scanner[name] = scan
+        return scanner
+
+    def get_analysis_log(self):
+        """Get recent analysis log entries."""
+        return self.analysis_log[-100:]
 
     def get_status(self):
         """Get current engine status for dashboard."""

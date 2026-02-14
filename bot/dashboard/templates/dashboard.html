@@ -164,6 +164,76 @@
         .modal-confirm { background: var(--red); color: #fff; }
         .modal-confirm:active { opacity: 0.8; }
 
+        /* === SCANNER TABLE === */
+        .scanner-section { margin-bottom: 16px; }
+        .scanner-title {
+            font-size: 0.85em; color: var(--accent); font-weight: 700;
+            padding: 8px 0; margin-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .scan-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+        }
+        .scan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .scan-symbol { font-size: 1.05em; font-weight: 700; }
+        .scan-verdict {
+            padding: 3px 10px; border-radius: 10px; font-size: 0.7em;
+            font-weight: 700; letter-spacing: 0.5px;
+        }
+        .verdict-buy { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+        .verdict-sell { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+        .verdict-warming { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+        .verdict-neutral { background: rgba(139,148,158,0.1); color: var(--muted); border: 1px solid var(--border); }
+        .verdict-entry { background: rgba(63,185,80,0.2); color: var(--green); border: 1px solid var(--green); }
+        .verdict-exit { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+        .verdict-stop { background: rgba(248,81,73,0.2); color: var(--red); border: 1px solid var(--red); }
+        .scan-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+            font-size: 0.75em; color: var(--muted);
+        }
+        .scan-val { color: var(--text); font-weight: 600; }
+        .scan-val.hot { color: var(--green); }
+        .scan-val.cold { color: var(--red); }
+        .scan-val.warm { color: var(--yellow); }
+        .scan-checks {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+            font-size: 0.7em;
+        }
+        .check-tag {
+            padding: 2px 8px; border-radius: 8px; font-weight: 600;
+        }
+        .check-pass { background: rgba(63,185,80,0.12); color: var(--green); }
+        .check-fail { background: rgba(139,148,158,0.08); color: var(--muted); }
+
+        /* === ANALYSIS LOG === */
+        .analysis-card {
+            background: var(--bg); border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0; padding: 10px 12px; margin-bottom: 6px;
+            font-size: 0.8em;
+        }
+        .analysis-card.buy { border-left-color: var(--green); }
+        .analysis-card.sell { border-left-color: var(--red); }
+        .analysis-top { display: flex; justify-content: space-between; align-items: center; }
+        .analysis-symbol { font-weight: 700; }
+        .analysis-action {
+            padding: 2px 8px; border-radius: 8px; font-size: 0.8em; font-weight: 700;
+        }
+        .action-buy { background: rgba(63,185,80,0.15); color: var(--green); }
+        .action-sell { background: rgba(248,81,73,0.15); color: var(--red); }
+        .analysis-reason { color: var(--muted); font-size: 0.85em; margin-top: 4px; }
+        .analysis-meta { color: var(--muted); font-size: 0.8em; margin-top: 4px; display: flex; gap: 12px; }
+        .conf-bar {
+            display: inline-block; width: 50px; height: 6px; border-radius: 3px;
+            background: var(--border); vertical-align: middle; margin-left: 4px;
+        }
+        .conf-fill { height: 100%; border-radius: 3px; }
+
+        @media (min-width: 768px) {
+            .scan-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+
         /* === EMPTY STATE === */
         .empty { text-align: center; color: var(--muted); padding: 20px; font-size: 0.85em; }
 
@@ -247,14 +317,36 @@
 
 <!-- TABS -->
 <div class="tabs">
-    <div class="tab active" data-tab="positions">Positions</div>
+    <div class="tab active" data-tab="scanner">Scanner</div>
+    <div class="tab" data-tab="analysis">Analysis</div>
+    <div class="tab" data-tab="positions">Positions</div>
     <div class="tab" data-tab="trades">Trades</div>
     <div class="tab" data-tab="notifications">Alerts</div>
     <div class="tab" data-tab="daily">Daily Stats</div>
 </div>
 
+<!-- SCANNER TAB (default) -->
+<div class="tab-content active" id="tab-scanner">
+    <div class="section">
+        <h2>Live Scanner <span class="count" id="scanCount">0</span></h2>
+        <div id="scannerList">
+            <div class="empty">Waiting for market data...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ANALYSIS TAB -->
+<div class="tab-content" id="tab-analysis">
+    <div class="section">
+        <h2>Signal Analysis <span class="count" id="analysisCount">0</span></h2>
+        <div id="analysisList">
+            <div class="empty">No signals generated yet</div>
+        </div>
+    </div>
+</div>
+
 <!-- POSITIONS TAB -->
-<div class="tab-content active" id="tab-positions">
+<div class="tab-content" id="tab-positions">
     <div class="section">
         <h2>Open Positions <span class="count" id="posCount">0</span></h2>
         <div id="positionsList">
@@ -358,14 +450,195 @@ function fmt(v, d) { d = d !== undefined ? d : 2; return v != null ? v.toFixed(d
 function fmtMoney(v) { return v != null ? v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00'; }
 function pnlCls(v) { return v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral'; }
 
+// === SCANNER RENDERING ===
+function verdictClass(v) {
+    if (!v) return 'verdict-neutral';
+    v = v.toUpperCase();
+    if (v.includes('BUY') || v.includes('ENTRY')) return 'verdict-buy';
+    if (v.includes('SELL') || v.includes('STOP')) return 'verdict-sell';
+    if (v.includes('WARMING') || v.includes('EXIT')) return 'verdict-warming';
+    return 'verdict-neutral';
+}
+
+function renderScannerMeanReversion(symbol, d) {
+    var checks = d.checks || {};
+    return '<div class="scan-card">' +
+        '<div class="scan-header">' +
+            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
+        '</div>' +
+        '<div class="scan-grid">' +
+            '<div>SMA<br><span class="scan-val">$' + fmt(d.sma) + '</span></div>' +
+            '<div>Z-Score<br><span class="scan-val ' + (d.zscore <= -2 ? 'hot' : d.zscore >= 2 ? 'cold' : '') + '">' + fmt(d.zscore) + '</span></div>' +
+            '<div>RSI<br><span class="scan-val ' + (d.rsi < 30 ? 'hot' : d.rsi > 70 ? 'cold' : '') + '">' + fmt(d.rsi, 0) + '</span></div>' +
+            '<div>BB Zone<br><span class="scan-val ' + (d.bb_zone === 'LOWER' ? 'hot' : d.bb_zone === 'UPPER' ? 'cold' : '') + '">' + d.bb_zone + '</span></div>' +
+            '<div>Vol<br><span class="scan-val ' + (d.vol_ratio > 1.3 ? 'warm' : '') + '">' + fmt(d.vol_ratio, 1) + 'x</span></div>' +
+            '<div>BB Range<br><span class="scan-val">$' + fmt(d.bb_lower) + '-$' + fmt(d.bb_upper) + '</span></div>' +
+        '</div>' +
+        '<div class="scan-checks">' +
+            (checks.zscore_ok ? '<span class="check-tag check-pass">Z-Score</span>' : '<span class="check-tag check-fail">Z-Score</span>') +
+            (checks.rsi_oversold ? '<span class="check-tag check-pass">RSI OS</span>' : '<span class="check-tag check-fail">RSI OS</span>') +
+            (checks.at_lower_bb ? '<span class="check-tag check-pass">Lower BB</span>' : '<span class="check-tag check-fail">Lower BB</span>') +
+            (checks.vol_surge ? '<span class="check-tag check-pass">Vol Surge</span>' : '<span class="check-tag check-fail">Vol Surge</span>') +
+        '</div>' +
+    '</div>';
+}
+
+function renderScannerMomentum(symbol, d) {
+    var checks = d.checks || {};
+    return '<div class="scan-card">' +
+        '<div class="scan-header">' +
+            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
+        '</div>' +
+        '<div class="scan-grid">' +
+            '<div>Fast EMA<br><span class="scan-val">$' + fmt(d.fast_ema) + '</span></div>' +
+            '<div>Slow EMA<br><span class="scan-val">$' + fmt(d.slow_ema) + '</span></div>' +
+            '<div>Spread<br><span class="scan-val ' + (d.ema_spread > 0 ? 'hot' : 'cold') + '">' + d.ema_spread + '%</span></div>' +
+            '<div>Trend<br><span class="scan-val ' + (d.trend === 'BULLISH' || d.trend === 'CROSS UP' ? 'hot' : 'cold') + '">' + d.trend + '</span></div>' +
+            '<div>ADX<br><span class="scan-val ' + (d.adx > 25 ? 'hot' : '') + '">' + fmt(d.adx, 0) + '</span></div>' +
+            '<div>ATR<br><span class="scan-val">$' + fmt(d.atr) + ' (' + d.atr_pct + '%)</span></div>' +
+            '<div>Vol<br><span class="scan-val ' + (d.vol_ratio >= 1.5 ? 'warm' : '') + '">' + fmt(d.vol_ratio, 1) + 'x</span></div>' +
+            '<div>Breakout<br><span class="scan-val ' + (d.breakout ? 'hot' : '') + '">' + (d.breakout ? 'YES' : 'No') + ' ($' + fmt(d.breakout_level) + ')</span></div>' +
+        '</div>' +
+        '<div class="scan-checks">' +
+            (checks.ema_bullish ? '<span class="check-tag check-pass">EMA Bull</span>' : '<span class="check-tag check-fail">EMA Bull</span>') +
+            (checks.ema_cross ? '<span class="check-tag check-pass">EMA Cross</span>' : '<span class="check-tag check-fail">EMA Cross</span>') +
+            (checks.strong_trend ? '<span class="check-tag check-pass">ADX Strong</span>' : '<span class="check-tag check-fail">ADX Strong</span>') +
+            (checks.vol_confirmed ? '<span class="check-tag check-pass">Vol Confirmed</span>' : '<span class="check-tag check-fail">Vol Confirmed</span>') +
+            (checks.breakout ? '<span class="check-tag check-pass">Breakout</span>' : '<span class="check-tag check-fail">Breakout</span>') +
+        '</div>' +
+    '</div>';
+}
+
+function renderScannerVWAP(symbol, d) {
+    return '<div class="scan-card">' +
+        '<div class="scan-header">' +
+            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
+        '</div>' +
+        '<div class="scan-grid">' +
+            '<div>VWAP<br><span class="scan-val">$' + fmt(d.vwap) + '</span></div>' +
+            '<div>Distance<br><span class="scan-val ' + (d.vwap_dist_pct > 0.3 ? 'warm' : '') + '">' + fmt(d.vwap_dist_pct) + '%</span></div>' +
+            '<div>Zone<br><span class="scan-val ' + (d.zone.includes('BELOW') ? 'hot' : d.zone.includes('ABOVE') ? 'cold' : '') + '">' + d.zone + '</span></div>' +
+            '<div>Lower 1<br><span class="scan-val">$' + fmt(d.lower_1) + '</span></div>' +
+            '<div>Upper 1<br><span class="scan-val">$' + fmt(d.upper_1) + '</span></div>' +
+            '<div>Vol<br><span class="scan-val ' + (d.vol_ratio > 1.3 ? 'warm' : '') + '">' + fmt(d.vol_ratio, 1) + 'x</span></div>' +
+            '<div>Trades<br><span class="scan-val">' + d.trades_today + '/' + d.max_trades + '</span></div>' +
+            '<div>Band 2<br><span class="scan-val">$' + fmt(d.lower_2) + '-$' + fmt(d.upper_2) + '</span></div>' +
+        '</div>' +
+    '</div>';
+}
+
+function renderScannerPairs(key, d) {
+    return '<div class="scan-card">' +
+        '<div class="scan-header">' +
+            '<span class="scan-symbol">' + key + '</span>' +
+            '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
+        '</div>' +
+        '<div class="scan-grid">' +
+            '<div>' + d.symbol_a + '<br><span class="scan-val">$' + fmt(d.price_a) + '</span></div>' +
+            '<div>' + d.symbol_b + '<br><span class="scan-val">$' + fmt(d.price_b) + '</span></div>' +
+            '<div>Corr<br><span class="scan-val ' + (d.correlation > 0.8 ? 'hot' : 'cold') + '">' + d.correlation + '</span></div>' +
+            '<div>Z-Score<br><span class="scan-val ' + (Math.abs(d.zscore) >= 2 ? 'warm' : '') + '">' + fmt(d.zscore) + '</span></div>' +
+            '<div>Ratio<br><span class="scan-val">' + d.ratio + '</span></div>' +
+            '<div>Mean Ratio<br><span class="scan-val">' + d.mean_ratio + '</span></div>' +
+            '<div>Active<br><span class="scan-val ' + (d.is_active ? 'warm' : '') + '">' + (d.is_active ? 'YES' : 'No') + '</span></div>' +
+            '<div>Entry Z<br><span class="scan-val">' + fmt(d.entry_threshold, 1) + '</span></div>' +
+        '</div>' +
+    '</div>';
+}
+
+function renderScanner(scannerData) {
+    var scanList = document.getElementById('scannerList');
+    if (!scannerData || Object.keys(scannerData).length === 0) {
+        scanList.innerHTML = '<div class="empty">Waiting for market data...</div>';
+        document.getElementById('scanCount').textContent = '0';
+        return;
+    }
+
+    var html = '';
+    var totalSymbols = 0;
+    var stratNames = {
+        'mean_reversion': 'Mean Reversion',
+        'momentum': 'Momentum',
+        'vwap_scalp': 'VWAP Scalping',
+        'pairs_trading': 'Pairs Trading'
+    };
+
+    for (var strat in scannerData) {
+        var symbols = scannerData[strat];
+        var count = Object.keys(symbols).length;
+        totalSymbols += count;
+
+        html += '<div class="scanner-section">';
+        html += '<div class="scanner-title">' + (stratNames[strat] || strat) + ' (' + count + ')</div>';
+
+        // Sort: signals first, then warming, then neutral
+        var entries = Object.entries(symbols).sort(function(a, b) {
+            var order = {'BUY SIGNAL': 0, 'SELL SIGNAL': 0, 'ENTRY SIGNAL': 0, 'BUY ZONE': 1, 'SELL ZONE': 1, 'EXIT SIGNAL': 1, 'STOP SIGNAL': 1, 'WARMING UP': 2};
+            var va = order[a[1].verdict] !== undefined ? order[a[1].verdict] : 9;
+            var vb = order[b[1].verdict] !== undefined ? order[b[1].verdict] : 9;
+            return va - vb;
+        });
+
+        for (var i = 0; i < entries.length; i++) {
+            var sym = entries[i][0];
+            var data = entries[i][1];
+            if (data.status === 'no_data' || data.status === 'low_volatility') continue;
+            if (strat === 'mean_reversion') html += renderScannerMeanReversion(sym, data);
+            else if (strat === 'momentum') html += renderScannerMomentum(sym, data);
+            else if (strat === 'vwap_scalp') html += renderScannerVWAP(sym, data);
+            else if (strat === 'pairs_trading') html += renderScannerPairs(sym, data);
+        }
+
+        html += '</div>';
+    }
+
+    scanList.innerHTML = html;
+    document.getElementById('scanCount').textContent = totalSymbols;
+}
+
+function renderAnalysis(analysisData) {
+    var aList = document.getElementById('analysisList');
+    document.getElementById('analysisCount').textContent = analysisData ? analysisData.length : 0;
+
+    if (!analysisData || analysisData.length === 0) {
+        aList.innerHTML = '<div class="empty">No signals generated yet</div>';
+        return;
+    }
+
+    aList.innerHTML = analysisData.slice(-30).reverse().map(function(a) {
+        var isBuy = a.action === 'buy';
+        var confPct = Math.round((a.confidence || 0) * 100);
+        var confColor = confPct >= 70 ? 'var(--green)' : confPct >= 50 ? 'var(--yellow)' : 'var(--red)';
+        return '<div class="analysis-card ' + (isBuy ? 'buy' : 'sell') + '">' +
+            '<div class="analysis-top">' +
+                '<span class="analysis-symbol">' + a.symbol + ' <span style="font-size:0.8em;color:var(--muted)">(' + a.strategy + ')</span></span>' +
+                '<span class="analysis-action ' + (isBuy ? 'action-buy' : 'action-sell') + '">' + a.action.toUpperCase() + '</span>' +
+            '</div>' +
+            '<div class="analysis-reason">' + (a.reason || '') + '</div>' +
+            '<div class="analysis-meta">' +
+                '<span>$' + fmt(a.price) + '</span>' +
+                (a.stop_loss ? '<span>Stop: $' + fmt(a.stop_loss) + '</span>' : '') +
+                (a.take_profit ? '<span>Target: $' + fmt(a.take_profit) + '</span>' : '') +
+                '<span>Conf: ' + confPct + '% <span class="conf-bar"><span class="conf-fill" style="width:' + confPct + '%;background:' + confColor + '"></span></span></span>' +
+            '</div>' +
+            '<div style="font-size:0.75em;color:var(--muted);margin-top:4px">' + new Date(a.time).toLocaleTimeString() + '</div>' +
+        '</div>';
+    }).join('');
+}
+
 // === UPDATE ALL ===
 async function update() {
     var results = await Promise.all([
         api('status'), api('positions'), api('trades'),
-        api('notifications'), api('daily'), api('equity')
+        api('notifications'), api('daily'), api('equity'),
+        api('scanner'), api('analysis')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
-        notifs = results[3], daily = results[4], equity = results[5];
+        notifs = results[3], daily = results[4], equity = results[5],
+        scanner = results[6], analysisData = results[7];
 
     // Status
     if (status) {
@@ -463,6 +736,12 @@ async function update() {
             '</div>';
         }).join('');
     }
+
+    // Scanner
+    renderScanner(scanner);
+
+    // Analysis
+    renderAnalysis(analysisData);
 
     // Equity Chart
     if (equity && equity.length > 1) {

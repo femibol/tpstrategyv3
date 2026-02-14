@@ -52,6 +52,7 @@ class MeanReversionStrategy(BaseStrategy):
         """Analyze a single symbol for mean reversion entry/exit."""
         bars = market_data.get_bars(symbol, self.lookback + 10)
         if bars is None or len(bars) < self.lookback:
+            self.scan_results[symbol] = {"status": "no_data", "verdict": "WAIT"}
             return None
 
         closes = bars["close"].values
@@ -78,6 +79,47 @@ class MeanReversionStrategy(BaseStrategy):
         # Volume check
         avg_vol = np.mean(volumes[-self.lookback:])
         vol_ratio = volumes[-1] / avg_vol if avg_vol > 0 else 0
+
+        # Determine where price is relative to bands
+        if current_price <= bb_lower:
+            bb_zone = "LOWER"
+        elif current_price >= bb_upper:
+            bb_zone = "UPPER"
+        else:
+            bb_zone = "MIDDLE"
+
+        # Build verdict
+        checks = {
+            "zscore_ok": zscore <= self.entry_zscore,
+            "rsi_oversold": rsi < self.rsi_oversold,
+            "rsi_overbought": rsi > self.rsi_overbought,
+            "at_lower_bb": current_price <= bb_lower,
+            "vol_surge": vol_ratio > 1.3,
+        }
+        passed = sum(1 for v in [checks["zscore_ok"], checks["rsi_oversold"], checks["at_lower_bb"]] if v)
+        if passed >= 2:
+            verdict = "BUY SIGNAL"
+        elif checks["rsi_overbought"] and zscore >= abs(self.entry_zscore):
+            verdict = "SELL SIGNAL"
+        elif passed == 1:
+            verdict = "WARMING UP"
+        else:
+            verdict = "NEUTRAL"
+
+        # Store scan result for dashboard
+        self.scan_results[symbol] = {
+            "price": round(current_price, 2),
+            "sma": round(sma, 2),
+            "zscore": round(zscore, 2),
+            "rsi": round(rsi, 1),
+            "bb_upper": round(bb_upper, 2),
+            "bb_lower": round(bb_lower, 2),
+            "bb_zone": bb_zone,
+            "vol_ratio": round(vol_ratio, 1),
+            "checks": checks,
+            "checks_passed": passed,
+            "verdict": verdict,
+        }
 
         # --- BUY Signal (Oversold) ---
         if zscore <= self.entry_zscore and rsi < self.rsi_oversold:

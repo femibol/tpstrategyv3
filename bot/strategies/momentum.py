@@ -54,6 +54,7 @@ class MomentumStrategy(BaseStrategy):
         """Analyze a single symbol for momentum entry."""
         bars = market_data.get_bars(symbol, 60)
         if bars is None or len(bars) < 40:
+            self.scan_results[symbol] = {"status": "no_data", "verdict": "WAIT"}
             return None
 
         closes = bars["close"].values
@@ -87,11 +88,52 @@ class MomentumStrategy(BaseStrategy):
         # ATR for stop/target calculation
         atr = self.indicators.atr(highs, lows, closes, period=self.atr_period)
         if atr is None or atr <= 0:
+            self.scan_results[symbol] = {"status": "low_volatility", "verdict": "WAIT"}
             return None
 
         # Breakout detection - price above N-bar high
         lookback_high = np.max(highs[-self.breakout_lookback:-1])
         breakout = current_price > lookback_high
+
+        # Trend direction
+        if ema_just_crossed:
+            trend = "CROSS UP"
+        elif ema_bullish:
+            trend = "BULLISH"
+        else:
+            trend = "BEARISH"
+
+        checks = {
+            "ema_bullish": ema_bullish,
+            "ema_cross": ema_just_crossed,
+            "strong_trend": strong_trend,
+            "vol_confirmed": vol_confirmed,
+            "breakout": breakout,
+        }
+        passed = sum(1 for v in checks.values() if v)
+        if ema_bullish and (strong_trend or breakout) and vol_confirmed:
+            verdict = "BUY SIGNAL"
+        elif passed >= 3:
+            verdict = "WARMING UP"
+        else:
+            verdict = "NEUTRAL"
+
+        self.scan_results[symbol] = {
+            "price": round(current_price, 2),
+            "fast_ema": round(fast_ema[-1], 2),
+            "slow_ema": round(slow_ema[-1], 2),
+            "ema_spread": round((fast_ema[-1] - slow_ema[-1]) / slow_ema[-1] * 100, 3),
+            "trend": trend,
+            "adx": round(adx, 1) if adx else 0,
+            "atr": round(atr, 2),
+            "atr_pct": round(atr / current_price * 100, 2),
+            "vol_ratio": round(vol_ratio, 1),
+            "breakout_level": round(lookback_high, 2),
+            "breakout": breakout,
+            "checks": checks,
+            "checks_passed": passed,
+            "verdict": verdict,
+        }
 
         # --- BUY Signal ---
         # Need: EMA bullish + (strong trend OR breakout) + volume

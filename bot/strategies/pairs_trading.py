@@ -55,11 +55,13 @@ class PairsTradingStrategy(BaseStrategy):
     def _analyze_pair(self, symbol_a, symbol_b, market_data):
         """Analyze a pair for statistical arbitrage opportunity."""
         signals = []
+        pair_key = f"{symbol_a}/{symbol_b}"
 
         bars_a = market_data.get_bars(symbol_a, self.lookback + 10)
         bars_b = market_data.get_bars(symbol_b, self.lookback + 10)
 
         if bars_a is None or bars_b is None:
+            self.scan_results[pair_key] = {"status": "no_data", "verdict": "WAIT"}
             return signals
 
         if len(bars_a) < self.lookback or len(bars_b) < self.lookback:
@@ -70,8 +72,6 @@ class PairsTradingStrategy(BaseStrategy):
 
         # Check correlation
         correlation = np.corrcoef(closes_a, closes_b)[0, 1]
-        if abs(correlation) < self.min_correlation:
-            return signals
 
         # Calculate spread (ratio method - more stable than difference)
         ratio = closes_a / np.where(closes_b > 0, closes_b, 1)
@@ -84,9 +84,40 @@ class PairsTradingStrategy(BaseStrategy):
         current_ratio = ratio[-1]
         zscore = (current_ratio - mean_ratio) / std_ratio
 
-        pair_key = f"{symbol_a}/{symbol_b}"
         price_a = closes_a[-1]
         price_b = closes_b[-1]
+
+        # Determine verdict
+        is_active = pair_key in self.active_pairs
+        if abs(correlation) < self.min_correlation:
+            verdict = "LOW CORR"
+        elif is_active and abs(zscore) <= self.exit_zscore:
+            verdict = "EXIT SIGNAL"
+        elif is_active and abs(zscore) >= self.stop_zscore:
+            verdict = "STOP SIGNAL"
+        elif not is_active and abs(zscore) >= self.entry_zscore:
+            verdict = "ENTRY SIGNAL"
+        elif abs(zscore) >= self.entry_zscore * 0.7:
+            verdict = "WARMING UP"
+        else:
+            verdict = "NEUTRAL"
+
+        self.scan_results[pair_key] = {
+            "symbol_a": symbol_a,
+            "symbol_b": symbol_b,
+            "price_a": round(price_a, 2),
+            "price_b": round(price_b, 2),
+            "correlation": round(correlation, 3),
+            "zscore": round(zscore, 2),
+            "ratio": round(current_ratio, 4),
+            "mean_ratio": round(mean_ratio, 4),
+            "is_active": is_active,
+            "entry_threshold": self.entry_zscore,
+            "verdict": verdict,
+        }
+
+        if abs(correlation) < self.min_correlation:
+            return signals
 
         # --- ENTRY: Spread diverged ---
         if abs(zscore) >= self.entry_zscore and pair_key not in self.active_pairs:

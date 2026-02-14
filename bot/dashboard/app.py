@@ -109,6 +109,14 @@ class Dashboard:
                 return jsonify(self.engine.notifier.history[-20:])
             return jsonify([])
 
+        @self.app.route("/api/scanner")
+        def scanner():
+            return jsonify(self.engine.get_scanner_data())
+
+        @self.app.route("/api/analysis")
+        def analysis():
+            return jsonify(self.engine.get_analysis_log())
+
         # --- Control APIs (for mobile) ---
 
         @self.app.route("/api/control/pause", methods=["POST"])

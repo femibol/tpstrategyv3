@@ -56,6 +56,7 @@ class VWAPScalpStrategy(BaseStrategy):
         """Analyze symbol relative to VWAP."""
         bars = market_data.get_bars(symbol, 78)  # Full trading day of 1-min bars
         if bars is None or len(bars) < 20:
+            self.scan_results[symbol] = {"status": "no_data", "verdict": "WAIT"}
             return None
 
         closes = bars["close"].values
@@ -88,9 +89,49 @@ class VWAPScalpStrategy(BaseStrategy):
         # Distance from VWAP
         distance_pct = abs(current_price - vwap) / vwap
 
+        # Which zone
+        if current_price <= lower_band_2:
+            zone = "BELOW -2SD"
+        elif current_price <= lower_band_1:
+            zone = "BELOW -1SD"
+        elif current_price >= upper_band_2:
+            zone = "ABOVE +2SD"
+        elif current_price >= upper_band_1:
+            zone = "ABOVE +1SD"
+        else:
+            zone = "AT VWAP"
+
         # Volume check
         avg_vol = np.mean(volumes[-20:])
         vol_ratio = volumes[-1] / avg_vol if avg_vol > 0 else 0
+
+        # Determine verdict
+        in_buy_zone = current_price <= lower_band_1 and self.min_distance <= distance_pct <= self.max_distance
+        in_sell_zone = current_price >= upper_band_1 and self.min_distance <= distance_pct <= self.max_distance
+
+        if in_buy_zone:
+            verdict = "BUY ZONE"
+        elif in_sell_zone:
+            verdict = "SELL ZONE"
+        elif distance_pct < self.min_distance:
+            verdict = "TOO CLOSE"
+        else:
+            verdict = "NEUTRAL"
+
+        self.scan_results[symbol] = {
+            "price": round(current_price, 2),
+            "vwap": round(vwap, 2),
+            "vwap_dist_pct": round(distance_pct * 100, 2),
+            "zone": zone,
+            "upper_1": round(upper_band_1, 2),
+            "lower_1": round(lower_band_1, 2),
+            "upper_2": round(upper_band_2, 2),
+            "lower_2": round(lower_band_2, 2),
+            "vol_ratio": round(vol_ratio, 1),
+            "trades_today": self.trades_today,
+            "max_trades": self.max_trades,
+            "verdict": verdict,
+        }
 
         # --- BUY at lower VWAP band ---
         if (current_price <= lower_band_1 and

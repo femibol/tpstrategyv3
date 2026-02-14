@@ -20,6 +20,10 @@ class BaseStrategy(ABC):
         self.signals_generated = 0
         self.trades_taken = 0
 
+        # Scanner: stores latest indicator values for EVERY symbol each cycle
+        # This is what makes the analysis visible in the dashboard
+        self.scan_results = {}  # symbol -> {indicators + verdict}
+
     @abstractmethod
     def generate_signals(self, market_data):
         """
@@ -43,6 +47,10 @@ class BaseStrategy(ABC):
     def get_symbols(self):
         """Return symbols this strategy trades."""
         return self.symbols
+
+    def get_scan_results(self):
+        """Return latest scan results for all symbols (for dashboard)."""
+        return self.scan_results
 
     def update_capital(self, new_capital):
         """Update allocated capital (called when account balance changes)."""
