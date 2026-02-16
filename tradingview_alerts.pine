@@ -1,0 +1,83 @@
+// ============================================
+// TradingView Pine Script - Alert Template
+// Sends webhook signals to your Algo Trading Bot
+// ============================================
+//
+// SETUP:
+// 1. Copy this script into TradingView Pine Editor
+// 2. Add to chart
+// 3. Create alert: Right-click chart > Add Alert
+// 4. Set condition to this strategy
+// 5. Set webhook URL to: http://YOUR_SERVER:5001/webhook/tradingview
+// 6. Set alert message to the JSON format below
+//
+// ALERT MESSAGE FORMAT (copy this exactly):
+// {
+//   "symbol": "{{ticker}}",
+//   "action": "{{strategy.order.action}}",
+//   "price": {{close}},
+//   "quantity": {{strategy.order.contracts}},
+//   "interval": "{{interval}}",
+//   "exchange": "{{exchange}}",
+//   "secret": "your_secret_here",
+//   "comment": "{{strategy.order.comment}}"
+// }
+
+//@version=5
+strategy("Algo Bot Signal Generator", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+// === INPUTS ===
+fastLen = input.int(8, "Fast EMA")
+slowLen = input.int(21, "Slow EMA")
+rsiLen = input.int(14, "RSI Period")
+rsiOversold = input.int(30, "RSI Oversold")
+rsiOverbought = input.int(70, "RSI Overbought")
+atrLen = input.int(14, "ATR Period")
+atrStopMult = input.float(2.0, "ATR Stop Multiplier")
+atrTargetMult = input.float(4.0, "ATR Target Multiplier")
+volMult = input.float(1.5, "Volume Surge Multiplier")
+
+// === CALCULATIONS ===
+fastEMA = ta.ema(close, fastLen)
+slowEMA = ta.ema(close, slowLen)
+rsi = ta.rsi(close, rsiLen)
+atr = ta.atr(atrLen)
+avgVol = ta.sma(volume, 20)
+volSurge = volume > avgVol * volMult
+
+// === SIGNALS ===
+emaBullish = fastEMA > slowEMA
+emaCross = ta.crossover(fastEMA, slowEMA)
+emaBearish = fastEMA < slowEMA
+
+// Momentum Buy: EMA cross + volume surge
+momentumBuy = emaCross and volSurge and rsi < rsiOverbought
+
+// Mean Reversion Buy: RSI oversold + price at lower BB
+[bbUpper, bbMiddle, bbLower] = ta.bb(close, 20, 2.0)
+meanRevBuy = rsi < rsiOversold and close <= bbLower and volSurge
+
+// Combined entry
+longEntry = momentumBuy or meanRevBuy
+
+// Exit conditions
+longExit = rsi > rsiOverbought or ta.crossunder(fastEMA, slowEMA)
+
+// === STRATEGY EXECUTION ===
+if longEntry
+    stopLoss = close - atr * atrStopMult
+    takeProfit = close + atr * atrTargetMult
+    strategy.entry("Long", strategy.long, comment="algo_entry")
+    strategy.exit("Exit", "Long", stop=stopLoss, limit=takeProfit, comment="algo_exit")
+
+if longExit
+    strategy.close("Long", comment="signal_exit")
+
+// === PLOTS ===
+plot(fastEMA, "Fast EMA", color=color.new(color.blue, 0), linewidth=2)
+plot(slowEMA, "Slow EMA", color=color.new(color.orange, 0), linewidth=2)
+plotshape(momentumBuy, "Momentum Buy", shape.triangleup, location.belowbar, color.new(color.green, 0), size=size.small)
+plotshape(meanRevBuy, "Mean Rev Buy", shape.diamond, location.belowbar, color.new(color.teal, 0), size=size.small)
+
+// Background color for active position
+bgcolor(strategy.position_size > 0 ? color.new(color.green, 90) : na)
