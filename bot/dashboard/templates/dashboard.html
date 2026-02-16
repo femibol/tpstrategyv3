@@ -454,8 +454,10 @@ function pnlCls(v) { return v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral';
 function verdictClass(v) {
     if (!v) return 'verdict-neutral';
     v = v.toUpperCase();
+    if (v === 'A+ SETUP') return 'verdict-buy';
     if (v.includes('BUY') || v.includes('ENTRY')) return 'verdict-buy';
     if (v.includes('SELL') || v.includes('STOP')) return 'verdict-sell';
+    if (v === 'BUILDING' || v === 'WATCHING') return 'verdict-warming';
     if (v.includes('WARMING') || v.includes('EXIT')) return 'verdict-warming';
     return 'verdict-neutral';
 }
@@ -530,6 +532,34 @@ function renderScannerVWAP(symbol, d) {
     '</div>';
 }
 
+function renderScannerSMC(symbol, d) {
+    var checks = d.checks || {};
+    return '<div class="scan-card">' +
+        '<div class="scan-header">' +
+            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
+        '</div>' +
+        '<div class="scan-grid">' +
+            '<div>Buy Liq<br><span class="scan-val">$' + fmt(d.buy_side_liq) + '</span></div>' +
+            '<div>Sell Liq<br><span class="scan-val">$' + fmt(d.sell_side_liq) + '</span></div>' +
+            '<div>Sweep<br><span class="scan-val ' + (d.sweep !== 'none' ? (d.sweep === 'bullish' ? 'hot' : 'cold') : '') + '">' + d.sweep.toUpperCase() + '</span></div>' +
+            '<div>SMT<br><span class="scan-val ' + (d.smt !== 'none' ? 'warm' : '') + '">' + d.smt.toUpperCase() + '</span></div>' +
+            '<div>CISD<br><span class="scan-val ' + (d.cisd !== 'none' ? (d.cisd === 'bullish' ? 'hot' : 'cold') : '') + '">' + d.cisd.toUpperCase() + (d.cisd_level ? ' $' + fmt(d.cisd_level) : '') + '</span></div>' +
+            '<div>Disp<br><span class="scan-val ' + (d.displacement > 0 ? 'warm' : '') + '">' + d.displacement + 'x ' + d.disp_type.toUpperCase() + '</span></div>' +
+            '<div>FVGs<br><span class="scan-val ' + (d.fvg_count > 0 ? 'warm' : '') + '">' + d.fvg_bull + 'B/' + d.fvg_bear + 'S</span></div>' +
+            '<div>ATR<br><span class="scan-val">$' + fmt(d.atr) + '</span></div>' +
+        '</div>' +
+        (d.smt_pair && d.smt_pair !== 'N/A' ? '<div style="font-size:0.7em;color:var(--muted);margin-top:6px">SMT Pair: ' + d.smt_pair + (d.smt_desc && d.smt_desc !== 'N/A' ? ' - ' + d.smt_desc : '') + '</div>' : '') +
+        '<div class="scan-checks">' +
+            (checks.sweep ? '<span class="check-tag check-pass">Sweep</span>' : '<span class="check-tag check-fail">Sweep</span>') +
+            (checks.smt ? '<span class="check-tag check-pass">SMT</span>' : '<span class="check-tag check-fail">SMT</span>') +
+            (checks.cisd ? '<span class="check-tag check-pass">CISD</span>' : '<span class="check-tag check-fail">CISD</span>') +
+            (checks.displacement ? '<span class="check-tag check-pass">Displacement</span>' : '<span class="check-tag check-fail">Displacement</span>') +
+            (checks.fvg ? '<span class="check-tag check-pass">FVG</span>' : '<span class="check-tag check-fail">FVG</span>') +
+        '</div>' +
+    '</div>';
+}
+
 function renderScannerPairs(key, d) {
     return '<div class="scan-card">' +
         '<div class="scan-header">' +
@@ -560,6 +590,7 @@ function renderScanner(scannerData) {
     var html = '';
     var totalSymbols = 0;
     var stratNames = {
+        'smc_forever': 'SMC Forever Model',
         'mean_reversion': 'Mean Reversion',
         'momentum': 'Momentum',
         'vwap_scalp': 'VWAP Scalping',
@@ -576,7 +607,7 @@ function renderScanner(scannerData) {
 
         // Sort: signals first, then warming, then neutral
         var entries = Object.entries(symbols).sort(function(a, b) {
-            var order = {'BUY SIGNAL': 0, 'SELL SIGNAL': 0, 'ENTRY SIGNAL': 0, 'BUY ZONE': 1, 'SELL ZONE': 1, 'EXIT SIGNAL': 1, 'STOP SIGNAL': 1, 'WARMING UP': 2};
+            var order = {'A+ SETUP': 0, 'BUY SIGNAL': 0, 'SELL SIGNAL': 0, 'ENTRY SIGNAL': 0, 'BUILDING': 1, 'BUY ZONE': 1, 'SELL ZONE': 1, 'EXIT SIGNAL': 1, 'STOP SIGNAL': 1, 'WATCHING': 2, 'WARMING UP': 2};
             var va = order[a[1].verdict] !== undefined ? order[a[1].verdict] : 9;
             var vb = order[b[1].verdict] !== undefined ? order[b[1].verdict] : 9;
             return va - vb;
@@ -585,8 +616,9 @@ function renderScanner(scannerData) {
         for (var i = 0; i < entries.length; i++) {
             var sym = entries[i][0];
             var data = entries[i][1];
-            if (data.status === 'no_data' || data.status === 'low_volatility') continue;
-            if (strat === 'mean_reversion') html += renderScannerMeanReversion(sym, data);
+            if (data.status === 'no_data' || data.status === 'low_volatility' || data.status === 'error') continue;
+            if (strat === 'smc_forever') html += renderScannerSMC(sym, data);
+            else if (strat === 'mean_reversion') html += renderScannerMeanReversion(sym, data);
             else if (strat === 'momentum') html += renderScannerMomentum(sym, data);
             else if (strat === 'vwap_scalp') html += renderScannerVWAP(sym, data);
             else if (strat === 'pairs_trading') html += renderScannerPairs(sym, data);

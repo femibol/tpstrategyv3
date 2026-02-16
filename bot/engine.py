@@ -25,6 +25,7 @@ from bot.strategies.mean_reversion import MeanReversionStrategy
 from bot.strategies.momentum import MomentumStrategy
 from bot.strategies.vwap import VWAPScalpStrategy
 from bot.strategies.pairs_trading import PairsTradingStrategy
+from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.utils.logger import setup_logger, get_logger
 from bot.utils.notifications import Notifier
 
@@ -158,6 +159,7 @@ class TradingEngine:
             "momentum": MomentumStrategy,
             "vwap_scalp": VWAPScalpStrategy,
             "pairs_trading": PairsTradingStrategy,
+            "smc_forever": SMCForeverStrategy,
         }
 
         allocation = self.config.strategy_allocation

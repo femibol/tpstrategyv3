@@ -5,10 +5,11 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  mean_reversion: 0.30            # 30% of capital
-  momentum: 0.30                  # 30% of capital
-  vwap_scalp: 0.20                # 20% of capital
-  pairs_trading: 0.20             # 20% of capital
+  smc_forever: 0.30               # 30% - highest conviction model
+  mean_reversion: 0.20            # 20% of capital
+  momentum: 0.20                  # 20% of capital
+  vwap_scalp: 0.15                # 15% of capital
+  pairs_trading: 0.15             # 15% of capital
 
 # --- Mean Reversion Strategy ---
 # Buy oversold, sell overbought - bread & butter for small accounts
@@ -103,6 +104,35 @@ pairs_trading:
     - ["AMD", "NVDA"]
     - ["XLF", "JPM"]
     - ["SPY", "QQQ"]
+
+# --- SMC Forever Model (ICT / Smart Money Concepts) ---
+# Highest-conviction model: stacks liquidity + SMT + CISD + FVG + DOL
+# Trades 1-3x per week, A+ setups only
+smc_forever:
+  enabled: true
+  timeframe: "15m"
+  swing_lookback: 5                 # Bars each side for swing point detection
+  fvg_min_size_pct: 0.001           # Min FVG size as % of price (0.1%)
+  smt_lookback: 10                  # Bars to compare for SMT divergence
+  displacement_atr_mult: 1.5        # Displacement candle = 1.5x ATR body
+  risk_reward_min: 2.0              # Minimum 2:1 R/R or skip
+  max_trades_per_week: 3            # Cap weekly trades (selectivity)
+  stop_buffer_pct: 0.002            # 0.2% buffer below FVG for stop
+  smt_pairs:                        # Correlated pairs for SMT divergence
+    - ["SPY", "QQQ"]
+    - ["AAPL", "MSFT"]
+    - ["NVDA", "AMD"]
+  symbols:
+    - SPY
+    - QQQ
+    - AAPL
+    - MSFT
+    - NVDA
+    - AMD
+    - AMZN
+    - META
+    - GOOGL
+    - TSLA
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts
