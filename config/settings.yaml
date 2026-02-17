@@ -20,6 +20,24 @@ risk:
   trailing_stop_pct: 0.02         # 2% trailing stop
   take_profit_pct: 0.06           # 6% take profit (2:1 reward/risk)
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
+
+  # --- Profit Taking (Partial Exits) ---
+  profit_taking:
+    enabled: true
+    # Scale out at multiple targets (percentage of position to close)
+    targets:
+      - pct_from_entry: 0.03      # At +3% profit
+        close_pct: 0.33           # Close 33% of position
+        move_stop: "breakeven"    # Move stop to break even
+      - pct_from_entry: 0.06      # At +6% profit (take_profit_pct)
+        close_pct: 0.50           # Close 50% of remaining
+        tighten_trail: 0.01       # Tighten trailing stop to 1%
+
+  # --- Break Even Stop ---
+  breakeven:
+    enabled: true
+    trigger_pct: 0.015            # Move stop to BE after 1.5% profit
+    buffer_pct: 0.002             # Small buffer above entry (0.2%) to cover commissions
   min_volume: 500000              # Minimum avg daily volume
   min_price: 5.00                 # No penny stocks
   max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)
@@ -59,6 +77,24 @@ scaling:
       max_positions: 20
       risk_per_trade: 0.02
       max_position_pct: 0.06
+
+# --- Weekly Watchlist ---
+# Symbols actively monitored each week. Auto-includes politician picks.
+watchlist:
+  symbols:
+    - NVDA
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - META
+    - TSLA
+    - AMD
+    - SPY
+    - QQQ
+    - AB          # Pelosi pick
+  auto_add_politician_picks: true   # Auto-add symbols from politician tracker
+  track_weekly_performance: true    # Track weekly P&L per symbol
 
 # --- Data Sources ---
 data:

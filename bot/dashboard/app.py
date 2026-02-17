@@ -88,6 +88,9 @@ class Dashboard:
                     "strategy": pos.get("strategy", "unknown"),
                     "stop_loss": pos.get("stop_loss", 0),
                     "take_profit": pos.get("take_profit", 0),
+                    "breakeven_hit": pos.get("breakeven_hit", False),
+                    "trailing_stop": pos.get("trailing_stop", 0),
+                    "targets_hit": pos.get("targets_hit", []),
                 })
             return jsonify(result)
 
@@ -308,6 +311,36 @@ class Dashboard:
             if self.engine.news_feed:
                 return jsonify(self.engine.news_feed.get_status())
             return jsonify({"running": False, "api_configured": False})
+
+        # --- Watchlist APIs ---
+
+        @self.app.route("/api/watchlist")
+        def watchlist():
+            return jsonify(self.engine.get_watchlist_data())
+
+        @self.app.route("/api/watchlist/add", methods=["POST"])
+        @self._require_auth
+        def watchlist_add():
+            data = request.get_json()
+            if not data or not data.get("symbol"):
+                return jsonify({"error": "symbol required"}), 400
+            symbols = self.engine.add_to_watchlist(data["symbol"])
+            return jsonify({"status": "added", "watchlist": symbols})
+
+        @self.app.route("/api/watchlist/remove", methods=["POST"])
+        @self._require_auth
+        def watchlist_remove():
+            data = request.get_json()
+            if not data or not data.get("symbol"):
+                return jsonify({"error": "symbol required"}), 400
+            symbols = self.engine.remove_from_watchlist(data["symbol"])
+            return jsonify({"status": "removed", "watchlist": symbols})
+
+        # --- Performance / Win-Loss Stats ---
+
+        @self.app.route("/api/performance")
+        def performance():
+            return jsonify(self.engine.get_performance_summary())
 
         # --- Quote API (real-time price lookup) ---
 

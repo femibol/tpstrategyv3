@@ -234,6 +234,44 @@
             .scan-grid { grid-template-columns: repeat(4, 1fr); }
         }
 
+        /* === WATCHLIST CARDS === */
+        .wl-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+        }
+        .wl-card.in-position { border-left: 3px solid var(--accent); }
+        .wl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .wl-symbol { font-size: 1.1em; font-weight: 700; }
+        .wl-price { font-size: 1em; font-weight: 600; }
+        .wl-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; font-size: 0.75em; color: var(--muted); }
+        .wl-val { color: var(--text); font-weight: 600; }
+        .wl-be-tag {
+            display: inline-block; padding: 1px 6px; border-radius: 6px; font-size: 0.65em;
+            font-weight: 700; background: rgba(88,166,255,0.15); color: var(--accent); margin-left: 6px;
+        }
+        .wl-pos-tag {
+            display: inline-block; padding: 1px 6px; border-radius: 6px; font-size: 0.65em;
+            font-weight: 700; background: rgba(63,185,80,0.15); color: var(--green); margin-left: 6px;
+        }
+
+        /* === PERFORMANCE STATS === */
+        .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .perf-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; text-align: center;
+        }
+        .perf-label { font-size: 0.65em; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .perf-value { font-size: 1.4em; font-weight: 700; margin-top: 4px; }
+        .perf-sub { font-size: 0.7em; color: var(--muted); margin-top: 2px; }
+        .strat-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+        }
+        .strat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .strat-name { font-weight: 700; font-size: 0.9em; }
+        .strat-pnl { font-weight: 700; }
+        .strat-meta { font-size: 0.75em; color: var(--muted); }
+
         /* === EMPTY STATE === */
         .empty { text-align: center; color: var(--muted); padding: 20px; font-size: 0.85em; }
 
@@ -317,16 +355,44 @@
 
 <!-- TABS -->
 <div class="tabs">
-    <div class="tab active" data-tab="scanner">Scanner</div>
-    <div class="tab" data-tab="analysis">Analysis</div>
+    <div class="tab active" data-tab="watchlist">Watchlist</div>
+    <div class="tab" data-tab="scanner">Scanner</div>
     <div class="tab" data-tab="positions">Positions</div>
+    <div class="tab" data-tab="performance">W/L Stats</div>
     <div class="tab" data-tab="trades">Trades</div>
-    <div class="tab" data-tab="notifications">Alerts</div>
+    <div class="tab" data-tab="analysis">Analysis</div>
     <div class="tab" data-tab="daily">Daily Stats</div>
+    <div class="tab" data-tab="notifications">Alerts</div>
 </div>
 
-<!-- SCANNER TAB (default) -->
-<div class="tab-content active" id="tab-scanner">
+<!-- WATCHLIST TAB (default) -->
+<div class="tab-content active" id="tab-watchlist">
+    <div class="section">
+        <h2>Weekly Watchlist <span class="count" id="watchlistCount">0</span></h2>
+        <div id="watchlistList">
+            <div class="empty">Loading watchlist...</div>
+        </div>
+    </div>
+</div>
+
+<!-- PERFORMANCE TAB -->
+<div class="tab-content" id="tab-performance">
+    <div class="section">
+        <h2>Win / Loss Stats</h2>
+        <div id="perfStats">
+            <div class="empty">No trades yet</div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>By Strategy</h2>
+        <div id="perfByStrategy">
+            <div class="empty">No strategy data</div>
+        </div>
+    </div>
+</div>
+
+<!-- SCANNER TAB -->
+<div class="tab-content" id="tab-scanner">
     <div class="section">
         <h2>Live Scanner <span class="count" id="scanCount">0</span></h2>
         <div id="scannerList">
@@ -661,16 +727,139 @@ function renderAnalysis(analysisData) {
     }).join('');
 }
 
+// === WATCHLIST RENDERING ===
+function renderWatchlist(data) {
+    var wl = document.getElementById('watchlistList');
+    document.getElementById('watchlistCount').textContent = data ? data.length : 0;
+
+    if (!data || data.length === 0) {
+        wl.innerHTML = '<div class="empty">No symbols in watchlist</div>';
+        return;
+    }
+
+    wl.innerHTML = data.map(function(w) {
+        var priceStr = w.price ? '$' + fmtMoney(w.price) : '--';
+        var changeCls = w.change_pct > 0 ? 'positive' : w.change_pct < 0 ? 'negative' : 'neutral';
+        var changeStr = w.change_pct != null ? (w.change_pct >= 0 ? '+' : '') + fmt(w.change_pct) + '%' : '--';
+
+        var posHtml = '';
+        if (w.in_position) {
+            var pnlCls2 = w.unrealized_pnl_pct > 0 ? 'positive' : w.unrealized_pnl_pct < 0 ? 'negative' : 'neutral';
+            posHtml = '<span class="wl-pos-tag">' + w.direction.toUpperCase() + '</span>' +
+                (w.breakeven_hit ? '<span class="wl-be-tag">BE STOP</span>' : '');
+        }
+
+        return '<div class="wl-card' + (w.in_position ? ' in-position' : '') + '">' +
+            '<div class="wl-header">' +
+                '<span class="wl-symbol">' + w.symbol + posHtml + '</span>' +
+                '<span class="wl-price ' + changeCls + '">' + priceStr + ' <span style="font-size:0.8em">' + changeStr + '</span></span>' +
+            '</div>' +
+            '<div class="wl-grid">' +
+                (w.in_position ?
+                    '<div>Entry<br><span class="wl-val">$' + fmt(w.entry_price) + '</span></div>' +
+                    '<div>P&L<br><span class="wl-val ' + pnlCls(w.unrealized_pnl_pct) + '">' + fmt(w.unrealized_pnl_pct) + '%</span></div>' +
+                    '<div>Stop<br><span class="wl-val">$' + fmt(w.stop_loss) + '</span></div>'
+                :
+                    '<div>Week Trades<br><span class="wl-val">' + w.week_trades + '</span></div>' +
+                    '<div>Week P&L<br><span class="wl-val ' + pnlCls(w.week_pnl) + '">$' + fmt(w.week_pnl) + '</span></div>' +
+                    '<div>W/L<br><span class="wl-val">' + w.week_wins + '/' + w.week_losses + '</span></div>'
+                ) +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// === PERFORMANCE RENDERING ===
+function renderPerformance(perf) {
+    var ps = document.getElementById('perfStats');
+    if (!perf || perf.total_trades === 0) {
+        ps.innerHTML = '<div class="empty">No trades completed yet</div>';
+        document.getElementById('perfByStrategy').innerHTML = '<div class="empty">No strategy data</div>';
+        return;
+    }
+
+    var wrCls = perf.win_rate >= 50 ? 'positive' : 'negative';
+    var pfCls = perf.profit_factor >= 1.5 ? 'positive' : perf.profit_factor >= 1 ? 'neutral' : 'negative';
+    var netCls = perf.net_pnl >= 0 ? 'positive' : 'negative';
+    var expCls = perf.expectancy >= 0 ? 'positive' : 'negative';
+
+    ps.innerHTML = '<div class="perf-grid">' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Win Rate</div>' +
+            '<div class="perf-value ' + wrCls + '">' + perf.win_rate + '%</div>' +
+            '<div class="perf-sub">' + perf.wins + 'W / ' + perf.losses + 'L / ' + perf.breakeven + 'BE</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Profit Factor</div>' +
+            '<div class="perf-value ' + pfCls + '">' + (perf.profit_factor === Infinity ? '--' : perf.profit_factor) + '</div>' +
+            '<div class="perf-sub">$' + fmtMoney(perf.total_profit) + ' / $' + fmtMoney(perf.total_loss) + '</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Net P&L</div>' +
+            '<div class="perf-value ' + netCls + '">$' + fmtMoney(perf.net_pnl) + '</div>' +
+            '<div class="perf-sub">' + perf.total_trades + ' total trades</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Expectancy</div>' +
+            '<div class="perf-value ' + expCls + '">$' + fmt(perf.expectancy) + '</div>' +
+            '<div class="perf-sub">avg per trade</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Avg Win</div>' +
+            '<div class="perf-value positive">$' + fmt(perf.avg_win) + '</div>' +
+            '<div class="perf-sub">Best: $' + fmtMoney(perf.largest_win) + '</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Avg Loss</div>' +
+            '<div class="perf-value negative">$' + fmt(perf.avg_loss) + '</div>' +
+            '<div class="perf-sub">Worst: $' + fmtMoney(perf.largest_loss) + '</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Win Streak</div>' +
+            '<div class="perf-value positive">' + perf.win_streak + '</div>' +
+            '<div class="perf-sub">current: ' + (perf.current_streak > 0 ? '+' : '') + perf.current_streak + '</div>' +
+        '</div>' +
+        '<div class="perf-card">' +
+            '<div class="perf-label">Loss Streak</div>' +
+            '<div class="perf-value negative">' + perf.loss_streak + '</div>' +
+            '<div class="perf-sub">worst run</div>' +
+        '</div>' +
+    '</div>';
+
+    // By strategy
+    var bs = perf.by_strategy;
+    var bsEl = document.getElementById('perfByStrategy');
+    if (!bs || Object.keys(bs).length === 0) {
+        bsEl.innerHTML = '<div class="empty">No strategy data</div>';
+        return;
+    }
+
+    bsEl.innerHTML = Object.entries(bs).map(function(e) {
+        var name = e[0], s = e[1];
+        return '<div class="strat-card">' +
+            '<div class="strat-header">' +
+                '<span class="strat-name">' + name + '</span>' +
+                '<span class="strat-pnl ' + pnlCls(s.pnl) + '">$' + fmt(s.pnl) + '</span>' +
+            '</div>' +
+            '<div class="strat-meta">' +
+                s.trades + ' trades | ' + s.win_rate + '% win rate | ' + s.wins + 'W / ' + (s.trades - s.wins) + 'L' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
 // === UPDATE ALL ===
 async function update() {
     var results = await Promise.all([
         api('status'), api('positions'), api('trades'),
         api('notifications'), api('daily'), api('equity'),
-        api('scanner'), api('analysis')
+        api('scanner'), api('analysis'), api('watchlist'),
+        api('performance')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
         notifs = results[3], daily = results[4], equity = results[5],
-        scanner = results[6], analysisData = results[7];
+        scanner = results[6], analysisData = results[7],
+        watchlistData = results[8], perfData = results[9];
 
     // Status
     if (status) {
@@ -701,18 +890,21 @@ async function update() {
     document.getElementById('posCount').textContent = positions ? positions.length : 0;
     if (positions && positions.length > 0) {
         posList.innerHTML = positions.map(function(p) {
+            var beBadge = p.breakeven_hit ? '<span class="wl-be-tag">BE STOP</span>' : '';
+            var targetsStr = p.targets_hit && p.targets_hit.length > 0 ?
+                '<span class="wl-pos-tag">T' + p.targets_hit.length + ' HIT</span>' : '';
             return '<div class="pos-card">' +
                 '<div class="pos-header">' +
-                    '<span class="pos-symbol">' + p.symbol + ' <span style="font-size:0.7em;color:var(--muted)">' + p.direction.toUpperCase() + '</span></span>' +
+                    '<span class="pos-symbol">' + p.symbol + ' <span style="font-size:0.7em;color:var(--muted)">' + p.direction.toUpperCase() + '</span>' + beBadge + targetsStr + '</span>' +
                     '<span class="pos-pnl ' + pnlCls(p.pnl_pct) + '">' + fmt(p.pnl_pct) + '% ($' + fmt(p.pnl_dollars) + ')</span>' +
                 '</div>' +
                 '<div class="pos-details">' +
                     '<div>Qty<br><span class="pos-detail-val">' + p.quantity + '</span></div>' +
                     '<div>Entry<br><span class="pos-detail-val">$' + fmt(p.entry_price) + '</span></div>' +
                     '<div>Now<br><span class="pos-detail-val">$' + fmt(p.current_price) + '</span></div>' +
-                    '<div>Stop<br><span class="pos-detail-val">$' + fmt(p.stop_loss) + '</span></div>' +
+                    '<div>Stop<br><span class="pos-detail-val">' + (p.breakeven_hit ? '<span style="color:var(--accent)">$' + fmt(p.stop_loss) + '</span>' : '$' + fmt(p.stop_loss)) + '</span></div>' +
+                    '<div>Trail<br><span class="pos-detail-val">$' + fmt(p.trailing_stop) + '</span></div>' +
                     '<div>Target<br><span class="pos-detail-val">$' + fmt(p.take_profit) + '</span></div>' +
-                    '<div>Strat<br><span class="pos-detail-val" style="color:var(--accent)">' + p.strategy + '</span></div>' +
                 '</div>' +
                 '<button class="pos-close-btn" onclick="closePosition(\'' + p.symbol + '\')">Close ' + p.symbol + '</button>' +
             '</div>';
@@ -779,6 +971,12 @@ async function update() {
     if (equity && equity.length > 1) {
         drawEquityChart(equity);
     }
+
+    // Watchlist
+    renderWatchlist(watchlistData);
+
+    // Performance
+    renderPerformance(perfData);
 }
 
 // === EQUITY CHART (Canvas) ===

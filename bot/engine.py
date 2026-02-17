@@ -84,6 +84,28 @@ class TradingEngine:
         self.equity_curve = []
         self.daily_stats = []
 
+        # Win/Loss tracking
+        self.performance_stats = {
+            "total_trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "breakeven": 0,
+            "total_profit": 0.0,
+            "total_loss": 0.0,
+            "largest_win": 0.0,
+            "largest_loss": 0.0,
+            "win_streak": 0,
+            "loss_streak": 0,
+            "current_streak": 0,  # positive = wins, negative = losses
+            "best_streak": 0,
+            "worst_streak": 0,
+        }
+
+        # Weekly watchlist
+        watchlist_cfg = self.config.settings.get("watchlist", {})
+        self.watchlist = list(watchlist_cfg.get("symbols", []))
+        self.watchlist_performance = {}  # {symbol: {week_start, pnl, trades, ...}}
+
         # Analysis log - records every signal/scan cycle for visibility
         self.analysis_log = []
         self.max_analysis_log = 200
@@ -399,7 +421,7 @@ class TradingEngine:
         return actual_open <= now <= actual_close
 
     def _update_data(self):
-        """Fetch latest market data for all strategy symbols."""
+        """Fetch latest market data for all strategy symbols + watchlist."""
         all_symbols = set()
         for strategy in self.strategies.values():
             all_symbols.update(strategy.get_symbols())
@@ -407,11 +429,24 @@ class TradingEngine:
         # Also include symbols we have positions in
         all_symbols.update(self.positions.keys())
 
+        # Include watchlist symbols for live prices
+        all_symbols.update(self.watchlist)
+
         self.market_data.update(list(all_symbols))
 
     def _monitor_positions(self):
-        """Check stops, trailing stops, and take profit targets."""
+        """Check stops, trailing stops, take profit, break-even, and partial exits."""
         positions_to_close = []
+        partial_exits = []
+
+        # Load profit taking & break-even config
+        pt_config = self.config.risk_config.get("profit_taking", {})
+        pt_enabled = pt_config.get("enabled", False)
+        pt_targets = pt_config.get("targets", [])
+        be_config = self.config.risk_config.get("breakeven", {})
+        be_enabled = be_config.get("enabled", True)
+        be_trigger = be_config.get("trigger_pct", 0.015)
+        be_buffer = be_config.get("buffer_pct", 0.002)
 
         for symbol, pos in self.positions.items():
             current_price = self.market_data.get_price(symbol)
@@ -430,7 +465,64 @@ class TradingEngine:
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
 
-            # Stop loss
+            # --- Break-Even Stop ---
+            if be_enabled and not pos.get("breakeven_hit") and pnl_pct >= be_trigger:
+                if direction == "long":
+                    new_stop = entry_price * (1 + be_buffer)
+                else:
+                    new_stop = entry_price * (1 - be_buffer)
+
+                old_stop = pos.get("stop_loss", 0)
+                # Only move stop UP for longs (more protective)
+                if direction == "long" and new_stop > old_stop:
+                    pos["stop_loss"] = new_stop
+                    pos["breakeven_hit"] = True
+                    log.info(
+                        f"BREAK-EVEN: {symbol} stop moved to ${new_stop:.2f} "
+                        f"(was ${old_stop:.2f}, P&L: {pnl_pct:.1%})"
+                    )
+                elif direction == "short" and (old_stop == 0 or new_stop < old_stop):
+                    pos["stop_loss"] = new_stop
+                    pos["breakeven_hit"] = True
+                    log.info(
+                        f"BREAK-EVEN: {symbol} stop moved to ${new_stop:.2f} "
+                        f"(was ${old_stop:.2f}, P&L: {pnl_pct:.1%})"
+                    )
+
+            # --- Partial Profit Taking ---
+            if pt_enabled and pos["quantity"] > 1:
+                targets_hit = pos.get("targets_hit", [])
+                for i, target in enumerate(pt_targets):
+                    if i in targets_hit:
+                        continue
+                    target_pct = target.get("pct_from_entry", 0)
+                    if pnl_pct >= target_pct:
+                        close_pct = target.get("close_pct", 0.33)
+                        qty_to_close = max(1, int(pos["quantity"] * close_pct))
+
+                        # Don't close everything via partial - leave at least 1
+                        if qty_to_close >= pos["quantity"]:
+                            qty_to_close = pos["quantity"] - 1
+
+                        if qty_to_close > 0:
+                            partial_exits.append((symbol, qty_to_close, i, target))
+                            targets_hit.append(i)
+                            pos["targets_hit"] = targets_hit
+
+                            # Move stop to break-even if specified
+                            if target.get("move_stop") == "breakeven" and not pos.get("breakeven_hit"):
+                                be_stop = entry_price * (1 + be_buffer) if direction == "long" else entry_price * (1 - be_buffer)
+                                pos["stop_loss"] = be_stop
+                                pos["breakeven_hit"] = True
+
+                            # Tighten trailing stop if specified
+                            if target.get("tighten_trail"):
+                                pos["trailing_stop_pct"] = target["tighten_trail"]
+                                log.info(f"TRAIL TIGHTENED: {symbol} trailing stop now {target['tighten_trail']:.1%}")
+
+                        break  # Only hit one target per cycle
+
+            # --- Stop Loss ---
             stop_price = pos.get("stop_loss")
             if stop_price:
                 hit = (direction == "long" and current_price <= stop_price) or \
@@ -441,7 +533,7 @@ class TradingEngine:
                     )
                     continue
 
-            # Take profit
+            # --- Take Profit (full exit if no partial taking, or for remaining shares) ---
             target_price = pos.get("take_profit")
             if target_price:
                 hit = (direction == "long" and current_price >= target_price) or \
@@ -452,7 +544,7 @@ class TradingEngine:
                     )
                     continue
 
-            # Trailing stop update
+            # --- Trailing Stop ---
             trailing_pct = pos.get("trailing_stop_pct",
                                    self.config.risk_config.get("trailing_stop_pct", 0.02))
             if direction == "long":
@@ -464,8 +556,17 @@ class TradingEngine:
                         (symbol, "trailing_stop",
                          f"Trailing stop at ${current_price:.2f}")
                     )
+            elif direction == "short":
+                new_trail = current_price * (1 + trailing_pct)
+                if "trailing_stop" not in pos or new_trail < pos["trailing_stop"]:
+                    pos["trailing_stop"] = new_trail
+                if current_price >= pos.get("trailing_stop", float("inf")):
+                    positions_to_close.append(
+                        (symbol, "trailing_stop",
+                         f"Trailing stop at ${current_price:.2f}")
+                    )
 
-            # Max holding period check
+            # --- Max Holding Period ---
             if "entry_time" in pos and "max_hold_bars" in pos:
                 elapsed = (datetime.now(self.tz) - pos["entry_time"]).total_seconds()
                 bar_seconds = pos.get("bar_seconds", 300)
@@ -474,7 +575,11 @@ class TradingEngine:
                         (symbol, "time_exit", "Max holding period exceeded")
                     )
 
-        # Execute closes
+        # Execute partial exits first
+        for symbol, qty, target_idx, target in partial_exits:
+            self._partial_close(symbol, qty, target_idx, target)
+
+        # Execute full closes
         for symbol, reason_type, reason_msg in positions_to_close:
             self._close_position(symbol, reason_type, reason_msg)
 
@@ -719,6 +824,7 @@ class TradingEngine:
         )
 
         # Record trade
+        pnl_pct = pnl / (pos["entry_price"] * pos["quantity"]) if pos["entry_price"] * pos["quantity"] > 0 else 0
         self.trade_history.append({
             "symbol": symbol,
             "direction": pos["direction"],
@@ -726,7 +832,7 @@ class TradingEngine:
             "exit_price": current_price,
             "quantity": pos["quantity"],
             "pnl": pnl,
-            "pnl_pct": pnl / (pos["entry_price"] * pos["quantity"]) if pos["entry_price"] * pos["quantity"] > 0 else 0,
+            "pnl_pct": pnl_pct,
             "strategy": pos["strategy"],
             "reason": reason_type,
             "executed_via": executed_via,
@@ -734,7 +840,126 @@ class TradingEngine:
             "exit_time": datetime.now(self.tz).isoformat(),
         })
 
+        # Update win/loss stats
+        self._update_performance_stats(pnl)
+
+        # Update watchlist performance tracking
+        if symbol in self.watchlist:
+            self._update_watchlist_performance(symbol, pnl, pnl_pct)
+
         del self.positions[symbol]
+
+    def _partial_close(self, symbol, qty_to_close, target_idx, target):
+        """Close part of a position (profit taking)."""
+        pos = self.positions.get(symbol)
+        if not pos or qty_to_close <= 0:
+            return
+
+        current_price = self.market_data.get_price(symbol)
+        if current_price is None:
+            current_price = pos.get("current_price", pos["entry_price"])
+
+        action = "SELL" if pos["direction"] == "long" else "BUY"
+        executed_via = pos.get("executed_via", "Simulated")
+
+        # Execute via broker chain
+        order = None
+        if self.broker and self.broker.is_connected():
+            order = self.broker.place_order(
+                symbol=symbol, action=action,
+                quantity=qty_to_close, order_type="MARKET",
+            )
+            if order:
+                executed_via = "IBKR"
+
+        if not order and self.tp_broker:
+            close_signal = {
+                "symbol": symbol, "action": action.lower(),
+                "quantity": qty_to_close, "price": current_price,
+            }
+            tp_result = self.tp_broker.send_signal(close_signal)
+            if tp_result and tp_result.get("success"):
+                executed_via = "TradersPost"
+
+        # Calculate P&L for partial
+        if pos["direction"] == "long":
+            pnl = (current_price - pos["entry_price"]) * qty_to_close
+        else:
+            pnl = (pos["entry_price"] - current_price) * qty_to_close
+
+        self.daily_pnl += pnl
+        self.current_balance += pnl
+        self.peak_balance = max(self.peak_balance, self.current_balance)
+
+        # Update remaining quantity
+        pos["quantity"] -= qty_to_close
+
+        target_pct = target.get("pct_from_entry", 0)
+        log.info(
+            f"PARTIAL CLOSE {symbol}: {qty_to_close} shares at ${current_price:.2f} "
+            f"(target {target_idx + 1}: +{target_pct:.0%}) | P&L: ${pnl:+.2f} | "
+            f"Remaining: {pos['quantity']} shares"
+        )
+
+        self.notifier.trade_alert(
+            action=f"PARTIAL CLOSE (target {target_idx + 1})",
+            symbol=symbol, qty=qty_to_close, price=current_price,
+            strategy=pos["strategy"],
+            reason=f"[{executed_via}] Took profit at +{target_pct:.0%} | P&L: ${pnl:+.2f} | {pos['quantity']} remaining"
+        )
+
+        # Record partial trade in history
+        self.trade_history.append({
+            "symbol": symbol,
+            "direction": pos["direction"],
+            "entry_price": pos["entry_price"],
+            "exit_price": current_price,
+            "quantity": qty_to_close,
+            "pnl": pnl,
+            "pnl_pct": pnl / (pos["entry_price"] * qty_to_close) if pos["entry_price"] > 0 else 0,
+            "strategy": pos["strategy"],
+            "reason": f"partial_target_{target_idx + 1}",
+            "executed_via": executed_via,
+            "entry_time": pos["entry_time"].isoformat(),
+            "exit_time": datetime.now(self.tz).isoformat(),
+            "partial": True,
+        })
+
+        # Update performance stats
+        self._update_performance_stats(pnl)
+
+        # If position fully closed via partials
+        if pos["quantity"] <= 0:
+            del self.positions[symbol]
+
+    def _update_performance_stats(self, pnl):
+        """Update win/loss tracking stats after a trade closes."""
+        stats = self.performance_stats
+        stats["total_trades"] += 1
+
+        if pnl > 0.01:
+            stats["wins"] += 1
+            stats["total_profit"] += pnl
+            stats["largest_win"] = max(stats["largest_win"], pnl)
+            if stats["current_streak"] > 0:
+                stats["current_streak"] += 1
+            else:
+                stats["current_streak"] = 1
+            stats["best_streak"] = max(stats["best_streak"], stats["current_streak"])
+        elif pnl < -0.01:
+            stats["losses"] += 1
+            stats["total_loss"] += abs(pnl)
+            stats["largest_loss"] = max(stats["largest_loss"], abs(pnl))
+            if stats["current_streak"] < 0:
+                stats["current_streak"] -= 1
+            else:
+                stats["current_streak"] = -1
+            stats["worst_streak"] = min(stats["worst_streak"], stats["current_streak"])
+        else:
+            stats["breakeven"] += 1
+
+        stats["win_streak"] = stats["best_streak"]
+        stats["loss_streak"] = abs(stats["worst_streak"])
 
     def _close_all_positions(self, reason):
         """Emergency close all positions."""
@@ -856,6 +1081,167 @@ class TradingEngine:
             results.append({"symbol": sig["symbol"], "action": sig["action"], "status": "executed"})
 
         return results if results else [{"status": "rejected", "reason": "Failed risk checks"}]
+
+    def _update_watchlist_performance(self, symbol, pnl, pnl_pct):
+        """Track per-symbol performance for the watchlist."""
+        now = datetime.now(self.tz)
+        # Week key = Monday of current week
+        week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+
+        key = f"{symbol}_{week_start}"
+        if key not in self.watchlist_performance:
+            self.watchlist_performance[key] = {
+                "symbol": symbol,
+                "week_start": week_start,
+                "trades": 0,
+                "wins": 0,
+                "losses": 0,
+                "total_pnl": 0.0,
+                "total_pnl_pct": 0.0,
+            }
+        perf = self.watchlist_performance[key]
+        perf["trades"] += 1
+        perf["total_pnl"] += pnl
+        perf["total_pnl_pct"] += pnl_pct * 100
+        if pnl > 0:
+            perf["wins"] += 1
+        elif pnl < 0:
+            perf["losses"] += 1
+
+    def add_to_watchlist(self, symbol):
+        """Add a symbol to the weekly watchlist."""
+        symbol = symbol.upper()
+        if symbol not in self.watchlist:
+            self.watchlist.append(symbol)
+            log.info(f"Added {symbol} to watchlist")
+        return self.watchlist
+
+    def remove_from_watchlist(self, symbol):
+        """Remove a symbol from the weekly watchlist."""
+        symbol = symbol.upper()
+        if symbol in self.watchlist:
+            self.watchlist.remove(symbol)
+            log.info(f"Removed {symbol} from watchlist")
+        return self.watchlist
+
+    def get_watchlist_data(self):
+        """Get watchlist with live prices and weekly performance."""
+        now = datetime.now(self.tz)
+        week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+
+        # Auto-add politician picks if enabled
+        watchlist_cfg = self.config.settings.get("watchlist", {})
+        if watchlist_cfg.get("auto_add_politician_picks") and self.politician_tracker:
+            for sig in self.politician_tracker.get_signals():
+                sym = sig.get("symbol", "").upper()
+                if sym and sym not in self.watchlist:
+                    self.watchlist.append(sym)
+
+        result = []
+        for symbol in self.watchlist:
+            item = {"symbol": symbol, "price": None, "change_pct": None}
+
+            # Get live price
+            if self.market_data:
+                price = self.market_data.get_price(symbol)
+                if price:
+                    item["price"] = price
+                quote = self.market_data.get_quote(symbol) if hasattr(self.market_data, "get_quote") else None
+                if quote:
+                    item["change_pct"] = quote.get("change_pct")
+
+            # Check if we have an open position
+            if symbol in self.positions:
+                pos = self.positions[symbol]
+                item["in_position"] = True
+                item["direction"] = pos.get("direction", "long")
+                item["entry_price"] = pos.get("entry_price", 0)
+                item["unrealized_pnl_pct"] = pos.get("unrealized_pnl_pct", 0) * 100
+                item["stop_loss"] = pos.get("stop_loss", 0)
+                item["take_profit"] = pos.get("take_profit", 0)
+                item["breakeven_hit"] = pos.get("breakeven_hit", False)
+            else:
+                item["in_position"] = False
+
+            # Weekly performance
+            key = f"{symbol}_{week_start}"
+            if key in self.watchlist_performance:
+                perf = self.watchlist_performance[key]
+                item["week_trades"] = perf["trades"]
+                item["week_pnl"] = round(perf["total_pnl"], 2)
+                item["week_wins"] = perf["wins"]
+                item["week_losses"] = perf["losses"]
+            else:
+                item["week_trades"] = 0
+                item["week_pnl"] = 0
+                item["week_wins"] = 0
+                item["week_losses"] = 0
+
+            result.append(item)
+
+        return result
+
+    def get_performance_summary(self):
+        """Get comprehensive win/loss performance stats."""
+        stats = dict(self.performance_stats)
+
+        # Calculated fields
+        total = stats["total_trades"]
+        if total > 0:
+            stats["win_rate"] = round(stats["wins"] / total * 100, 1)
+            stats["loss_rate"] = round(stats["losses"] / total * 100, 1)
+        else:
+            stats["win_rate"] = 0
+            stats["loss_rate"] = 0
+
+        if stats["wins"] > 0:
+            stats["avg_win"] = round(stats["total_profit"] / stats["wins"], 2)
+        else:
+            stats["avg_win"] = 0
+
+        if stats["losses"] > 0:
+            stats["avg_loss"] = round(stats["total_loss"] / stats["losses"], 2)
+        else:
+            stats["avg_loss"] = 0
+
+        # Profit factor
+        if stats["total_loss"] > 0:
+            stats["profit_factor"] = round(stats["total_profit"] / stats["total_loss"], 2)
+        else:
+            stats["profit_factor"] = float("inf") if stats["total_profit"] > 0 else 0
+
+        # Net P&L
+        stats["net_pnl"] = round(stats["total_profit"] - stats["total_loss"], 2)
+
+        # Expectancy (avg $ per trade)
+        if total > 0:
+            stats["expectancy"] = round(stats["net_pnl"] / total, 2)
+        else:
+            stats["expectancy"] = 0
+
+        # Round dollar amounts
+        stats["total_profit"] = round(stats["total_profit"], 2)
+        stats["total_loss"] = round(stats["total_loss"], 2)
+        stats["largest_win"] = round(stats["largest_win"], 2)
+        stats["largest_loss"] = round(stats["largest_loss"], 2)
+
+        # Per-strategy breakdown
+        strategy_stats = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0})
+        for trade in self.trade_history:
+            strat = trade.get("strategy", "unknown")
+            strategy_stats[strat]["trades"] += 1
+            if trade.get("pnl", 0) > 0:
+                strategy_stats[strat]["wins"] += 1
+            strategy_stats[strat]["pnl"] += trade.get("pnl", 0)
+
+        for strat in strategy_stats:
+            s = strategy_stats[strat]
+            s["win_rate"] = round(s["wins"] / s["trades"] * 100, 1) if s["trades"] > 0 else 0
+            s["pnl"] = round(s["pnl"], 2)
+
+        stats["by_strategy"] = dict(strategy_stats)
+
+        return stats
 
     def _pre_market_scan(self):
         """Pre-market preparation."""
