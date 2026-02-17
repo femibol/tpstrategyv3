@@ -118,6 +118,7 @@ class TradingEngine:
 
         # Timezone
         self.tz = pytz.timezone(self.config.timezone)
+        self._in_premarket = False
 
     def initialize(self):
         """Initialize all components."""
@@ -406,7 +407,18 @@ class TradingEngine:
                     signals, self.positions, self.current_balance
                 )
 
-                # 7. Apply regime-based filtering
+                # 7a. Pre-market filtering: limit strategies and reduce size
+                if getattr(self, "_in_premarket", False):
+                    pm_config = self.config.schedule_config.get("premarket", {})
+                    allowed = pm_config.get("allowed_strategies", [])
+                    size_mult = pm_config.get("reduce_size_pct", 0.5)
+                    if allowed:
+                        approved = [s for s in approved if s.get("strategy") in allowed]
+                    for sig in approved:
+                        if sig.get("quantity"):
+                            sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
+
+                # 7b. Apply regime-based filtering
                 if regime_result and regime_result.get("regime") == "crisis":
                     # In crisis, only allow hedge signals and exits
                     approved = [s for s in approved if
@@ -435,7 +447,7 @@ class TradingEngine:
                 time.sleep(30)
 
     def _is_market_hours(self, now):
-        """Check if within trading hours."""
+        """Check if within trading hours (includes optional premarket)."""
         sched = self.config.schedule_config
         day_name = now.strftime("%A")
         trading_days = sched.get("trading_days", [
@@ -445,10 +457,23 @@ class TradingEngine:
         if day_name not in trading_days:
             return False
 
+        # Check premarket window
+        premarket = sched.get("premarket", {})
+        if premarket.get("enabled", False):
+            pm_start = premarket.get("start_time", "08:00")
+            h_pm, m_pm = map(int, pm_start.split(":"))
+            pm_open = now.replace(hour=h_pm, minute=m_pm, second=0)
+            regular_open = now.replace(hour=9, minute=30, second=0)
+            if pm_open <= now < regular_open:
+                self._in_premarket = True
+                return True
+
+        self._in_premarket = False
+
         open_time = sched.get("market_open", "09:30")
         close_time = sched.get("market_close", "16:00")
-        avoid_first = sched.get("avoid_first_minutes", 5)
-        avoid_last = sched.get("avoid_last_minutes", 15)
+        avoid_first = sched.get("avoid_first_minutes", 30)
+        avoid_last = sched.get("avoid_last_minutes", 30)
 
         h_open, m_open = map(int, open_time.split(":"))
         h_close, m_close = map(int, close_time.split(":"))
@@ -1336,8 +1361,65 @@ class TradingEngine:
         )
 
     def _end_of_day(self):
-        """End of day routine with learning analysis."""
+        """End of day routine with overnight hold decisions and learning."""
         log.info("=== END OF DAY ===")
+
+        # --- Overnight Hold Logic ---
+        overnight_cfg = self.config.schedule_config.get("overnight", {})
+        overnight_enabled = overnight_cfg.get("enabled", False)
+        max_overnight = overnight_cfg.get("max_overnight_positions", 3)
+
+        if self.positions:
+            overnight_holds = []
+            positions_to_close = []
+
+            for symbol, pos in list(self.positions.items()):
+                pnl_pct = pos.get("unrealized_pnl_pct", 0)
+                in_profit = pnl_pct > 0
+
+                should_hold = False
+                if overnight_enabled and in_profit and len(overnight_holds) < max_overnight:
+                    min_profit = overnight_cfg.get("min_profit_pct", 0.01)
+                    if pnl_pct >= min_profit:
+                        # Check if in uptrend (price above entry, which we already know if profitable)
+                        should_hold = True
+
+                        if overnight_cfg.get("require_uptrend", False) and self.market_data:
+                            # Quick trend check: is price above 20-EMA?
+                            data = self.market_data.get_data(symbol)
+                            if data is not None and len(data) >= 20:
+                                closes = data["close"].values
+                                ema20 = self.indicators.ema(closes, 20)
+                                if ema20 is not None and closes[-1] < ema20[-1]:
+                                    should_hold = False  # Not in uptrend
+
+                if should_hold:
+                    # Tighten stop for overnight
+                    tighten = overnight_cfg.get("tighten_stop_pct", 0.02)
+                    current_price = pos.get("current_price", pos["entry_price"])
+                    if pos["direction"] == "long":
+                        new_stop = current_price * (1 - tighten)
+                        if new_stop > pos.get("stop_loss", 0):
+                            pos["stop_loss"] = new_stop
+                    pos["overnight_hold"] = True
+                    overnight_holds.append(symbol)
+                    log.info(
+                        f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                        f"Stop tightened to ${pos['stop_loss']:.2f}"
+                    )
+                elif overnight_cfg.get("close_losers", True) or not overnight_enabled:
+                    positions_to_close.append(symbol)
+
+            # Close positions not held overnight
+            for symbol in positions_to_close:
+                self._close_position(symbol, "eod_close", "End of day close")
+
+            if overnight_holds:
+                self.notifier.system_alert(
+                    f"Holding {len(overnight_holds)} positions overnight: "
+                    f"{', '.join(overnight_holds)}",
+                    level="info"
+                )
 
         # Calculate daily stats
         wins = [t for t in self.daily_trades if t.get("pnl", 0) > 0]
@@ -1355,12 +1437,16 @@ class TradingEngine:
             "win_rate": win_rate,
             "balance": self.current_balance,
             "open_positions": len(self.positions),
+            "overnight_holds": len([p for p in self.positions.values() if p.get("overnight_hold")]),
             "regime": regime,
         }
 
         self.daily_stats.append(stats)
         self.notifier.daily_summary(stats)
-        log.info(f"Day P&L: ${self.daily_pnl:+.2f} | Trades: {total_trades} | Regime: {regime}")
+        log.info(
+            f"Day P&L: ${self.daily_pnl:+.2f} | Trades: {total_trades} | "
+            f"Regime: {regime} | Overnight: {stats['overnight_holds']}"
+        )
 
         # Run end-of-day learning analysis
         if self.trade_analyzer and len(self.trade_history) >= 5:
