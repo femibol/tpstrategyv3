@@ -446,8 +446,27 @@ class TradingEngine:
                 log.error(f"Main loop error: {e}", exc_info=True)
                 time.sleep(30)
 
+    def _is_crypto_symbol(self, symbol):
+        """Check if a symbol is a crypto ticker (e.g. BTC-USD, ETH-USDT)."""
+        crypto_cfg = self.config.settings.get("crypto", {})
+        if not crypto_cfg.get("enabled", False):
+            return False
+        suffixes = crypto_cfg.get("symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"])
+        return any(symbol.upper().endswith(s) for s in suffixes)
+
+    def _has_crypto_symbols(self):
+        """Check if any watched/traded symbols are crypto (enables 24/7 mode)."""
+        all_syms = set(self.watchlist) | set(self.positions.keys())
+        for s in self.strategies.values():
+            all_syms.update(s.get_symbols())
+        return any(self._is_crypto_symbol(sym) for sym in all_syms)
+
     def _is_market_hours(self, now):
-        """Check if within trading hours (includes optional premarket)."""
+        """Check if within trading hours (includes optional premarket + crypto 24/7)."""
+        # Crypto trades 24/7 - if we have any crypto symbols, always run
+        if self._has_crypto_symbols():
+            return True
+
         sched = self.config.schedule_config
         day_name = now.strftime("%A")
         trading_days = sched.get("trading_days", [
@@ -711,7 +730,12 @@ class TradingEngine:
 
         stop_loss_price = signal.get("stop_loss")
         if not stop_loss_price:
-            stop_pct = self.config.stop_loss_pct
+            # Use wider stops for crypto (more volatile)
+            if self._is_crypto_symbol(symbol):
+                crypto_risk = self.config.settings.get("crypto", {}).get("risk", {})
+                stop_pct = crypto_risk.get("stop_loss_pct", 0.05)
+            else:
+                stop_pct = self.config.stop_loss_pct
             stop_loss_price = current_price * (1 - stop_pct) if action == "buy" \
                 else current_price * (1 + stop_pct)
 
@@ -1589,6 +1613,13 @@ class TradingEngine:
                 "enabled": hedging.get("enabled", True),
                 "auto_hedge": hedging.get("auto_hedge", True),
                 "max_hedge_pct": hedging.get("max_hedge_pct", 0.30),
+            },
+            "crypto": {
+                "enabled": self.config.settings.get("crypto", {}).get("enabled", False),
+                "risk": self.config.settings.get("crypto", {}).get("risk", {
+                    "stop_loss_pct": 0.05,
+                    "max_position_size_pct": 0.10,
+                }),
             },
         }
 

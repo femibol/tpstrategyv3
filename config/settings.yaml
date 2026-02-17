@@ -124,8 +124,25 @@ watchlist:
     - SPY
     - QQQ
     - AB          # Pelosi pick
+    # Crypto (trades 24/7 via Yahoo Finance tickers)
+    - BTC-USD     # Bitcoin
+    - ETH-USD     # Ethereum
+    - SOL-USD     # Solana
   auto_add_politician_picks: true   # Auto-add symbols from politician tracker
   track_weekly_performance: true    # Track weekly P&L per symbol
+
+# --- Crypto Configuration ---
+# Crypto symbols trade 24/7 and bypass stock market hours
+crypto:
+  enabled: true
+  symbols_suffix: ["-USD", "-USDT", "-BTC", "-ETH"]  # How we detect crypto tickers
+  schedule:
+    trading_24h: true             # Trade crypto 24 hours a day
+    trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+  risk:
+    max_position_size_pct: 0.10   # Smaller size for crypto (more volatile)
+    stop_loss_pct: 0.05           # Wider stop for crypto volatility
+    trailing_stop_pct: 0.03       # Wider trailing stop
 
 # --- Data Sources ---
 data:

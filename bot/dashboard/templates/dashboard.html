@@ -780,6 +780,57 @@
             </div>
         </div>
     </div>
+
+    <div class="section">
+        <h2>TradingView Alerts</h2>
+        <div style="font-size:0.8em;color:var(--muted);line-height:1.6;padding:8px 0">
+            Send alerts from TradingView to auto-trade. This does <strong style="color:var(--text)">NOT</strong> change
+            the bot structure - alerts are just another signal source alongside the built-in strategies.
+        </div>
+        <div class="setting-group">
+            <div style="font-size:0.75em;color:var(--accent);font-weight:700;margin-bottom:8px">WEBHOOK URL</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:monospace;font-size:0.75em;word-break:break-all;color:var(--text)" id="tvWebhookUrl">
+                Loading...
+            </div>
+            <div style="font-size:0.75em;color:var(--accent);font-weight:700;margin-top:12px;margin-bottom:8px">ALERT MESSAGE FORMAT (JSON)</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:monospace;font-size:0.7em;line-height:1.6;color:var(--text);white-space:pre">{
+  "symbol": "{{ticker}}",
+  "action": "buy",
+  "price": {{close}},
+  "comment": "Your alert note"
+}</div>
+            <div style="font-size:0.75em;color:var(--muted);margin-top:10px;line-height:1.5">
+                <strong style="color:var(--text)">Setup:</strong> In TradingView, create an alert &rarr; Notifications tab &rarr;
+                "Webhook URL" &rarr; paste the URL above &rarr; set the alert message to the JSON format.
+                Works with stocks &amp; crypto.
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Crypto (24/7)</h2>
+        <div class="setting-group">
+            <div class="setting-row">
+                <span class="setting-label">Crypto Trading</span>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="cfg-crypto-enabled" data-path="crypto.enabled" onchange="saveToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Crypto Stop Loss %</span>
+                <input class="setting-input" id="cfg-crypto-stop" data-path="crypto.risk.stop_loss_pct" type="number" step="0.01" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Crypto Max Size %</span>
+                <input class="setting-input" id="cfg-crypto-size" data-path="crypto.risk.max_position_size_pct" type="number" step="0.01" onchange="saveSetting(this)">
+            </div>
+            <div style="font-size:0.75em;color:var(--muted);padding:8px 0;line-height:1.5">
+                Crypto symbols (BTC-USD, ETH-USD, SOL-USD) trade 24/7 including weekends.
+                Wider stops are used automatically due to higher volatility.
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- BOTTOM CONTROL BAR (5 buttons) -->
@@ -1388,6 +1439,16 @@ async function loadSettings() {
     var h = data.hedging || {};
     setToggle('cfg-hedge-auto', h.auto_hedge);
     setInput('cfg-hedge-max', h.max_hedge_pct);
+
+    // Crypto
+    var cr = data.crypto || {};
+    setToggle('cfg-crypto-enabled', cr.enabled);
+    var crRisk = cr.risk || {};
+    setInput('cfg-crypto-stop', crRisk.stop_loss_pct);
+    setInput('cfg-crypto-size', crRisk.max_position_size_pct);
+
+    // TradingView webhook URL
+    document.getElementById('tvWebhookUrl').textContent = API + '/webhook/tradingview';
 }
 
 function setInput(id, val) {
