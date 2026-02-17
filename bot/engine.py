@@ -31,6 +31,7 @@ from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
+from bot.learning.ai_insights import AIInsights
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
 from bot.utils.logger import setup_logger, get_logger
@@ -196,6 +197,18 @@ class TradingEngine:
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)
         log.info("Trade learning system enabled")
+
+        # Claude AI Insights (analyzes trades for deeper learning)
+        self.ai_insights = AIInsights(self.config)
+        if self.ai_insights.is_available():
+            log.info("Claude AI Insights ENABLED")
+
+        # Load persisted trade history from previous sessions
+        if self.trade_analyzer:
+            persisted = self.trade_analyzer.get_persisted_trades()
+            if persisted:
+                self.trade_history = list(persisted)
+                log.info(f"Restored {len(persisted)} trades from previous sessions")
 
         # Market regime detector
         self.regime_detector = RegimeDetector(self.indicators)
@@ -1057,6 +1070,10 @@ class TradingEngine:
 
         # Update win/loss stats
         self._update_performance_stats(pnl)
+
+        # Persist trade to disk (survives restarts for AI learning)
+        if self.trade_analyzer:
+            self.trade_analyzer.persist_trade(self.trade_history[-1])
 
         # Update watchlist performance tracking
         if symbol in self.watchlist:

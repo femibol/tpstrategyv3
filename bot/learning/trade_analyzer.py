@@ -46,8 +46,40 @@ class TradeAnalyzer:
         self.weight_adjustment_rate = 0.1    # Max 10% shift per adaptation cycle
         self.cooldown_losses = 3       # Consecutive losses before reducing weight
 
+        # Trade history persistence
+        self._trades_file = self.data_dir / "trade_history.json"
+        self._persisted_trades = self._load_trade_history()
+
         # Load saved learning data
         self._load_state()
+
+    def persist_trade(self, trade):
+        """Save a completed trade to persistent storage (survives restarts)."""
+        self._persisted_trades.append(trade)
+        # Keep last 500 trades
+        self._persisted_trades = self._persisted_trades[-500:]
+        try:
+            with open(self._trades_file, "w") as f:
+                json.dump(self._persisted_trades, f, indent=2)
+            log.debug(f"Trade persisted: {trade.get('symbol')} {trade.get('pnl', 0):+.2f}")
+        except Exception as e:
+            log.debug(f"Could not persist trade: {e}")
+
+    def get_persisted_trades(self):
+        """Get all persisted trades (for AI analysis across restarts)."""
+        return list(self._persisted_trades)
+
+    def _load_trade_history(self):
+        """Load trade history from disk."""
+        if self._trades_file.exists():
+            try:
+                with open(self._trades_file, "r") as f:
+                    trades = json.load(f)
+                log.info(f"Loaded {len(trades)} persisted trades from disk")
+                return trades
+            except Exception as e:
+                log.debug(f"Could not load trade history: {e}")
+        return []
 
     def analyze(self, trade_history, current_regime=None):
         """
