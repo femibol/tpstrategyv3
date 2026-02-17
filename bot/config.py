@@ -125,6 +125,11 @@ class Config:
     def tradingview_webhook_secret(self):
         return os.getenv("TRADINGVIEW_WEBHOOK_SECRET", "")
 
+    # --- Politician Tracker ---
+    @property
+    def capitoltrades_api_key(self):
+        return os.getenv("CAPITOLTRADES_API_KEY", "")
+
     # --- Notifications ---
     @property
     def discord_webhook_url(self):

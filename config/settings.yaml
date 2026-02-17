@@ -12,8 +12,7 @@ capital:
 
 # --- Risk Management ---
 risk:
-  max_position_size_pct: 0.15     # Max 15% of capital per position ($750)
-  max_position_size_dollars: 750
+  max_position_size_pct: 0.15     # Max 15% of capital per position (scales with balance)
   max_positions: 5                # Max 5 concurrent positions
   risk_per_trade_pct: 0.01        # Risk 1% per trade ($50)
   max_correlated_positions: 2     # Max 2 positions in same sector
@@ -23,7 +22,7 @@ risk:
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
   min_volume: 500000              # Minimum avg daily volume
   min_price: 5.00                 # No penny stocks
-  max_price: 500.00               # Cap price for position sizing
+  max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)
 
 # --- Trading Schedule ---
 schedule:

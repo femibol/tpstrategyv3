@@ -163,6 +163,165 @@ class Dashboard:
                 self.engine.notifier.system_alert("EMERGENCY STOP via mobile", level="error")
             return jsonify({"status": "stopped", "positions_closed": True})
 
+        # --- Signal Routing API ---
+
+        @self.app.route("/api/signal", methods=["POST"])
+        @self._require_auth
+        def submit_signal():
+            """
+            Submit a manual trading signal.
+
+            POST JSON:
+            {
+                "symbol": "NVDA",
+                "action": "buy",
+                "price": 500.00,        (optional - uses market price)
+                "quantity": 10,          (optional - auto-sized)
+                "stop_loss": 485.00,     (optional - 3% default)
+                "take_profit": 530.00,   (optional - 6% default)
+                "strategy": "manual",    (optional)
+                "asset_type": "stock",   (optional - "stock" or "option")
+                "expiry": "20250117",    (optional - for options)
+                "strike": 500.0,         (optional - for options)
+                "right": "C"             (optional - "C" call or "P" put)
+            }
+            """
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No JSON data"}), 400
+
+            symbol = data.get("symbol", "").upper()
+            action = data.get("action", "").lower()
+
+            if not symbol or not action:
+                return jsonify({"error": "symbol and action required"}), 400
+
+            if action not in ("buy", "sell", "short", "cover", "close"):
+                return jsonify({"error": f"Invalid action: {action}"}), 400
+
+            # Build signal
+            signal = {
+                "symbol": symbol,
+                "action": action,
+                "confidence": float(data.get("confidence", 0.7)),
+                "source": "manual",
+                "strategy": data.get("strategy", "manual"),
+                "reason": data.get("reason", f"Manual signal via API"),
+            }
+
+            if data.get("price"):
+                signal["price"] = float(data["price"])
+            else:
+                price = self.engine.market_data.get_price(symbol) if self.engine.market_data else None
+                if price:
+                    signal["price"] = price
+                else:
+                    return jsonify({"error": f"No price available for {symbol}. Provide 'price' in request."}), 400
+
+            if data.get("quantity"):
+                signal["quantity"] = int(data["quantity"])
+            if data.get("stop_loss"):
+                signal["stop_loss"] = float(data["stop_loss"])
+            if data.get("take_profit"):
+                signal["take_profit"] = float(data["take_profit"])
+            if data.get("asset_type"):
+                signal["asset_type"] = data["asset_type"]
+            if data.get("expiry"):
+                signal["expiry"] = data["expiry"]
+            if data.get("strike"):
+                signal["strike"] = float(data["strike"])
+            if data.get("right"):
+                signal["right"] = data["right"]
+
+            results = self.engine.handle_manual_signal(signal)
+            log.info(f"Manual signal submitted: {action.upper()} {symbol} | Result: {results}")
+
+            return jsonify({"status": "ok", "results": results})
+
+        # --- Politician Trade APIs ---
+
+        @self.app.route("/api/politicians/status")
+        def politician_status():
+            if self.engine.politician_tracker:
+                return jsonify(self.engine.politician_tracker.get_status())
+            return jsonify({"error": "Politician tracker not enabled"}), 404
+
+        @self.app.route("/api/politicians/trades")
+        def politician_trades():
+            if self.engine.politician_tracker:
+                limit = request.args.get("limit", 50, type=int)
+                return jsonify(self.engine.politician_tracker.get_recent_disclosures(limit))
+            return jsonify([])
+
+        @self.app.route("/api/politicians/signals")
+        def politician_signals():
+            if self.engine.politician_tracker:
+                return jsonify(self.engine.politician_tracker.get_signals())
+            return jsonify([])
+
+        @self.app.route("/api/politicians/check", methods=["POST"])
+        @self._require_auth
+        def politician_check():
+            """Manually trigger check for new politician trades."""
+            if self.engine.politician_tracker:
+                trades = self.engine.politician_tracker.manual_check()
+                return jsonify({"status": "checked", "new_trades": len(trades), "trades": trades})
+            return jsonify({"error": "Politician tracker not enabled"}), 404
+
+        @self.app.route("/api/politicians/add", methods=["POST"])
+        @self._require_auth
+        def add_politician():
+            """Add a politician to track."""
+            data = request.get_json()
+            if not data or not data.get("politician_id") or not data.get("name"):
+                return jsonify({"error": "politician_id and name required"}), 400
+
+            if self.engine.politician_tracker:
+                self.engine.politician_tracker.add_politician(
+                    politician_id=data["politician_id"],
+                    name=data["name"],
+                    chamber=data.get("chamber", "House"),
+                    party=data.get("party", ""),
+                    priority=data.get("priority", 3),
+                    notable=data.get("notable", ""),
+                )
+                return jsonify({"status": "added", "politician": data["name"]})
+            return jsonify({"error": "Politician tracker not enabled"}), 404
+
+        # --- Webhook receiver for TradingView (on same server) ---
+
+        @self.app.route("/webhook/tradingview", methods=["POST"])
+        def tradingview_webhook():
+            """Receive TradingView webhook on the main dashboard server."""
+            if self.engine.tv_receiver:
+                # Delegate to TV receiver's route handler
+                return self.engine.tv_receiver.app.test_client().post(
+                    "/webhook/tradingview",
+                    data=request.data,
+                    headers=dict(request.headers),
+                ).data
+            # Handle directly if no separate TV receiver
+            data = request.get_json(force=True)
+            if not data:
+                return jsonify({"error": "No data"}), 400
+
+            signal = {
+                "symbol": (data.get("symbol") or data.get("ticker", "")).upper(),
+                "action": (data.get("action") or "buy").lower(),
+                "price": float(data.get("price", 0)) if data.get("price") else None,
+                "confidence": float(data.get("confidence", 0.7)),
+                "source": "tradingview_webhook",
+                "strategy": "tradingview",
+                "reason": f"TradingView alert: {data.get('comment', '')}",
+            }
+            if data.get("stop_loss"):
+                signal["stop_loss"] = float(data["stop_loss"])
+            if data.get("take_profit"):
+                signal["take_profit"] = float(data["take_profit"])
+
+            self.engine._handle_tv_signal(signal)
+            return jsonify({"status": "ok"})
+
     def start(self):
         host = self.config.dashboard_host
         port = self.config.dashboard_port

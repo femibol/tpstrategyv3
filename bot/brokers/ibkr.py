@@ -18,7 +18,7 @@ from bot.utils.logger import get_logger
 log = get_logger("broker.ibkr")
 
 try:
-    from ib_insync import IB, Stock, MarketOrder, LimitOrder, StopOrder, util
+    from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util
     HAS_IB = True
 except ImportError:
     HAS_IB = False
@@ -109,17 +109,18 @@ class IBKRBroker(BaseBroker):
         return False
 
     def place_order(self, symbol, action, quantity, order_type="LIMIT",
-                    limit_price=None, stop_price=None):
+                    limit_price=None, stop_price=None, **kwargs):
         """
-        Place an order through IBKR.
+        Place an order through IBKR (stocks or options).
 
         Args:
             symbol: Stock ticker (e.g., "AAPL")
             action: "BUY" or "SELL"
-            quantity: Number of shares
+            quantity: Number of shares/contracts
             order_type: "MARKET", "LIMIT", or "STOP"
             limit_price: Price for limit orders
             stop_price: Price for stop orders
+            **kwargs: Option params (expiry, strike, right) for options orders
 
         Returns:
             dict with order details or None if failed
@@ -129,8 +130,17 @@ class IBKRBroker(BaseBroker):
             return None
 
         try:
-            # Create contract
-            contract = Stock(symbol, "SMART", "USD")
+            # Create contract (stock or option)
+            if kwargs.get("asset_type") == "option":
+                contract = self._create_option_contract(
+                    symbol,
+                    expiry=kwargs.get("expiry"),
+                    strike=kwargs.get("strike"),
+                    right=kwargs.get("right", "C"),
+                )
+            else:
+                contract = Stock(symbol, "SMART", "USD")
+
             self.ib.qualifyContracts(contract)
 
             # Create order
@@ -158,9 +168,11 @@ class IBKRBroker(BaseBroker):
             self.ib.sleep(1)  # Wait for order acknowledgement
 
             order_id = trade.order.orderId
+            asset_label = f"{symbol} {kwargs.get('right', '')}{kwargs.get('strike', '')} {kwargs.get('expiry', '')}" \
+                if kwargs.get("asset_type") == "option" else symbol
 
             log.info(
-                f"Order placed: {action} {quantity} {symbol} "
+                f"Order placed: {action} {quantity} {asset_label} "
                 f"@ {order_type} {limit_price or stop_price or 'MKT'} "
                 f"| Order ID: {order_id}"
             )
@@ -171,6 +183,7 @@ class IBKRBroker(BaseBroker):
                 "action": action,
                 "quantity": quantity,
                 "order_type": order_type,
+                "asset_type": kwargs.get("asset_type", "stock"),
                 "limit_price": limit_price,
                 "stop_price": stop_price,
                 "status": trade.orderStatus.status,
@@ -179,6 +192,56 @@ class IBKRBroker(BaseBroker):
 
         except Exception as e:
             log.error(f"Order placement failed for {symbol}: {e}")
+            return None
+
+    def _create_option_contract(self, symbol, expiry, strike, right="C"):
+        """
+        Create an IBKR option contract.
+
+        Args:
+            symbol: Underlying ticker (e.g., "NVDA")
+            expiry: Expiration date "YYYYMMDD" (e.g., "20250117")
+            strike: Strike price (e.g., 500.0)
+            right: "C" for call, "P" for put
+        """
+        if not HAS_IB:
+            return None
+        return Option(symbol, expiry, strike, right, "SMART", "100", "USD")
+
+    def get_option_chain(self, symbol):
+        """
+        Get the option chain for a symbol.
+
+        Returns list of available expirations and strikes.
+        """
+        if not self.is_connected():
+            return None
+
+        try:
+            stock = Stock(symbol, "SMART", "USD")
+            self.ib.qualifyContracts(stock)
+
+            chains = self.ib.reqSecDefOptParams(
+                stock.symbol, "", stock.secType, stock.conId
+            )
+
+            if not chains:
+                return None
+
+            # Use SMART exchange chain
+            result = []
+            for chain in chains:
+                if chain.exchange == "SMART":
+                    result.append({
+                        "exchange": chain.exchange,
+                        "expirations": sorted(chain.expirations),
+                        "strikes": sorted(chain.strikes),
+                    })
+
+            return result[0] if result else None
+
+        except Exception as e:
+            log.error(f"Failed to get option chain for {symbol}: {e}")
             return None
 
     def cancel_order(self, order_id):

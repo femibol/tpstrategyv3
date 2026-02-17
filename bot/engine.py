@@ -22,6 +22,7 @@ from bot.data.indicators import TechnicalIndicators
 from bot.brokers.ibkr import IBKRBroker
 from bot.brokers.traderspost import TradersPostBroker
 from bot.signals.tradingview import TradingViewReceiver
+from bot.signals.politician_tracker import PoliticianTradeTracker
 from bot.strategies.mean_reversion import MeanReversionStrategy
 from bot.strategies.momentum import MomentumStrategy
 from bot.strategies.vwap import VWAPScalpStrategy
@@ -63,6 +64,7 @@ class TradingEngine:
         self.indicators = TechnicalIndicators()
         self.tv_receiver = None
         self.tp_broker = None
+        self.politician_tracker = None
         self.scheduler = None
 
         # State
@@ -127,6 +129,13 @@ class TradingEngine:
                 callback=self._handle_tv_signal
             )
             log.info("TradingView webhook receiver enabled")
+
+        # Politician trade tracker (always enabled)
+        self.politician_tracker = PoliticianTradeTracker(
+            self.config,
+            callback=self._handle_politician_signal
+        )
+        log.info("Politician trade tracker enabled")
 
         # Scheduler for periodic tasks
         self.scheduler = BackgroundScheduler(timezone=self.tz)
@@ -242,6 +251,10 @@ class TradingEngine:
                 daemon=True
             )
             tv_thread.start()
+
+        # Start politician trade tracker
+        if self.politician_tracker:
+            self.politician_tracker.start()
 
         log.info("Trading engine started - entering main loop")
         self.notifier.system_alert("Trading engine started", level="success")
@@ -487,7 +500,7 @@ class TradingEngine:
         return all_signals
 
     def _execute_signal(self, signal):
-        """Execute a trading signal."""
+        """Execute a trading signal through broker chain (IBKR -> TradersPost fallback)."""
         symbol = signal["symbol"]
         action = signal["action"]  # buy, sell, short, cover
         strategy = signal.get("strategy", "unknown")
@@ -497,8 +510,10 @@ class TradingEngine:
             log.debug(f"Skipping {action} {symbol} - already in position")
             return
 
-        # Position sizing
-        current_price = self.market_data.get_price(symbol)
+        # Position sizing - use market price if available, or signal's price
+        current_price = self.market_data.get_price(symbol) if self.market_data else None
+        if current_price is None:
+            current_price = signal.get("price")
         if current_price is None:
             log.warning(f"No price for {symbol} - skipping signal")
             return
@@ -509,7 +524,7 @@ class TradingEngine:
             stop_loss_price = current_price * (1 - stop_pct) if action == "buy" \
                 else current_price * (1 + stop_pct)
 
-        qty = self.position_sizer.calculate(
+        qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
             stop_loss=stop_loss_price,
@@ -527,68 +542,109 @@ class TradingEngine:
             take_profit_price = current_price * (1 + tp_pct) if action == "buy" \
                 else current_price * (1 - tp_pct)
 
-        # Place order via broker
-        order = self.broker.place_order(
-            symbol=symbol,
-            action=action.upper(),
-            quantity=qty,
-            order_type="LIMIT",
-            limit_price=current_price,
-        )
+        # --- Broker Execution Chain ---
+        # Try IBKR first, then TradersPost as fallback
+        order = None
+        executed_via = None
 
-        if order:
-            log.info(
-                f"ORDER {action.upper()} {symbol} | "
-                f"Qty: {qty} | Price: ${current_price:.2f} | "
-                f"Stop: ${stop_loss_price:.2f} | Target: ${take_profit_price:.2f} | "
-                f"Strategy: {strategy}"
+        # 1. Try IBKR (primary broker)
+        if self.broker and self.broker.is_connected():
+            order = self.broker.place_order(
+                symbol=symbol,
+                action=action.upper(),
+                quantity=qty,
+                order_type="LIMIT",
+                limit_price=current_price,
             )
+            if order:
+                executed_via = "IBKR"
 
-            # Track position
-            self.positions[symbol] = {
-                "symbol": symbol,
-                "direction": "long" if action in ("buy",) else "short",
+        # 2. Fallback to TradersPost if IBKR failed or unavailable
+        if not order and self.tp_broker:
+            tp_signal = {
+                **signal,
                 "quantity": qty,
-                "entry_price": current_price,
-                "entry_time": datetime.now(self.tz),
+                "price": current_price,
                 "stop_loss": stop_loss_price,
                 "take_profit": take_profit_price,
-                "trailing_stop_pct": signal.get(
-                    "trailing_stop_pct",
-                    self.config.risk_config.get("trailing_stop_pct", 0.02)
-                ),
-                "strategy": strategy,
-                "order_id": order.get("order_id"),
-                "max_hold_bars": signal.get("max_hold_bars", 40),
-                "bar_seconds": signal.get("bar_seconds", 300),
             }
+            tp_result = self.tp_broker.send_signal(tp_signal)
+            if tp_result and tp_result.get("success"):
+                order = {
+                    "order_id": f"tp_{int(datetime.now(self.tz).timestamp())}",
+                    "symbol": symbol,
+                    "action": action,
+                    "quantity": qty,
+                    "status": "sent_to_traderspost",
+                }
+                executed_via = "TradersPost"
 
-            # Notify
-            self.notifier.trade_alert(
-                action=action,
-                symbol=symbol,
-                qty=qty,
-                price=current_price,
-                strategy=strategy,
-                reason=signal.get("reason", "")
-            )
-
-            # Forward to TradersPost if configured
-            if self.tp_broker:
-                self.tp_broker.send_signal(signal)
-
-            # Track trade
-            self.daily_trades.append({
-                "time": datetime.now(self.tz).isoformat(),
+        # 3. If no broker available, track as simulated (paper mode / signal-only)
+        if not order:
+            order = {
+                "order_id": f"sim_{int(datetime.now(self.tz).timestamp())}",
                 "symbol": symbol,
                 "action": action,
-                "qty": qty,
-                "price": current_price,
-                "strategy": strategy,
-            })
+                "quantity": qty,
+                "status": "simulated",
+            }
+            executed_via = "Simulated"
+            log.warning(f"No broker available - simulating order for {symbol}")
+
+        log.info(
+            f"ORDER {action.upper()} {symbol} via {executed_via} | "
+            f"Qty: {qty} | Price: ${current_price:.2f} | "
+            f"Stop: ${stop_loss_price:.2f} | Target: ${take_profit_price:.2f} | "
+            f"Strategy: {strategy}"
+        )
+
+        # Track position
+        self.positions[symbol] = {
+            "symbol": symbol,
+            "direction": "long" if action in ("buy",) else "short",
+            "quantity": qty,
+            "entry_price": current_price,
+            "entry_time": datetime.now(self.tz),
+            "stop_loss": stop_loss_price,
+            "take_profit": take_profit_price,
+            "trailing_stop_pct": signal.get(
+                "trailing_stop_pct",
+                self.config.risk_config.get("trailing_stop_pct", 0.02)
+            ),
+            "strategy": strategy,
+            "order_id": order.get("order_id"),
+            "executed_via": executed_via,
+            "max_hold_bars": signal.get("max_hold_bars", 40),
+            "bar_seconds": signal.get("bar_seconds", 300),
+        }
+
+        # Notify
+        self.notifier.trade_alert(
+            action=action,
+            symbol=symbol,
+            qty=qty,
+            price=current_price,
+            strategy=strategy,
+            reason=f"[{executed_via}] {signal.get('reason', '')}"
+        )
+
+        # Also forward to TradersPost if IBKR was the primary executor
+        if executed_via == "IBKR" and self.tp_broker:
+            self.tp_broker.send_signal(signal)
+
+        # Track trade
+        self.daily_trades.append({
+            "time": datetime.now(self.tz).isoformat(),
+            "symbol": symbol,
+            "action": action,
+            "qty": qty,
+            "price": current_price,
+            "strategy": strategy,
+            "executed_via": executed_via,
+        })
 
     def _close_position(self, symbol, reason_type, reason_msg):
-        """Close a position."""
+        """Close a position through broker chain."""
         pos = self.positions.get(symbol)
         if not pos:
             return
@@ -598,13 +654,30 @@ class TradingEngine:
             current_price = pos.get("current_price", pos["entry_price"])
 
         action = "SELL" if pos["direction"] == "long" else "BUY"
+        executed_via = pos.get("executed_via", "Simulated")
 
-        order = self.broker.place_order(
-            symbol=symbol,
-            action=action,
-            quantity=pos["quantity"],
-            order_type="MARKET",
-        )
+        # Try to close via broker chain
+        order = None
+        if self.broker and self.broker.is_connected():
+            order = self.broker.place_order(
+                symbol=symbol,
+                action=action,
+                quantity=pos["quantity"],
+                order_type="MARKET",
+            )
+            if order:
+                executed_via = "IBKR"
+
+        if not order and self.tp_broker:
+            close_signal = {
+                "symbol": symbol,
+                "action": action.lower(),
+                "quantity": pos["quantity"],
+                "price": current_price,
+            }
+            tp_result = self.tp_broker.send_signal(close_signal)
+            if tp_result and tp_result.get("success"):
+                executed_via = "TradersPost"
 
         # Calculate P&L
         if pos["direction"] == "long":
@@ -613,9 +686,12 @@ class TradingEngine:
             pnl = (pos["entry_price"] - current_price) * pos["quantity"]
 
         self.daily_pnl += pnl
+        # Update internal balance tracking
+        self.current_balance += pnl
+        self.peak_balance = max(self.peak_balance, self.current_balance)
 
         log.info(
-            f"CLOSED {symbol} | {reason_type} | "
+            f"CLOSED {symbol} via {executed_via} | {reason_type} | "
             f"P&L: ${pnl:+.2f} | {reason_msg}"
         )
 
@@ -625,7 +701,7 @@ class TradingEngine:
             qty=pos["quantity"],
             price=current_price,
             strategy=pos["strategy"],
-            reason=f"{reason_msg} | P&L: ${pnl:+.2f}"
+            reason=f"[{executed_via}] {reason_msg} | P&L: ${pnl:+.2f}"
         )
 
         # Record trade
@@ -636,9 +712,10 @@ class TradingEngine:
             "exit_price": current_price,
             "quantity": pos["quantity"],
             "pnl": pnl,
-            "pnl_pct": pnl / (pos["entry_price"] * pos["quantity"]),
+            "pnl_pct": pnl / (pos["entry_price"] * pos["quantity"]) if pos["entry_price"] * pos["quantity"] > 0 else 0,
             "strategy": pos["strategy"],
             "reason": reason_type,
+            "executed_via": executed_via,
             "entry_time": pos["entry_time"].isoformat(),
             "exit_time": datetime.now(self.tz).isoformat(),
         })
@@ -653,23 +730,49 @@ class TradingEngine:
             self._close_position(symbol, "emergency", reason)
 
     def _update_account(self):
-        """Update account balance and tracking."""
-        account = self.broker.get_account_summary()
-        if account:
-            self.current_balance = account.get(
-                "net_liquidation", self.current_balance
-            )
-            self.peak_balance = max(self.peak_balance, self.current_balance)
+        """Update account balance and tracking (works with or without IBKR)."""
+        # Try to sync from IBKR if connected
+        if self.broker and self.broker.is_connected():
+            account = self.broker.get_account_summary()
+            if account:
+                self.current_balance = account.get(
+                    "net_liquidation", self.current_balance
+                )
+        else:
+            # Internal balance tracking: base + unrealized P&L
+            unrealized = 0
+            for symbol, pos in self.positions.items():
+                price = self.market_data.get_price(symbol)
+                if price is not None:
+                    if pos["direction"] == "long":
+                        unrealized += (price - pos["entry_price"]) * pos["quantity"]
+                    else:
+                        unrealized += (pos["entry_price"] - price) * pos["quantity"]
+            # current_balance already includes realized P&L from _close_position
+            # Just need to track unrealized for equity curve
 
-            # Update scaling tier
-            tier = self.config.get_scaling_tier(self.current_balance)
-            if tier:
-                self.risk_manager.update_tier(tier)
+        self.peak_balance = max(self.peak_balance, self.current_balance)
 
-        # Track equity curve
+        # Update scaling tier
+        tier = self.config.get_scaling_tier(self.current_balance)
+        if tier:
+            self.risk_manager.update_tier(tier)
+
+        # Track equity curve (include unrealized P&L)
+        unrealized_pnl = 0
+        for symbol, pos in self.positions.items():
+            price = self.market_data.get_price(symbol)
+            if price is not None:
+                if pos["direction"] == "long":
+                    unrealized_pnl += (price - pos["entry_price"]) * pos["quantity"]
+                else:
+                    unrealized_pnl += (pos["entry_price"] - price) * pos["quantity"]
+
         self.equity_curve.append({
             "time": datetime.now(self.tz).isoformat(),
             "balance": self.current_balance,
+            "equity": self.current_balance + unrealized_pnl,
+            "unrealized_pnl": unrealized_pnl,
             "positions": len(self.positions),
             "daily_pnl": self.daily_pnl,
         })
@@ -677,11 +780,6 @@ class TradingEngine:
     def _handle_tv_signal(self, signal):
         """Handle incoming TradingView webhook signal."""
         log.info(f"TradingView signal received: {signal}")
-
-        # Validate signal age
-        max_age = self.config.get_strategy_config(
-            "tradingview_signals"
-        ).get("max_signal_age_seconds", 30)
 
         signal["strategy"] = "tradingview"
         signal["source"] = "tradingview_webhook"
@@ -693,6 +791,46 @@ class TradingEngine:
 
         for sig in approved:
             self._execute_signal(sig)
+
+    def _handle_politician_signal(self, signal):
+        """Handle incoming politician trade signal."""
+        log.info(
+            f"Politician signal: {signal.get('politician', 'Unknown')} "
+            f"{signal['action'].upper()} {signal['symbol']}"
+        )
+
+        # Run through risk manager
+        approved = self.risk_manager.filter_signals(
+            [signal], self.positions, self.current_balance
+        )
+
+        for sig in approved:
+            self._execute_signal(sig)
+
+    def handle_manual_signal(self, signal):
+        """Handle manually submitted signal (from API/dashboard)."""
+        log.info(f"Manual signal received: {signal}")
+
+        signal["strategy"] = signal.get("strategy", "manual")
+        signal["source"] = "manual"
+
+        # Provide default stop loss if missing (3% for buys)
+        if signal["action"] in ("buy", "short") and not signal.get("stop_loss"):
+            price = signal.get("price", 0)
+            if price > 0:
+                signal["stop_loss"] = price * 0.97 if signal["action"] == "buy" else price * 1.03
+
+        # Run through risk manager
+        approved = self.risk_manager.filter_signals(
+            [signal], self.positions, self.current_balance
+        )
+
+        results = []
+        for sig in approved:
+            self._execute_signal(sig)
+            results.append({"symbol": sig["symbol"], "action": sig["action"], "status": "executed"})
+
+        return results if results else [{"status": "rejected", "reason": "Failed risk checks"}]
 
     def _pre_market_scan(self):
         """Pre-market preparation."""
@@ -753,7 +891,13 @@ class TradingEngine:
         self.running = False
 
         if self.scheduler:
-            self.scheduler.shutdown(wait=False)
+            try:
+                self.scheduler.shutdown(wait=False)
+            except Exception:
+                pass
+
+        if self.politician_tracker:
+            self.politician_tracker.stop()
 
         if self.broker:
             self.broker.disconnect()
@@ -776,7 +920,7 @@ class TradingEngine:
 
     def get_status(self):
         """Get current engine status for dashboard."""
-        return {
+        status = {
             "running": self.running,
             "paused": self.paused,
             "mode": self.config.mode,
@@ -798,4 +942,7 @@ class TradingEngine:
             "total_trades": len(self.trade_history),
             "daily_trades": len(self.daily_trades),
             "broker_connected": self.broker.is_connected() if self.broker else False,
+            "traderspost_connected": self.tp_broker._connected if self.tp_broker else False,
+            "politician_tracker": self.politician_tracker.get_status() if self.politician_tracker else None,
         }
+        return status
