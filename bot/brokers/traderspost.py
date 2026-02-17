@@ -38,16 +38,22 @@ class TradersPostBroker(BaseBroker):
     }
     """
 
+    # Crypto symbol suffixes for webhook routing
+    CRYPTO_SUFFIXES = ("-USD", "-USDT", "-BTC", "-ETH")
+
     def __init__(self, config):
         self.config = config
         self.webhook_url = config.traderspost_webhook_url
         self.webhook_url_secondary = config.traderspost_webhook_url_secondary
+        self.webhook_url_crypto = getattr(config, 'traderspost_webhook_url_crypto', '') or ''
         self.api_key = config.traderspost_api_key
         self._connected = bool(self.webhook_url)
         self.signal_history = []
         self.dual_mode = bool(self.webhook_url and self.webhook_url_secondary)
         if self.dual_mode:
             log.info("TradersPost DUAL MODE: signals sent to both live and paper webhooks")
+        if self.webhook_url_crypto:
+            log.info("TradersPost CRYPTO webhook configured - crypto signals route separately")
 
     def connect(self):
         """Validate webhook URL is configured."""
@@ -80,6 +86,15 @@ class TradersPostBroker(BaseBroker):
             return None
 
         action = signal.get("action", "").lower()
+        symbol = signal.get("symbol", "")
+
+        # Route crypto signals to dedicated crypto webhook
+        is_crypto = any(symbol.upper().endswith(s) for s in self.CRYPTO_SUFFIXES)
+        if is_crypto and self.webhook_url_crypto:
+            target_url = self.webhook_url_crypto
+            log.info(f"Routing {symbol} to CRYPTO webhook")
+        else:
+            target_url = self.webhook_url
 
         # Map actions to TradersPost format
         # TradersPost supports: buy, sell, exit, cancel
@@ -133,7 +148,7 @@ class TradersPostBroker(BaseBroker):
                 headers["Authorization"] = f"Bearer {self.api_key}"
 
             response = requests.post(
-                self.webhook_url,
+                target_url,
                 json=payload,
                 headers=headers,
                 timeout=10
@@ -146,6 +161,7 @@ class TradersPostBroker(BaseBroker):
                 "status_code": response.status_code,
                 "response": response.text[:200],
                 "payload": payload,
+                "webhook": "crypto" if (is_crypto and self.webhook_url_crypto) else "primary",
                 "time": datetime.now().isoformat(),
             }
 

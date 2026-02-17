@@ -23,14 +23,30 @@ services:
         value: "7497"
       - key: IBKR_CLIENT_ID
         value: "1"
+      # === Alpaca Markets (real-time data + paper trading) ===
+      - key: ALPACA_API_KEY
+        value: "CKWININ27CAG5GRQFF5KED355T"
+      - key: ALPACA_SECRET_KEY
+        value: "2hbRBTFTi4fbqaJjfUT61YSzqksvgQwtfVQZTCtpAadz"
+      - key: ALPACA_BASE_URL
+        value: "https://paper-api.alpaca.markets"
+      # === TradersPost (stock + crypto webhooks) ===
       - key: TRADERSPOST_WEBHOOK_URL
-        sync: false
+        value: "https://webhooks.traderspost.io/trading/webhook/0ad4ec45-37b5-43f5-9d34-5d72090be6be/140840c4dde368fa17d4c545d83f93b2"
+      - key: TRADERSPOST_WEBHOOK_URL_CRYPTO
+        value: "https://webhooks.traderspost.io/trading/webhook/fe21a0bd-bcd1-4da0-911b-22c8f7de66b5/fea0c574a4fd4f34e8a77c08519a4991"
       - key: TRADERSPOST_API_KEY
         sync: false
+      # === TradingView ===
       - key: TRADINGVIEW_WEBHOOK_SECRET
         sync: false
+      # === News API ===
+      - key: NEWS_API_KEY
+        value: "8c8da7dacb5040c49e10fecbdea41ad0"
+      # === Notifications ===
       - key: DISCORD_WEBHOOK_URL
         sync: false
+      # === Dashboard ===
       - key: DASHBOARD_SECRET_KEY
         generateValue: true
       - key: DASHBOARD_HOST
