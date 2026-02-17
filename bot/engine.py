@@ -691,6 +691,11 @@ class TradingEngine:
         action = signal["action"]  # buy, sell, short, cover
         strategy = signal.get("strategy", "unknown")
 
+        # LONG-ONLY MODE: Block all short signals
+        if action in ("short",):
+            log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
+            return
+
         # Skip if we already have a position (for buy signals)
         if action in ("buy", "short") and symbol in self.positions:
             log.debug(f"Skipping {action} {symbol} - already in position")
@@ -1600,3 +1605,387 @@ class TradingEngine:
         self.config.update_setting(path, value)
         self.config.save_settings()
         log.info(f"Config updated: {path} = {value}")
+
+    # =========================================================================
+    # RVOL Scanner - Money Machine Style Relative Volume Scanner
+    # =========================================================================
+
+    def get_rvol_scan(self, min_rvol=2.0, extra_symbols=None):
+        """
+        Scan all watchlist symbols for high relative volume (RVOL).
+
+        Inspired by Trade Ideas Money Machine system:
+        - RVOL = current bar volume / average bar volume over 20 periods
+        - Looks for stocks with unusual volume activity (RVOL >= 2x)
+        - Combines with price action (gap %, range %, direction)
+        - Sorts by highest RVOL first
+
+        Returns list of dicts sorted by RVOL descending.
+        """
+        import numpy as np
+
+        symbols_to_scan = list(set(self.watchlist + list(self.positions.keys())))
+        if extra_symbols:
+            symbols_to_scan = list(set(symbols_to_scan + extra_symbols))
+
+        results = []
+
+        for symbol in symbols_to_scan:
+            try:
+                bars = self.market_data.get_bars(symbol, 60) if self.market_data else None
+                if bars is None or len(bars) < 25:
+                    continue
+
+                closes = bars["close"].values
+                volumes = bars["volume"].values
+                highs = bars["high"].values
+                lows = bars["low"].values
+                opens = bars["open"].values
+
+                current_price = closes[-1]
+                if current_price <= 0:
+                    continue
+
+                # --- RVOL Calculation (core of Money Machine) ---
+                avg_vol_20 = float(np.mean(volumes[-21:-1])) if len(volumes) > 21 else float(np.mean(volumes[:-1]))
+                current_vol = float(volumes[-1])
+                rvol = round(current_vol / avg_vol_20, 2) if avg_vol_20 > 0 else 0
+
+                # --- Price Action ---
+                prev_close = closes[-2]
+                gap_pct = round((opens[-1] - prev_close) / prev_close * 100, 2)
+                change_pct = round((current_price - prev_close) / prev_close * 100, 2)
+                day_range = highs[-1] - lows[-1]
+                range_pct = round(day_range / current_price * 100, 2)
+
+                # ATR for context
+                atr = self.indicators.atr(highs, lows, closes, period=14)
+                atr_pct = round(atr / current_price * 100, 2) if atr else 0
+
+                # RSI
+                rsi = self.indicators.rsi(closes, 14)
+
+                # EMA trend
+                ema9 = self.indicators.ema(closes, 9)
+                ema20 = self.indicators.ema(closes, 20)
+                trend = "BULL" if (ema9 is not None and ema20 is not None and ema9[-1] > ema20[-1]) else "BEAR"
+
+                # MACD momentum
+                macd_line, signal_line, histogram = self.indicators.macd(closes)
+                macd_bullish = histogram is not None and len(histogram) > 0 and histogram[-1] > 0
+
+                # Direction
+                if change_pct > 0.3:
+                    direction = "UP"
+                elif change_pct < -0.3:
+                    direction = "DOWN"
+                else:
+                    direction = "FLAT"
+
+                # --- Money Machine Score ---
+                # Combines RVOL with momentum indicators for a composite score
+                score = 0
+                if rvol >= 3.0:
+                    score += 30
+                elif rvol >= 2.0:
+                    score += 20
+                elif rvol >= 1.5:
+                    score += 10
+
+                if direction == "UP" and change_pct > 1.0:
+                    score += 20
+                elif direction == "UP":
+                    score += 10
+
+                if trend == "BULL":
+                    score += 15
+
+                if macd_bullish:
+                    score += 10
+
+                if 30 < rsi < 70:
+                    score += 5  # Not overbought/oversold
+                if rsi < 35:
+                    score += 15  # Oversold bounce potential
+
+                if gap_pct > 1.0:
+                    score += 10  # Gap up = institutional interest
+
+                # Verdict
+                if rvol >= min_rvol and score >= 50:
+                    verdict = "HOT"
+                elif rvol >= min_rvol and score >= 30:
+                    verdict = "ACTIVE"
+                elif rvol >= 1.5:
+                    verdict = "WARMING"
+                else:
+                    verdict = "QUIET"
+
+                results.append({
+                    "symbol": symbol,
+                    "price": round(current_price, 2),
+                    "rvol": rvol,
+                    "current_vol": int(current_vol),
+                    "avg_vol": int(avg_vol_20),
+                    "change_pct": change_pct,
+                    "gap_pct": gap_pct,
+                    "range_pct": range_pct,
+                    "direction": direction,
+                    "trend": trend,
+                    "rsi": round(rsi, 1),
+                    "atr_pct": atr_pct,
+                    "macd_bullish": macd_bullish,
+                    "score": score,
+                    "verdict": verdict,
+                })
+
+            except Exception as e:
+                log.debug(f"RVOL scan error for {symbol}: {e}")
+
+        # Sort by RVOL descending (highest volume activity first)
+        results.sort(key=lambda x: x["rvol"], reverse=True)
+        return results
+
+    # =========================================================================
+    # Trade Suggestion Engine - Suggests specific trades with profit reasoning
+    # =========================================================================
+
+    def get_trade_suggestions(self, max_suggestions=5):
+        """
+        Generate actionable LONG trade suggestions with profit reasoning.
+
+        Analyzes all scanner data + RVOL + technical levels to suggest
+        the best trades right now. Each suggestion includes:
+        - Entry price, stop loss, take profit
+        - Expected profit $ and %
+        - Risk/reward ratio
+        - Confidence score
+        - WHY this trade (detailed reasoning)
+
+        Returns list of suggestion dicts.
+        """
+        import numpy as np
+
+        suggestions = []
+        scanner_data = self.get_scanner_data()
+        rvol_data = self.get_rvol_scan(min_rvol=1.3)
+        rvol_map = {r["symbol"]: r for r in rvol_data}
+
+        # Collect all symbols with scanner verdicts leaning bullish
+        candidates = []
+
+        for strat_name, strat_data in scanner_data.items():
+            for symbol, data in strat_data.items():
+                if data.get("status") in ("no_data", "error", "low_volatility"):
+                    continue
+
+                verdict = (data.get("verdict") or "").upper()
+                # Only consider bullish setups (LONG-only)
+                if verdict in ("BUY SIGNAL", "A+ SETUP", "BUY ZONE", "ENTRY SIGNAL", "WARMING UP", "BUILDING"):
+                    candidates.append({
+                        "symbol": symbol if "/" not in symbol else symbol.split("/")[0],
+                        "strategy": strat_name,
+                        "verdict": verdict,
+                        "data": data,
+                    })
+
+        # Also consider high-RVOL stocks even without scanner signal
+        for r in rvol_data:
+            if r["rvol"] >= 2.0 and r["direction"] == "UP" and r["trend"] == "BULL":
+                already = any(c["symbol"] == r["symbol"] for c in candidates)
+                if not already:
+                    candidates.append({
+                        "symbol": r["symbol"],
+                        "strategy": "rvol_momentum",
+                        "verdict": "RVOL SURGE",
+                        "data": r,
+                    })
+
+        # Skip symbols we already hold
+        candidates = [c for c in candidates if c["symbol"] not in self.positions]
+
+        # Score and build suggestions
+        for cand in candidates:
+            symbol = cand["symbol"]
+            strat = cand["strategy"]
+            data = cand["data"]
+            verdict = cand["verdict"]
+
+            try:
+                bars = self.market_data.get_bars(symbol, 60) if self.market_data else None
+                if bars is None or len(bars) < 20:
+                    continue
+
+                closes = bars["close"].values
+                highs = bars["high"].values
+                lows = bars["low"].values
+                current_price = float(closes[-1])
+
+                if current_price <= 0:
+                    continue
+
+                # Get RVOL data for this symbol
+                rvol_info = rvol_map.get(symbol, {})
+                rvol = rvol_info.get("rvol", 1.0)
+
+                # Calculate levels
+                atr = self.indicators.atr(highs, lows, closes, period=14)
+                if atr is None or atr <= 0:
+                    continue
+
+                rsi = self.indicators.rsi(closes, 14)
+
+                # Strategy-specific entry logic
+                reasons = []
+                confidence = 0.5
+                stop_loss = current_price - (2.0 * atr)
+                take_profit = current_price + (3.0 * atr)
+
+                if strat == "mean_reversion":
+                    checks = data.get("checks", {})
+                    if checks.get("zscore_ok"):
+                        reasons.append(f"Z-Score oversold ({data.get('zscore', 0):.1f})")
+                        confidence += 0.1
+                    if checks.get("rsi_oversold"):
+                        reasons.append(f"RSI oversold ({data.get('rsi', 50):.0f})")
+                        confidence += 0.1
+                    if checks.get("at_lower_bb"):
+                        reasons.append("At lower Bollinger Band (bounce zone)")
+                        confidence += 0.1
+                    sma = data.get("sma", current_price)
+                    if sma and sma > current_price:
+                        take_profit = sma  # Target the mean
+                        reasons.append(f"Target: mean reversion to ${sma:.2f}")
+                    stop_loss = current_price * 0.97
+
+                elif strat == "momentum":
+                    checks = data.get("checks", {})
+                    if checks.get("ema_cross"):
+                        reasons.append("Fresh EMA crossover (bullish)")
+                        confidence += 0.15
+                    elif checks.get("ema_bullish"):
+                        reasons.append("EMAs aligned bullish")
+                        confidence += 0.05
+                    if checks.get("strong_trend"):
+                        reasons.append(f"Strong trend (ADX={data.get('adx', 0):.0f})")
+                        confidence += 0.1
+                    if checks.get("breakout"):
+                        reasons.append(f"Breakout above ${data.get('breakout_level', 0):.2f}")
+                        confidence += 0.15
+                    if checks.get("vol_confirmed"):
+                        reasons.append(f"Volume confirmed ({data.get('vol_ratio', 0):.1f}x avg)")
+                        confidence += 0.05
+                    stop_loss = current_price - (2.0 * atr)
+                    take_profit = current_price + (4.0 * atr)
+
+                elif strat == "vwap_scalp":
+                    zone = data.get("zone", "")
+                    vwap = data.get("vwap", current_price)
+                    if "BELOW" in zone:
+                        reasons.append(f"Below VWAP (${vwap:.2f}) - bounce setup")
+                        confidence += 0.1
+                    reasons.append(f"VWAP distance: {data.get('vwap_dist_pct', 0):.2f}%")
+                    take_profit = vwap if vwap > current_price else current_price + atr
+                    stop_loss = current_price - (1.5 * atr)
+
+                elif strat == "smc_forever":
+                    checks = data.get("checks", {})
+                    if checks.get("sweep"):
+                        reasons.append("Liquidity sweep detected (smart money)")
+                        confidence += 0.15
+                    if checks.get("smt"):
+                        reasons.append("SMT divergence confirmed")
+                        confidence += 0.1
+                    if checks.get("cisd"):
+                        reasons.append("Change in delivery (bullish shift)")
+                        confidence += 0.1
+                    if checks.get("fvg"):
+                        reasons.append("Fair Value Gap entry zone")
+                        confidence += 0.1
+                    if checks.get("displacement"):
+                        reasons.append("Institutional displacement candle")
+                        confidence += 0.05
+                    stop_loss = current_price - (2.5 * atr)
+                    take_profit = current_price + (5.0 * atr)
+
+                elif strat == "rvol_momentum":
+                    reasons.append(f"RVOL surge: {rvol:.1f}x average volume")
+                    reasons.append(f"Price moving {data.get('direction', 'UP')} with momentum")
+                    if data.get("macd_bullish"):
+                        reasons.append("MACD histogram positive")
+                        confidence += 0.1
+                    if data.get("gap_pct", 0) > 0.5:
+                        reasons.append(f"Gap up +{data.get('gap_pct', 0):.1f}% (institutional interest)")
+                        confidence += 0.1
+                    stop_loss = current_price - (2.0 * atr)
+                    take_profit = current_price + (3.0 * atr)
+
+                # RVOL bonus for any strategy
+                if rvol >= 2.0:
+                    reasons.append(f"High RVOL ({rvol:.1f}x) - unusual volume activity")
+                    confidence += 0.1
+                elif rvol >= 1.5:
+                    reasons.append(f"Elevated RVOL ({rvol:.1f}x)")
+                    confidence += 0.05
+
+                confidence = min(1.0, confidence)
+
+                # Risk/reward calculation
+                risk_per_share = current_price - stop_loss
+                reward_per_share = take_profit - current_price
+                rr_ratio = round(reward_per_share / risk_per_share, 2) if risk_per_share > 0 else 0
+
+                # Position sizing (what we'd actually trade)
+                qty = 0
+                if self.position_sizer and risk_per_share > 0:
+                    alloc = self.config.strategy_allocation.get(strat, 0.2)
+                    qty = self.position_sizer.calculate(
+                        balance=self.current_balance,
+                        price=current_price,
+                        stop_loss=stop_loss,
+                        strategy_allocation=alloc
+                    )
+
+                potential_profit = round(reward_per_share * qty, 2) if qty > 0 else round(reward_per_share, 2)
+                potential_loss = round(risk_per_share * qty, 2) if qty > 0 else round(risk_per_share, 2)
+                profit_pct = round(reward_per_share / current_price * 100, 2)
+                risk_pct = round(risk_per_share / current_price * 100, 2)
+
+                # Build the "why" narrative
+                if not reasons:
+                    reasons.append(f"{verdict} signal from {strat} strategy")
+
+                suggestion = {
+                    "symbol": symbol,
+                    "action": "BUY",
+                    "strategy": strat,
+                    "verdict": verdict,
+                    "price": round(current_price, 2),
+                    "stop_loss": round(stop_loss, 2),
+                    "take_profit": round(take_profit, 2),
+                    "quantity": qty,
+                    "confidence": round(confidence, 2),
+                    "rr_ratio": rr_ratio,
+                    "potential_profit": potential_profit,
+                    "potential_loss": potential_loss,
+                    "profit_pct": profit_pct,
+                    "risk_pct": risk_pct,
+                    "rvol": rvol,
+                    "rsi": round(rsi, 1),
+                    "atr": round(atr, 2),
+                    "reasons": reasons,
+                    "why": " | ".join(reasons),
+                }
+
+                suggestions.append(suggestion)
+
+            except Exception as e:
+                log.debug(f"Suggestion error for {symbol}: {e}")
+
+        # Sort by confidence * RR ratio (best risk-adjusted opportunities first)
+        suggestions.sort(
+            key=lambda x: x["confidence"] * max(x["rr_ratio"], 0.1),
+            reverse=True
+        )
+
+        return suggestions[:max_suggestions]

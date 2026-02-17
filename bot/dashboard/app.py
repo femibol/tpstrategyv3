@@ -406,6 +406,57 @@ class Dashboard:
             tips = self._generate_tips()
             return jsonify(tips)
 
+        # --- RVOL Scanner API (Money Machine style) ---
+
+        @self.app.route("/api/rvol")
+        def rvol_scan():
+            """Get relative volume scan results."""
+            min_rvol = request.args.get("min_rvol", 1.5, type=float)
+            return jsonify(self.engine.get_rvol_scan(min_rvol=min_rvol))
+
+        # --- Trade Suggestions API ---
+
+        @self.app.route("/api/suggestions")
+        def trade_suggestions():
+            """Get AI-generated trade suggestions with profit reasoning."""
+            max_suggestions = request.args.get("max", 5, type=int)
+            return jsonify(self.engine.get_trade_suggestions(max_suggestions=max_suggestions))
+
+        # --- Quick Trade (execute a suggestion) ---
+
+        @self.app.route("/api/suggestions/execute", methods=["POST"])
+        @self._require_auth
+        def execute_suggestion():
+            """Execute a trade suggestion (LONG only)."""
+            data = request.get_json()
+            if not data or not data.get("symbol"):
+                return jsonify({"error": "symbol required"}), 400
+
+            signal = {
+                "symbol": data["symbol"].upper(),
+                "action": "buy",
+                "confidence": float(data.get("confidence", 0.7)),
+                "source": "suggestion",
+                "strategy": data.get("strategy", "suggestion"),
+                "reason": f"Trade suggestion: {data.get('why', 'Manual execution')}",
+            }
+
+            if data.get("stop_loss"):
+                signal["stop_loss"] = float(data["stop_loss"])
+            if data.get("take_profit"):
+                signal["take_profit"] = float(data["take_profit"])
+
+            price = self.engine.market_data.get_price(data["symbol"].upper()) if self.engine.market_data else None
+            if price:
+                signal["price"] = price
+            elif data.get("price"):
+                signal["price"] = float(data["price"])
+            else:
+                return jsonify({"error": "No price available"}), 400
+
+            results = self.engine.handle_manual_signal(signal)
+            return jsonify({"status": "ok", "results": results})
+
         # --- Quote API (real-time price lookup) ---
 
         @self.app.route("/api/quote/<symbol>")

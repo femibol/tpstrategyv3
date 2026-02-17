@@ -335,6 +335,85 @@
         }
         .tv-link:hover { text-decoration: underline; }
 
+        /* === RVOL CARDS === */
+        .rvol-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+        }
+        .rvol-card.hot { border-left: 3px solid var(--green); }
+        .rvol-card.active { border-left: 3px solid var(--yellow); }
+        .rvol-card.warming { border-left: 3px solid var(--orange); }
+        .rvol-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .rvol-symbol { font-size: 1.1em; font-weight: 700; }
+        .rvol-badge {
+            padding: 3px 10px; border-radius: 10px; font-size: 0.7em;
+            font-weight: 700; letter-spacing: 0.5px;
+        }
+        .rvol-hot { background: rgba(63,185,80,0.2); color: var(--green); border: 1px solid var(--green); }
+        .rvol-active { background: rgba(210,153,34,0.2); color: var(--yellow); border: 1px solid var(--yellow); }
+        .rvol-warming { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid rgba(240,136,62,0.3); }
+        .rvol-quiet { background: rgba(139,148,158,0.1); color: var(--muted); border: 1px solid var(--border); }
+        .rvol-bar-wrap {
+            background: var(--border); border-radius: 4px; height: 8px;
+            margin-top: 6px; overflow: hidden;
+        }
+        .rvol-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .rvol-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+            font-size: 0.75em; color: var(--muted); margin-top: 6px;
+        }
+
+        /* === SUGGESTION CARDS === */
+        .sugg-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-left: 3px solid var(--green); border-radius: 0 10px 10px 0;
+            padding: 14px; margin-bottom: 10px;
+        }
+        .sugg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .sugg-symbol { font-size: 1.2em; font-weight: 700; }
+        .sugg-conf {
+            padding: 3px 10px; border-radius: 10px; font-size: 0.75em; font-weight: 700;
+        }
+        .sugg-levels {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+            margin-bottom: 10px;
+        }
+        .sugg-level {
+            background: var(--card); border-radius: 8px; padding: 8px; text-align: center;
+        }
+        .sugg-level-label { font-size: 0.65em; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .sugg-level-val { font-size: 1.1em; font-weight: 700; margin-top: 2px; }
+        .sugg-metrics {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+            font-size: 0.75em; color: var(--muted); margin-bottom: 10px;
+        }
+        .sugg-why {
+            background: rgba(88,166,255,0.06); border: 1px solid rgba(88,166,255,0.15);
+            border-radius: 8px; padding: 10px; margin-bottom: 10px;
+        }
+        .sugg-why-title { font-size: 0.7em; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .sugg-reason {
+            font-size: 0.8em; color: var(--text); line-height: 1.5;
+            padding-left: 8px; border-left: 2px solid rgba(88,166,255,0.3);
+            margin-bottom: 4px;
+        }
+        .sugg-exec-btn {
+            background: rgba(63,185,80,0.12); color: var(--green); border: 1px solid rgba(63,185,80,0.3);
+            border-radius: 8px; padding: 10px; font-size: 0.85em; font-weight: 700;
+            cursor: pointer; width: 100%; text-align: center;
+        }
+        .sugg-exec-btn:active { background: rgba(63,185,80,0.3); }
+
+        /* === REDESIGNED BOTTOM CONTROLS === */
+        .ctrl-btn.suggest {
+            color: var(--accent); border-color: rgba(88,166,255,0.4);
+            background: rgba(88,166,255,0.06);
+        }
+        .ctrl-btn.rvol-btn {
+            color: var(--green); border-color: rgba(63,185,80,0.4);
+            background: rgba(63,185,80,0.06);
+        }
+
         /* === EMPTY STATE === */
         .empty { text-align: center; color: var(--muted); padding: 20px; font-size: 0.85em; }
 
@@ -440,7 +519,9 @@
 
 <!-- TABS -->
 <div class="tabs">
-    <div class="tab active" data-tab="watchlist">Watchlist</div>
+    <div class="tab active" data-tab="suggestions">Suggestions</div>
+    <div class="tab" data-tab="rvol">RVOL</div>
+    <div class="tab" data-tab="watchlist">Watchlist</div>
     <div class="tab" data-tab="scanner">Scanner</div>
     <div class="tab" data-tab="positions">Positions</div>
     <div class="tab" data-tab="performance">W/L Stats</div>
@@ -452,8 +533,34 @@
     <div class="tab" data-tab="notifications">Alerts</div>
 </div>
 
-<!-- WATCHLIST TAB (default) -->
-<div class="tab-content active" id="tab-watchlist">
+<!-- TRADE SUGGESTIONS TAB (default) -->
+<div class="tab-content active" id="tab-suggestions">
+    <div class="section">
+        <h2>Trade Suggestions <span class="count" id="suggCount">0</span></h2>
+        <div style="font-size:0.75em;color:var(--muted);margin-bottom:12px">
+            LONG-only trades ranked by confidence &times; risk/reward. Tap "Execute" to trade.
+        </div>
+        <div id="suggestionsList">
+            <div class="empty">Analyzing markets...</div>
+        </div>
+    </div>
+</div>
+
+<!-- RVOL SCANNER TAB (Money Machine style) -->
+<div class="tab-content" id="tab-rvol">
+    <div class="section">
+        <h2>Relative Volume Scanner <span class="count" id="rvolCount">0</span></h2>
+        <div style="font-size:0.75em;color:var(--muted);margin-bottom:12px">
+            Stocks with unusual volume activity. High RVOL = institutional interest.
+        </div>
+        <div id="rvolList">
+            <div class="empty">Scanning volume...</div>
+        </div>
+    </div>
+</div>
+
+<!-- WATCHLIST TAB -->
+<div class="tab-content" id="tab-watchlist">
     <div class="section">
         <h2>Weekly Watchlist <span class="count" id="watchlistCount">0</span></h2>
         <div id="watchlistList">
@@ -675,8 +782,14 @@
     </div>
 </div>
 
-<!-- BOTTOM CONTROL BAR -->
+<!-- BOTTOM CONTROL BAR (5 buttons) -->
 <div class="controls">
+    <button class="ctrl-btn suggest" onclick="switchTab('suggestions')">
+        <span class="ctrl-icon">&#9733;</span>Ideas
+    </button>
+    <button class="ctrl-btn rvol-btn" onclick="switchTab('rvol')">
+        <span class="ctrl-icon">&#9650;</span>RVOL
+    </button>
     <button class="ctrl-btn pause" id="btnPause" onclick="controlBot('pause')">
         <span class="ctrl-icon">| |</span>Pause
     </button>
@@ -684,7 +797,7 @@
         <span class="ctrl-icon">&#9654;</span>Resume
     </button>
     <button class="ctrl-btn close-all" onclick="showConfirm('close-all')">
-        <span class="ctrl-icon">&#10006;</span>Close All
+        <span class="ctrl-icon">&#10006;</span>Close
     </button>
     <button class="ctrl-btn emergency" onclick="showEmergencyModal()">
         <span class="ctrl-icon">&#9888;</span>STOP
@@ -1093,6 +1206,148 @@ function renderTips(tips) {
     }).join('');
 }
 
+// === RVOL RENDERING (Money Machine Style) ===
+function renderRvol(data) {
+    var el = document.getElementById('rvolList');
+    document.getElementById('rvolCount').textContent = data ? data.length : 0;
+
+    if (!data || data.length === 0) {
+        el.innerHTML = '<div class="empty">No volume data available</div>';
+        return;
+    }
+
+    el.innerHTML = data.map(function(r) {
+        var verdictCls = r.verdict === 'HOT' ? 'rvol-hot' : r.verdict === 'ACTIVE' ? 'rvol-active' : r.verdict === 'WARMING' ? 'rvol-warming' : 'rvol-quiet';
+        var cardCls = r.verdict === 'HOT' ? 'hot' : r.verdict === 'ACTIVE' ? 'active' : r.verdict === 'WARMING' ? 'warming' : '';
+        var changeCls = r.change_pct > 0 ? 'positive' : r.change_pct < 0 ? 'negative' : 'neutral';
+        var barPct = Math.min(100, (r.rvol / 5) * 100);
+        var barColor = r.rvol >= 3.0 ? 'var(--green)' : r.rvol >= 2.0 ? 'var(--yellow)' : r.rvol >= 1.5 ? 'var(--orange)' : 'var(--muted)';
+
+        return '<div class="rvol-card ' + cardCls + '">' +
+            '<div class="rvol-header">' +
+                '<span class="rvol-symbol">' + tvLink(r.symbol) + ' <span style="font-size:0.8em;color:var(--muted)">$' + fmt(r.price) + '</span></span>' +
+                '<span class="rvol-badge ' + verdictCls + '">' + r.rvol + 'x RVOL</span>' +
+            '</div>' +
+            '<div class="rvol-bar-wrap">' +
+                '<div class="rvol-bar-fill" style="width:' + barPct + '%;background:' + barColor + '"></div>' +
+            '</div>' +
+            '<div class="rvol-grid">' +
+                '<div>Change<br><span class="scan-val ' + changeCls + '">' + (r.change_pct >= 0 ? '+' : '') + r.change_pct + '%</span></div>' +
+                '<div>Gap<br><span class="scan-val ' + (r.gap_pct > 0.5 ? 'hot' : '') + '">' + (r.gap_pct >= 0 ? '+' : '') + r.gap_pct + '%</span></div>' +
+                '<div>RSI<br><span class="scan-val ' + (r.rsi < 35 ? 'hot' : r.rsi > 70 ? 'cold' : '') + '">' + r.rsi + '</span></div>' +
+                '<div>Trend<br><span class="scan-val ' + (r.trend === 'BULL' ? 'hot' : 'cold') + '">' + r.trend + '</span></div>' +
+                '<div>Dir<br><span class="scan-val ' + (r.direction === 'UP' ? 'hot' : r.direction === 'DOWN' ? 'cold' : '') + '">' + r.direction + '</span></div>' +
+                '<div>Vol<br><span class="scan-val">' + (r.current_vol > 1000000 ? (r.current_vol / 1000000).toFixed(1) + 'M' : r.current_vol > 1000 ? (r.current_vol / 1000).toFixed(0) + 'K' : r.current_vol) + '</span></div>' +
+                '<div>ATR%<br><span class="scan-val">' + r.atr_pct + '%</span></div>' +
+                '<div>Score<br><span class="scan-val ' + (r.score >= 50 ? 'hot' : r.score >= 30 ? 'warm' : '') + '">' + r.score + '</span></div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+// === TRADE SUGGESTIONS RENDERING ===
+function renderSuggestions(data) {
+    var el = document.getElementById('suggestionsList');
+    document.getElementById('suggCount').textContent = data ? data.length : 0;
+
+    if (!data || data.length === 0) {
+        el.innerHTML = '<div class="empty">No trade suggestions right now. The bot will suggest trades when it spots high-probability setups.</div>';
+        return;
+    }
+
+    el.innerHTML = data.map(function(s, idx) {
+        var confPct = Math.round(s.confidence * 100);
+        var confColor = confPct >= 70 ? 'var(--green)' : confPct >= 50 ? 'var(--yellow)' : 'var(--muted)';
+        var confBg = confPct >= 70 ? 'rgba(63,185,80,0.15)' : confPct >= 50 ? 'rgba(210,153,34,0.15)' : 'rgba(139,148,158,0.1)';
+
+        var reasonsHtml = (s.reasons || []).map(function(r) {
+            return '<div class="sugg-reason">' + r + '</div>';
+        }).join('');
+
+        return '<div class="sugg-card">' +
+            '<div class="sugg-header">' +
+                '<span class="sugg-symbol">' + tvLink(s.symbol) + ' <span style="font-size:0.65em;color:var(--muted);font-weight:400">' + s.strategy + '</span></span>' +
+                '<span class="sugg-conf" style="background:' + confBg + ';color:' + confColor + '">' + confPct + '% conf</span>' +
+            '</div>' +
+
+            '<div class="sugg-levels">' +
+                '<div class="sugg-level">' +
+                    '<div class="sugg-level-label">Entry</div>' +
+                    '<div class="sugg-level-val">$' + fmt(s.price) + '</div>' +
+                '</div>' +
+                '<div class="sugg-level" style="border:1px solid rgba(248,81,73,0.2)">' +
+                    '<div class="sugg-level-label">Stop Loss</div>' +
+                    '<div class="sugg-level-val negative">$' + fmt(s.stop_loss) + '</div>' +
+                '</div>' +
+                '<div class="sugg-level" style="border:1px solid rgba(63,185,80,0.2)">' +
+                    '<div class="sugg-level-label">Target</div>' +
+                    '<div class="sugg-level-val positive">$' + fmt(s.take_profit) + '</div>' +
+                '</div>' +
+            '</div>' +
+
+            '<div class="sugg-metrics">' +
+                '<div>R/R<br><span class="scan-val ' + (s.rr_ratio >= 2 ? 'hot' : s.rr_ratio >= 1.5 ? 'warm' : '') + '">' + s.rr_ratio + ':1</span></div>' +
+                '<div>Profit<br><span class="scan-val positive">+$' + fmt(s.potential_profit) + '</span></div>' +
+                '<div>Risk<br><span class="scan-val negative">-$' + fmt(s.potential_loss) + '</span></div>' +
+                '<div>RVOL<br><span class="scan-val ' + (s.rvol >= 2.0 ? 'hot' : s.rvol >= 1.5 ? 'warm' : '') + '">' + fmt(s.rvol, 1) + 'x</span></div>' +
+            '</div>' +
+
+            '<div class="sugg-why">' +
+                '<div class="sugg-why-title">Why this trade</div>' +
+                reasonsHtml +
+            '</div>' +
+
+            (s.quantity > 0 ?
+                '<button class="sugg-exec-btn" onclick="executeSuggestion(\'' + s.symbol + '\',' + s.stop_loss + ',' + s.take_profit + ',' + s.confidence + ',\'' + s.strategy + '\',\'' + encodeURIComponent(s.why || '') + '\')">' +
+                    'Execute BUY ' + s.symbol + ' (' + s.quantity + ' shares @ $' + fmt(s.price) + ')' +
+                '</button>'
+            :
+                '<div style="text-align:center;font-size:0.75em;color:var(--muted);padding:8px">Position size unavailable - check capital allocation</div>'
+            ) +
+        '</div>';
+    }).join('');
+}
+
+// === EXECUTE SUGGESTION ===
+async function executeSuggestion(symbol, stop, target, conf, strategy, whyEncoded) {
+    var why = decodeURIComponent(whyEncoded);
+    if (!confirm('Execute BUY ' + symbol + '?\n\nStop: $' + stop.toFixed(2) + '\nTarget: $' + target.toFixed(2) + '\nStrategy: ' + strategy)) {
+        return;
+    }
+    try {
+        var r = await fetch(API + '/api/suggestions/execute', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                symbol: symbol,
+                stop_loss: stop,
+                take_profit: target,
+                confidence: conf,
+                strategy: strategy,
+                why: why
+            })
+        });
+        var d = await r.json();
+        if (r.ok) {
+            alert('Trade executed: BUY ' + symbol);
+            update();
+        } else {
+            alert('Error: ' + (d.error || 'Trade failed'));
+        }
+    } catch(e) {
+        alert('Network error');
+    }
+}
+
+// === TAB SWITCHING (for bottom buttons) ===
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(tc) { tc.classList.remove('active'); });
+    document.querySelector('.tab[data-tab="' + tabName + '"]').classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+    window.scrollTo(0, 0);
+}
+
 // === SETTINGS MANAGEMENT ===
 async function loadSettings() {
     var data = await api('settings');
@@ -1194,12 +1449,14 @@ async function update() {
         api('status'), api('positions'), api('trades'),
         api('notifications'), api('daily'), api('equity'),
         api('scanner'), api('analysis'), api('watchlist'),
-        api('performance'), api('tips')
+        api('performance'), api('tips'), api('rvol'),
+        api('suggestions')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
         notifs = results[3], daily = results[4], equity = results[5],
         scanner = results[6], analysisData = results[7],
-        watchlistData = results[8], perfData = results[9], tipsData = results[10];
+        watchlistData = results[8], perfData = results[9], tipsData = results[10],
+        rvolData = results[11], suggestionsData = results[12];
 
     // Regime badge (from status)
     if (status && status.regime) {
@@ -1348,6 +1605,12 @@ async function update() {
 
     // Tips
     renderTips(tipsData);
+
+    // RVOL Scanner
+    renderRvol(rvolData);
+
+    // Trade Suggestions
+    renderSuggestions(suggestionsData);
 }
 
 // === EQUITY CHART (Canvas) ===
