@@ -47,7 +47,9 @@ class Dashboard:
 
         @self.app.route("/")
         def index():
-            return render_template("dashboard.html")
+            # Pass auth key to template so dashboard JS can make authenticated calls
+            dashboard_key = os.environ.get("DASHBOARD_SECRET_KEY", "")
+            return render_template("dashboard.html", dashboard_key=dashboard_key)
 
         @self.app.route("/health")
         def health():

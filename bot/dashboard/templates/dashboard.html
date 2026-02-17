@@ -1030,12 +1030,32 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// === AUTH KEY (injected from server) ===
+var AUTH_KEY = '{{ dashboard_key or "" }}';
+
 // === DATA FETCHING ===
+function authHeaders(extra) {
+    var h = extra || {};
+    if (AUTH_KEY) { h['X-API-Key'] = AUTH_KEY; }
+    return h;
+}
+
 async function api(endpoint) {
     try {
-        const r = await fetch(API + '/api/' + endpoint);
+        const r = await fetch(API + '/api/' + endpoint, { headers: authHeaders() });
         return await r.json();
     } catch (e) { return null; }
+}
+
+async function apiPost(endpoint, body) {
+    try {
+        const r = await fetch(API + '/api/' + endpoint, {
+            method: 'POST',
+            headers: authHeaders({'Content-Type': 'application/json'}),
+            body: body ? JSON.stringify(body) : undefined
+        });
+        return { ok: r.ok, data: await r.json() };
+    } catch (e) { return { ok: false, data: {error: 'Network error'} }; }
 }
 
 function fmt(v, d) { d = d !== undefined ? d : 2; return v != null ? v.toFixed(d) : '0.00'; }
@@ -1404,12 +1424,8 @@ async function addTicker() {
     var symbol = input.value.trim().toUpperCase();
     if (!symbol) return;
     try {
-        var r = await fetch(API + '/api/watchlist/add', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({symbol: symbol})
-        });
-        if (r.ok) {
+        var result = await apiPost('watchlist/add', {symbol: symbol});
+        if (result.ok) {
             input.value = '';
             update();
         } else {
@@ -1421,29 +1437,20 @@ async function addTicker() {
 async function removeTicker(symbol) {
     if (!confirm('Remove ' + symbol + ' from watchlist?')) return;
     try {
-        var r = await fetch(API + '/api/watchlist/remove', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({symbol: symbol})
-        });
-        if (r.ok) update();
+        var result = await apiPost('watchlist/remove', {symbol: symbol});
+        if (result.ok) update();
     } catch(e) { alert('Network error'); }
 }
 
 async function addMover(symbol, btn) {
-    btn.classList.add('added');
-    btn.textContent = 'Adding...';
+    if (btn) { btn.classList.add('added'); btn.textContent = 'Adding...'; }
     try {
-        var r = await fetch(API + '/api/watchlist/add', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({symbol: symbol})
-        });
-        if (r.ok) {
-            btn.textContent = 'Added';
+        var result = await apiPost('watchlist/add', {symbol: symbol});
+        if (result.ok) {
+            if (btn) btn.textContent = 'Added';
             update();
         }
-    } catch(e) { btn.textContent = 'Error'; }
+    } catch(e) { if (btn) btn.textContent = 'Error'; }
 }
 
 // === ADD PRESET GROUP ===
@@ -1452,13 +1459,12 @@ async function addPreset(group, btn) {
     var origText = btn.textContent;
     btn.textContent = 'Adding...';
     try {
-        var r = await fetch(API + '/api/watchlist/preset/' + group, {method: 'POST'});
-        var d = await r.json();
-        if (r.ok) {
-            btn.textContent = 'Added ' + (d.added ? d.added.length : 0);
+        var result = await apiPost('watchlist/preset/' + group);
+        if (result.ok) {
+            btn.textContent = 'Added ' + (result.data.added ? result.data.added.length : 0);
             setTimeout(function() { update(); }, 500);
         } else {
-            btn.textContent = d.error || 'Error';
+            btn.textContent = result.data.error || 'Error';
         }
     } catch(e) {
         btn.textContent = 'Error';
@@ -1649,24 +1655,19 @@ async function executeSuggestion(symbol, stop, target, conf, strategy, whyEncode
         return;
     }
     try {
-        var r = await fetch(API + '/api/suggestions/execute', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                symbol: symbol,
-                stop_loss: stop,
-                take_profit: target,
-                confidence: conf,
-                strategy: strategy,
-                why: why
-            })
+        var result = await apiPost('suggestions/execute', {
+            symbol: symbol,
+            stop_loss: stop,
+            take_profit: target,
+            confidence: conf,
+            strategy: strategy,
+            why: why
         });
-        var d = await r.json();
-        if (r.ok) {
+        if (result.ok) {
             alert('Trade executed: BUY ' + symbol);
             update();
         } else {
-            alert('Error: ' + (d.error || 'Trade failed'));
+            alert('Error: ' + (result.data.error || 'Trade failed'));
         }
     } catch(e) {
         alert('Network error');
@@ -1747,11 +1748,7 @@ async function saveSetting(el) {
     var path = el.dataset.path;
     var value = el.value;
     try {
-        await fetch(API + '/api/settings/update', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({path: path, value: value})
-        });
+        await apiPost('settings/update', {path: path, value: value});
         el.style.borderColor = 'var(--green)';
         setTimeout(function() { el.style.borderColor = ''; }, 1000);
     } catch(e) {
@@ -1763,22 +1760,14 @@ async function saveToggle(el) {
     var path = el.dataset.path;
     var value = el.checked ? 'true' : 'false';
     try {
-        await fetch(API + '/api/settings/update', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({path: path, value: value})
-        });
+        await apiPost('settings/update', {path: path, value: value});
     } catch(e) { /* silent */ }
 }
 
 async function setProfile(name) {
     try {
-        var r = await fetch(API + '/api/settings/profile', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({profile: name})
-        });
-        if (r.ok) {
+        var result = await apiPost('settings/profile', {profile: name});
+        if (result.ok) {
             document.querySelectorAll('.profile-card').forEach(function(c) {
                 c.classList.toggle('active', c.dataset.profile === name);
             });
@@ -2030,12 +2019,11 @@ function drawEquityChart(data) {
 // === CONTROL FUNCTIONS ===
 async function controlBot(action) {
     try {
-        var r = await fetch(API + '/api/control/' + action, { method: 'POST' });
-        var d = await r.json();
-        if (r.ok) {
+        var result = await apiPost('control/' + action);
+        if (result.ok) {
             update();
         } else {
-            alert(d.error || 'Action failed');
+            alert(result.data.error || 'Action failed');
         }
     } catch (e) { alert('Network error'); }
 }
