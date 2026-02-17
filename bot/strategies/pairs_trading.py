@@ -126,8 +126,10 @@ class PairsTradingStrategy(BaseStrategy):
                 # Short A, Buy B
                 signals.append({
                     "symbol": symbol_a,
-                    "action": "sell",
+                    "action": "short",
                     "price": price_a,
+                    "stop_loss": price_a * 1.03,
+                    "take_profit": price_a * 0.96,
                     "confidence": min(1.0, abs(zscore) / 3.0),
                     "reason": (
                         f"Pairs SHORT {symbol_a}: {pair_key} Z={zscore:.2f}, "
@@ -181,8 +183,10 @@ class PairsTradingStrategy(BaseStrategy):
                 })
                 signals.append({
                     "symbol": symbol_b,
-                    "action": "sell",
+                    "action": "short",
                     "price": price_b,
+                    "stop_loss": price_b * 1.03,
+                    "take_profit": price_b * 0.96,
                     "confidence": min(1.0, abs(zscore) / 3.0),
                     "reason": (
                         f"Pairs SHORT {symbol_b}: {pair_key} Z={zscore:.2f}, "
@@ -202,16 +206,31 @@ class PairsTradingStrategy(BaseStrategy):
         # --- EXIT: Spread converged ---
         elif pair_key in self.active_pairs and abs(zscore) <= self.exit_zscore:
             direction = self.active_pairs[pair_key]["direction"]
+            exit_reason = f"Pairs EXIT: {pair_key} converged Z={zscore:.2f}"
             if direction == "short_a":
-                signals.append({"symbol": symbol_a, "action": "buy",
-                                "price": price_a, "reason": f"Pairs EXIT: {pair_key} converged Z={zscore:.2f}"})
-                signals.append({"symbol": symbol_b, "action": "sell",
-                                "price": price_b, "reason": f"Pairs EXIT: {pair_key} converged Z={zscore:.2f}"})
+                # Close short A (buy to cover), close long B (sell)
+                signals.append({
+                    "symbol": symbol_a, "action": "cover", "price": price_a,
+                    "confidence": 0.9, "source": "exit", "reason": exit_reason,
+                    "pair": pair_key,
+                })
+                signals.append({
+                    "symbol": symbol_b, "action": "sell", "price": price_b,
+                    "confidence": 0.9, "source": "exit", "reason": exit_reason,
+                    "pair": pair_key,
+                })
             else:
-                signals.append({"symbol": symbol_a, "action": "sell",
-                                "price": price_a, "reason": f"Pairs EXIT: {pair_key} converged Z={zscore:.2f}"})
-                signals.append({"symbol": symbol_b, "action": "buy",
-                                "price": price_b, "reason": f"Pairs EXIT: {pair_key} converged Z={zscore:.2f}"})
+                # Close long A (sell), close short B (buy to cover)
+                signals.append({
+                    "symbol": symbol_a, "action": "sell", "price": price_a,
+                    "confidence": 0.9, "source": "exit", "reason": exit_reason,
+                    "pair": pair_key,
+                })
+                signals.append({
+                    "symbol": symbol_b, "action": "cover", "price": price_b,
+                    "confidence": 0.9, "source": "exit", "reason": exit_reason,
+                    "pair": pair_key,
+                })
 
             del self.active_pairs[pair_key]
             log.info(f"PAIRS EXIT: {pair_key} | Z converged to {zscore:.2f}")
@@ -219,16 +238,29 @@ class PairsTradingStrategy(BaseStrategy):
         # --- STOP: Spread widened too much ---
         elif pair_key in self.active_pairs and abs(zscore) >= self.stop_zscore:
             direction = self.active_pairs[pair_key]["direction"]
+            stop_reason = f"Pairs STOP: {pair_key} Z={zscore:.2f}"
             if direction == "short_a":
-                signals.append({"symbol": symbol_a, "action": "buy",
-                                "price": price_a, "reason": f"Pairs STOP: {pair_key} Z={zscore:.2f}"})
-                signals.append({"symbol": symbol_b, "action": "sell",
-                                "price": price_b, "reason": f"Pairs STOP: {pair_key} Z={zscore:.2f}"})
+                signals.append({
+                    "symbol": symbol_a, "action": "cover", "price": price_a,
+                    "confidence": 1.0, "source": "exit", "reason": stop_reason,
+                    "pair": pair_key,
+                })
+                signals.append({
+                    "symbol": symbol_b, "action": "sell", "price": price_b,
+                    "confidence": 1.0, "source": "exit", "reason": stop_reason,
+                    "pair": pair_key,
+                })
             else:
-                signals.append({"symbol": symbol_a, "action": "sell",
-                                "price": price_a, "reason": f"Pairs STOP: {pair_key} Z={zscore:.2f}"})
-                signals.append({"symbol": symbol_b, "action": "buy",
-                                "price": price_b, "reason": f"Pairs STOP: {pair_key} Z={zscore:.2f}"})
+                signals.append({
+                    "symbol": symbol_a, "action": "sell", "price": price_a,
+                    "confidence": 1.0, "source": "exit", "reason": stop_reason,
+                    "pair": pair_key,
+                })
+                signals.append({
+                    "symbol": symbol_b, "action": "cover", "price": price_b,
+                    "confidence": 1.0, "source": "exit", "reason": stop_reason,
+                    "pair": pair_key,
+                })
 
             del self.active_pairs[pair_key]
             log.warning(f"PAIRS STOP: {pair_key} | Z widened to {zscore:.2f}")

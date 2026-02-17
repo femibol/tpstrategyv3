@@ -1348,6 +1348,11 @@ class TradingEngine:
             if total > 0:
                 adjusted_alloc = {k: round(v / total, 3) for k, v in adjusted_alloc.items()}
 
+        # Reset daily counters on strategies (e.g. VWAP daily trade limit)
+        for name, strategy in self.strategies.items():
+            if hasattr(strategy, "reset_daily"):
+                strategy.reset_daily()
+
         # Refresh strategy capital allocations
         for name, strategy in self.strategies.items():
             alloc = adjusted_alloc.get(name, 0.25)
