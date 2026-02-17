@@ -1205,11 +1205,22 @@ class TradingEngine:
             perf["losses"] += 1
 
     def add_to_watchlist(self, symbol):
-        """Add a symbol to the weekly watchlist."""
+        """Add a symbol to the weekly watchlist AND inject into active strategies."""
         symbol = symbol.upper()
         if symbol not in self.watchlist:
             self.watchlist.append(symbol)
             log.info(f"Added {symbol} to watchlist")
+
+        # Also inject into active strategies so it gets scanned immediately
+        self._inject_symbol_into_strategies(symbol)
+
+        # Fetch data immediately so it shows up right away
+        if self.market_data:
+            try:
+                self.market_data.update([symbol])
+            except Exception:
+                pass
+
         return self.watchlist
 
     def remove_from_watchlist(self, symbol):
@@ -1219,6 +1230,62 @@ class TradingEngine:
             self.watchlist.remove(symbol)
             log.info(f"Removed {symbol} from watchlist")
         return self.watchlist
+
+    def _inject_symbol_into_strategies(self, symbol):
+        """Inject a symbol into appropriate strategies for live scanning."""
+        # Add to momentum and mean_reversion (the broadest strategies)
+        for name in ("momentum", "mean_reversion", "smc_forever"):
+            strat = self.strategies.get(name)
+            if strat and symbol not in strat.symbols:
+                strat.symbols.append(symbol)
+                log.info(f"Injected {symbol} into {name} strategy")
+
+    # Preset watchlist groups for quick-add
+    WATCHLIST_PRESETS = {
+        "sp100_top": {
+            "label": "S&P 100 Top",
+            "symbols": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA",
+                        "BRK-B", "UNH", "JNJ", "V", "XOM", "JPM", "PG", "MA",
+                        "HD", "CVX", "MRK", "ABBV", "LLY", "PEP", "KO", "COST",
+                        "AVGO", "WMT"],
+        },
+        "growth_tech": {
+            "label": "Growth Tech",
+            "symbols": ["NVDA", "AMD", "PLTR", "SNOW", "CRWD", "NET", "DDOG",
+                        "SHOP", "SQ", "COIN", "MSTR", "SMCI", "ARM", "IONQ",
+                        "RKLB", "SOFI", "HOOD", "AFRM", "U", "SE"],
+        },
+        "sp500_etfs": {
+            "label": "S&P 500 ETFs",
+            "symbols": ["SPY", "QQQ", "IWM", "DIA", "VOO", "VTI", "XLK",
+                        "XLF", "XLE", "XLV", "XLI", "ARKK", "TQQQ", "SOXL"],
+        },
+        "crypto_major": {
+            "label": "Crypto Major",
+            "symbols": ["BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "ADA-USD",
+                        "DOGE-USD", "AVAX-USD", "DOT-USD", "LINK-USD", "MATIC-USD"],
+        },
+        "meme_popular": {
+            "label": "Meme / Popular",
+            "symbols": ["GME", "AMC", "BBBY", "DOGE-USD", "SHIB-USD",
+                        "RIVN", "LCID", "NIO", "PLTR", "SOFI"],
+        },
+    }
+
+    def add_preset_group(self, group_name):
+        """Add all symbols from a preset group to the watchlist."""
+        preset = self.WATCHLIST_PRESETS.get(group_name)
+        if not preset:
+            return {"error": f"Unknown preset: {group_name}"}
+
+        added = []
+        for symbol in preset["symbols"]:
+            if symbol not in self.watchlist:
+                self.add_to_watchlist(symbol)
+                added.append(symbol)
+
+        log.info(f"Added preset '{group_name}': {len(added)} new symbols")
+        return {"group": group_name, "added": added, "total_watchlist": len(self.watchlist)}
 
     def get_watchlist_data(self):
         """Get watchlist with live prices and weekly performance."""
@@ -1776,6 +1843,95 @@ class TradingEngine:
         # Sort by RVOL descending (highest volume activity first)
         results.sort(key=lambda x: x["rvol"], reverse=True)
         return results
+
+    # =========================================================================
+    # Top Movers Scanner - Find stocks making big moves outside your watchlist
+    # =========================================================================
+
+    def get_top_movers(self):
+        """
+        Fetch top gaining stocks from Yahoo Finance trending/movers.
+        Catches 300%+ runners and hot movers you're not watching yet.
+
+        Returns list of dicts: [{symbol, name, price, change_pct, volume, ...}]
+        """
+        import requests as _req
+
+        movers = []
+
+        # Yahoo Finance screener: day gainers
+        try:
+            url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+            params = {"scrIds": "day_gainers", "count": 25}
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            resp = _req.get(url, params=params, headers=headers, timeout=10)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                results = data.get("finance", {}).get("result", [])
+                if results:
+                    quotes = results[0].get("quotes", [])
+                    for q in quotes[:20]:
+                        symbol = q.get("symbol", "")
+                        if not symbol or "." in symbol:  # Skip foreign tickers
+                            continue
+                        change_pct = q.get("regularMarketChangePercent", 0)
+                        price = q.get("regularMarketPrice", 0)
+                        volume = q.get("regularMarketVolume", 0)
+                        avg_vol = q.get("averageDailyVolume3Month", 1)
+                        rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
+                        name = q.get("shortName", symbol)
+
+                        # Is this already in our watchlist?
+                        on_watchlist = symbol in self.watchlist
+
+                        movers.append({
+                            "symbol": symbol,
+                            "name": name[:30],
+                            "price": round(price, 2),
+                            "change_pct": round(change_pct, 2),
+                            "volume": volume,
+                            "avg_volume": avg_vol,
+                            "rvol": rvol,
+                            "market_cap": q.get("marketCap", 0),
+                            "on_watchlist": on_watchlist,
+                        })
+        except Exception as e:
+            log.debug(f"Top movers fetch error: {e}")
+
+        # Also try trending tickers as fallback
+        if len(movers) < 5:
+            try:
+                url2 = "https://query1.finance.yahoo.com/v1/finance/trending/US"
+                resp2 = _req.get(url2, headers=headers, timeout=10)
+                if resp2.status_code == 200:
+                    data2 = resp2.json()
+                    trending = data2.get("finance", {}).get("result", [])
+                    if trending:
+                        for t in trending[0].get("quotes", [])[:15]:
+                            sym = t.get("symbol", "")
+                            if sym and sym not in [m["symbol"] for m in movers] and "." not in sym:
+                                # Get quote for this trending ticker
+                                if self.market_data:
+                                    quote = self.market_data.get_quote(sym)
+                                    if quote and quote.get("price", 0) > 0:
+                                        movers.append({
+                                            "symbol": sym,
+                                            "name": sym,
+                                            "price": round(quote["price"], 2),
+                                            "change_pct": round(quote.get("change_pct", 0), 2),
+                                            "volume": 0,
+                                            "avg_volume": 0,
+                                            "rvol": 0,
+                                            "market_cap": 0,
+                                            "on_watchlist": sym in self.watchlist,
+                                        })
+            except Exception as e:
+                log.debug(f"Trending fetch error: {e}")
+
+        # Sort by change % descending
+        movers.sort(key=lambda x: x["change_pct"], reverse=True)
+        return movers
 
     # =========================================================================
     # Trade Suggestion Engine - Suggests specific trades with profit reasoning

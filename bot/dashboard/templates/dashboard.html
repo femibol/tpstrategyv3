@@ -414,6 +414,55 @@
             background: rgba(63,185,80,0.06);
         }
 
+        /* === ADD TICKER BAR === */
+        .add-ticker-bar {
+            display: flex; gap: 8px; margin-bottom: 12px;
+        }
+        .add-ticker-input {
+            flex: 1; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 14px; color: var(--text);
+            font-size: 0.9em; font-weight: 600; text-transform: uppercase;
+        }
+        .add-ticker-input::placeholder { color: var(--muted); text-transform: none; font-weight: 400; }
+        .add-ticker-input:focus { border-color: var(--accent); outline: none; }
+        .add-ticker-btn {
+            background: rgba(88,166,255,0.12); color: var(--accent);
+            border: 1px solid rgba(88,166,255,0.3); border-radius: 8px;
+            padding: 10px 16px; font-size: 0.85em; font-weight: 700;
+            cursor: pointer; white-space: nowrap;
+        }
+        .add-ticker-btn:active { background: rgba(88,166,255,0.25); }
+        .remove-btn {
+            background: rgba(248,81,73,0.1); color: var(--red);
+            border: 1px solid rgba(248,81,73,0.2); border-radius: 6px;
+            padding: 4px 8px; font-size: 0.65em; font-weight: 700;
+            cursor: pointer; margin-left: 6px;
+        }
+        .remove-btn:active { background: rgba(248,81,73,0.3); }
+
+        /* === TOP MOVERS === */
+        .mover-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 14px; margin-bottom: 6px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .mover-left { flex: 1; }
+        .mover-sym { font-weight: 700; font-size: 1em; }
+        .mover-name { font-size: 0.7em; color: var(--muted); margin-top: 2px; }
+        .mover-right { text-align: right; display: flex; align-items: center; gap: 8px; }
+        .mover-change { font-weight: 700; font-size: 1.1em; }
+        .mover-add-btn {
+            background: rgba(63,185,80,0.12); color: var(--green);
+            border: 1px solid rgba(63,185,80,0.3); border-radius: 6px;
+            padding: 6px 10px; font-size: 0.75em; font-weight: 700;
+            cursor: pointer;
+        }
+        .mover-add-btn:active { background: rgba(63,185,80,0.3); }
+        .mover-add-btn.added {
+            background: rgba(139,148,158,0.1); color: var(--muted);
+            border-color: var(--border); cursor: default;
+        }
+
         /* === EMPTY STATE === */
         .empty { text-align: center; color: var(--muted); padding: 20px; font-size: 0.85em; }
 
@@ -562,7 +611,37 @@
 <!-- WATCHLIST TAB -->
 <div class="tab-content" id="tab-watchlist">
     <div class="section">
-        <h2>Weekly Watchlist <span class="count" id="watchlistCount">0</span></h2>
+        <h2>Add Ticker</h2>
+        <div class="add-ticker-bar">
+            <input class="add-ticker-input" id="addTickerInput" type="text" placeholder="AAPL, BTC-USD, DOGE-USD..." maxlength="12"
+                   onkeypress="if(event.key==='Enter')addTicker()">
+            <button class="add-ticker-btn" onclick="addTicker()">+ Add</button>
+        </div>
+        <div style="font-size:0.7em;color:var(--muted);margin-bottom:10px">
+            Type any stock or crypto ticker. It starts scanning immediately - no redeploy needed.
+        </div>
+        <div style="font-size:0.75em;color:var(--accent);font-weight:700;margin-bottom:6px">QUICK ADD GROUPS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px" id="presetButtons">
+            <button class="mover-add-btn" onclick="addPreset('sp100_top', this)">S&P 100 Top</button>
+            <button class="mover-add-btn" onclick="addPreset('growth_tech', this)">Growth Tech</button>
+            <button class="mover-add-btn" onclick="addPreset('sp500_etfs', this)">S&P 500 ETFs</button>
+            <button class="mover-add-btn" onclick="addPreset('crypto_major', this)">Crypto Major</button>
+            <button class="mover-add-btn" onclick="addPreset('meme_popular', this)">Meme / Popular</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Top Movers <span class="count" id="moversCount">0</span></h2>
+        <div style="font-size:0.7em;color:var(--muted);margin-bottom:8px">
+            Biggest gainers today. Tap + to add to your watchlist &amp; start scanning.
+        </div>
+        <div id="moversList">
+            <div class="empty">Loading movers...</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Watchlist <span class="count" id="watchlistCount">0</span></h2>
         <div id="watchlistList">
             <div class="empty">Loading watchlist...</div>
         </div>
@@ -1144,7 +1223,10 @@ function renderWatchlist(data) {
         return '<div class="wl-card' + (w.in_position ? ' in-position' : '') + '">' +
             '<div class="wl-header">' +
                 '<span class="wl-symbol">' + tvLink(w.symbol) + posHtml + '</span>' +
-                '<span class="wl-price ' + changeCls + '">' + priceStr + ' <span style="font-size:0.8em">' + changeStr + '</span></span>' +
+                '<span>' +
+                    '<span class="wl-price ' + changeCls + '">' + priceStr + ' <span style="font-size:0.8em">' + changeStr + '</span></span>' +
+                    (!w.in_position ? '<button class="remove-btn" onclick="removeTicker(\'' + w.symbol + '\')">X</button>' : '') +
+                '</span>' +
             '</div>' +
             '<div class="wl-grid">' +
                 (w.in_position ?
@@ -1254,6 +1336,104 @@ function renderTips(tips) {
         else if (lower.includes('reduce') || lower.includes('avoid') || lower.includes('caution') || lower.includes('cut')) cls += ' warning';
         else if (lower.includes('best') || lower.includes('shine') || lower.includes('ready') || lower.includes('scale out')) cls += ' success';
         return '<div class="' + cls + '">' + t + '</div>';
+    }).join('');
+}
+
+// === ADD / REMOVE TICKER (Dynamic) ===
+async function addTicker() {
+    var input = document.getElementById('addTickerInput');
+    var symbol = input.value.trim().toUpperCase();
+    if (!symbol) return;
+    try {
+        var r = await fetch(API + '/api/watchlist/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({symbol: symbol})
+        });
+        if (r.ok) {
+            input.value = '';
+            update();
+        } else {
+            alert('Error adding ' + symbol);
+        }
+    } catch(e) { alert('Network error'); }
+}
+
+async function removeTicker(symbol) {
+    if (!confirm('Remove ' + symbol + ' from watchlist?')) return;
+    try {
+        var r = await fetch(API + '/api/watchlist/remove', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({symbol: symbol})
+        });
+        if (r.ok) update();
+    } catch(e) { alert('Network error'); }
+}
+
+async function addMover(symbol, btn) {
+    btn.classList.add('added');
+    btn.textContent = 'Adding...';
+    try {
+        var r = await fetch(API + '/api/watchlist/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({symbol: symbol})
+        });
+        if (r.ok) {
+            btn.textContent = 'Added';
+            update();
+        }
+    } catch(e) { btn.textContent = 'Error'; }
+}
+
+// === ADD PRESET GROUP ===
+async function addPreset(group, btn) {
+    btn.classList.add('added');
+    var origText = btn.textContent;
+    btn.textContent = 'Adding...';
+    try {
+        var r = await fetch(API + '/api/watchlist/preset/' + group, {method: 'POST'});
+        var d = await r.json();
+        if (r.ok) {
+            btn.textContent = 'Added ' + (d.added ? d.added.length : 0);
+            setTimeout(function() { update(); }, 500);
+        } else {
+            btn.textContent = d.error || 'Error';
+        }
+    } catch(e) {
+        btn.textContent = 'Error';
+    }
+    setTimeout(function() { btn.textContent = origText; btn.classList.remove('added'); }, 3000);
+}
+
+// === TOP MOVERS RENDERING ===
+function renderMovers(data) {
+    var el = document.getElementById('moversList');
+    document.getElementById('moversCount').textContent = data ? data.length : 0;
+    if (!data || data.length === 0) {
+        el.innerHTML = '<div class="empty">No movers data available (market may be closed)</div>';
+        return;
+    }
+    el.innerHTML = data.slice(0, 15).map(function(m) {
+        var changeCls = m.change_pct > 0 ? 'positive' : 'negative';
+        var volStr = m.volume > 1000000 ? (m.volume/1000000).toFixed(1) + 'M' : m.volume > 1000 ? (m.volume/1000).toFixed(0) + 'K' : m.volume || '?';
+        return '<div class="mover-card">' +
+            '<div class="mover-left">' +
+                '<div class="mover-sym">' + tvLink(m.symbol) + '</div>' +
+                '<div class="mover-name">' + (m.name || '') + ' &middot; Vol: ' + volStr + (m.rvol > 1.5 ? ' &middot; RVOL: ' + m.rvol + 'x' : '') + '</div>' +
+            '</div>' +
+            '<div class="mover-right">' +
+                '<div>' +
+                    '<div class="mover-change ' + changeCls + '">' + (m.change_pct > 0 ? '+' : '') + m.change_pct + '%</div>' +
+                    '<div style="font-size:0.75em;color:var(--muted)">$' + fmt(m.price) + '</div>' +
+                '</div>' +
+                (m.on_watchlist ?
+                    '<button class="mover-add-btn added">Watching</button>' :
+                    '<button class="mover-add-btn" onclick="addMover(\'' + m.symbol + '\', this)">+ Add</button>'
+                ) +
+            '</div>' +
+        '</div>';
     }).join('');
 }
 
@@ -1511,13 +1691,14 @@ async function update() {
         api('notifications'), api('daily'), api('equity'),
         api('scanner'), api('analysis'), api('watchlist'),
         api('performance'), api('tips'), api('rvol'),
-        api('suggestions')
+        api('suggestions'), api('movers')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
         notifs = results[3], daily = results[4], equity = results[5],
         scanner = results[6], analysisData = results[7],
         watchlistData = results[8], perfData = results[9], tipsData = results[10],
-        rvolData = results[11], suggestionsData = results[12];
+        rvolData = results[11], suggestionsData = results[12],
+        moversData = results[13];
 
     // Regime badge (from status)
     if (status && status.regime) {
@@ -1672,6 +1853,9 @@ async function update() {
 
     // Trade Suggestions
     renderSuggestions(suggestionsData);
+
+    // Top Movers
+    renderMovers(moversData);
 }
 
 // === EQUITY CHART (Canvas) ===

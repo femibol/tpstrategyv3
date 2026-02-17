@@ -406,6 +406,35 @@ class Dashboard:
             tips = self._generate_tips()
             return jsonify(tips)
 
+        # --- Top Movers API ---
+
+        @self.app.route("/api/movers")
+        def top_movers():
+            """Get top gaining stocks (catches 300% runners)."""
+            return jsonify(self.engine.get_top_movers())
+
+        # --- Preset Watchlist Groups ---
+
+        @self.app.route("/api/watchlist/presets")
+        def watchlist_presets():
+            """Get available preset groups."""
+            presets = {}
+            for name, p in self.engine.WATCHLIST_PRESETS.items():
+                presets[name] = {
+                    "label": p["label"],
+                    "count": len(p["symbols"]),
+                    "symbols": p["symbols"],
+                }
+            return jsonify(presets)
+
+        @self.app.route("/api/watchlist/preset/<group>", methods=["POST"])
+        def add_preset(group):
+            """Add a preset group of symbols to watchlist."""
+            result = self.engine.add_preset_group(group)
+            if "error" in result:
+                return jsonify(result), 400
+            return jsonify(result)
+
         # --- RVOL Scanner API (Money Machine style) ---
 
         @self.app.route("/api/rvol")
