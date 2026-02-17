@@ -44,7 +44,7 @@
 
         /* === STATS GRID === */
         .stats {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;
         }
         .stat-card {
             background: var(--card); border: 1px solid var(--border);
@@ -290,6 +290,18 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* === REGIME BADGE === */
+        .regime-badge {
+            padding: 3px 10px; border-radius: 10px; font-size: 0.7em;
+            font-weight: 700; letter-spacing: 0.5px;
+        }
+        .regime-bull { background: rgba(63,185,80,0.15); color: var(--green); }
+        .regime-bear { background: rgba(248,81,73,0.15); color: var(--red); }
+        .regime-sideways { background: rgba(139,148,158,0.15); color: var(--muted); }
+        .regime-highvol { background: rgba(240,136,62,0.15); color: var(--orange); }
+        .regime-lowvol { background: rgba(88,166,255,0.15); color: var(--accent); }
+        .regime-crisis { background: rgba(248,81,73,0.3); color: var(--red); border: 1px solid var(--red); }
+
         /* === PULL TO REFRESH INDICATOR === */
         .pull-indicator {
             text-align: center; color: var(--muted); font-size: 0.75em;
@@ -300,7 +312,7 @@
         /* === DESKTOP OVERRIDES === */
         @media (min-width: 768px) {
             body { padding: 20px; max-width: 1200px; margin: 0 auto; padding-bottom: 100px; }
-            .stats { grid-template-columns: repeat(4, 1fr); }
+            .stats { grid-template-columns: repeat(6, 1fr); }
             .equity-chart { height: 220px; }
             .chart-canvas { height: 180px; }
             .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -344,6 +356,16 @@
         <div class="stat-label">Drawdown</div>
         <div class="stat-value" id="drawdown">0%</div>
         <div class="stat-sub" id="peakBalance">Peak: $0</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Market Regime</div>
+        <div class="stat-value"><span class="regime-badge" id="regimeBadge">--</span></div>
+        <div class="stat-sub" id="regimeRisk">Risk: --</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="winRate">--</div>
+        <div class="stat-sub" id="profitFactor">PF: --</div>
     </div>
 </div>
 
@@ -860,6 +882,34 @@ async function update() {
         notifs = results[3], daily = results[4], equity = results[5],
         scanner = results[6], analysisData = results[7],
         watchlistData = results[8], perfData = results[9];
+
+    // Regime badge (from status)
+    if (status && status.regime) {
+        var r = status.regime;
+        var regimeBadge = document.getElementById('regimeBadge');
+        var regimeMap = {
+            'bull_trend': ['BULL', 'regime-bull'],
+            'bear_trend': ['BEAR', 'regime-bear'],
+            'sideways': ['SIDEWAYS', 'regime-sideways'],
+            'high_vol': ['HIGH VOL', 'regime-highvol'],
+            'low_vol': ['LOW VOL', 'regime-lowvol'],
+            'crisis': ['CRISIS', 'regime-crisis']
+        };
+        var rm = regimeMap[r.current_regime] || ['--', ''];
+        regimeBadge.textContent = rm[0];
+        regimeBadge.className = 'regime-badge ' + rm[1];
+        var riskMult = r.risk_multiplier || 1.0;
+        document.getElementById('regimeRisk').textContent = 'Risk: ' + (riskMult * 100).toFixed(0) + '%';
+    }
+
+    // Quick win rate / profit factor in header
+    if (perfData && perfData.total_trades > 0) {
+        var wrEl = document.getElementById('winRate');
+        wrEl.textContent = perfData.win_rate + '%';
+        wrEl.className = 'stat-value ' + (perfData.win_rate >= 50 ? 'positive' : 'negative');
+        var pfStr = perfData.profit_factor === Infinity ? '--' : perfData.profit_factor;
+        document.getElementById('profitFactor').textContent = 'PF: ' + pfStr + ' | ' + perfData.total_trades + ' trades';
+    }
 
     // Status
     if (status) {

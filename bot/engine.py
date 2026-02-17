@@ -29,6 +29,9 @@ from bot.strategies.momentum import MomentumStrategy
 from bot.strategies.vwap import VWAPScalpStrategy
 from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
+from bot.learning.trade_analyzer import TradeAnalyzer
+from bot.signals.regime_detector import RegimeDetector
+from bot.risk.hedging import HedgingManager
 from bot.utils.logger import setup_logger, get_logger
 from bot.utils.notifications import Notifier
 
@@ -67,6 +70,9 @@ class TradingEngine:
         self.tp_broker = None
         self.politician_tracker = None
         self.news_feed = None
+        self.trade_analyzer = None
+        self.regime_detector = None
+        self.hedging_manager = None
         self.scheduler = None
 
         # State
@@ -168,6 +174,18 @@ class TradingEngine:
                 callback=self._handle_news_signal
             )
             log.info("News feed enabled")
+
+        # Trade learning system
+        self.trade_analyzer = TradeAnalyzer(self.config)
+        log.info("Trade learning system enabled")
+
+        # Market regime detector
+        self.regime_detector = RegimeDetector(self.indicators)
+        log.info("Market regime detector enabled")
+
+        # Hedging manager
+        self.hedging_manager = HedgingManager(self.config)
+        log.info(f"Hedging system enabled (auto_hedge={self.hedging_manager.auto_hedge})")
 
         # Scheduler for periodic tasks
         self.scheduler = BackgroundScheduler(timezone=self.tz)
@@ -367,22 +385,46 @@ class TradingEngine:
                 # 1. Update market data
                 self._update_data()
 
-                # 2. Monitor existing positions (stops, targets, trailing)
+                # 2. Detect market regime (every cycle, uses cached data)
+                regime_result = self.regime_detector.detect(self.market_data)
+
+                # 3. Monitor existing positions (stops, targets, trailing)
                 self._monitor_positions()
 
-                # 3. Run strategies and generate signals
+                # 4. Run strategies and generate signals
                 signals = self._run_strategies()
 
-                # 4. Filter signals through risk manager
+                # 5. Check hedging needs
+                if self.hedging_manager and self.hedging_manager.auto_hedge:
+                    hedge_signals = self.hedging_manager.evaluate(
+                        self.positions, self.current_balance, regime_result
+                    )
+                    signals.extend(hedge_signals)
+
+                # 6. Filter signals through risk manager
                 approved = self.risk_manager.filter_signals(
                     signals, self.positions, self.current_balance
                 )
 
-                # 5. Execute approved signals
+                # 7. Apply regime-based filtering
+                if regime_result and regime_result.get("regime") == "crisis":
+                    # In crisis, only allow hedge signals and exits
+                    approved = [s for s in approved if
+                                s.get("source") == "hedging" or
+                                s.get("action") in ("sell", "cover", "close")]
+
+                # 8. Execute approved signals
                 for sig in approved:
                     self._execute_signal(sig)
+                    # Record regime context for learning
+                    if self.trade_analyzer and regime_result:
+                        self.trade_analyzer.record_regime_trade(
+                            sig.get("strategy", "unknown"),
+                            regime_result.get("regime", "unknown"),
+                            0  # P&L recorded at close
+                        )
 
-                # 6. Update account state
+                # 9. Update account state
                 self._update_account()
 
                 # Sleep based on fastest strategy timeframe
@@ -1244,31 +1286,65 @@ class TradingEngine:
         return stats
 
     def _pre_market_scan(self):
-        """Pre-market preparation."""
+        """Pre-market preparation with learning-adjusted allocations."""
         log.info("=== PRE-MARKET SCAN ===")
         self.start_of_day_balance = self.current_balance
         self.daily_pnl = 0.0
         self.daily_trades = []
         self.paused = False
 
+        # Run trade analyzer to get adjusted strategy weights
+        base_alloc = self.config.strategy_allocation
+        adjusted_alloc = base_alloc
+
+        if self.trade_analyzer and len(self.trade_history) >= 10:
+            analysis = self.trade_analyzer.analyze(
+                self.trade_history,
+                current_regime=self.regime_detector.current_regime if self.regime_detector else None
+            )
+            adjusted_alloc = self.trade_analyzer.get_strategy_weights(base_alloc)
+
+            # Log adjustments
+            for strat in adjusted_alloc:
+                old = base_alloc.get(strat, 0)
+                new = adjusted_alloc.get(strat, 0)
+                if abs(old - new) > 0.01:
+                    log.info(f"LEARNING: {strat} allocation {old:.0%} -> {new:.0%}")
+
+        # Apply regime multipliers to allocation
+        if self.regime_detector:
+            regime = self.regime_detector.current_regime
+            multipliers = self.regime_detector.get_status().get("strategy_multipliers", {})
+            for strat in adjusted_alloc:
+                mult = multipliers.get(strat, 1.0)
+                adjusted_alloc[strat] = round(adjusted_alloc[strat] * mult, 3)
+            # Re-normalize
+            total = sum(adjusted_alloc.values())
+            if total > 0:
+                adjusted_alloc = {k: round(v / total, 3) for k, v in adjusted_alloc.items()}
+
         # Refresh strategy capital allocations
         for name, strategy in self.strategies.items():
-            alloc = self.config.strategy_allocation.get(name, 0.25)
+            alloc = adjusted_alloc.get(name, 0.25)
             strategy.update_capital(self.current_balance * alloc)
 
+        regime_str = self.regime_detector.current_regime.upper() if self.regime_detector else "N/A"
         self.notifier.system_alert(
-            f"Pre-market scan complete. Balance: ${self.current_balance:,.2f}",
+            f"Pre-market scan complete. Balance: ${self.current_balance:,.2f} | "
+            f"Regime: {regime_str}",
             level="info"
         )
 
     def _end_of_day(self):
-        """End of day routine."""
+        """End of day routine with learning analysis."""
         log.info("=== END OF DAY ===")
 
         # Calculate daily stats
         wins = [t for t in self.daily_trades if t.get("pnl", 0) > 0]
         total_trades = len(self.daily_trades)
         win_rate = (len(wins) / total_trades * 100) if total_trades > 0 else 0
+
+        regime = self.regime_detector.current_regime if self.regime_detector else "unknown"
 
         stats = {
             "date": datetime.now(self.tz).strftime("%Y-%m-%d"),
@@ -1279,11 +1355,22 @@ class TradingEngine:
             "win_rate": win_rate,
             "balance": self.current_balance,
             "open_positions": len(self.positions),
+            "regime": regime,
         }
 
         self.daily_stats.append(stats)
         self.notifier.daily_summary(stats)
-        log.info(f"Day P&L: ${self.daily_pnl:+.2f} | Trades: {total_trades}")
+        log.info(f"Day P&L: ${self.daily_pnl:+.2f} | Trades: {total_trades} | Regime: {regime}")
+
+        # Run end-of-day learning analysis
+        if self.trade_analyzer and len(self.trade_history) >= 5:
+            analysis = self.trade_analyzer.analyze(self.trade_history, current_regime=regime)
+            avoid = analysis.get("symbols_to_avoid", [])
+            if avoid:
+                log.info(f"LEARNING: Symbols to avoid: {[s['symbol'] for s in avoid]}")
+            weight_adj = analysis.get("strategy_weight_adjustments", {})
+            if weight_adj:
+                log.info(f"LEARNING: Strategy weight adjustments: {weight_adj}")
 
     def _health_check(self):
         """Periodic health check."""
@@ -1357,6 +1444,10 @@ class TradingEngine:
             "daily_trades": len(self.daily_trades),
             "broker_connected": self.broker.is_connected() if self.broker else False,
             "traderspost_connected": self.tp_broker._connected if self.tp_broker else False,
+            "traderspost_dual_mode": self.tp_broker.dual_mode if self.tp_broker else False,
             "politician_tracker": self.politician_tracker.get_status() if self.politician_tracker else None,
+            "regime": self.regime_detector.get_status() if self.regime_detector else None,
+            "hedging": self.hedging_manager.get_status() if self.hedging_manager else None,
+            "learning": self.trade_analyzer.get_status() if self.trade_analyzer else None,
         }
         return status

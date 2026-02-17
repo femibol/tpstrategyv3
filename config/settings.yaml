@@ -78,6 +78,14 @@ scaling:
       risk_per_trade: 0.02
       max_position_pct: 0.06
 
+# --- Hedging ---
+# Automatic portfolio protection via inverse ETFs during bearish regimes
+hedging:
+  enabled: true
+  auto_hedge: true                  # Automatically hedge when regime is bearish/crisis
+  max_hedge_pct: 0.30               # Max 30% of portfolio in hedge positions
+  instruments: ["SH", "SDS", "PSQ", "SQQQ"]  # Available hedge ETFs
+
 # --- Weekly Watchlist ---
 # Symbols actively monitored each week. Auto-includes politician picks.
 watchlist:

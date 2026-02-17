@@ -120,6 +120,38 @@ class Dashboard:
         def analysis():
             return jsonify(self.engine.get_analysis_log())
 
+        # --- Regime, Learning, Hedging APIs ---
+
+        @self.app.route("/api/regime")
+        def regime():
+            if self.engine.regime_detector:
+                return jsonify(self.engine.regime_detector.get_status())
+            return jsonify({"current_regime": "unknown"})
+
+        @self.app.route("/api/learning")
+        def learning():
+            if self.engine.trade_analyzer:
+                return jsonify(self.engine.trade_analyzer.get_status())
+            return jsonify({})
+
+        @self.app.route("/api/learning/analyze", methods=["POST"])
+        @self._require_auth
+        def run_analysis():
+            """Manually trigger learning analysis."""
+            if self.engine.trade_analyzer:
+                result = self.engine.trade_analyzer.analyze(
+                    self.engine.trade_history,
+                    current_regime=self.engine.regime_detector.current_regime if self.engine.regime_detector else None
+                )
+                return jsonify(result)
+            return jsonify({"error": "Trade analyzer not enabled"}), 404
+
+        @self.app.route("/api/hedging")
+        def hedging():
+            if self.engine.hedging_manager:
+                return jsonify(self.engine.hedging_manager.get_status())
+            return jsonify({"enabled": False})
+
         # --- Control APIs (for mobile) ---
 
         @self.app.route("/api/control/pause", methods=["POST"])
