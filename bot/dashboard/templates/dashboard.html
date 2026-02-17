@@ -413,6 +413,44 @@
             color: var(--green); border-color: rgba(63,185,80,0.4);
             background: rgba(63,185,80,0.06);
         }
+        .ctrl-btn.runners-btn {
+            color: #ff6b35; border-color: rgba(255,107,53,0.4);
+            background: rgba(255,107,53,0.06);
+        }
+
+        /* === RUNNER CARDS === */
+        .runner-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px; margin-bottom: 8px;
+        }
+        .runner-card.squeeze { border-left: 3px solid #ff6b35; }
+        .runner-card.post-split { border-left: 3px solid #e040fb; }
+        .runner-card .runner-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+        }
+        .runner-card .runner-sym {
+            font-weight: 800; font-size: 1.05em; color: var(--text);
+        }
+        .runner-card .runner-type {
+            font-size: 0.65em; font-weight: 700; padding: 2px 8px;
+            border-radius: 4px; text-transform: uppercase;
+        }
+        .runner-type.low-float { background: rgba(255,107,53,0.15); color: #ff6b35; }
+        .runner-type.post-split { background: rgba(224,64,251,0.15); color: #e040fb; }
+        .runner-type.momentum { background: rgba(63,185,80,0.15); color: var(--green); }
+        .runner-card .runner-stats {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;
+            font-size: 0.75em; color: var(--muted);
+        }
+        .runner-card .runner-stats .val { color: var(--text); font-weight: 600; }
+        .runner-card .runner-name { font-size: 0.7em; color: var(--muted); margin-top: 4px; }
+        .runner-add-btn {
+            background: rgba(255,107,53,0.12); color: #ff6b35;
+            border: 1px solid rgba(255,107,53,0.3); border-radius: 6px;
+            padding: 4px 10px; font-size: 0.7em; font-weight: 700;
+            cursor: pointer; margin-top: 6px;
+        }
+        .runner-add-btn:active { background: rgba(255,107,53,0.25); }
 
         /* === ADD TICKER BAR === */
         .add-ticker-bar {
@@ -604,6 +642,20 @@
         </div>
         <div id="rvolList">
             <div class="empty">Scanning volume...</div>
+        </div>
+    </div>
+</div>
+
+<!-- RUNNERS TAB (Low Float Post-Split Squeeze Candidates) -->
+<div class="tab-content" id="tab-runners">
+    <div class="section">
+        <h2>Low Float Runners <span class="count" id="runnersCount">0</span></h2>
+        <div style="font-size:0.75em;color:var(--muted);margin-bottom:12px">
+            Low float + post-split + extreme volume = squeeze candidates.
+            These stocks can do 100-500% in a day.
+        </div>
+        <div id="runnersList">
+            <div class="empty">Scanning for runners...</div>
         </div>
     </div>
 </div>
@@ -912,13 +964,16 @@
     </div>
 </div>
 
-<!-- BOTTOM CONTROL BAR (5 buttons) -->
+<!-- BOTTOM CONTROL BAR (6 buttons) -->
 <div class="controls">
     <button class="ctrl-btn suggest" onclick="switchTab('suggestions')">
         <span class="ctrl-icon">&#9733;</span>Ideas
     </button>
     <button class="ctrl-btn rvol-btn" onclick="switchTab('rvol')">
         <span class="ctrl-icon">&#9650;</span>RVOL
+    </button>
+    <button class="ctrl-btn runners-btn" onclick="switchTab('runners')">
+        <span class="ctrl-icon">&#128293;</span>Runners
     </button>
     <button class="ctrl-btn pause" id="btnPause" onclick="controlBot('pause')">
         <span class="ctrl-icon">| |</span>Pause
@@ -1476,6 +1531,50 @@ function renderRvol(data) {
     }).join('');
 }
 
+// === LOW FLOAT RUNNERS RENDERING ===
+function renderRunners(data) {
+    var el = document.getElementById('runnersList');
+    document.getElementById('runnersCount').textContent = data ? data.length : 0;
+
+    if (!data || data.length === 0) {
+        el.innerHTML = '<div class="empty">No low-float runners detected right now. These appear when stocks with tiny floats make big moves.</div>';
+        return;
+    }
+
+    el.innerHTML = data.map(function(r) {
+        var typeCls = r.runner_type.includes('SPLIT') ? 'post-split' : r.is_low_float ? 'low-float' : 'momentum';
+        var cardCls = r.is_post_split ? 'post-split' : r.is_low_float ? 'squeeze' : '';
+
+        var volStr = r.volume > 1000000 ? (r.volume / 1000000).toFixed(1) + 'M' :
+                     r.volume > 1000 ? (r.volume / 1000).toFixed(0) + 'K' : r.volume;
+
+        var mcapStr = r.market_cap > 1000000000 ? '$' + (r.market_cap / 1000000000).toFixed(1) + 'B' :
+                      r.market_cap > 1000000 ? '$' + (r.market_cap / 1000000).toFixed(0) + 'M' :
+                      r.market_cap > 0 ? '$' + (r.market_cap / 1000).toFixed(0) + 'K' : 'N/A';
+
+        return '<div class="runner-card ' + cardCls + '">' +
+            '<div class="runner-header">' +
+                '<span class="runner-sym">' + tvLink(r.symbol) + ' <span style="color:var(--green);font-size:0.85em">+' + r.change_pct.toFixed(1) + '%</span></span>' +
+                '<span class="runner-type ' + typeCls + '">' + r.runner_type + '</span>' +
+            '</div>' +
+            '<div class="runner-stats">' +
+                '<div>Price<br><span class="val">$' + fmt(r.price) + '</span></div>' +
+                '<div>RVOL<br><span class="val">' + r.rvol + 'x</span></div>' +
+                '<div>Volume<br><span class="val">' + volStr + '</span></div>' +
+                '<div>Float<br><span class="val">' + (r.float_display || 'N/A') + '</span></div>' +
+                '<div>Mkt Cap<br><span class="val">' + mcapStr + '</span></div>' +
+                '<div>Avg Vol<br><span class="val">' + (r.avg_volume > 1000000 ? (r.avg_volume/1000000).toFixed(1) + 'M' : r.avg_volume > 1000 ? (r.avg_volume/1000).toFixed(0) + 'K' : r.avg_volume) + '</span></div>' +
+            '</div>' +
+            '<div class="runner-name">' + (r.name || r.symbol) + '</div>' +
+            (!r.on_watchlist ?
+                '<button class="runner-add-btn" onclick="addMover(\'' + r.symbol + '\')">+ Add to Watchlist & Trade</button>'
+            :
+                '<div style="font-size:0.7em;color:var(--muted);margin-top:4px">Already on watchlist</div>'
+            ) +
+        '</div>';
+    }).join('');
+}
+
 // === TRADE SUGGESTIONS RENDERING ===
 function renderSuggestions(data) {
     var el = document.getElementById('suggestionsList');
@@ -1691,14 +1790,14 @@ async function update() {
         api('notifications'), api('daily'), api('equity'),
         api('scanner'), api('analysis'), api('watchlist'),
         api('performance'), api('tips'), api('rvol'),
-        api('suggestions'), api('movers')
+        api('suggestions'), api('movers'), api('runners')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
         notifs = results[3], daily = results[4], equity = results[5],
         scanner = results[6], analysisData = results[7],
         watchlistData = results[8], perfData = results[9], tipsData = results[10],
         rvolData = results[11], suggestionsData = results[12],
-        moversData = results[13];
+        moversData = results[13], runnersData = results[14];
 
     // Regime badge (from status)
     if (status && status.regime) {
@@ -1856,6 +1955,9 @@ async function update() {
 
     // Top Movers
     renderMovers(moversData);
+
+    // Low Float Runners
+    renderRunners(runnersData);
 }
 
 // === EQUITY CHART (Canvas) ===

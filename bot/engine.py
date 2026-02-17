@@ -29,6 +29,7 @@ from bot.strategies.momentum import MomentumStrategy
 from bot.strategies.vwap import VWAPScalpStrategy
 from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
+from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
@@ -227,6 +228,7 @@ class TradingEngine:
             "vwap_scalp": VWAPScalpStrategy,
             "pairs_trading": PairsTradingStrategy,
             "smc_forever": SMCForeverStrategy,
+            "rvol_momentum": RvolMomentumStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -383,6 +385,9 @@ class TradingEngine:
                     break
 
                 # --- Core Loop ---
+                # 0. Dynamic discovery: feed top movers into RVOL strategy
+                self._discover_dynamic_symbols()
+
                 # 1. Update market data
                 self._update_data()
 
@@ -424,6 +429,25 @@ class TradingEngine:
                     approved = [s for s in approved if
                                 s.get("source") == "hedging" or
                                 s.get("action") in ("sell", "cover", "close")]
+
+                # 7c. Scanner summary notification
+                symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
+                regime_str = regime_result.get("regime") if regime_result else None
+                spy_change = None
+                if self.market_data:
+                    spy_data = self.market_data.get_data("SPY")
+                    if spy_data is not None and len(spy_data) >= 2:
+                        spy_change = (spy_data["close"].iloc[-1] - spy_data["close"].iloc[-2]) / spy_data["close"].iloc[-2] * 100
+                rejected_count = len(signals) - len(approved) if signals else 0
+                if signals or approved:
+                    self.notifier.scanner_summary(
+                        symbols_scanned=symbols_scanned,
+                        signals_found=signals,
+                        regime=regime_str,
+                        spy_change=spy_change,
+                        approved=approved,
+                        rejected=rejected_count if rejected_count > 0 else None,
+                    )
 
                 # 8. Execute approved signals
                 for sig in approved:
@@ -567,12 +591,20 @@ class TradingEngine:
                         f"BREAK-EVEN: {symbol} stop moved to ${new_stop:.2f} "
                         f"(was ${old_stop:.2f}, P&L: {pnl_pct:.1%})"
                     )
+                    self.notifier.position_update(
+                        symbol, "breakeven",
+                        f"Stop moved to ${new_stop:.2f} (was ${old_stop:.2f}) | P&L: {pnl_pct:.1%}"
+                    )
                 elif direction == "short" and (old_stop == 0 or new_stop < old_stop):
                     pos["stop_loss"] = new_stop
                     pos["breakeven_hit"] = True
                     log.info(
                         f"BREAK-EVEN: {symbol} stop moved to ${new_stop:.2f} "
                         f"(was ${old_stop:.2f}, P&L: {pnl_pct:.1%})"
+                    )
+                    self.notifier.position_update(
+                        symbol, "breakeven",
+                        f"Stop moved to ${new_stop:.2f} (was ${old_stop:.2f}) | P&L: {pnl_pct:.1%}"
                     )
 
             # --- Partial Profit Taking ---
@@ -603,8 +635,13 @@ class TradingEngine:
 
                             # Tighten trailing stop if specified
                             if target.get("tighten_trail"):
+                                old_trail = pos.get("trailing_stop_pct", 0.02)
                                 pos["trailing_stop_pct"] = target["tighten_trail"]
                                 log.info(f"TRAIL TIGHTENED: {symbol} trailing stop now {target['tighten_trail']:.1%}")
+                                self.notifier.position_update(
+                                    symbol, "trailing_tightened",
+                                    f"Trailing stop tightened from {old_trail:.1%} to {target['tighten_trail']:.1%}"
+                                )
 
                         break  # Only hit one target per cycle
 
@@ -833,14 +870,24 @@ class TradingEngine:
             "bar_seconds": signal.get("bar_seconds", 300),
         }
 
-        # Notify
-        self.notifier.trade_alert(
-            action=action,
+        # Rich notification with full trade details
+        self.notifier.trade_entry(
             symbol=symbol,
+            action=action,
             qty=qty,
             price=current_price,
+            stop_loss=stop_loss_price,
+            take_profit=take_profit_price,
             strategy=strategy,
-            reason=f"[{executed_via}] {signal.get('reason', '')}"
+            reason=signal.get("reason", ""),
+            confidence=signal.get("confidence", 0),
+            rr_ratio=signal.get("rr_ratio", 0) or (
+                round(abs(take_profit_price - current_price) / abs(current_price - stop_loss_price), 1)
+                if abs(current_price - stop_loss_price) > 0 else 0
+            ),
+            executed_via=executed_via,
+            rvol=signal.get("rvol"),
+            targets=signal.get("targets"),
         )
 
         # Also forward to TradersPost if IBKR was the primary executor
@@ -910,17 +957,24 @@ class TradingEngine:
             f"P&L: ${pnl:+.2f} | {reason_msg}"
         )
 
-        self.notifier.trade_alert(
-            action=f"CLOSE ({reason_type})",
-            symbol=symbol,
-            qty=pos["quantity"],
-            price=current_price,
-            strategy=pos["strategy"],
-            reason=f"[{executed_via}] {reason_msg} | P&L: ${pnl:+.2f}"
-        )
-
-        # Record trade
         pnl_pct = pnl / (pos["entry_price"] * pos["quantity"]) if pos["entry_price"] * pos["quantity"] > 0 else 0
+        hold_time = (datetime.now(self.tz) - pos["entry_time"]) if "entry_time" in pos else None
+
+        # Rich exit notification
+        self.notifier.trade_exit(
+            symbol=symbol,
+            direction=pos["direction"],
+            qty=pos["quantity"],
+            entry_price=pos["entry_price"],
+            exit_price=current_price,
+            pnl=pnl,
+            pnl_pct=pnl_pct * 100,
+            reason_type=reason_type,
+            reason_msg=reason_msg,
+            strategy=pos["strategy"],
+            executed_via=executed_via,
+            hold_time=hold_time,
+        )
         self.trade_history.append({
             "symbol": symbol,
             "direction": pos["direction"],
@@ -997,11 +1051,15 @@ class TradingEngine:
             f"Remaining: {pos['quantity']} shares"
         )
 
-        self.notifier.trade_alert(
-            action=f"PARTIAL CLOSE (target {target_idx + 1})",
-            symbol=symbol, qty=qty_to_close, price=current_price,
+        self.notifier.trade_partial(
+            symbol=symbol,
+            qty_closed=qty_to_close,
+            qty_remaining=pos["quantity"],
+            price=current_price,
+            pnl=pnl,
+            target_idx=target_idx,
+            target_pct=target_pct,
             strategy=pos["strategy"],
-            reason=f"[{executed_via}] Took profit at +{target_pct:.0%} | P&L: ${pnl:+.2f} | {pos['quantity']} remaining"
         )
 
         # Record partial trade in history
@@ -1465,6 +1523,16 @@ class TradingEngine:
         """End of day routine with overnight hold decisions and learning."""
         log.info("=== END OF DAY ===")
 
+        # --- Check for stock split candidates (NEVER hold these overnight) ---
+        split_candidates = self._check_split_candidates()
+        if split_candidates:
+            log.warning(f"SPLIT CANDIDATES detected - blocking overnight: {split_candidates}")
+            self.notifier.risk_alert(
+                f"Stock split candidates detected - closing at EOD: "
+                f"{', '.join(split_candidates)}. "
+                f"Splits cause extreme overnight gaps."
+            )
+
         # --- Overnight Hold Logic ---
         overnight_cfg = self.config.schedule_config.get("overnight", {})
         overnight_enabled = overnight_cfg.get("enabled", False)
@@ -1477,6 +1545,18 @@ class TradingEngine:
             for symbol, pos in list(self.positions.items()):
                 pnl_pct = pos.get("unrealized_pnl_pct", 0)
                 in_profit = pnl_pct > 0
+
+                # NEVER hold stock split candidates overnight
+                if symbol in split_candidates:
+                    log.warning(f"SPLIT BLOCK: Closing {symbol} - split candidate, no overnight hold")
+                    positions_to_close.append(symbol)
+                    continue
+
+                # NEVER hold RVOL momentum plays overnight (these are intraday only)
+                if pos.get("strategy") == "rvol_momentum":
+                    log.info(f"RVOL EXIT: Closing {symbol} - RVOL momentum is intraday only")
+                    positions_to_close.append(symbol)
+                    continue
 
                 should_hold = False
                 if overnight_enabled and in_profit and len(overnight_holds) < max_overnight:
@@ -1703,6 +1783,263 @@ class TradingEngine:
         self.config.update_setting(path, value)
         self.config.save_settings()
         log.info(f"Config updated: {path} = {value}")
+
+    # =========================================================================
+    # Dynamic Stock Discovery - Feed top movers into RVOL strategy
+    # =========================================================================
+
+    def _discover_dynamic_symbols(self):
+        """
+        Dynamically discover hot stocks from top movers and inject into
+        the RVOL strategy for auto-trading. Runs every cycle.
+
+        This is what makes it a true Money Machine: the bot finds the runners,
+        not just your static watchlist.
+        """
+        rvol_strat = self.strategies.get("rvol_momentum")
+        if not rvol_strat:
+            return
+
+        try:
+            # Get top movers from Yahoo Finance (big gainers, trending)
+            movers = self.get_top_movers()
+            if movers:
+                mover_symbols = []
+                for m in movers:
+                    sym = m.get("symbol", "")
+                    price = m.get("price", 0)
+                    change_pct = m.get("change_pct", 0)
+                    # Filter: price > $2, big move, not already in watchlist
+                    if sym and price >= 2.0 and change_pct >= 5.0:
+                        mover_symbols.append(sym)
+
+                if mover_symbols:
+                    rvol_strat.add_dynamic_symbols(mover_symbols)
+                    log.debug(f"Injected {len(mover_symbols)} movers into RVOL strategy")
+
+            # Also check for low-float post-split runners
+            runners = self.get_low_float_runners()
+            if runners:
+                runner_symbols = [r["symbol"] for r in runners if r.get("symbol")]
+                if runner_symbols:
+                    rvol_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} low-float runners into RVOL strategy")
+
+        except Exception as e:
+            log.debug(f"Dynamic discovery error: {e}")
+
+    # =========================================================================
+    # Stock Split Detection - Avoid overnight holds on split candidates
+    # =========================================================================
+
+    def _check_split_candidates(self):
+        """
+        Check if any held symbols have upcoming stock splits.
+        Returns set of symbols that are split candidates.
+
+        Uses yfinance calendar data to detect upcoming splits.
+        Split candidates should NOT be held overnight (extreme volatility risk).
+        """
+        split_candidates = set()
+
+        try:
+            import yfinance as yf
+            from datetime import timedelta
+
+            for symbol in self.positions:
+                try:
+                    ticker = yf.Ticker(symbol)
+                    cal = getattr(ticker, "calendar", None)
+                    if cal is not None and isinstance(cal, dict):
+                        # Check for stock split events
+                        splits = cal.get("Stock Splits", [])
+                        if splits:
+                            split_candidates.add(symbol)
+                            log.info(f"SPLIT CANDIDATE: {symbol} has upcoming split")
+                            continue
+
+                    # Also check recent splits (within 5 days) - still volatile
+                    actions = ticker.actions
+                    if actions is not None and len(actions) > 0 and "Stock Splits" in actions.columns:
+                        recent_splits = actions[actions["Stock Splits"] != 0]
+                        if len(recent_splits) > 0:
+                            last_split_date = recent_splits.index[-1]
+                            if hasattr(last_split_date, "date"):
+                                last_split_date = last_split_date.date()
+                            days_since = (datetime.now().date() - last_split_date).days
+                            if days_since <= 5:
+                                split_candidates.add(symbol)
+                                log.info(
+                                    f"RECENT SPLIT: {symbol} split {days_since} days ago - "
+                                    f"still volatile, avoid overnight"
+                                )
+                except Exception:
+                    pass  # Skip if can't check
+
+        except ImportError:
+            log.debug("yfinance not available for split detection")
+
+        self._split_candidates = split_candidates
+        return split_candidates
+
+    # =========================================================================
+    # Low Float Post-Split Runner Scanner
+    # =========================================================================
+
+    def get_low_float_runners(self):
+        """
+        Scan for low-float stocks that recently went through reverse splits
+        and are showing explosive volume. These are squeeze candidates.
+
+        Like RIME +222%, JDZG +125% etc - typically low float + post-split
+        + high RVOL = potential squeeze.
+
+        Returns list of runner dicts sorted by change_pct descending.
+        """
+        import requests as _req
+
+        runners = []
+
+        try:
+            # Yahoo Finance screener: small cap gainers with high volume
+            url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+            params = {"scrIds": "small_cap_gainers", "count": 25}
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            resp = _req.get(url, params=params, headers=headers, timeout=10)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                results = data.get("finance", {}).get("result", [])
+                if results:
+                    quotes = results[0].get("quotes", [])
+                    for q in quotes[:25]:
+                        symbol = q.get("symbol", "")
+                        if not symbol or "." in symbol:
+                            continue
+
+                        price = q.get("regularMarketPrice", 0)
+                        change_pct = q.get("regularMarketChangePercent", 0)
+                        volume = q.get("regularMarketVolume", 0)
+                        avg_vol = q.get("averageDailyVolume3Month", 1)
+                        market_cap = q.get("marketCap", 0)
+                        shares_outstanding = q.get("sharesOutstanding", 0)
+                        float_shares = q.get("floatShares", shares_outstanding)
+                        name = q.get("shortName", symbol)
+
+                        rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
+
+                        # Low float criteria:
+                        # - Float < 20M shares (very low float)
+                        # - Or float < 50M with high RVOL (moderately low float)
+                        is_low_float = (
+                            (float_shares > 0 and float_shares < 20_000_000) or
+                            (float_shares > 0 and float_shares < 50_000_000 and rvol >= 3.0)
+                        )
+
+                        # Runner criteria: big move + volume
+                        is_runner = (
+                            change_pct >= 20.0 and  # At least +20% move
+                            volume >= 500_000 and   # Decent volume
+                            price >= 1.00 and       # Not a sub-penny
+                            price <= 50.00           # Typically low-priced
+                        )
+
+                        if is_runner:
+                            runner_type = "LOW FLOAT SQUEEZE" if is_low_float else "HIGH MOMENTUM"
+
+                            # Check for split indicators
+                            # Post-split stocks often have: low price + low float + extreme move
+                            is_post_split = (
+                                price < 10.0 and
+                                float_shares > 0 and float_shares < 10_000_000 and
+                                change_pct >= 50.0
+                            )
+                            if is_post_split:
+                                runner_type = "POST-SPLIT SQUEEZE"
+
+                            runners.append({
+                                "symbol": symbol,
+                                "name": name[:30],
+                                "price": round(price, 2),
+                                "change_pct": round(change_pct, 2),
+                                "volume": volume,
+                                "avg_volume": avg_vol,
+                                "rvol": rvol,
+                                "market_cap": market_cap,
+                                "float_shares": float_shares,
+                                "float_display": self._format_float(float_shares),
+                                "shares_outstanding": shares_outstanding,
+                                "runner_type": runner_type,
+                                "is_low_float": is_low_float,
+                                "is_post_split": is_post_split,
+                                "on_watchlist": symbol in self.watchlist,
+                            })
+
+        except Exception as e:
+            log.debug(f"Low float runner scan error: {e}")
+
+        # Also scan day gainers for extreme movers
+        try:
+            url2 = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+            params2 = {"scrIds": "day_gainers", "count": 25}
+            resp2 = _req.get(url2, params=params2, headers=headers, timeout=10)
+
+            if resp2.status_code == 200:
+                data2 = resp2.json()
+                results2 = data2.get("finance", {}).get("result", [])
+                if results2:
+                    for q in results2[0].get("quotes", [])[:25]:
+                        sym = q.get("symbol", "")
+                        if not sym or "." in sym or any(r["symbol"] == sym for r in runners):
+                            continue
+
+                        price = q.get("regularMarketPrice", 0)
+                        change_pct = q.get("regularMarketChangePercent", 0)
+                        volume = q.get("regularMarketVolume", 0)
+                        avg_vol = q.get("averageDailyVolume3Month", 1)
+                        float_shares = q.get("floatShares", 0)
+
+                        # Only add extreme movers not already captured
+                        if change_pct >= 40.0 and price >= 1.0 and volume >= 300_000:
+                            rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
+                            is_low_float = float_shares > 0 and float_shares < 20_000_000
+
+                            runners.append({
+                                "symbol": sym,
+                                "name": q.get("shortName", sym)[:30],
+                                "price": round(price, 2),
+                                "change_pct": round(change_pct, 2),
+                                "volume": volume,
+                                "avg_volume": avg_vol,
+                                "rvol": rvol,
+                                "market_cap": q.get("marketCap", 0),
+                                "float_shares": float_shares,
+                                "float_display": self._format_float(float_shares),
+                                "shares_outstanding": q.get("sharesOutstanding", 0),
+                                "runner_type": "LOW FLOAT SQUEEZE" if is_low_float else "DAY RUNNER",
+                                "is_low_float": is_low_float,
+                                "is_post_split": False,
+                                "on_watchlist": sym in self.watchlist,
+                            })
+
+        except Exception as e:
+            log.debug(f"Day gainer runner scan error: {e}")
+
+        runners.sort(key=lambda x: x["change_pct"], reverse=True)
+        return runners
+
+    @staticmethod
+    def _format_float(float_shares):
+        """Format float shares into readable string."""
+        if not float_shares or float_shares <= 0:
+            return "N/A"
+        if float_shares >= 1_000_000_000:
+            return f"{float_shares / 1_000_000_000:.1f}B"
+        if float_shares >= 1_000_000:
+            return f"{float_shares / 1_000_000:.1f}M"
+        if float_shares >= 1_000:
+            return f"{float_shares / 1_000:.0f}K"
+        return str(int(float_shares))
 
     # =========================================================================
     # RVOL Scanner - Money Machine Style Relative Volume Scanner

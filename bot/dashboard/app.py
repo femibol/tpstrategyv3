@@ -443,6 +443,13 @@ class Dashboard:
             min_rvol = request.args.get("min_rvol", 1.5, type=float)
             return jsonify(self.engine.get_rvol_scan(min_rvol=min_rvol))
 
+        # --- Low Float Runners API ---
+
+        @self.app.route("/api/runners")
+        def low_float_runners():
+            """Get low-float post-split runner candidates."""
+            return jsonify(self.engine.get_low_float_runners())
+
         # --- Trade Suggestions API ---
 
         @self.app.route("/api/suggestions")
