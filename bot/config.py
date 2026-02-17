@@ -125,10 +125,28 @@ class Config:
     def tradingview_webhook_secret(self):
         return os.getenv("TRADINGVIEW_WEBHOOK_SECRET", "")
 
+    # --- Alpaca Markets ---
+    @property
+    def alpaca_api_key(self):
+        return os.getenv("ALPACA_API_KEY", "")
+
+    @property
+    def alpaca_secret_key(self):
+        return os.getenv("ALPACA_SECRET_KEY", "")
+
+    @property
+    def alpaca_base_url(self):
+        return os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
+
     # --- Politician Tracker ---
     @property
     def capitoltrades_api_key(self):
         return os.getenv("CAPITOLTRADES_API_KEY", "")
+
+    # --- News API ---
+    @property
+    def news_api_key(self):
+        return os.getenv("NEWS_API_KEY", "")
 
     # --- Notifications ---
     @property

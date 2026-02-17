@@ -288,6 +288,39 @@ class Dashboard:
                 return jsonify({"status": "added", "politician": data["name"]})
             return jsonify({"error": "Politician tracker not enabled"}), 404
 
+        # --- News Feed APIs ---
+
+        @self.app.route("/api/news")
+        def news():
+            if self.engine.news_feed:
+                limit = request.args.get("limit", 20, type=int)
+                return jsonify(self.engine.news_feed.get_recent_news(limit))
+            return jsonify([])
+
+        @self.app.route("/api/news/signals")
+        def news_signals():
+            if self.engine.news_feed:
+                return jsonify(self.engine.news_feed.get_signals())
+            return jsonify([])
+
+        @self.app.route("/api/news/status")
+        def news_status():
+            if self.engine.news_feed:
+                return jsonify(self.engine.news_feed.get_status())
+            return jsonify({"running": False, "api_configured": False})
+
+        # --- Quote API (real-time price lookup) ---
+
+        @self.app.route("/api/quote/<symbol>")
+        def quote(symbol):
+            """Get real-time quote for a symbol."""
+            symbol = symbol.upper()
+            if self.engine.market_data:
+                q = self.engine.market_data.get_quote(symbol)
+                if q:
+                    return jsonify(q)
+            return jsonify({"error": f"No quote available for {symbol}"}), 404
+
         # --- Webhook receiver for TradingView (on same server) ---
 
         @self.app.route("/webhook/tradingview", methods=["POST"])

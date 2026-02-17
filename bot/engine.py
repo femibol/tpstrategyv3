@@ -23,6 +23,7 @@ from bot.brokers.ibkr import IBKRBroker
 from bot.brokers.traderspost import TradersPostBroker
 from bot.signals.tradingview import TradingViewReceiver
 from bot.signals.politician_tracker import PoliticianTradeTracker
+from bot.signals.news_feed import NewsFeed
 from bot.strategies.mean_reversion import MeanReversionStrategy
 from bot.strategies.momentum import MomentumStrategy
 from bot.strategies.vwap import VWAPScalpStrategy
@@ -65,6 +66,7 @@ class TradingEngine:
         self.tv_receiver = None
         self.tp_broker = None
         self.politician_tracker = None
+        self.news_feed = None
         self.scheduler = None
 
         # State
@@ -136,6 +138,14 @@ class TradingEngine:
             callback=self._handle_politician_signal
         )
         log.info("Politician trade tracker enabled")
+
+        # News feed (if API key configured)
+        if self.config.news_api_key:
+            self.news_feed = NewsFeed(
+                self.config,
+                callback=self._handle_news_signal
+            )
+            log.info("News feed enabled")
 
         # Scheduler for periodic tasks
         self.scheduler = BackgroundScheduler(timezone=self.tz)
@@ -255,6 +265,10 @@ class TradingEngine:
         # Start politician trade tracker
         if self.politician_tracker:
             self.politician_tracker.start()
+
+        # Start news feed
+        if self.news_feed:
+            self.news_feed.start()
 
         log.info("Trading engine started - entering main loop")
         self.notifier.system_alert("Trading engine started", level="success")
@@ -792,6 +806,17 @@ class TradingEngine:
         for sig in approved:
             self._execute_signal(sig)
 
+    def _handle_news_signal(self, signal):
+        """Handle incoming news-based signal."""
+        log.info(f"News signal: {signal['action'].upper()} {signal['symbol']} | {signal.get('reason', '')[:60]}")
+
+        approved = self.risk_manager.filter_signals(
+            [signal], self.positions, self.current_balance
+        )
+
+        for sig in approved:
+            self._execute_signal(sig)
+
     def _handle_politician_signal(self, signal):
         """Handle incoming politician trade signal."""
         log.info(
@@ -898,6 +923,9 @@ class TradingEngine:
 
         if self.politician_tracker:
             self.politician_tracker.stop()
+
+        if self.news_feed:
+            self.news_feed.stop()
 
         if self.broker:
             self.broker.disconnect()
