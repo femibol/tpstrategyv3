@@ -40,6 +40,9 @@
             font-weight: 700; letter-spacing: 1px;
         }
         .mode-paper { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid var(--orange); }
+        .data-live { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid var(--green); }
+        .data-delayed { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid var(--orange); }
+        .data-connected { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid var(--accent); }
         .mode-live { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid var(--red); }
 
         /* === STATS GRID === */
@@ -558,6 +561,7 @@
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText" style="font-size:0.8em">--</span>
         <span class="mode-badge" id="modeBadge">--</span>
+        <span class="mode-badge" id="dataBadge" style="font-size:0.55em">--</span>
     </div>
 </div>
 
@@ -1834,6 +1838,15 @@ async function update() {
         document.getElementById('statusText').textContent = status.running ? (status.paused ? 'Paused' : 'Running') : 'Stopped';
         document.getElementById('modeBadge').textContent = status.mode.toUpperCase();
         document.getElementById('modeBadge').className = 'mode-badge mode-' + status.mode;
+
+        // Data source badge (IBKR Real-Time vs Yahoo Delayed)
+        if (status.data_source) {
+            var ds = status.data_source;
+            var dbadge = document.getElementById('dataBadge');
+            var dsLabel = ds.streaming ? ds.source + ' (' + ds.subscribed_symbols + ')' : ds.source;
+            dbadge.textContent = dsLabel;
+            dbadge.className = 'mode-badge data-' + ds.status;
+        }
 
         document.getElementById('balance').textContent = '$' + fmtMoney(status.balance);
         var retPct = status.total_return_pct;

@@ -10,7 +10,9 @@ Setup:
 5. Set .env IBKR_PORT accordingly
 """
 import time
+import threading
 from datetime import datetime
+from collections import defaultdict
 
 from bot.brokers.base import BaseBroker
 from bot.utils.logger import get_logger
@@ -41,6 +43,13 @@ class IBKRBroker(BaseBroker):
         self.ib = None
         self._connected = False
         self._order_id_counter = 0
+
+        # Real-time streaming data
+        self._streaming_contracts = {}   # symbol -> Contract
+        self._streaming_tickers = {}     # symbol -> Ticker object
+        self._live_prices = {}           # symbol -> {bid, ask, last, volume, ...}
+        self._live_bars = {}             # symbol -> list of 5-sec bars
+        self._stream_lock = threading.Lock()
 
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
@@ -359,6 +368,189 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.error(f"Failed to get historical bars for {symbol}: {e}")
             return None
+
+    # =========================================================================
+    # Real-Time Streaming Market Data
+    # =========================================================================
+
+    def subscribe_market_data(self, symbols):
+        """
+        Subscribe to real-time market data for a list of symbols.
+        Uses IBKR's reqMktData for live bid/ask/last/volume streaming.
+
+        This gives you TRUE real-time prices (no 15-min delay).
+        Essential for RVOL momentum trading.
+        """
+        if not self.is_connected() or not HAS_IB:
+            return False
+
+        subscribed = 0
+        for symbol in symbols:
+            if symbol in self._streaming_contracts:
+                continue  # Already subscribed
+
+            try:
+                contract = Stock(symbol, "SMART", "USD")
+                self.ib.qualifyContracts(contract)
+                self._streaming_contracts[symbol] = contract
+
+                # Request streaming market data
+                # genericTickList="" gets basic bid/ask/last/volume
+                # 233 = RTVolume (real-time volume for RVOL)
+                ticker = self.ib.reqMktData(contract, genericTickList="233", snapshot=False)
+                self._streaming_tickers[symbol] = ticker
+
+                # Initialize live price entry
+                self._live_prices[symbol] = {
+                    "bid": None, "ask": None, "last": None,
+                    "volume": 0, "high": None, "low": None,
+                    "close": None, "open": None,
+                    "last_update": None,
+                }
+
+                subscribed += 1
+                log.debug(f"Subscribed to live data: {symbol}")
+
+            except Exception as e:
+                log.debug(f"Failed to subscribe {symbol}: {e}")
+
+        if subscribed > 0:
+            log.info(f"Subscribed to {subscribed} live market data streams")
+
+            # Register tick handler if not already
+            if not hasattr(self, '_tick_handler_registered'):
+                self.ib.pendingTickersEvent += self._on_pending_tickers
+                self._tick_handler_registered = True
+
+        return subscribed > 0
+
+    def unsubscribe_market_data(self, symbols=None):
+        """Unsubscribe from market data streams."""
+        if not self.is_connected():
+            return
+
+        syms = symbols or list(self._streaming_contracts.keys())
+        for symbol in syms:
+            contract = self._streaming_contracts.pop(symbol, None)
+            if contract:
+                try:
+                    self.ib.cancelMktData(contract)
+                except Exception:
+                    pass
+            self._streaming_tickers.pop(symbol, None)
+
+    def subscribe_realtime_bars(self, symbols):
+        """
+        Subscribe to 5-second real-time bars for symbols.
+        These are the fastest bar updates IBKR provides.
+        Perfect for catching RVOL surges in real-time.
+        """
+        if not self.is_connected() or not HAS_IB:
+            return False
+
+        for symbol in symbols:
+            if symbol in self._live_bars:
+                continue
+
+            try:
+                contract = Stock(symbol, "SMART", "USD")
+                self.ib.qualifyContracts(contract)
+
+                bars = self.ib.reqRealTimeBars(
+                    contract,
+                    barSize=5,              # 5-second bars (only option)
+                    whatToShow="TRADES",
+                    useRTH=False,           # Include extended hours
+                )
+
+                self._live_bars[symbol] = {
+                    "bars": bars,
+                    "recent": [],  # Store last 60 bars (5 minutes of 5-sec data)
+                }
+
+                log.debug(f"Subscribed to 5-sec bars: {symbol}")
+
+            except Exception as e:
+                log.debug(f"Failed to subscribe 5-sec bars for {symbol}: {e}")
+
+        return True
+
+    def get_live_price(self, symbol):
+        """
+        Get the latest real-time price for a symbol.
+        Returns immediately from streaming cache (no API call).
+        """
+        with self._stream_lock:
+            ticker = self._streaming_tickers.get(symbol)
+            if ticker:
+                # Pull latest from ticker object
+                price_data = {
+                    "bid": ticker.bid if ticker.bid > 0 else None,
+                    "ask": ticker.ask if ticker.ask > 0 else None,
+                    "last": ticker.last if ticker.last > 0 else None,
+                    "volume": int(ticker.volume) if ticker.volume else 0,
+                    "high": ticker.high if ticker.high > 0 else None,
+                    "low": ticker.low if ticker.low > 0 else None,
+                    "close": ticker.close if ticker.close > 0 else None,
+                    "open": ticker.open if ticker.open > 0 else None,
+                }
+
+                # Best price: last trade, or midpoint of bid/ask
+                if price_data["last"] and price_data["last"] > 0:
+                    price_data["price"] = price_data["last"]
+                elif price_data["bid"] and price_data["ask"]:
+                    price_data["price"] = (price_data["bid"] + price_data["ask"]) / 2
+                else:
+                    price_data["price"] = None
+
+                return price_data
+
+        return None
+
+    def get_live_quote(self, symbol):
+        """
+        Get a full real-time quote from streaming data.
+        Faster than get_quote() since it reads from the live stream.
+        """
+        price_data = self.get_live_price(symbol)
+        if not price_data or not price_data.get("price"):
+            return None
+
+        price = price_data["price"]
+        prev_close = price_data.get("close", 0)
+
+        return {
+            "symbol": symbol,
+            "price": round(price, 2),
+            "bid": price_data.get("bid"),
+            "ask": price_data.get("ask"),
+            "last": price_data.get("last"),
+            "volume": price_data.get("volume", 0),
+            "high": price_data.get("high"),
+            "low": price_data.get("low"),
+            "prev_close": prev_close,
+            "change": round(price - prev_close, 2) if prev_close else 0,
+            "change_pct": round((price - prev_close) / prev_close * 100, 2) if prev_close else 0,
+            "market_state": "REGULAR",
+            "source": "IBKR_LIVE",
+        }
+
+    def get_all_live_prices(self):
+        """Get all streaming prices as a dict {symbol: price}."""
+        prices = {}
+        for symbol in self._streaming_tickers:
+            data = self.get_live_price(symbol)
+            if data and data.get("price"):
+                prices[symbol] = data["price"]
+        return prices
+
+    def _on_pending_tickers(self, tickers):
+        """Callback fired when streaming tickers have new data."""
+        with self._stream_lock:
+            for ticker in tickers:
+                symbol = ticker.contract.symbol if ticker.contract else None
+                if symbol and symbol in self._live_prices:
+                    self._live_prices[symbol]["last_update"] = datetime.now()
 
     # --- Event Callbacks ---
     def _on_order_status(self, trade):

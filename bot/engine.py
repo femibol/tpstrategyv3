@@ -146,6 +146,12 @@ class TradingEngine:
         # Market data feed
         self.market_data = MarketDataFeed(self.config, self.broker)
 
+        # Start IBKR real-time streaming if connected
+        if self.broker and self.broker.is_connected():
+            all_symbols = list(set(self.watchlist))
+            self.market_data.start_streaming(all_symbols)
+            log.info("IBKR real-time streaming initialized for watchlist")
+
         # Load strategies
         self._load_strategies()
 
@@ -1717,8 +1723,38 @@ class TradingEngine:
             "hedging": self.hedging_manager.get_status() if self.hedging_manager else None,
             "learning": self.trade_analyzer.get_status() if self.trade_analyzer else None,
             "trading_profile": self.config.trading_profile,
+            "data_source": self._get_data_source_info(),
         }
         return status
+
+    def _get_data_source_info(self):
+        """Get current data source status for dashboard."""
+        streaming = (
+            self.market_data and
+            hasattr(self.market_data, '_streaming_active') and
+            self.market_data._streaming_active
+        )
+        subscribed = len(self.market_data._subscribed_symbols) if streaming else 0
+
+        if self.broker and self.broker.is_connected() and streaming:
+            source = "IBKR Real-Time"
+            status = "live"
+        elif self.broker and self.broker.is_connected():
+            source = "IBKR Historical"
+            status = "connected"
+        elif self.market_data and self.market_data.alpaca:
+            source = "Alpaca"
+            status = "connected"
+        else:
+            source = "Yahoo Finance"
+            status = "delayed"
+
+        return {
+            "source": source,
+            "status": status,
+            "streaming": streaming,
+            "subscribed_symbols": subscribed,
+        }
 
     def get_editable_settings(self):
         """Return current settings for the config editor."""

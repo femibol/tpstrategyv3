@@ -39,6 +39,9 @@ class MarketDataFeed:
     Real market data provider with multiple sources and caching.
 
     Priority: IBKR -> Alpaca -> Yahoo Finance Direct -> yfinance lib
+
+    When IBKR is connected, streaming market data provides TRUE real-time
+    prices (no 15-min delay). Essential for RVOL momentum trading.
     """
 
     def __init__(self, config, broker=None):
@@ -66,11 +69,59 @@ class MarketDataFeed:
         self._last_update = {}  # symbol -> timestamp
         self._cache_ttl = 30    # seconds
 
+        # Streaming state
+        self._streaming_active = False
+        self._subscribed_symbols = set()
+
+    def start_streaming(self, symbols):
+        """
+        Start IBKR real-time streaming for symbols.
+        Call once when engine starts - after that, prices update automatically.
+        """
+        if not self.broker or not self.broker.is_connected():
+            log.debug("IBKR not connected - streaming unavailable, using polling")
+            return False
+
+        if not hasattr(self.broker, 'subscribe_market_data'):
+            log.debug("Broker doesn't support streaming")
+            return False
+
+        new_symbols = [s for s in symbols if s not in self._subscribed_symbols]
+        if not new_symbols:
+            return self._streaming_active
+
+        try:
+            result = self.broker.subscribe_market_data(new_symbols)
+            if result:
+                self._subscribed_symbols.update(new_symbols)
+                self._streaming_active = True
+                log.info(f"IBKR streaming active for {len(self._subscribed_symbols)} symbols")
+                return True
+        except Exception as e:
+            log.debug(f"Failed to start streaming: {e}")
+
+        return False
+
     def update(self, symbols):
         """Fetch latest real data for all symbols."""
         now = time.time()
 
+        # Start streaming for new symbols if IBKR is connected
+        if self.broker and self.broker.is_connected():
+            new_syms = [s for s in symbols if s not in self._subscribed_symbols]
+            if new_syms:
+                self.start_streaming(new_syms)
+
         for symbol in symbols:
+            # If streaming is active, grab live prices from IBKR stream first
+            if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
+                live = self.broker.get_live_price(symbol)
+                if live and live.get("price"):
+                    self._price_cache[symbol] = live["price"]
+                    if live.get("volume"):
+                        self._volume_cache[symbol] = live["volume"]
+                    self._last_update[symbol] = now
+
             last = self._last_update.get(symbol, 0)
             if now - last < self._cache_ttl:
                 continue
@@ -79,10 +130,12 @@ class MarketDataFeed:
                 bars = self._fetch_bars(symbol)
                 if bars is not None and len(bars) > 0:
                     self._bars_cache[symbol] = bars
-                    self._price_cache[symbol] = float(bars["close"].iloc[-1])
+                    # Only overwrite price from bars if we don't have a live stream
+                    if symbol not in self._subscribed_symbols:
+                        self._price_cache[symbol] = float(bars["close"].iloc[-1])
                     self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
                     self._last_update[symbol] = now
-                    log.debug(f"Updated {symbol}: ${self._price_cache[symbol]:.2f}")
+                    log.debug(f"Updated {symbol}: ${self._price_cache.get(symbol, 0):.2f}")
             except Exception as e:
                 log.debug(f"Data update failed for {symbol}: {e}")
 
@@ -295,9 +348,25 @@ class MarketDataFeed:
         """Get all cached prices."""
         return dict(self._price_cache)
 
+    def get_data(self, symbol):
+        """Get cached bar data for a symbol (alias for get_bars)."""
+        return self._bars_cache.get(symbol)
+
     def get_quote(self, symbol):
-        """Get a real-time quote for a single symbol (bypasses cache)."""
-        # Try Yahoo direct for fastest single quote
+        """
+        Get a real-time quote for a single symbol.
+        Priority: IBKR streaming (instant) -> Yahoo Finance API (delayed).
+        """
+        # 1. Try IBKR live streaming (TRUE real-time, no delay)
+        if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_quote'):
+            try:
+                quote = self.broker.get_live_quote(symbol)
+                if quote and quote.get("price"):
+                    return quote
+            except Exception:
+                pass
+
+        # 2. Fallback: Yahoo Finance direct API (~15 min delay)
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
             headers = {"User-Agent": "Mozilla/5.0"}
@@ -317,6 +386,7 @@ class MarketDataFeed:
                             "change": price - prev_close if prev_close else 0,
                             "change_pct": ((price - prev_close) / prev_close * 100) if prev_close else 0,
                             "market_state": meta.get("marketState", "UNKNOWN"),
+                            "source": "YAHOO",
                         }
         except Exception as e:
             log.debug(f"Quote failed for {symbol}: {e}")
