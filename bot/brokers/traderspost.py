@@ -163,8 +163,12 @@ class TradersPostBroker(BaseBroker):
         payload = {
             "ticker": signal.get("symbol", ""),
             "action": tp_action,
-            "sentiment": sentiment_map.get(action, "flat"),
         }
+
+        # sentiment can ONLY be used when action is "buy" or "sell"
+        # TradersPost rejects it on "exit" / "cancel" with INVALID SENTIMENT ACTION
+        if tp_action in ("buy", "sell"):
+            payload["sentiment"] = sentiment_map.get(action, "flat")
 
         # Add optional fields
         if "quantity" in signal:
