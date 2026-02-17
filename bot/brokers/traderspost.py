@@ -135,12 +135,23 @@ class TradersPostBroker(BaseBroker):
         if "price" in signal:
             payload["price"] = signal["price"]
 
-        # Add signal metadata
-        if signal.get("stop_loss"):
-            payload["stopLoss"] = signal["stop_loss"]
+        # Add stop loss / take profit as TradersPost objects
+        # TradersPost requires: {"limitPrice": x} for takeProfit, {"stopPrice": x} for stopLoss
+        # The strategy config requires takeProfit on every entry signal
+        if not is_exit:
+            stop_loss = signal.get("stop_loss")
+            take_profit = signal.get("take_profit")
+            price = signal.get("price", 0)
 
-        if signal.get("take_profit"):
-            payload["takeProfit"] = signal["take_profit"]
+            if stop_loss:
+                payload["stopLoss"] = {"type": "stop", "stopPrice": round(float(stop_loss), 2)}
+
+            if take_profit:
+                payload["takeProfit"] = {"type": "limit", "limitPrice": round(float(take_profit), 2)}
+            elif price:
+                # Default 2% take profit if none provided (TradersPost requires it)
+                default_tp = price * 1.02 if tp_action == "buy" else price * 0.98
+                payload["takeProfit"] = {"type": "limit", "limitPrice": round(float(default_tp), 2)}
 
         try:
             headers = {"Content-Type": "application/json"}
