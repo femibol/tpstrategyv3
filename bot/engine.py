@@ -1540,5 +1540,63 @@ class TradingEngine:
             "regime": self.regime_detector.get_status() if self.regime_detector else None,
             "hedging": self.hedging_manager.get_status() if self.hedging_manager else None,
             "learning": self.trade_analyzer.get_status() if self.trade_analyzer else None,
+            "trading_profile": self.config.trading_profile,
         }
         return status
+
+    def get_editable_settings(self):
+        """Return current settings for the config editor."""
+        risk = self.config.risk_config
+        schedule = self.config.schedule_config
+        overnight = schedule.get("overnight", {})
+        premarket = schedule.get("premarket", {})
+        hedging = self.config.settings.get("hedging", {})
+        return {
+            "trading_profile": self.config.trading_profile,
+            "profiles": {
+                k: {"label": v["label"], "description": v["description"]}
+                for k, v in self.config.TRADING_PROFILES.items()
+            },
+            "risk": {
+                "stop_loss_pct": risk.get("stop_loss_pct", 0.03),
+                "trailing_stop_pct": risk.get("trailing_stop_pct", 0.02),
+                "take_profit_pct": risk.get("take_profit_pct", 0.06),
+                "max_positions": risk.get("max_positions", 5),
+                "risk_per_trade_pct": risk.get("risk_per_trade_pct", 0.01),
+                "max_position_size_pct": risk.get("max_position_size_pct", 0.15),
+            },
+            "schedule": {
+                "avoid_first_minutes": schedule.get("avoid_first_minutes", 30),
+                "avoid_last_minutes": schedule.get("avoid_last_minutes", 30),
+            },
+            "overnight": {
+                "enabled": overnight.get("enabled", False),
+                "min_profit_pct": overnight.get("min_profit_pct", 0.01),
+                "require_uptrend": overnight.get("require_uptrend", True),
+                "max_overnight_positions": overnight.get("max_overnight_positions", 3),
+            },
+            "premarket": {
+                "enabled": premarket.get("enabled", False),
+                "start_time": premarket.get("start_time", "08:00"),
+                "reduce_size_pct": premarket.get("reduce_size_pct", 0.5),
+            },
+            "hedging": {
+                "enabled": hedging.get("enabled", True),
+                "auto_hedge": hedging.get("auto_hedge", True),
+                "max_hedge_pct": hedging.get("max_hedge_pct", 0.30),
+            },
+        }
+
+    def apply_trading_profile(self, profile_name):
+        """Apply a trading profile and save."""
+        if self.config.apply_profile(profile_name):
+            self.config.save_settings()
+            log.info(f"Trading profile changed to: {profile_name}")
+            return True
+        return False
+
+    def update_config_setting(self, path, value):
+        """Update a single config setting and save."""
+        self.config.update_setting(path, value)
+        self.config.save_settings()
+        log.info(f"Config updated: {path} = {value}")

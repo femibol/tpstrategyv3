@@ -173,3 +173,109 @@ class Config:
 
     def get_strategy_config(self, strategy_name):
         return self.strategies.get(strategy_name, {})
+
+    # --- Trading Mode Profiles ---
+    TRADING_PROFILES = {
+        "scalp": {
+            "label": "Scalp",
+            "description": "Quick trades, tight stops, intraday only",
+            "risk": {
+                "stop_loss_pct": 0.015,
+                "trailing_stop_pct": 0.01,
+                "take_profit_pct": 0.03,
+                "max_positions": 6,
+                "risk_per_trade_pct": 0.005,
+            },
+            "schedule": {
+                "avoid_first_minutes": 30,
+                "avoid_last_minutes": 15,
+                "overnight": {"enabled": False},
+                "premarket": {"enabled": False},
+            },
+            "preferred_strategies": ["vwap_scalp", "mean_reversion"],
+        },
+        "swing": {
+            "label": "Swing",
+            "description": "Multi-day holds, medium stops, trend following",
+            "risk": {
+                "stop_loss_pct": 0.04,
+                "trailing_stop_pct": 0.025,
+                "take_profit_pct": 0.08,
+                "max_positions": 5,
+                "risk_per_trade_pct": 0.01,
+            },
+            "schedule": {
+                "avoid_first_minutes": 30,
+                "avoid_last_minutes": 30,
+                "overnight": {"enabled": True, "min_profit_pct": 0.01, "require_uptrend": True},
+                "premarket": {"enabled": False},
+            },
+            "preferred_strategies": ["momentum", "smc_forever", "pairs_trading"],
+        },
+        "invest": {
+            "label": "Invest",
+            "description": "Longer holds, wide stops, follow smart money",
+            "risk": {
+                "stop_loss_pct": 0.08,
+                "trailing_stop_pct": 0.05,
+                "take_profit_pct": 0.20,
+                "max_positions": 8,
+                "risk_per_trade_pct": 0.015,
+            },
+            "schedule": {
+                "avoid_first_minutes": 30,
+                "avoid_last_minutes": 15,
+                "overnight": {"enabled": True, "min_profit_pct": 0.005, "require_uptrend": False},
+                "premarket": {"enabled": True},
+            },
+            "preferred_strategies": ["momentum", "smc_forever"],
+        },
+    }
+
+    @property
+    def trading_profile(self):
+        return self.settings.get("trading_profile", "swing")
+
+    def apply_profile(self, profile_name):
+        """Apply a trading mode profile, updating settings in memory."""
+        profile = self.TRADING_PROFILES.get(profile_name)
+        if not profile:
+            return False
+        # Update risk settings
+        risk = self.settings.setdefault("risk", {})
+        risk.update(profile["risk"])
+        # Update schedule settings
+        schedule = self.settings.setdefault("schedule", {})
+        for key, val in profile["schedule"].items():
+            if isinstance(val, dict):
+                schedule.setdefault(key, {}).update(val)
+            else:
+                schedule[key] = val
+        self.settings["trading_profile"] = profile_name
+        return True
+
+    def save_settings(self):
+        """Persist current settings back to settings.yaml."""
+        filepath = self.config_dir / "settings.yaml"
+        with open(filepath, "w") as f:
+            yaml.dump(self.settings, f, default_flow_style=False, sort_keys=False)
+
+    def update_setting(self, path, value):
+        """Update a nested setting by dot-path (e.g. 'risk.stop_loss_pct')."""
+        keys = path.split(".")
+        d = self.settings
+        for key in keys[:-1]:
+            d = d.setdefault(key, {})
+        # Try to cast to appropriate type
+        if isinstance(value, str):
+            if value.lower() in ("true", "false"):
+                value = value.lower() == "true"
+            else:
+                try:
+                    value = int(value)
+                except ValueError:
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        pass
+        d[keys[-1]] = value

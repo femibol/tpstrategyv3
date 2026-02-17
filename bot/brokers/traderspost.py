@@ -82,23 +82,34 @@ class TradersPostBroker(BaseBroker):
         action = signal.get("action", "").lower()
 
         # Map actions to TradersPost format
+        # TradersPost supports: buy, sell, exit, cancel
+        # "buy" opens long, "sell" opens short, "exit" closes any position
+        is_exit = signal.get("source") == "exit" or action in ("cover", "close")
+
         action_map = {
             "buy": "buy",
             "sell": "sell",
             "short": "sell",
-            "cover": "buy",
+            "cover": "exit",
+            "close": "exit",
         }
 
         sentiment_map = {
             "buy": "bullish",
             "sell": "bearish",
             "short": "bearish",
-            "cover": "bullish",
+            "cover": "flat",
+            "close": "flat",
         }
+
+        tp_action = action_map.get(action, action)
+        # For closing positions (exits), use "exit" for cleaner TradersPost handling
+        if is_exit and tp_action in ("buy", "sell"):
+            tp_action = "exit"
 
         payload = {
             "ticker": signal.get("symbol", ""),
-            "action": action_map.get(action, action),
+            "action": tp_action,
             "sentiment": sentiment_map.get(action, "flat"),
         }
 

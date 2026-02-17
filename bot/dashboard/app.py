@@ -374,6 +374,38 @@ class Dashboard:
         def performance():
             return jsonify(self.engine.get_performance_summary())
 
+        # --- Settings / Config APIs ---
+
+        @self.app.route("/api/settings")
+        def get_settings():
+            return jsonify(self.engine.get_editable_settings())
+
+        @self.app.route("/api/settings/profile", methods=["POST"])
+        @self._require_auth
+        def set_profile():
+            """Switch trading mode profile (scalp/swing/invest)."""
+            data = request.get_json()
+            profile = data.get("profile", "") if data else ""
+            if self.engine.apply_trading_profile(profile):
+                return jsonify({"status": "ok", "profile": profile})
+            return jsonify({"error": f"Unknown profile: {profile}"}), 400
+
+        @self.app.route("/api/settings/update", methods=["POST"])
+        @self._require_auth
+        def update_setting():
+            """Update a single config setting."""
+            data = request.get_json()
+            if not data or "path" not in data or "value" not in data:
+                return jsonify({"error": "path and value required"}), 400
+            self.engine.update_config_setting(data["path"], data["value"])
+            return jsonify({"status": "ok", "path": data["path"], "value": data["value"]})
+
+        @self.app.route("/api/tips")
+        def trading_tips():
+            """Get context-aware trading tips."""
+            tips = self._generate_tips()
+            return jsonify(tips)
+
         # --- Quote API (real-time price lookup) ---
 
         @self.app.route("/api/quote/<symbol>")
@@ -419,6 +451,82 @@ class Dashboard:
 
             self.engine._handle_tv_signal(signal)
             return jsonify({"status": "ok"})
+
+    def _generate_tips(self):
+        """Generate context-aware trading tips based on current state."""
+        tips = []
+        status = self.engine.get_status()
+        perf = self.engine.get_performance_summary()
+
+        # Regime-based tips
+        regime_data = status.get("regime") or {}
+        regime = regime_data.get("current_regime", "sideways")
+        regime_tips = {
+            "bull_trend": [
+                "Bull trend detected - momentum and breakout strategies work best",
+                "Let winners run longer with trailing stops, tighten losers quickly",
+                "Consider swing trades over scalps in strong uptrends",
+            ],
+            "bear_trend": [
+                "Bear trend active - reduce position sizes and hold more cash",
+                "Inverse ETFs (SH, SQQQ) can hedge downside exposure",
+                "Mean reversion setups have higher failure rate in bear markets",
+            ],
+            "sideways": [
+                "Range-bound market - mean reversion and VWAP scalp strategies shine",
+                "Look for support/resistance bounces rather than breakouts",
+                "Tighter stops work better in choppy conditions",
+            ],
+            "high_vol": [
+                "High volatility - reduce position sizes by 50%",
+                "Widen stops to avoid getting stopped out by noise",
+                "Avoid VWAP scalping - spreads are wider in volatile markets",
+            ],
+            "low_vol": [
+                "Low vol = potential breakout setup brewing",
+                "Compression usually precedes big moves - watch for breakouts",
+                "Reduce position count but increase size on high-conviction setups",
+            ],
+            "crisis": [
+                "CRISIS MODE - capital preservation is priority #1",
+                "Close risky positions and hedge with inverse ETFs",
+                "Only trade with 20% or less of normal size",
+            ],
+        }
+        tips.extend(regime_tips.get(regime, []))
+
+        # Performance-based tips
+        if perf.get("total_trades", 0) >= 5:
+            wr = perf.get("win_rate", 50)
+            pf = perf.get("profit_factor", 1.0)
+            if wr < 40:
+                tips.append("Win rate below 40% - consider tighter entry criteria or switching to higher-probability setups")
+            if pf and pf < 1.0:
+                tips.append("Profit factor below 1.0 (losing money) - cut losers faster or let winners run longer")
+            if perf.get("loss_streak", 0) >= 3:
+                tips.append("Consecutive losses detected - consider pausing, reviewing your recent trades, and reducing size")
+            avg_win = perf.get("avg_win", 0)
+            avg_loss = abs(perf.get("avg_loss", 0))
+            if avg_loss > 0 and avg_win / avg_loss < 1.5:
+                tips.append("Reward/risk ratio is below 1.5:1 - try wider take profit targets or tighter stops")
+
+        # Position-based tips
+        n_pos = len(self.engine.positions)
+        max_pos = self.engine.config.max_positions
+        if n_pos >= max_pos:
+            tips.append(f"Max positions reached ({n_pos}/{max_pos}) - close a position before entering new trades")
+        if n_pos == 0:
+            tips.append("No open positions - ready for new entries when signals align")
+
+        # General profit tips
+        tips.extend([
+            "Follow politician trades within 3 days of disclosure for best alpha",
+            "LEAPS options (6-12 month expiry, deep ITM) reduce theta decay vs short-dated options",
+            "Scale out of winners: sell 33% at +3%, 50% at +6%, let the rest ride",
+            "Never risk more than 1-2% of portfolio on a single trade",
+        ])
+
+        return tips
 
     def start(self):
         host = self.config.dashboard_host

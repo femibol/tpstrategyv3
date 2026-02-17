@@ -272,6 +272,69 @@
         .strat-pnl { font-weight: 700; }
         .strat-meta { font-size: 0.75em; color: var(--muted); }
 
+        /* === SETTINGS === */
+        .setting-group {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px; margin-bottom: 10px;
+        }
+        .setting-group-title {
+            font-size: 0.8em; color: var(--accent); font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .setting-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,0.5);
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label { font-size: 0.8em; color: var(--muted); }
+        .setting-input {
+            background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text); padding: 6px 10px; font-size: 0.85em; width: 100px;
+            text-align: right; font-family: monospace;
+        }
+        .setting-input:focus { border-color: var(--accent); outline: none; }
+        .setting-toggle {
+            position: relative; width: 44px; height: 24px; cursor: pointer;
+        }
+        .setting-toggle input { display: none; }
+        .toggle-slider {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--border); border-radius: 12px; transition: 0.2s;
+        }
+        .toggle-slider:before {
+            content: ""; position: absolute; width: 18px; height: 18px;
+            left: 3px; bottom: 3px; background: var(--text); border-radius: 50%; transition: 0.2s;
+        }
+        .setting-toggle input:checked + .toggle-slider { background: var(--accent); }
+        .setting-toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* === PROFILE SELECTOR === */
+        .profile-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .profile-card {
+            background: var(--bg); border: 2px solid var(--border); border-radius: 10px;
+            padding: 12px; text-align: center; cursor: pointer; transition: all 0.15s;
+        }
+        .profile-card:active { transform: scale(0.97); }
+        .profile-card.active { border-color: var(--accent); background: rgba(88,166,255,0.08); }
+        .profile-name { font-weight: 700; font-size: 0.95em; margin-bottom: 4px; }
+        .profile-desc { font-size: 0.7em; color: var(--muted); }
+
+        /* === TIPS === */
+        .tip-card {
+            background: var(--bg); border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 8px;
+            font-size: 0.85em; line-height: 1.4;
+        }
+        .tip-card.warning { border-left-color: var(--yellow); }
+        .tip-card.danger { border-left-color: var(--red); }
+        .tip-card.success { border-left-color: var(--green); }
+
+        /* === TV LINK === */
+        .tv-link {
+            color: var(--accent); text-decoration: none; font-weight: 700;
+        }
+        .tv-link:hover { text-decoration: underline; }
+
         /* === EMPTY STATE === */
         .empty { text-align: center; color: var(--muted); padding: 20px; font-size: 0.85em; }
 
@@ -384,6 +447,8 @@
     <div class="tab" data-tab="trades">Trades</div>
     <div class="tab" data-tab="analysis">Analysis</div>
     <div class="tab" data-tab="daily">Daily Stats</div>
+    <div class="tab" data-tab="tips">Tips</div>
+    <div class="tab" data-tab="settings">Settings</div>
     <div class="tab" data-tab="notifications">Alerts</div>
 </div>
 
@@ -473,6 +538,143 @@
     </div>
 </div>
 
+<!-- TIPS TAB -->
+<div class="tab-content" id="tab-tips">
+    <div class="section">
+        <h2>Trading Tips & Guidance</h2>
+        <div id="tipsList">
+            <div class="empty">Loading tips...</div>
+        </div>
+    </div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div class="tab-content" id="tab-settings">
+    <div class="section">
+        <h2>Trading Mode</h2>
+        <div class="profile-cards" id="profileCards">
+            <div class="profile-card" data-profile="scalp" onclick="setProfile('scalp')">
+                <div class="profile-name">SCALP</div>
+                <div class="profile-desc">Quick trades, tight stops, intraday only</div>
+            </div>
+            <div class="profile-card" data-profile="swing" onclick="setProfile('swing')">
+                <div class="profile-name">SWING</div>
+                <div class="profile-desc">Multi-day holds, medium stops, trend following</div>
+            </div>
+            <div class="profile-card" data-profile="invest" onclick="setProfile('invest')">
+                <div class="profile-name">INVEST</div>
+                <div class="profile-desc">Longer holds, wide stops, follow smart money</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Risk Settings</h2>
+        <div class="setting-group">
+            <div class="setting-row">
+                <span class="setting-label">Stop Loss %</span>
+                <input class="setting-input" id="cfg-stop_loss" data-path="risk.stop_loss_pct" type="number" step="0.005" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Trailing Stop %</span>
+                <input class="setting-input" id="cfg-trailing_stop" data-path="risk.trailing_stop_pct" type="number" step="0.005" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Take Profit %</span>
+                <input class="setting-input" id="cfg-take_profit" data-path="risk.take_profit_pct" type="number" step="0.01" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Max Positions</span>
+                <input class="setting-input" id="cfg-max_pos" data-path="risk.max_positions" type="number" step="1" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Risk Per Trade %</span>
+                <input class="setting-input" id="cfg-risk_per_trade" data-path="risk.risk_per_trade_pct" type="number" step="0.005" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Max Position Size %</span>
+                <input class="setting-input" id="cfg-max_pos_size" data-path="risk.max_position_size_pct" type="number" step="0.01" onchange="saveSetting(this)">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Schedule</h2>
+        <div class="setting-group">
+            <div class="setting-row">
+                <span class="setting-label">Avoid First N Minutes</span>
+                <input class="setting-input" id="cfg-avoid_first" data-path="schedule.avoid_first_minutes" type="number" step="5" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Avoid Last N Minutes</span>
+                <input class="setting-input" id="cfg-avoid_last" data-path="schedule.avoid_last_minutes" type="number" step="5" onchange="saveSetting(this)">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Overnight</h2>
+        <div class="setting-group">
+            <div class="setting-row">
+                <span class="setting-label">Hold Overnight</span>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="cfg-overnight" data-path="schedule.overnight.enabled" onchange="saveToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Min Profit % to Hold</span>
+                <input class="setting-input" id="cfg-overnight-profit" data-path="schedule.overnight.min_profit_pct" type="number" step="0.005" onchange="saveSetting(this)">
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Require Uptrend</span>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="cfg-overnight-trend" data-path="schedule.overnight.require_uptrend" onchange="saveToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Max Overnight Positions</span>
+                <input class="setting-input" id="cfg-overnight-max" data-path="schedule.overnight.max_overnight_positions" type="number" step="1" onchange="saveSetting(this)">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Pre-Market</h2>
+        <div class="setting-group">
+            <div class="setting-row">
+                <span class="setting-label">Pre-Market Trading</span>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="cfg-premarket" data-path="schedule.premarket.enabled" onchange="saveToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Pre-Market Size %</span>
+                <input class="setting-input" id="cfg-premarket-size" data-path="schedule.premarket.reduce_size_pct" type="number" step="0.1" onchange="saveSetting(this)">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Hedging</h2>
+        <div class="setting-group">
+            <div class="setting-row">
+                <span class="setting-label">Auto-Hedge</span>
+                <label class="setting-toggle">
+                    <input type="checkbox" id="cfg-hedge-auto" data-path="hedging.auto_hedge" onchange="saveToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Max Hedge %</span>
+                <input class="setting-input" id="cfg-hedge-max" data-path="hedging.max_hedge_pct" type="number" step="0.05" onchange="saveSetting(this)">
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- BOTTOM CONTROL BAR -->
 <div class="controls">
     <button class="ctrl-btn pause" id="btnPause" onclick="controlBot('pause')">
@@ -537,6 +739,10 @@ async function api(endpoint) {
 function fmt(v, d) { d = d !== undefined ? d : 2; return v != null ? v.toFixed(d) : '0.00'; }
 function fmtMoney(v) { return v != null ? v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00'; }
 function pnlCls(v) { return v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral'; }
+function tvLink(symbol) {
+    var s = symbol.replace('/', '');
+    return '<a class="tv-link" href="https://www.tradingview.com/chart/?symbol=' + s + '" target="_blank" rel="noopener">' + symbol + '</a>';
+}
 
 // === SCANNER RENDERING ===
 function verdictClass(v) {
@@ -554,7 +760,7 @@ function renderScannerMeanReversion(symbol, d) {
     var checks = d.checks || {};
     return '<div class="scan-card">' +
         '<div class="scan-header">' +
-            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-symbol">' + tvLink(symbol) + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
             '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
         '</div>' +
         '<div class="scan-grid">' +
@@ -578,7 +784,7 @@ function renderScannerMomentum(symbol, d) {
     var checks = d.checks || {};
     return '<div class="scan-card">' +
         '<div class="scan-header">' +
-            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-symbol">' + tvLink(symbol) + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
             '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
         '</div>' +
         '<div class="scan-grid">' +
@@ -604,7 +810,7 @@ function renderScannerMomentum(symbol, d) {
 function renderScannerVWAP(symbol, d) {
     return '<div class="scan-card">' +
         '<div class="scan-header">' +
-            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-symbol">' + tvLink(symbol) + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
             '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
         '</div>' +
         '<div class="scan-grid">' +
@@ -624,7 +830,7 @@ function renderScannerSMC(symbol, d) {
     var checks = d.checks || {};
     return '<div class="scan-card">' +
         '<div class="scan-header">' +
-            '<span class="scan-symbol">' + symbol + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
+            '<span class="scan-symbol">' + tvLink(symbol) + ' <span style="font-size:0.7em;color:var(--muted)">$' + fmt(d.price) + '</span></span>' +
             '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
         '</div>' +
         '<div class="scan-grid">' +
@@ -651,7 +857,7 @@ function renderScannerSMC(symbol, d) {
 function renderScannerPairs(key, d) {
     return '<div class="scan-card">' +
         '<div class="scan-header">' +
-            '<span class="scan-symbol">' + key + '</span>' +
+            '<span class="scan-symbol">' + tvLink(key.split('/')[0]) + '/' + tvLink(key.split('/')[1]) + '</span>' +
             '<span class="scan-verdict ' + verdictClass(d.verdict) + '">' + d.verdict + '</span>' +
         '</div>' +
         '<div class="scan-grid">' +
@@ -734,7 +940,7 @@ function renderAnalysis(analysisData) {
         var confColor = confPct >= 70 ? 'var(--green)' : confPct >= 50 ? 'var(--yellow)' : 'var(--red)';
         return '<div class="analysis-card ' + (isBuy ? 'buy' : 'sell') + '">' +
             '<div class="analysis-top">' +
-                '<span class="analysis-symbol">' + a.symbol + ' <span style="font-size:0.8em;color:var(--muted)">(' + a.strategy + ')</span></span>' +
+                '<span class="analysis-symbol">' + tvLink(a.symbol) + ' <span style="font-size:0.8em;color:var(--muted)">(' + a.strategy + ')</span></span>' +
                 '<span class="analysis-action ' + (isBuy ? 'action-buy' : 'action-sell') + '">' + a.action.toUpperCase() + '</span>' +
             '</div>' +
             '<div class="analysis-reason">' + (a.reason || '') + '</div>' +
@@ -773,7 +979,7 @@ function renderWatchlist(data) {
 
         return '<div class="wl-card' + (w.in_position ? ' in-position' : '') + '">' +
             '<div class="wl-header">' +
-                '<span class="wl-symbol">' + w.symbol + posHtml + '</span>' +
+                '<span class="wl-symbol">' + tvLink(w.symbol) + posHtml + '</span>' +
                 '<span class="wl-price ' + changeCls + '">' + priceStr + ' <span style="font-size:0.8em">' + changeStr + '</span></span>' +
             '</div>' +
             '<div class="wl-grid">' +
@@ -870,18 +1076,130 @@ function renderPerformance(perf) {
     }).join('');
 }
 
+// === TIPS RENDERING ===
+function renderTips(tips) {
+    var el = document.getElementById('tipsList');
+    if (!tips || tips.length === 0) {
+        el.innerHTML = '<div class="empty">No tips available</div>';
+        return;
+    }
+    el.innerHTML = tips.map(function(t) {
+        var cls = 'tip-card';
+        var lower = t.toLowerCase();
+        if (lower.includes('crisis') || lower.includes('stop') || lower.includes('below')) cls += ' danger';
+        else if (lower.includes('reduce') || lower.includes('avoid') || lower.includes('caution') || lower.includes('cut')) cls += ' warning';
+        else if (lower.includes('best') || lower.includes('shine') || lower.includes('ready') || lower.includes('scale out')) cls += ' success';
+        return '<div class="' + cls + '">' + t + '</div>';
+    }).join('');
+}
+
+// === SETTINGS MANAGEMENT ===
+async function loadSettings() {
+    var data = await api('settings');
+    if (!data) return;
+
+    // Highlight active profile
+    document.querySelectorAll('.profile-card').forEach(function(c) {
+        c.classList.toggle('active', c.dataset.profile === data.trading_profile);
+    });
+
+    // Fill in risk settings
+    var r = data.risk || {};
+    setInput('cfg-stop_loss', r.stop_loss_pct);
+    setInput('cfg-trailing_stop', r.trailing_stop_pct);
+    setInput('cfg-take_profit', r.take_profit_pct);
+    setInput('cfg-max_pos', r.max_positions);
+    setInput('cfg-risk_per_trade', r.risk_per_trade_pct);
+    setInput('cfg-max_pos_size', r.max_position_size_pct);
+
+    // Schedule
+    var s = data.schedule || {};
+    setInput('cfg-avoid_first', s.avoid_first_minutes);
+    setInput('cfg-avoid_last', s.avoid_last_minutes);
+
+    // Overnight
+    var o = data.overnight || {};
+    setToggle('cfg-overnight', o.enabled);
+    setInput('cfg-overnight-profit', o.min_profit_pct);
+    setToggle('cfg-overnight-trend', o.require_uptrend);
+    setInput('cfg-overnight-max', o.max_overnight_positions);
+
+    // Premarket
+    var p = data.premarket || {};
+    setToggle('cfg-premarket', p.enabled);
+    setInput('cfg-premarket-size', p.reduce_size_pct);
+
+    // Hedging
+    var h = data.hedging || {};
+    setToggle('cfg-hedge-auto', h.auto_hedge);
+    setInput('cfg-hedge-max', h.max_hedge_pct);
+}
+
+function setInput(id, val) {
+    var el = document.getElementById(id);
+    if (el && val !== undefined) el.value = val;
+}
+function setToggle(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.checked = !!val;
+}
+
+async function saveSetting(el) {
+    var path = el.dataset.path;
+    var value = el.value;
+    try {
+        await fetch(API + '/api/settings/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({path: path, value: value})
+        });
+        el.style.borderColor = 'var(--green)';
+        setTimeout(function() { el.style.borderColor = ''; }, 1000);
+    } catch(e) {
+        el.style.borderColor = 'var(--red)';
+    }
+}
+
+async function saveToggle(el) {
+    var path = el.dataset.path;
+    var value = el.checked ? 'true' : 'false';
+    try {
+        await fetch(API + '/api/settings/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({path: path, value: value})
+        });
+    } catch(e) { /* silent */ }
+}
+
+async function setProfile(name) {
+    try {
+        var r = await fetch(API + '/api/settings/profile', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({profile: name})
+        });
+        if (r.ok) {
+            document.querySelectorAll('.profile-card').forEach(function(c) {
+                c.classList.toggle('active', c.dataset.profile === name);
+            });
+            await loadSettings();
+        }
+    } catch(e) { /* silent */ }
+}
+
 // === UPDATE ALL ===
 async function update() {
     var results = await Promise.all([
         api('status'), api('positions'), api('trades'),
         api('notifications'), api('daily'), api('equity'),
         api('scanner'), api('analysis'), api('watchlist'),
-        api('performance')
+        api('performance'), api('tips')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
         notifs = results[3], daily = results[4], equity = results[5],
         scanner = results[6], analysisData = results[7],
-        watchlistData = results[8], perfData = results[9];
+        watchlistData = results[8], perfData = results[9], tipsData = results[10];
 
     // Regime badge (from status)
     if (status && status.regime) {
@@ -945,7 +1263,7 @@ async function update() {
                 '<span class="wl-pos-tag">T' + p.targets_hit.length + ' HIT</span>' : '';
             return '<div class="pos-card">' +
                 '<div class="pos-header">' +
-                    '<span class="pos-symbol">' + p.symbol + ' <span style="font-size:0.7em;color:var(--muted)">' + p.direction.toUpperCase() + '</span>' + beBadge + targetsStr + '</span>' +
+                    '<span class="pos-symbol">' + tvLink(p.symbol) + ' <span style="font-size:0.7em;color:var(--muted)">' + p.direction.toUpperCase() + '</span>' + beBadge + targetsStr + '</span>' +
                     '<span class="pos-pnl ' + pnlCls(p.pnl_pct) + '">' + fmt(p.pnl_pct) + '% ($' + fmt(p.pnl_dollars) + ')</span>' +
                 '</div>' +
                 '<div class="pos-details">' +
@@ -970,7 +1288,7 @@ async function update() {
         trList.innerHTML = trades.slice(-15).reverse().map(function(t) {
             return '<div class="trade-card ' + (t.pnl > 0 ? 'win' : 'loss') + '">' +
                 '<div class="trade-top">' +
-                    '<span class="trade-symbol">' + t.symbol + ' ' + t.direction + '</span>' +
+                    '<span class="trade-symbol">' + tvLink(t.symbol) + ' ' + t.direction + '</span>' +
                     '<span class="trade-pnl ' + pnlCls(t.pnl) + '">$' + fmt(t.pnl) + '</span>' +
                 '</div>' +
                 '<div class="trade-meta">' +
@@ -1027,6 +1345,9 @@ async function update() {
 
     // Performance
     renderPerformance(perfData);
+
+    // Tips
+    renderTips(tipsData);
 }
 
 // === EQUITY CHART (Canvas) ===
@@ -1142,6 +1463,7 @@ document.addEventListener('touchend', function(e) {
 
 // === INIT ===
 update();
+loadSettings();
 setInterval(update, 8000);
 
 // Resize chart on orientation change
