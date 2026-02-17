@@ -41,9 +41,13 @@ class TradersPostBroker(BaseBroker):
     def __init__(self, config):
         self.config = config
         self.webhook_url = config.traderspost_webhook_url
+        self.webhook_url_secondary = config.traderspost_webhook_url_secondary
         self.api_key = config.traderspost_api_key
         self._connected = bool(self.webhook_url)
         self.signal_history = []
+        self.dual_mode = bool(self.webhook_url and self.webhook_url_secondary)
+        if self.dual_mode:
+            log.info("TradersPost DUAL MODE: signals sent to both live and paper webhooks")
 
     def connect(self):
         """Validate webhook URL is configured."""
@@ -78,23 +82,34 @@ class TradersPostBroker(BaseBroker):
         action = signal.get("action", "").lower()
 
         # Map actions to TradersPost format
+        # TradersPost supports: buy, sell, exit, cancel
+        # "buy" opens long, "sell" opens short, "exit" closes any position
+        is_exit = signal.get("source") == "exit" or action in ("cover", "close")
+
         action_map = {
             "buy": "buy",
             "sell": "sell",
             "short": "sell",
-            "cover": "buy",
+            "cover": "exit",
+            "close": "exit",
         }
 
         sentiment_map = {
             "buy": "bullish",
             "sell": "bearish",
             "short": "bearish",
-            "cover": "bullish",
+            "cover": "flat",
+            "close": "flat",
         }
+
+        tp_action = action_map.get(action, action)
+        # For closing positions (exits), use "exit" for cleaner TradersPost handling
+        if is_exit and tp_action in ("buy", "sell"):
+            tp_action = "exit"
 
         payload = {
             "ticker": signal.get("symbol", ""),
-            "action": action_map.get(action, action),
+            "action": tp_action,
             "sentiment": sentiment_map.get(action, "flat"),
         }
 
@@ -146,6 +161,19 @@ class TradersPostBroker(BaseBroker):
                     f"TradersPost signal failed: {response.status_code} "
                     f"| {response.text[:100]}"
                 )
+
+            # Also send to secondary webhook (dual mode)
+            if self.dual_mode and self.webhook_url_secondary:
+                try:
+                    requests.post(
+                        self.webhook_url_secondary,
+                        json=payload,
+                        headers=headers,
+                        timeout=10
+                    )
+                    log.debug(f"TradersPost secondary webhook sent: {action.upper()} {payload['ticker']}")
+                except Exception as e2:
+                    log.debug(f"TradersPost secondary webhook error: {e2}")
 
             return result
 

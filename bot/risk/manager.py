@@ -74,20 +74,29 @@ class RiskManager:
         action = signal["action"]
         price = signal.get("price", 0)
 
+        # Exit signals (sell/cover for existing positions) get lighter checks
+        if action in ("sell", "cover", "close"):
+            if symbol in positions:
+                return True, "Exit signal for existing position"
+            # Sell signal without position = skip
+            return False, f"No position to exit: {symbol}"
+
+        # --- Entry signal checks below ---
+
         # --- Rule 1: Max positions ---
-        if action in ("buy", "short") and len(positions) >= self.max_positions:
+        if len(positions) >= self.max_positions:
             return False, f"Max positions reached ({self.max_positions})"
 
         # --- Rule 2: Already in position ---
-        if action in ("buy", "short") and symbol in positions:
+        if symbol in positions:
             return False, f"Already in position: {symbol}"
 
-        # --- Rule 3: Min price ---
-        if price < self.min_price:
+        # --- Rule 3: Min price (skip for options) ---
+        if signal.get("asset_type") != "option" and price > 0 and price < self.min_price:
             return False, f"Price ${price:.2f} below minimum ${self.min_price}"
 
-        # --- Rule 4: Max price ---
-        if price > self.max_price:
+        # --- Rule 4: Max price (skip for options) ---
+        if signal.get("asset_type") != "option" and price > self.max_price:
             return False, f"Price ${price:.2f} above maximum ${self.max_price}"
 
         # --- Rule 5: Position size limit ---
@@ -103,7 +112,7 @@ class RiskManager:
             for p in positions.values()
         )
         available = balance - invested - reserve
-        if action in ("buy", "short") and price > available:
+        if price > available:
             return False, f"Insufficient available capital (${available:.0f} after reserve)"
 
         # --- Rule 7: Confidence threshold ---
@@ -112,7 +121,7 @@ class RiskManager:
             return False, f"Confidence {confidence:.2f} below threshold {self.min_confidence}"
 
         # --- Rule 8: Must have stop loss for entries ---
-        if action in ("buy", "short") and not signal.get("stop_loss"):
+        if not signal.get("stop_loss"):
             return False, "No stop loss defined"
 
         return True, "All checks passed"

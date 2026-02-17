@@ -2,6 +2,12 @@
 # ALGO TRADING BOT - MAIN CONFIGURATION
 # ============================================
 
+# --- Trading Mode ---
+# scalp = Quick trades, tight stops, intraday only
+# swing = Multi-day holds, medium stops, trend following
+# invest = Longer holds, wide stops, follow smart money
+trading_profile: swing
+
 # --- Capital & Account ---
 capital:
   starting_balance: 5000
@@ -12,8 +18,7 @@ capital:
 
 # --- Risk Management ---
 risk:
-  max_position_size_pct: 0.15     # Max 15% of capital per position ($750)
-  max_position_size_dollars: 750
+  max_position_size_pct: 0.15     # Max 15% of capital per position (scales with balance)
   max_positions: 5                # Max 5 concurrent positions
   risk_per_trade_pct: 0.01        # Risk 1% per trade ($50)
   max_correlated_positions: 2     # Max 2 positions in same sector
@@ -21,9 +26,27 @@ risk:
   trailing_stop_pct: 0.02         # 2% trailing stop
   take_profit_pct: 0.06           # 6% take profit (2:1 reward/risk)
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
+
+  # --- Profit Taking (Partial Exits) ---
+  profit_taking:
+    enabled: true
+    # Scale out at multiple targets (percentage of position to close)
+    targets:
+      - pct_from_entry: 0.03      # At +3% profit
+        close_pct: 0.33           # Close 33% of position
+        move_stop: "breakeven"    # Move stop to break even
+      - pct_from_entry: 0.06      # At +6% profit (take_profit_pct)
+        close_pct: 0.50           # Close 50% of remaining
+        tighten_trail: 0.01       # Tighten trailing stop to 1%
+
+  # --- Break Even Stop ---
+  breakeven:
+    enabled: true
+    trigger_pct: 0.015            # Move stop to BE after 1.5% profit
+    buffer_pct: 0.002             # Small buffer above entry (0.2%) to cover commissions
   min_volume: 500000              # Minimum avg daily volume
   min_price: 5.00                 # No penny stocks
-  max_price: 500.00               # Cap price for position sizing
+  max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)
 
 # --- Trading Schedule ---
 schedule:
@@ -31,9 +54,26 @@ schedule:
   market_close: "16:00"
   timezone: "US/Eastern"
   pre_market_scan: "09:15"       # Scan 15 min before open
-  avoid_first_minutes: 5          # Skip first 5 min (volatile)
-  avoid_last_minutes: 15          # Close positions 15 min before close
+  avoid_first_minutes: 30         # Skip first 30 min (volatile open)
+  avoid_last_minutes: 30          # Avoid last 30 min (choppy close)
   trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+  # --- Pre-market / Extended Hours ---
+  premarket:
+    enabled: false                 # Enable pre-market trading (4:00-9:30 AM)
+    start_time: "08:00"           # Start pre-market scanning at 8 AM
+    allowed_strategies: ["momentum", "news_sentiment"]  # Only these strategies pre-market
+    reduce_size_pct: 0.50         # Use 50% of normal position size (less liquidity)
+
+  # --- Overnight Holding ---
+  overnight:
+    enabled: true                  # Allow holding overnight
+    require_profit: true           # Only hold if position is in profit
+    min_profit_pct: 0.01          # Minimum 1% profit to hold overnight
+    require_uptrend: true          # Only hold if in uptrend (EMA fast > slow)
+    tighten_stop_pct: 0.02        # Tighten stop to 2% for overnight holds
+    max_overnight_positions: 3    # Max 3 positions held overnight
+    close_losers: true            # Always close losing positions at EOD
 
 # --- Scaling Plan ---
 # Bot auto-adjusts as account grows
@@ -60,6 +100,49 @@ scaling:
       max_positions: 20
       risk_per_trade: 0.02
       max_position_pct: 0.06
+
+# --- Hedging ---
+# Automatic portfolio protection via inverse ETFs during bearish regimes
+hedging:
+  enabled: true
+  auto_hedge: true                  # Automatically hedge when regime is bearish/crisis
+  max_hedge_pct: 0.30               # Max 30% of portfolio in hedge positions
+  instruments: ["SH", "SDS", "PSQ", "SQQQ"]  # Available hedge ETFs
+
+# --- Weekly Watchlist ---
+# Symbols actively monitored each week. Auto-includes politician picks.
+watchlist:
+  symbols:
+    - NVDA
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - META
+    - TSLA
+    - AMD
+    - SPY
+    - QQQ
+    - AB          # Pelosi pick
+    # Crypto (trades 24/7 via Yahoo Finance tickers)
+    - BTC-USD     # Bitcoin
+    - ETH-USD     # Ethereum
+    - SOL-USD     # Solana
+  auto_add_politician_picks: true   # Auto-add symbols from politician tracker
+  track_weekly_performance: true    # Track weekly P&L per symbol
+
+# --- Crypto Configuration ---
+# Crypto symbols trade 24/7 and bypass stock market hours
+crypto:
+  enabled: true
+  symbols_suffix: ["-USD", "-USDT", "-BTC", "-ETH"]  # How we detect crypto tickers
+  schedule:
+    trading_24h: true             # Trade crypto 24 hours a day
+    trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+  risk:
+    max_position_size_pct: 0.10   # Smaller size for crypto (more volatile)
+    stop_loss_pct: 0.05           # Wider stop for crypto volatility
+    trailing_stop_pct: 0.03       # Wider trailing stop
 
 # --- Data Sources ---
 data:

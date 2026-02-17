@@ -33,12 +33,11 @@ class PositionSizer:
         self.config = config
         self.risk_per_trade_pct = config.risk_per_trade
         self.max_position_pct = config.risk_config.get("max_position_size_pct", 0.15)
-        self.max_position_dollars = config.risk_config.get("max_position_size_dollars", 750)
         self.reserve_pct = config.reserve_cash_pct
 
     def calculate(self, balance, price, stop_loss, strategy_allocation=1.0):
         """
-        Calculate position size in shares.
+        Calculate position size in shares (or contracts for options).
 
         Args:
             balance: Current account balance
@@ -47,7 +46,7 @@ class PositionSizer:
             strategy_allocation: Fraction of capital for this strategy (0-1)
 
         Returns:
-            int: Number of shares (0 if trade doesn't meet criteria)
+            int: Number of shares/contracts (0 if trade doesn't meet criteria)
         """
         if price <= 0 or stop_loss <= 0:
             return 0
@@ -55,10 +54,9 @@ class PositionSizer:
         # Available capital (after reserve)
         available = balance * (1 - self.reserve_pct) * strategy_allocation
 
-        # Max position value
+        # Max position value scales with account size (no hard dollar cap)
         max_position = min(
             balance * self.max_position_pct,
-            self.max_position_dollars,
             available
         )
 

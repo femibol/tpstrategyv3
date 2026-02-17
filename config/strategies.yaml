@@ -5,10 +5,11 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  smc_forever: 0.30               # 30% - highest conviction model
-  mean_reversion: 0.20            # 20% of capital
-  momentum: 0.20                  # 20% of capital
-  vwap_scalp: 0.15                # 15% of capital
+  smc_forever: 0.25               # 25% - highest conviction model
+  mean_reversion: 0.15            # 15% of capital
+  momentum: 0.15                  # 15% of capital
+  rvol_momentum: 0.20             # 20% - Money Machine RVOL auto-trading
+  vwap_scalp: 0.10                # 10% of capital
   pairs_trading: 0.15             # 15% of capital
 
 # --- Mean Reversion Strategy ---
@@ -36,6 +37,9 @@ mean_reversion:
     - META
     - NVDA
     - AMD
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
 
 # --- Momentum / Trend Following ---
 # Ride strong trends - let winners run
@@ -65,6 +69,9 @@ momentum:
     - META
     - GOOGL
     - NFLX
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
 
 # --- VWAP Scalping ---
 # Trade around VWAP like institutional desks
@@ -133,6 +140,35 @@ smc_forever:
     - META
     - GOOGL
     - TSLA
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
+
+# --- RVOL Momentum Strategy (Money Machine) ---
+# Auto-trades high relative volume stocks like Trade Ideas Money Machine
+# Dynamically discovers runners from top movers (not just static watchlist)
+rvol_momentum:
+  enabled: true
+  timeframe: "5m"
+  min_rvol: 2.0                    # Minimum 2x relative volume to trigger
+  min_score: 60                    # Minimum Money Machine score (0-100)
+  min_price: 2.00                  # Skip penny stocks below $2
+  max_price: 500.00                # Upper price limit
+  min_volume: 200000               # Min avg daily volume
+  atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR (momentum = fast exit)
+  atr_target_multiplier: 3.0      # Target: 3x ATR (2:1 R/R)
+  max_hold_minutes: 120            # Max 2 hours (intraday momentum only)
+  max_trades_per_day: 6            # Cap to prevent overtrading
+  symbols:                         # Base watchlist (dynamic symbols get added automatically)
+    - SPY
+    - QQQ
+    - AAPL
+    - MSFT
+    - NVDA
+    - AMD
+    - TSLA
+    - META
+    - AMZN
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts
