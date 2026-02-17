@@ -1,29 +1,37 @@
 """
 Position Sizer - Determines how many shares to buy.
 Uses fixed-risk method: risk a fixed % of capital per trade.
+Auto-adjusts quantity based on stock price tier.
 """
 import math
 from bot.utils.logger import get_logger
 
 log = get_logger("risk.position_sizer")
 
+# Price tiers for auto-adjusting quantity limits
+# Expensive stocks get fewer shares, cheap stocks get more
+PRICE_TIERS = [
+    # (max_price, min_shares, max_shares_cap)
+    (10,     5,   500),   # Penny/low-price: 5-500 shares
+    (50,     3,   200),   # Mid-low: 3-200 shares
+    (150,    2,   100),   # Mid: 2-100 shares
+    (500,    1,    50),   # High: 1-50 shares
+    (2000,   1,    20),   # Premium: 1-20 shares (NVDA, MSFT)
+    (99999,  1,    10),   # Ultra: 1-10 shares (BRK.A etc)
+]
+
 
 class PositionSizer:
     """
-    Position sizing using fixed-risk model.
+    Position sizing using fixed-risk model with price-tier awareness.
 
     The key formula (used by professional traders):
     Position Size = (Account Risk $) / (Per-Share Risk $)
 
-    Where:
-    - Account Risk $ = Balance * Risk Per Trade % (e.g., $5000 * 1% = $50)
-    - Per-Share Risk $ = Entry Price - Stop Loss Price
-
-    This means:
-    - If AAPL is $150 with stop at $147 (risk $3/share):
-      Shares = $50 / $3 = 16 shares ($2,400 position)
-    - If AMD is $100 with stop at $97 (risk $3/share):
-      Shares = $50 / $3 = 16 shares ($1,600 position)
+    Price-tier guards ensure:
+    - Expensive stocks ($180+ NVDA): min 1, max 20 shares
+    - Mid-range stocks ($50-150 AAPL): min 2, max 100 shares
+    - Cheap stocks (<$10): min 5, max 500 shares
 
     The position size automatically adjusts based on volatility.
     Volatile stocks = smaller positions. Stable stocks = larger positions.
@@ -34,6 +42,13 @@ class PositionSizer:
         self.risk_per_trade_pct = config.risk_per_trade
         self.max_position_pct = config.risk_config.get("max_position_size_pct", 0.15)
         self.reserve_pct = config.reserve_cash_pct
+
+    def _get_tier_limits(self, price):
+        """Get min/max share limits based on stock price tier."""
+        for max_price, min_shares, max_shares in PRICE_TIERS:
+            if price <= max_price:
+                return min_shares, max_shares
+        return 1, 10  # fallback
 
     def calculate(self, balance, price, stop_loss, strategy_allocation=1.0):
         """
@@ -77,7 +92,15 @@ class PositionSizer:
         # Take the smaller of the two
         shares = min(shares_by_risk, shares_by_max)
 
-        # Minimum 1 share
+        # Apply price-tier limits (auto-adjust for expensive vs cheap stocks)
+        tier_min, tier_max = self._get_tier_limits(price)
+        shares = min(shares, tier_max)
+
+        # Ensure minimum shares if we can afford it
+        if shares < tier_min and tier_min * price <= available:
+            shares = tier_min
+
+        # Floor at 0 (never negative)
         shares = max(0, shares)
 
         # Final sanity check - position value shouldn't exceed available capital
@@ -90,7 +113,13 @@ class PositionSizer:
             log.info(
                 f"Position size: {shares} shares @ ${price:.2f} = "
                 f"${position_value:,.2f} | Risk: ${risk_amount:.2f} "
-                f"({risk_amount / balance:.1%} of account)"
+                f"({risk_amount / balance:.1%} of account) "
+                f"[tier: {tier_min}-{tier_max} shares]"
+            )
+        else:
+            log.warning(
+                f"Position size 0 for ${price:.2f} stock - "
+                f"available: ${available:.2f}, risk: ${risk_dollars:.2f}"
             )
 
         return shares

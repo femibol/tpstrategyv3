@@ -41,6 +41,11 @@ class TradersPostBroker(BaseBroker):
     # Crypto symbol suffixes for webhook routing
     CRYPTO_SUFFIXES = ("-USD", "-USDT", "-BTC", "-ETH")
 
+    # Rate limiting: max signals per symbol within a window
+    RATE_LIMIT_WINDOW = 60   # seconds
+    RATE_LIMIT_MAX = 2       # max signals per symbol per window
+    GLOBAL_MIN_INTERVAL = 5  # minimum seconds between ANY webhook call
+
     def __init__(self, config):
         self.config = config
         self.webhook_url = config.traderspost_webhook_url
@@ -50,6 +55,9 @@ class TradersPostBroker(BaseBroker):
         self._connected = bool(self.webhook_url)
         self.signal_history = []
         self.dual_mode = bool(self.webhook_url and self.webhook_url_secondary)
+        # Rate limiting state
+        self._symbol_signals = {}  # {symbol: [timestamp, ...]}
+        self._last_webhook_time = 0
         if self.dual_mode:
             log.info("TradersPost DUAL MODE: signals sent to both live and paper webhooks")
         if self.webhook_url_crypto:
@@ -87,6 +95,32 @@ class TradersPostBroker(BaseBroker):
 
         action = signal.get("action", "").lower()
         symbol = signal.get("symbol", "")
+
+        # --- Rate Limiting ---
+        now = time.time()
+
+        # Global minimum interval between webhook calls
+        since_last = now - self._last_webhook_time
+        if since_last < self.GLOBAL_MIN_INTERVAL:
+            log.warning(
+                f"RATE LIMIT: Global cooldown - {since_last:.1f}s since last webhook "
+                f"(min {self.GLOBAL_MIN_INTERVAL}s). Blocking {action} {symbol}"
+            )
+            return {"success": False, "reason": "rate_limited", "status_code": 429}
+
+        # Per-symbol rate limit
+        sym_times = self._symbol_signals.get(symbol, [])
+        # Purge old timestamps outside the window
+        sym_times = [t for t in sym_times if now - t < self.RATE_LIMIT_WINDOW]
+        if len(sym_times) >= self.RATE_LIMIT_MAX:
+            log.warning(
+                f"RATE LIMIT: {symbol} has {len(sym_times)} signals in last "
+                f"{self.RATE_LIMIT_WINDOW}s (max {self.RATE_LIMIT_MAX}). Blocking."
+            )
+            return {"success": False, "reason": "rate_limited", "status_code": 429}
+        sym_times.append(now)
+        self._symbol_signals[symbol] = sym_times
+        self._last_webhook_time = now
 
         # Route crypto signals to dedicated crypto webhook
         is_crypto = any(symbol.upper().endswith(s) for s in self.CRYPTO_SUFFIXES)

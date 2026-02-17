@@ -86,6 +86,10 @@ class TradingEngine:
         self.current_balance = self.config.starting_balance
         self.start_of_day_balance = self.config.starting_balance
 
+        # Signal deduplication - prevent duplicate entries
+        self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
+        self._signal_cooldown_secs = 120  # Min seconds between signals for same symbol
+
         # Performance tracking
         self.trade_history = []
         self.equity_curve = []
@@ -758,16 +762,31 @@ class TradingEngine:
         symbol = signal["symbol"]
         action = signal["action"]  # buy, sell, short, cover
         strategy = signal.get("strategy", "unknown")
+        now = datetime.now(self.tz)
 
         # LONG-ONLY MODE: Block all short signals
         if action in ("short",):
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
 
-        # Skip if we already have a position (for buy signals)
-        if action in ("buy", "short") and symbol in self.positions:
-            log.debug(f"Skipping {action} {symbol} - already in position")
-            return
+        # --- DUPLICATE ENTRY GUARD ---
+        # Prevent same symbol from being entered twice within cooldown window
+        if action in ("buy", "short"):
+            if symbol in self.positions:
+                log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
+                return
+
+            last_signal = self._signal_cooldowns.get(symbol)
+            if last_signal and (now - last_signal).total_seconds() < self._signal_cooldown_secs:
+                elapsed = int((now - last_signal).total_seconds())
+                log.warning(
+                    f"COOLDOWN BLOCKED: {symbol} signal rejected - "
+                    f"last signal {elapsed}s ago (min {self._signal_cooldown_secs}s)"
+                )
+                return
+
+            # Record this signal time BEFORE execution (prevents race condition)
+            self._signal_cooldowns[symbol] = now
 
         # Position sizing - use market price if available, or signal's price
         current_price = self.market_data.get_price(symbol) if self.market_data else None

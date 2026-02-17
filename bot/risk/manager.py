@@ -91,21 +91,46 @@ class RiskManager:
         if symbol in positions:
             return False, f"Already in position: {symbol}"
 
-        # --- Rule 3: Min price (skip for options) ---
+        # --- Rule 3: Signal age - reject stale signals (>60 seconds old) ---
+        signal_time = signal.get("timestamp") or signal.get("received_at")
+        if signal_time:
+            if isinstance(signal_time, str):
+                try:
+                    from dateutil.parser import parse as parse_dt
+                    signal_time = parse_dt(signal_time)
+                except Exception:
+                    signal_time = None
+            if signal_time:
+                now = datetime.now(signal_time.tzinfo) if signal_time.tzinfo else datetime.now()
+                age_seconds = (now - signal_time).total_seconds()
+                if age_seconds > 60:
+                    return False, f"Stale signal: {age_seconds:.0f}s old (max 60s)"
+
+        # --- Rule 4: Min price (skip for options) ---
         if signal.get("asset_type") != "option" and price > 0 and price < self.min_price:
             return False, f"Price ${price:.2f} below minimum ${self.min_price}"
 
-        # --- Rule 4: Max price (skip for options) ---
+        # --- Rule 5: Max price (skip for options) ---
         if signal.get("asset_type") != "option" and price > self.max_price:
             return False, f"Price ${price:.2f} above maximum ${self.max_price}"
 
-        # --- Rule 5: Position size limit ---
+        # --- Rule 6: Price reasonableness (reject if signal price is >5% from market) ---
+        market_price = signal.get("market_price") or signal.get("current_price")
+        if market_price and price and market_price > 0:
+            price_diff_pct = abs(price - market_price) / market_price
+            if price_diff_pct > 0.05:
+                return False, (
+                    f"Price ${price:.2f} is {price_diff_pct:.1%} away from "
+                    f"market ${market_price:.2f} (max 5%)"
+                )
+
+        # --- Rule 7: Position size limit ---
         max_position = balance * self.max_position_pct
         position_value = price * signal.get("quantity", 1)
         if position_value > max_position:
             return False, f"Position ${position_value:.0f} exceeds max ${max_position:.0f}"
 
-        # --- Rule 6: Reserve cash ---
+        # --- Rule 8: Reserve cash ---
         reserve = balance * self.config.reserve_cash_pct
         invested = sum(
             p.get("entry_price", 0) * p.get("quantity", 0)
@@ -115,12 +140,12 @@ class RiskManager:
         if price > available:
             return False, f"Insufficient available capital (${available:.0f} after reserve)"
 
-        # --- Rule 7: Confidence threshold ---
+        # --- Rule 9: Confidence threshold ---
         confidence = signal.get("confidence", 0)
         if confidence < self.min_confidence:
             return False, f"Confidence {confidence:.2f} below threshold {self.min_confidence}"
 
-        # --- Rule 8: Must have stop loss for entries ---
+        # --- Rule 10: Must have stop loss for entries ---
         if not signal.get("stop_loss"):
             return False, "No stop loss defined"
 
