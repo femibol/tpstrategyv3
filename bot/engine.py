@@ -158,7 +158,13 @@ class TradingEngine:
         # TradersPost integration
         if self.config.traderspost_webhook_url:
             self.tp_broker = TradersPostBroker(self.config)
-            log.info("TradersPost integration enabled")
+            log.info(f"TradersPost integration ENABLED - webhook configured")
+            log.info(f"TradersPost URL: ...{self.config.traderspost_webhook_url[-20:]}")
+        else:
+            log.warning(
+                "TradersPost NOT configured! Set TRADERSPOST_WEBHOOK_URL env var. "
+                "All trades will be SIMULATED until this is set."
+            )
 
         # TradingView webhook receiver
         if self.config.tradingview_webhook_secret:
@@ -801,12 +807,13 @@ class TradingEngine:
                 else current_price * (1 - tp_pct)
 
         # --- Broker Execution Chain ---
-        # Try IBKR first, then TradersPost as fallback
+        # Priority: IBKR -> TradersPost -> Simulated
         order = None
         executed_via = None
 
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
+            log.info(f"Executing {symbol} via IBKR...")
             order = self.broker.place_order(
                 symbol=symbol,
                 action=action.upper(),
@@ -816,9 +823,14 @@ class TradingEngine:
             )
             if order:
                 executed_via = "IBKR"
+            else:
+                log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
+        else:
+            log.debug(f"IBKR not connected - trying TradersPost for {symbol}")
 
-        # 2. Fallback to TradersPost if IBKR failed or unavailable
+        # 2. TradersPost webhook (primary on Render where IBKR unavailable)
         if not order and self.tp_broker:
+            log.info(f"Sending {action.upper()} {symbol} to TradersPost webhook...")
             tp_signal = {
                 **signal,
                 "quantity": qty,
@@ -826,18 +838,33 @@ class TradingEngine:
                 "stop_loss": stop_loss_price,
                 "take_profit": take_profit_price,
             }
-            tp_result = self.tp_broker.send_signal(tp_signal)
-            if tp_result and tp_result.get("success"):
-                order = {
-                    "order_id": f"tp_{int(datetime.now(self.tz).timestamp())}",
-                    "symbol": symbol,
-                    "action": action,
-                    "quantity": qty,
-                    "status": "sent_to_traderspost",
-                }
-                executed_via = "TradersPost"
+            try:
+                tp_result = self.tp_broker.send_signal(tp_signal)
+                if tp_result and tp_result.get("success"):
+                    order = {
+                        "order_id": f"tp_{int(datetime.now(self.tz).timestamp())}",
+                        "symbol": symbol,
+                        "action": action,
+                        "quantity": qty,
+                        "status": "sent_to_traderspost",
+                    }
+                    executed_via = "TradersPost"
+                    log.info(f"TradersPost accepted {action.upper()} {symbol} (status {tp_result.get('status_code')})")
+                else:
+                    log.error(
+                        f"TradersPost REJECTED {symbol}: "
+                        f"status={tp_result.get('status_code') if tp_result else 'None'} "
+                        f"response={tp_result.get('response', 'no response') if tp_result else 'send_signal returned None'}"
+                    )
+            except Exception as e:
+                log.error(f"TradersPost exception for {symbol}: {e}")
+        elif not order and not self.tp_broker:
+            log.warning(
+                f"TradersPost NOT configured - tp_broker is None. "
+                f"Set TRADERSPOST_WEBHOOK_URL env var on Render!"
+            )
 
-        # 3. If no broker available, track as simulated (paper mode / signal-only)
+        # 3. If no broker available, track as simulated
         if not order:
             order = {
                 "order_id": f"sim_{int(datetime.now(self.tz).timestamp())}",
@@ -847,7 +874,11 @@ class TradingEngine:
                 "status": "simulated",
             }
             executed_via = "Simulated"
-            log.warning(f"No broker available - simulating order for {symbol}")
+            log.warning(
+                f"SIMULATED order for {symbol} - no broker executed. "
+                f"IBKR={'connected' if self.broker and self.broker.is_connected() else 'disconnected'}, "
+                f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}"
+            )
 
         log.info(
             f"ORDER {action.upper()} {symbol} via {executed_via} | "
@@ -937,15 +968,24 @@ class TradingEngine:
                 executed_via = "IBKR"
 
         if not order and self.tp_broker:
+            log.info(f"Closing {symbol} via TradersPost webhook...")
             close_signal = {
                 "symbol": symbol,
                 "action": action.lower(),
                 "quantity": pos["quantity"],
                 "price": current_price,
+                "source": "exit",
             }
-            tp_result = self.tp_broker.send_signal(close_signal)
-            if tp_result and tp_result.get("success"):
-                executed_via = "TradersPost"
+            try:
+                tp_result = self.tp_broker.send_signal(close_signal)
+                if tp_result and tp_result.get("success"):
+                    executed_via = "TradersPost"
+                else:
+                    log.error(f"TradersPost close failed for {symbol}: {tp_result}")
+            except Exception as e:
+                log.error(f"TradersPost close exception for {symbol}: {e}")
+        elif not order and not self.tp_broker:
+            log.warning(f"No broker to close {symbol} - TRADERSPOST_WEBHOOK_URL not set")
 
         # Calculate P&L
         if pos["direction"] == "long":
@@ -1717,7 +1757,17 @@ class TradingEngine:
             "daily_trades": len(self.daily_trades),
             "broker_connected": self.broker.is_connected() if self.broker else False,
             "traderspost_connected": self.tp_broker._connected if self.tp_broker else False,
+            "traderspost_configured": self.tp_broker is not None,
             "traderspost_dual_mode": self.tp_broker.dual_mode if self.tp_broker else False,
+            "traderspost_signals_sent": len(self.tp_broker.signal_history) if self.tp_broker else 0,
+            "traderspost_last_signal": (
+                self.tp_broker.signal_history[-1] if self.tp_broker and self.tp_broker.signal_history else None
+            ),
+            "execution_broker": (
+                "IBKR" if (self.broker and self.broker.is_connected())
+                else "TradersPost" if self.tp_broker
+                else "Simulated"
+            ),
             "politician_tracker": self.politician_tracker.get_status() if self.politician_tracker else None,
             "regime": self.regime_detector.get_status() if self.regime_detector else None,
             "hedging": self.hedging_manager.get_status() if self.hedging_manager else None,
