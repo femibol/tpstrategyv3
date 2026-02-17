@@ -495,6 +495,13 @@ class Dashboard:
             results = self.engine.handle_manual_signal(signal)
             return jsonify({"status": "ok", "results": results})
 
+        # --- Swing Trade Scanner API ---
+
+        @self.app.route("/api/swing-scanner")
+        def swing_scanner():
+            """Get swing trade opportunities with hold duration & profit targets."""
+            return jsonify(self.engine.get_swing_scanner())
+
         # --- Quote API (real-time price lookup) ---
 
         @self.app.route("/api/quote/<symbol>")

@@ -2618,3 +2618,211 @@ class TradingEngine:
         )
 
         return suggestions[:max_suggestions]
+
+    def get_swing_scanner(self):
+        """
+        Scan the market for swing trade opportunities (multi-day holds).
+
+        Analyzes watchlist + top movers for:
+        - Weekly/daily trend (50/200 EMA)
+        - Support/resistance levels
+        - Suggested hold period
+        - Profit target with reasoning
+
+        Returns list of swing trade dicts.
+        """
+        import numpy as np
+
+        results = []
+        if not self.market_data:
+            return results
+
+        # Scan watchlist + any high-RVOL additions
+        symbols = list(set(self.watchlist))
+
+        for symbol in symbols:
+            try:
+                bars = self.market_data.get_bars(symbol, 200)
+                if bars is None or len(bars) < 50:
+                    continue
+
+                closes = bars["close"].values.astype(float)
+                highs = bars["high"].values.astype(float)
+                lows = bars["low"].values.astype(float)
+                volumes = bars["volume"].values.astype(float) if "volume" in bars else None
+
+                current_price = float(closes[-1])
+                if current_price <= 0:
+                    continue
+
+                # --- Trend Analysis ---
+                ema20 = self.indicators.ema(closes, 20)
+                ema50 = self.indicators.ema(closes, 50)
+                ema200 = self.indicators.ema(closes, 200) if len(closes) >= 200 else None
+
+                # Determine trend
+                if ema200 is not None:
+                    if current_price > ema50 > ema200:
+                        trend = "STRONG UPTREND"
+                        trend_score = 3
+                    elif current_price > ema200:
+                        trend = "UPTREND"
+                        trend_score = 2
+                    elif current_price < ema50 < ema200:
+                        trend = "STRONG DOWNTREND"
+                        trend_score = -2
+                    elif current_price < ema200:
+                        trend = "DOWNTREND"
+                        trend_score = -1
+                    else:
+                        trend = "SIDEWAYS"
+                        trend_score = 0
+                else:
+                    if current_price > ema50:
+                        trend = "UPTREND"
+                        trend_score = 2
+                    elif current_price < ema50:
+                        trend = "DOWNTREND"
+                        trend_score = -1
+                    else:
+                        trend = "SIDEWAYS"
+                        trend_score = 0
+
+                # --- RSI ---
+                rsi = self.indicators.rsi(closes, 14)
+
+                # --- ATR for volatility ---
+                atr = self.indicators.atr(highs, lows, closes, period=14)
+                if atr is None or atr <= 0:
+                    continue
+                atr_pct = round(atr / current_price * 100, 2)
+
+                # --- Support / Resistance (recent swing highs/lows) ---
+                lookback = min(60, len(lows))
+                recent_lows = lows[-lookback:]
+                recent_highs = highs[-lookback:]
+                support = float(np.min(recent_lows))
+                resistance = float(np.max(recent_highs))
+
+                # Nearest support: lowest low in last 20 bars
+                near_support = float(np.min(lows[-20:]))
+                # Nearest resistance: highest high in last 20 bars
+                near_resistance = float(np.max(highs[-20:]))
+
+                dist_to_support_pct = round((current_price - near_support) / current_price * 100, 2)
+                dist_to_resistance_pct = round((near_resistance - current_price) / current_price * 100, 2)
+
+                # --- Volume trend ---
+                vol_rising = False
+                if volumes is not None and len(volumes) >= 20:
+                    avg_vol_10 = float(np.mean(volumes[-10:]))
+                    avg_vol_20 = float(np.mean(volumes[-20:]))
+                    vol_rising = avg_vol_10 > avg_vol_20 * 1.2
+
+                # --- Scoring & Recommendation ---
+                score = 0
+                reasons = []
+
+                # Trend points
+                if trend_score >= 2:
+                    score += 30
+                    reasons.append(f"{trend} - price above key moving averages")
+                elif trend_score == -1:
+                    reasons.append("Downtrend - wait for reversal confirmation")
+
+                # RSI oversold bounce opportunity
+                if rsi < 35:
+                    score += 25
+                    reasons.append(f"RSI oversold ({rsi:.0f}) - bounce likely")
+                elif rsi < 45 and trend_score >= 1:
+                    score += 15
+                    reasons.append(f"RSI pulling back ({rsi:.0f}) in uptrend - buy the dip")
+                elif rsi > 70:
+                    score -= 10
+                    reasons.append(f"RSI overbought ({rsi:.0f}) - wait for pullback")
+
+                # Near support = good entry
+                if dist_to_support_pct < 3:
+                    score += 20
+                    reasons.append(f"Near support (${near_support:.2f}) - {dist_to_support_pct:.1f}% away")
+                elif dist_to_support_pct < 5:
+                    score += 10
+                    reasons.append(f"Close to support (${near_support:.2f})")
+
+                # Volume rising
+                if vol_rising:
+                    score += 10
+                    reasons.append("Volume increasing - confirms momentum")
+
+                # Above 200 EMA
+                if ema200 is not None and current_price > ema200:
+                    score += 10
+                    reasons.append(f"Above 200 EMA (${ema200:.2f}) - long-term bullish")
+
+                # --- Calculate targets and hold period ---
+                # Target: next resistance or 2-3x ATR above
+                profit_target = max(near_resistance, current_price + 3 * atr)
+                stop_loss = max(near_support - atr * 0.5, current_price - 2.5 * atr)
+
+                profit_pct = round((profit_target - current_price) / current_price * 100, 2)
+                risk_pct = round((current_price - stop_loss) / current_price * 100, 2)
+                rr_ratio = round(profit_pct / risk_pct, 2) if risk_pct > 0 else 0
+
+                # Estimated hold: distance to target / avg daily move
+                avg_daily_move = atr_pct
+                if avg_daily_move > 0:
+                    est_hold_days = max(2, min(30, round(profit_pct / avg_daily_move)))
+                else:
+                    est_hold_days = 7
+
+                # Hold period description
+                if est_hold_days <= 5:
+                    hold_desc = f"{est_hold_days} days (short swing)"
+                elif est_hold_days <= 14:
+                    hold_desc = f"{est_hold_days} days (swing trade)"
+                else:
+                    hold_desc = f"{est_hold_days} days (position trade)"
+
+                # Only include if score >= 30 (decent opportunity)
+                if score < 30:
+                    continue
+
+                # Rating
+                if score >= 70:
+                    rating = "STRONG BUY"
+                elif score >= 50:
+                    rating = "BUY"
+                elif score >= 30:
+                    rating = "WATCH"
+                else:
+                    continue
+
+                results.append({
+                    "symbol": symbol,
+                    "price": round(current_price, 2),
+                    "rating": rating,
+                    "score": score,
+                    "trend": trend,
+                    "rsi": round(rsi, 1),
+                    "atr_pct": atr_pct,
+                    "support": round(near_support, 2),
+                    "resistance": round(near_resistance, 2),
+                    "profit_target": round(profit_target, 2),
+                    "stop_loss": round(stop_loss, 2),
+                    "profit_pct": profit_pct,
+                    "risk_pct": risk_pct,
+                    "rr_ratio": rr_ratio,
+                    "hold_period": hold_desc,
+                    "hold_days": est_hold_days,
+                    "vol_rising": vol_rising,
+                    "ema50": round(ema50, 2),
+                    "ema200": round(ema200, 2) if ema200 is not None else None,
+                    "reasons": reasons,
+                })
+
+            except Exception as e:
+                log.debug(f"Swing scanner error for {symbol}: {e}")
+
+        # Sort by score descending
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:15]

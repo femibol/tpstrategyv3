@@ -96,30 +96,34 @@ class TradersPostBroker(BaseBroker):
         action = signal.get("action", "").lower()
         symbol = signal.get("symbol", "")
 
-        # --- Rate Limiting ---
+        # Exit signals ALWAYS go through - never rate limit closing positions
+        is_exit = signal.get("source") == "exit" or action in ("sell", "cover", "close", "exit")
+
+        # --- Rate Limiting (entries only, NEVER block exits) ---
         now = time.time()
+        if not is_exit:
+            # Global minimum interval between webhook calls
+            since_last = now - self._last_webhook_time
+            if since_last < self.GLOBAL_MIN_INTERVAL:
+                log.warning(
+                    f"RATE LIMIT: Global cooldown - {since_last:.1f}s since last webhook "
+                    f"(min {self.GLOBAL_MIN_INTERVAL}s). Blocking {action} {symbol}"
+                )
+                return {"success": False, "reason": "rate_limited", "status_code": 429}
 
-        # Global minimum interval between webhook calls
-        since_last = now - self._last_webhook_time
-        if since_last < self.GLOBAL_MIN_INTERVAL:
-            log.warning(
-                f"RATE LIMIT: Global cooldown - {since_last:.1f}s since last webhook "
-                f"(min {self.GLOBAL_MIN_INTERVAL}s). Blocking {action} {symbol}"
-            )
-            return {"success": False, "reason": "rate_limited", "status_code": 429}
-
-        # Per-symbol rate limit
-        sym_times = self._symbol_signals.get(symbol, [])
-        # Purge old timestamps outside the window
-        sym_times = [t for t in sym_times if now - t < self.RATE_LIMIT_WINDOW]
-        if len(sym_times) >= self.RATE_LIMIT_MAX:
-            log.warning(
-                f"RATE LIMIT: {symbol} has {len(sym_times)} signals in last "
-                f"{self.RATE_LIMIT_WINDOW}s (max {self.RATE_LIMIT_MAX}). Blocking."
-            )
-            return {"success": False, "reason": "rate_limited", "status_code": 429}
-        sym_times.append(now)
-        self._symbol_signals[symbol] = sym_times
+            # Per-symbol rate limit
+            sym_times = self._symbol_signals.get(symbol, [])
+            sym_times = [t for t in sym_times if now - t < self.RATE_LIMIT_WINDOW]
+            if len(sym_times) >= self.RATE_LIMIT_MAX:
+                log.warning(
+                    f"RATE LIMIT: {symbol} has {len(sym_times)} signals in last "
+                    f"{self.RATE_LIMIT_WINDOW}s (max {self.RATE_LIMIT_MAX}). Blocking."
+                )
+                return {"success": False, "reason": "rate_limited", "status_code": 429}
+            sym_times.append(now)
+            self._symbol_signals[symbol] = sym_times
+        else:
+            log.info(f"EXIT signal for {symbol} - bypassing rate limits")
         self._last_webhook_time = now
 
         # Route crypto signals to dedicated crypto webhook
@@ -133,7 +137,7 @@ class TradersPostBroker(BaseBroker):
         # Map actions to TradersPost format
         # TradersPost supports: buy, sell, exit, cancel
         # "buy" opens long, "sell" opens short, "exit" closes any position
-        is_exit = signal.get("source") == "exit" or action in ("cover", "close")
+        # is_exit already set above for rate limiting bypass
 
         action_map = {
             "buy": "buy",
