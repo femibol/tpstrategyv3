@@ -3,6 +3,7 @@ Core Trading Engine - The brain of the operation.
 Runs the main event loop, coordinates strategies, risk, and execution.
 Fully automated, no-touch operation.
 """
+import os
 import time
 import threading
 import signal
@@ -134,8 +135,14 @@ class TradingEngine:
         log.info("All components initialized successfully")
 
     def _connect_broker(self):
-        """Connect to IBKR."""
+        """Connect to IBKR (skipped on Render where no TWS is available)."""
         self.broker = IBKRBroker(self.config)
+
+        # Skip IBKR connection on Render - no TWS/Gateway available
+        if os.environ.get("RENDER"):
+            log.info("Running on Render - skipping IBKR connection (using yfinance for data)")
+            return
+
         connected = self.broker.connect()
         if connected:
             log.info(f"Connected to IBKR ({self.config.mode} mode)")
@@ -217,9 +224,13 @@ class TradingEngine:
         self.initialize()
         self.running = True
 
-        # Handle graceful shutdown
-        signal.signal(signal.SIGINT, self._shutdown)
-        signal.signal(signal.SIGTERM, self._shutdown)
+        # Handle graceful shutdown (only works in main thread)
+        try:
+            signal.signal(signal.SIGINT, self._shutdown)
+            signal.signal(signal.SIGTERM, self._shutdown)
+        except ValueError:
+            # Running in a background thread (e.g., Render/gunicorn)
+            log.info("Running in background thread - signal handlers skipped")
 
         # Start scheduler
         self.scheduler.start()
