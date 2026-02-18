@@ -40,6 +40,7 @@ class RiskManager:
         self.max_price = self.risk.get("max_price", 500.0)
         self.max_correlated = self.risk.get("max_correlated_positions", 2)
         self.min_confidence = 0.4
+        self.long_only = self.risk.get("long_only", False)
 
         # Tracking
         self.rejected_signals = []
@@ -82,6 +83,10 @@ class RiskManager:
             return False, f"No position to exit: {symbol}"
 
         # --- Entry signal checks below ---
+
+        # --- Rule 0: Long-only mode (matches TradersPost bullish-only setting) ---
+        if self.long_only and action in ("sell", "short"):
+            return False, f"BLOCKED: {action} {symbol} - long_only mode (no short/bearish entries)"
 
         # --- Rule 1: Max positions ---
         if len(positions) >= self.max_positions:

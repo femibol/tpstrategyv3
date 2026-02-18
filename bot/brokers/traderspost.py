@@ -99,6 +99,11 @@ class TradersPostBroker(BaseBroker):
         # Exit signals ALWAYS go through - never rate limit closing positions
         is_exit = signal.get("source") == "exit" or action in ("sell", "cover", "close", "exit")
 
+        # Block short/bearish entry signals (TradersPost strategy is bullish-only)
+        if not is_exit and action in ("sell", "short"):
+            log.warning(f"BLOCKED: {action} {symbol} - TradersPost is bullish-only, no short entries")
+            return {"success": False, "reason": "long_only", "blocked": True}
+
         # --- Rate Limiting (entries only, NEVER block exits) ---
         now = time.time()
         if not is_exit:
