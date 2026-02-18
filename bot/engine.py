@@ -231,6 +231,8 @@ class TradingEngine:
         # Skip IBKR connection on Render - no TWS/Gateway available
         if os.environ.get("RENDER"):
             log.info("Running on Render - skipping IBKR connection (using yfinance for data)")
+            # Sync positions from Alpaca on startup (Render uses TradersPost → Alpaca)
+            self._sync_positions_from_alpaca()
             return
 
         connected = self.broker.connect()
@@ -309,6 +311,15 @@ class TradingEngine:
             "interval", minutes=5,
             id="health_check"
         )
+
+        # Alpaca position sync every 2 minutes (prevents phantom positions)
+        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
+            self.scheduler.add_job(
+                self._sync_positions_with_broker,
+                "interval", minutes=2,
+                id="alpaca_position_sync"
+            )
+            log.info("Alpaca position sync scheduled (every 2 min)")
 
     def start(self):
         """Start the trading engine main loop."""
@@ -1014,6 +1025,13 @@ class TradingEngine:
                     executed_via = "TradersPost"
                 else:
                     log.error(f"TradersPost close failed for {symbol}: {tp_result}")
+                    # If broker has no position, this is a phantom - clean up internally
+                    if self._alpaca_position_exists(symbol) is False:
+                        log.warning(
+                            f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
+                            f"in broker. Cleaning up internal state."
+                        )
+                        executed_via = "Phantom-Cleanup"
             except Exception as e:
                 log.error(f"TradersPost close exception for {symbol}: {e}")
         elif not order and not self.tp_broker:
@@ -1251,6 +1269,113 @@ class TradingEngine:
             "positions": len(self.positions),
             "daily_pnl": self.daily_pnl,
         })
+
+    # --- Alpaca Position Sync (prevents phantom positions) ---
+
+    def _init_alpaca_client(self):
+        """Lazily initialize Alpaca REST client for position verification."""
+        if hasattr(self, '_alpaca_client'):
+            return self._alpaca_client
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        base_url = self.config.alpaca_base_url
+        if api_key and secret_key:
+            try:
+                import alpaca_trade_api as tradeapi
+                self._alpaca_client = tradeapi.REST(
+                    api_key, secret_key, base_url, api_version='v2'
+                )
+                log.info("Alpaca REST client initialized for position sync")
+            except Exception as e:
+                log.warning(f"Alpaca client init failed: {e}")
+                self._alpaca_client = None
+        else:
+            self._alpaca_client = None
+        return self._alpaca_client
+
+    def _alpaca_position_exists(self, symbol):
+        """Check if a position exists on the Alpaca broker side.
+        Returns True/False, or None if unable to check."""
+        client = self._init_alpaca_client()
+        if not client:
+            return None  # Can't verify without Alpaca credentials
+        try:
+            pos = client.get_position(symbol)
+            return abs(float(pos.qty)) > 0
+        except Exception:
+            # 404 = no position exists, which is what we're checking for
+            return False
+
+    def _sync_positions_from_alpaca(self):
+        """On startup (Render), load actual positions from Alpaca so internal
+        state matches reality. Prevents exits for positions that don't exist."""
+        client = self._init_alpaca_client()
+        if not client:
+            log.info("Alpaca credentials not set - starting with empty positions")
+            return
+        try:
+            broker_positions = client.list_positions()
+            for p in broker_positions:
+                symbol = p.symbol.upper()
+                qty = abs(float(p.qty))
+                entry = float(p.avg_entry_price)
+                side = "long" if float(p.qty) > 0 else "short"
+                self.positions[symbol] = {
+                    "symbol": symbol,
+                    "direction": side,
+                    "quantity": int(qty) if qty == int(qty) else qty,
+                    "entry_price": entry,
+                    "entry_time": datetime.now(self.tz),
+                    "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
+                    "take_profit": entry * 1.04 if side == "long" else entry * 0.96,
+                    "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                    "strategy": "synced_from_alpaca",
+                    "executed_via": "TradersPost",
+                    "max_hold_bars": 40,
+                    "bar_seconds": 300,
+                }
+            if broker_positions:
+                log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
+            else:
+                log.info("Alpaca reports 0 open positions")
+        except Exception as e:
+            log.warning(f"Alpaca startup sync failed: {e}")
+
+    def _sync_positions_with_broker(self):
+        """Reconcile internal positions with actual Alpaca broker positions.
+        Removes phantom positions that exist internally but not at the broker."""
+        client = self._init_alpaca_client()
+        if not client:
+            return
+
+        try:
+            broker_positions = client.list_positions()
+            broker_symbols = {p.symbol.upper() for p in broker_positions}
+        except Exception as e:
+            log.warning(f"Alpaca position sync failed: {e}")
+            return
+
+        # Find phantom positions (in bot but not at broker)
+        phantoms = []
+        for symbol in list(self.positions.keys()):
+            if symbol.upper() not in broker_symbols:
+                phantoms.append(symbol)
+
+        for symbol in phantoms:
+            pos = self.positions[symbol]
+            # Only clean up positions that were sent to TradersPost (not simulated)
+            if pos.get("executed_via") in ("TradersPost", "Phantom-Cleanup"):
+                log.warning(
+                    f"POSITION SYNC: Removing phantom {symbol} "
+                    f"(in bot but not at Alpaca broker)"
+                )
+                del self.positions[symbol]
+
+        if phantoms:
+            log.info(
+                f"Position sync complete: removed {len(phantoms)} phantom(s), "
+                f"{len(self.positions)} positions remain"
+            )
 
     def _handle_tv_signal(self, signal):
         """Handle incoming TradingView webhook signal."""
