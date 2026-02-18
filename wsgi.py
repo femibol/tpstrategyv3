@@ -11,9 +11,11 @@ Render URL: https://your-app.onrender.com
 """
 import os
 import sys
+import time
 import threading
 import atexit
 import logging
+import urllib.request
 
 log = logging.getLogger("trading_bot.wsgi")
 
@@ -67,8 +69,37 @@ def _stop_engine():
         pass
 
 
+# --- Self-ping keep-alive (prevents Render from sleeping the service) ---
+def _keep_alive():
+    """Ping our own /health endpoint every 10 minutes to stay awake."""
+    # Render sets RENDER_EXTERNAL_URL automatically (e.g. https://algobot.onrender.com)
+    base_url = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not base_url:
+        log.info("RENDER_EXTERNAL_URL not set - keep-alive disabled")
+        return
+    health_url = f"{base_url}/health"
+    log.info(f"Keep-alive pinging {health_url} every 10 minutes")
+    while True:
+        time.sleep(600)  # 10 minutes
+        try:
+            req = urllib.request.Request(health_url, method="GET")
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                log.debug(f"Keep-alive ping: {resp.status}")
+        except Exception as e:
+            log.warning(f"Keep-alive ping failed: {e}")
+
+
 # Start engine now (at import time / gunicorn preload)
 _start_engine()
+
+# Start keep-alive thread on Render
+if os.environ.get("RENDER"):
+    _keepalive_thread = threading.Thread(
+        target=_keep_alive,
+        name="KeepAlive",
+        daemon=True,
+    )
+    _keepalive_thread.start()
 
 # Register cleanup
 atexit.register(_stop_engine)
