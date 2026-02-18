@@ -40,11 +40,11 @@ class TradeAnalyzer:
         self.hourly_performance = defaultdict(lambda: {"trades": 0, "pnl": 0.0})
         self.regime_performance = defaultdict(lambda: defaultdict(lambda: {"trades": 0, "pnl": 0.0, "wins": 0}))
 
-        # Adaptation settings
+        # Adaptation settings (aggressive - learn fast, adapt fast)
         self.lookback_trades = 100     # How many trades to analyze
-        self.min_trades_for_adjustment = 10  # Min trades before adjusting
-        self.weight_adjustment_rate = 0.1    # Max 10% shift per adaptation cycle
-        self.cooldown_losses = 3       # Consecutive losses before reducing weight
+        self.min_trades_for_adjustment = 5   # Start adjusting after just 5 trades
+        self.weight_adjustment_rate = 0.20   # Max 20% shift per adaptation cycle
+        self.cooldown_losses = 2       # 2 consecutive losses triggers weight reduction
 
         # Trade history persistence
         self._trades_file = self.data_dir / "trade_history.json"
@@ -258,38 +258,38 @@ class TradeAnalyzer:
             "regime_adjustments": {},
         }
 
-        # Strategy weight adjustments
+        # Strategy weight adjustments (aggressive - reward winners, punish losers fast)
         base_allocation = self.config.strategy_allocation
         if strategy_perf:
-            max_score = max((s.get("win_rate", 0) for s in strategy_perf.values()), default=50)
             for strat, perf in strategy_perf.items():
-                if perf["trades"] < 5:
+                if perf["trades"] < 3:  # Only need 3 trades now
                     continue
                 current_weight = base_allocation.get(strat, 0.20)
                 win_rate = perf.get("win_rate", 50)
 
-                # Increase weight for winning strategies, decrease for losing
-                if win_rate > 55 and perf["total_pnl"] > 0:
-                    adj = min(self.weight_adjustment_rate, (win_rate - 50) / 100)
+                # Boost winning strategies faster
+                if win_rate > 50 and perf["total_pnl"] > 0:
+                    adj = min(self.weight_adjustment_rate, (win_rate - 40) / 80)
                     recommendations["strategy_weight_adjustments"][strat] = round(
-                        min(0.40, current_weight + adj), 3
+                        min(0.45, current_weight + adj), 3
                     )
-                elif win_rate < 35 and perf["total_pnl"] < 0:
-                    adj = min(self.weight_adjustment_rate, (50 - win_rate) / 100)
+                # Cut losing strategies harder
+                elif win_rate < 40 and perf["total_pnl"] < 0:
+                    adj = min(self.weight_adjustment_rate, (50 - win_rate) / 60)
                     recommendations["strategy_weight_adjustments"][strat] = round(
-                        max(0.05, current_weight - adj), 3
+                        max(0.03, current_weight - adj), 3
                     )
 
-        # Symbol recommendations
+        # Symbol recommendations (aggressive - avoid losers faster, favor winners)
         for symbol, perf in symbol_perf.items():
-            if perf["trades"] >= 3:
-                if perf.get("win_rate", 0) < 25 and perf["total_pnl"] < 0:
+            if perf["trades"] >= 2:  # Only 2 trades needed to start learning
+                if perf.get("win_rate", 0) < 35 and perf["total_pnl"] < 0:
                     recommendations["symbols_to_avoid"].append({
                         "symbol": symbol,
                         "win_rate": perf.get("win_rate", 0),
                         "total_pnl": round(perf["total_pnl"], 2),
                     })
-                elif perf.get("win_rate", 0) > 65 and perf["total_pnl"] > 0:
+                elif perf.get("win_rate", 0) > 55 and perf["total_pnl"] > 0:
                     recommendations["symbols_performing_well"].append({
                         "symbol": symbol,
                         "win_rate": perf.get("win_rate", 0),
@@ -352,14 +352,14 @@ class TradeAnalyzer:
         if total_score <= 0 or len(self.strategy_scores) < 2:
             return adjusted
 
-        # Normalize scores to weights
+        # Normalize scores to weights (aggressive rebalancing)
         for strat, score in self.strategy_scores.items():
             if strat in adjusted:
                 base = adjusted[strat]
-                # Clamp adjustment to +-10% of base
+                # Clamp adjustment to +-20% of base
                 score_factor = score / max(total_score, 1)
                 adjustment = (score_factor - (1 / len(self.strategy_scores))) * self.weight_adjustment_rate
-                adjusted[strat] = round(max(0.05, min(0.40, base + adjustment)), 3)
+                adjusted[strat] = round(max(0.03, min(0.45, base + adjustment)), 3)
 
         # Normalize to sum to ~1.0
         total = sum(adjusted.values())
@@ -370,7 +370,7 @@ class TradeAnalyzer:
 
     def should_avoid_symbol(self, symbol):
         """Check if a symbol should be avoided based on learning."""
-        return self.symbol_scores.get(symbol, 0) < -15
+        return self.symbol_scores.get(symbol, 0) < -8  # More sensitive: avoid losers faster
 
     def get_status(self):
         """Get learning system status for dashboard."""

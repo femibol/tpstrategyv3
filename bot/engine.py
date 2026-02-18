@@ -32,6 +32,7 @@ from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
+from bot.learning.auto_tuner import AutoTuner
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
 from bot.utils.logger import setup_logger, get_logger
@@ -73,6 +74,7 @@ class TradingEngine:
         self.politician_tracker = None
         self.news_feed = None
         self.trade_analyzer = None
+        self.auto_tuner = None
         self.regime_detector = None
         self.hedging_manager = None
         self.scheduler = None
@@ -203,6 +205,11 @@ class TradingEngine:
         if self.ai_insights.is_available():
             log.info("Claude AI Insights ENABLED")
 
+        # Auto-Tuner (autonomously optimizes parameters from AI analysis)
+        self.auto_tuner = AutoTuner(self.config)
+        if self.auto_tuner.is_available():
+            log.info("Auto-Tuner ENABLED - bot will self-optimize parameters")
+
         # Load persisted trade history from previous sessions
         if self.trade_analyzer:
             persisted = self.trade_analyzer.get_persisted_trades()
@@ -310,6 +317,20 @@ class TradingEngine:
             self._health_check,
             "interval", minutes=5,
             id="health_check"
+        )
+
+        # Auto-Tune: Run midday (12:30 PM) and after EOD (4:30 PM)
+        self.scheduler.add_job(
+            self._run_auto_tune,
+            "cron", hour=12, minute=30,
+            day_of_week="mon-fri",
+            id="auto_tune_midday"
+        )
+        self.scheduler.add_job(
+            self._run_auto_tune,
+            "cron", hour=16, minute=30,
+            day_of_week="mon-fri",
+            id="auto_tune_eod"
         )
 
         # Alpaca position sync every 2 minutes (prevents phantom positions)
@@ -1845,6 +1866,49 @@ class TradingEngine:
             weight_adj = analysis.get("strategy_weight_adjustments", {})
             if weight_adj:
                 log.info(f"LEARNING: Strategy weight adjustments: {weight_adj}")
+
+        # Run auto-tune after EOD learning (this is where the bot improves itself)
+        self._run_auto_tune()
+
+    def _run_auto_tune(self):
+        """Run autonomous parameter optimization using AI analysis."""
+        if not self.auto_tuner or not self.auto_tuner.is_available():
+            return
+
+        log.info("=== AUTO-TUNE CYCLE ===")
+        try:
+            regime_data = None
+            if self.regime_detector:
+                regime_data = {
+                    "regime": self.regime_detector.current_regime,
+                    "confidence": self.regime_detector.regime_confidence,
+                }
+
+            strategy_scores = {}
+            if self.trade_analyzer:
+                strategy_scores = self.trade_analyzer.strategy_scores
+
+            result = self.auto_tuner.run_auto_tune(
+                trade_history=self.trade_history,
+                performance_stats=self.performance_stats,
+                strategy_scores=strategy_scores,
+                regime_data=regime_data,
+                notifier=self.notifier,
+            )
+
+            if result.get("applied"):
+                # Reload strategy capital with new allocations
+                alloc = self.config.strategy_allocation
+                for name, strategy in self.strategies.items():
+                    new_alloc = alloc.get(name, 0.25)
+                    strategy.update_capital(self.current_balance * new_alloc)
+
+                log.info(f"Auto-Tune applied {result['total_changes']} changes - strategies reloaded")
+            else:
+                log.info(f"Auto-Tune: {result.get('reason', 'no changes')}")
+
+        except Exception as e:
+            log.error(f"Auto-Tune error: {e}", exc_info=True)
 
     def _health_check(self):
         """Periodic health check."""

@@ -201,6 +201,32 @@ class Dashboard:
             )
             return jsonify({"insight": insight})
 
+        # --- Auto-Tuner (autonomous parameter optimization) ---
+
+        @self.app.route("/api/auto-tuner")
+        def auto_tuner_status():
+            """Get auto-tuner status and recent changes."""
+            if self.engine.auto_tuner:
+                return jsonify(self.engine.auto_tuner.get_status())
+            return jsonify({"enabled": False})
+
+        @self.app.route("/api/auto-tuner/changelog")
+        def auto_tuner_changelog():
+            """Get full auto-tuner changelog."""
+            if self.engine.auto_tuner:
+                return jsonify(self.engine.auto_tuner.get_changelog())
+            return jsonify([])
+
+        @self.app.route("/api/auto-tuner/run", methods=["POST"])
+        @self._require_auth
+        def run_auto_tune():
+            """Manually trigger auto-tune cycle."""
+            if not self.engine.auto_tuner or not self.engine.auto_tuner.is_available():
+                return jsonify({"error": "Auto-tuner not available (set ANTHROPIC_API_KEY)"}), 400
+
+            self.engine._run_auto_tune()
+            return jsonify({"status": "Auto-tune cycle triggered"})
+
         @self.app.route("/api/hedging")
         def hedging():
             if self.engine.hedging_manager:
