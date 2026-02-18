@@ -562,6 +562,7 @@
         <span id="statusText" style="font-size:0.8em">--</span>
         <span class="mode-badge" id="modeBadge">--</span>
         <span class="mode-badge" id="dataBadge" style="font-size:0.55em">--</span>
+        <span class="mode-badge" id="brokerBadge" style="font-size:0.55em">--</span>
     </div>
 </div>
 
@@ -1828,13 +1829,25 @@ async function update() {
         document.getElementById('modeBadge').textContent = status.mode.toUpperCase();
         document.getElementById('modeBadge').className = 'mode-badge mode-' + status.mode;
 
-        // Data source badge (IBKR Real-Time vs Yahoo Delayed)
+        // Data source badge (IBKR Real-Time vs Alpaca vs Yahoo Delayed)
         if (status.data_source) {
             var ds = status.data_source;
             var dbadge = document.getElementById('dataBadge');
             var dsLabel = ds.streaming ? ds.source + ' (' + ds.subscribed_symbols + ')' : ds.source;
             dbadge.textContent = dsLabel;
             dbadge.className = 'mode-badge data-' + ds.status;
+        }
+
+        // Execution broker badge
+        var bbadge = document.getElementById('brokerBadge');
+        var execBroker = status.execution_broker || 'Simulated';
+        bbadge.textContent = execBroker;
+        if (execBroker === 'TradersPost') {
+            bbadge.className = 'mode-badge data-connected';
+        } else if (execBroker === 'IBKR') {
+            bbadge.className = 'mode-badge data-live';
+        } else {
+            bbadge.className = 'mode-badge data-delayed';
         }
 
         document.getElementById('balance').textContent = '$' + fmtMoney(status.balance);

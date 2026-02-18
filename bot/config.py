@@ -121,6 +121,10 @@ class Config:
         return os.getenv("TRADERSPOST_WEBHOOK_URL_SECONDARY", "")
 
     @property
+    def traderspost_webhook_url_crypto(self):
+        return os.getenv("TRADERSPOST_WEBHOOK_URL_CRYPTO", "")
+
+    @property
     def traderspost_api_key(self):
         return os.getenv("TRADERSPOST_API_KEY", "")
 

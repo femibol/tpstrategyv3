@@ -31,6 +31,8 @@ from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
+from bot.learning.ai_insights import AIInsights
+from bot.learning.auto_tuner import AutoTuner
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
 from bot.utils.logger import setup_logger, get_logger
@@ -72,6 +74,7 @@ class TradingEngine:
         self.politician_tracker = None
         self.news_feed = None
         self.trade_analyzer = None
+        self.auto_tuner = None
         self.regime_detector = None
         self.hedging_manager = None
         self.scheduler = None
@@ -85,6 +88,10 @@ class TradingEngine:
         self.peak_balance = self.config.starting_balance
         self.current_balance = self.config.starting_balance
         self.start_of_day_balance = self.config.starting_balance
+
+        # Signal deduplication - prevent duplicate entries
+        self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
+        self._signal_cooldown_secs = 120  # Min seconds between signals for same symbol
 
         # Performance tracking
         self.trade_history = []
@@ -158,7 +165,13 @@ class TradingEngine:
         # TradersPost integration
         if self.config.traderspost_webhook_url:
             self.tp_broker = TradersPostBroker(self.config)
-            log.info("TradersPost integration enabled")
+            log.info(f"TradersPost integration ENABLED - webhook configured")
+            log.info(f"TradersPost URL: ...{self.config.traderspost_webhook_url[-20:]}")
+        else:
+            log.warning(
+                "TradersPost NOT configured! Set TRADERSPOST_WEBHOOK_URL env var. "
+                "All trades will be SIMULATED until this is set."
+            )
 
         # TradingView webhook receiver
         if self.config.tradingview_webhook_secret:
@@ -187,6 +200,23 @@ class TradingEngine:
         self.trade_analyzer = TradeAnalyzer(self.config)
         log.info("Trade learning system enabled")
 
+        # Claude AI Insights (analyzes trades for deeper learning)
+        self.ai_insights = AIInsights(self.config)
+        if self.ai_insights.is_available():
+            log.info("Claude AI Insights ENABLED")
+
+        # Auto-Tuner (autonomously optimizes parameters from AI analysis)
+        self.auto_tuner = AutoTuner(self.config)
+        if self.auto_tuner.is_available():
+            log.info("Auto-Tuner ENABLED - bot will self-optimize parameters")
+
+        # Load persisted trade history from previous sessions
+        if self.trade_analyzer:
+            persisted = self.trade_analyzer.get_persisted_trades()
+            if persisted:
+                self.trade_history = list(persisted)
+                log.info(f"Restored {len(persisted)} trades from previous sessions")
+
         # Market regime detector
         self.regime_detector = RegimeDetector(self.indicators)
         log.info("Market regime detector enabled")
@@ -208,6 +238,8 @@ class TradingEngine:
         # Skip IBKR connection on Render - no TWS/Gateway available
         if os.environ.get("RENDER"):
             log.info("Running on Render - skipping IBKR connection (using yfinance for data)")
+            # Sync positions from Alpaca on startup (Render uses TradersPost → Alpaca)
+            self._sync_positions_from_alpaca()
             return
 
         connected = self.broker.connect()
@@ -286,6 +318,29 @@ class TradingEngine:
             "interval", minutes=5,
             id="health_check"
         )
+
+        # Auto-Tune: Run midday (12:30 PM) and after EOD (4:30 PM)
+        self.scheduler.add_job(
+            self._run_auto_tune,
+            "cron", hour=12, minute=30,
+            day_of_week="mon-fri",
+            id="auto_tune_midday"
+        )
+        self.scheduler.add_job(
+            self._run_auto_tune,
+            "cron", hour=16, minute=30,
+            day_of_week="mon-fri",
+            id="auto_tune_eod"
+        )
+
+        # Alpaca position sync every 2 minutes (prevents phantom positions)
+        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
+            self.scheduler.add_job(
+                self._sync_positions_with_broker,
+                "interval", minutes=2,
+                id="alpaca_position_sync"
+            )
+            log.info("Alpaca position sync scheduled (every 2 min)")
 
     def start(self):
         """Start the trading engine main loop."""
@@ -752,16 +807,31 @@ class TradingEngine:
         symbol = signal["symbol"]
         action = signal["action"]  # buy, sell, short, cover
         strategy = signal.get("strategy", "unknown")
+        now = datetime.now(self.tz)
 
         # LONG-ONLY MODE: Block all short signals
         if action in ("short",):
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
 
-        # Skip if we already have a position (for buy signals)
-        if action in ("buy", "short") and symbol in self.positions:
-            log.debug(f"Skipping {action} {symbol} - already in position")
-            return
+        # --- DUPLICATE ENTRY GUARD ---
+        # Prevent same symbol from being entered twice within cooldown window
+        if action in ("buy", "short"):
+            if symbol in self.positions:
+                log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
+                return
+
+            last_signal = self._signal_cooldowns.get(symbol)
+            if last_signal and (now - last_signal).total_seconds() < self._signal_cooldown_secs:
+                elapsed = int((now - last_signal).total_seconds())
+                log.warning(
+                    f"COOLDOWN BLOCKED: {symbol} signal rejected - "
+                    f"last signal {elapsed}s ago (min {self._signal_cooldown_secs}s)"
+                )
+                return
+
+            # Record this signal time BEFORE execution (prevents race condition)
+            self._signal_cooldowns[symbol] = now
 
         # Position sizing - use market price if available, or signal's price
         current_price = self.market_data.get_price(symbol) if self.market_data else None
@@ -801,12 +871,13 @@ class TradingEngine:
                 else current_price * (1 - tp_pct)
 
         # --- Broker Execution Chain ---
-        # Try IBKR first, then TradersPost as fallback
+        # Priority: IBKR -> TradersPost -> Simulated
         order = None
         executed_via = None
 
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
+            log.info(f"Executing {symbol} via IBKR...")
             order = self.broker.place_order(
                 symbol=symbol,
                 action=action.upper(),
@@ -816,9 +887,14 @@ class TradingEngine:
             )
             if order:
                 executed_via = "IBKR"
+            else:
+                log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
+        else:
+            log.debug(f"IBKR not connected - trying TradersPost for {symbol}")
 
-        # 2. Fallback to TradersPost if IBKR failed or unavailable
+        # 2. TradersPost webhook (primary on Render where IBKR unavailable)
         if not order and self.tp_broker:
+            log.info(f"Sending {action.upper()} {symbol} to TradersPost webhook...")
             tp_signal = {
                 **signal,
                 "quantity": qty,
@@ -826,18 +902,33 @@ class TradingEngine:
                 "stop_loss": stop_loss_price,
                 "take_profit": take_profit_price,
             }
-            tp_result = self.tp_broker.send_signal(tp_signal)
-            if tp_result and tp_result.get("success"):
-                order = {
-                    "order_id": f"tp_{int(datetime.now(self.tz).timestamp())}",
-                    "symbol": symbol,
-                    "action": action,
-                    "quantity": qty,
-                    "status": "sent_to_traderspost",
-                }
-                executed_via = "TradersPost"
+            try:
+                tp_result = self.tp_broker.send_signal(tp_signal)
+                if tp_result and tp_result.get("success"):
+                    order = {
+                        "order_id": f"tp_{int(datetime.now(self.tz).timestamp())}",
+                        "symbol": symbol,
+                        "action": action,
+                        "quantity": qty,
+                        "status": "sent_to_traderspost",
+                    }
+                    executed_via = "TradersPost"
+                    log.info(f"TradersPost accepted {action.upper()} {symbol} (status {tp_result.get('status_code')})")
+                else:
+                    log.error(
+                        f"TradersPost REJECTED {symbol}: "
+                        f"status={tp_result.get('status_code') if tp_result else 'None'} "
+                        f"response={tp_result.get('response', 'no response') if tp_result else 'send_signal returned None'}"
+                    )
+            except Exception as e:
+                log.error(f"TradersPost exception for {symbol}: {e}")
+        elif not order and not self.tp_broker:
+            log.warning(
+                f"TradersPost NOT configured - tp_broker is None. "
+                f"Set TRADERSPOST_WEBHOOK_URL env var on Render!"
+            )
 
-        # 3. If no broker available, track as simulated (paper mode / signal-only)
+        # 3. If no broker available, track as simulated
         if not order:
             order = {
                 "order_id": f"sim_{int(datetime.now(self.tz).timestamp())}",
@@ -847,7 +938,11 @@ class TradingEngine:
                 "status": "simulated",
             }
             executed_via = "Simulated"
-            log.warning(f"No broker available - simulating order for {symbol}")
+            log.warning(
+                f"SIMULATED order for {symbol} - no broker executed. "
+                f"IBKR={'connected' if self.broker and self.broker.is_connected() else 'disconnected'}, "
+                f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}"
+            )
 
         log.info(
             f"ORDER {action.upper()} {symbol} via {executed_via} | "
@@ -937,15 +1032,31 @@ class TradingEngine:
                 executed_via = "IBKR"
 
         if not order and self.tp_broker:
+            log.info(f"Closing {symbol} via TradersPost webhook...")
             close_signal = {
                 "symbol": symbol,
                 "action": action.lower(),
                 "quantity": pos["quantity"],
                 "price": current_price,
+                "source": "exit",
             }
-            tp_result = self.tp_broker.send_signal(close_signal)
-            if tp_result and tp_result.get("success"):
-                executed_via = "TradersPost"
+            try:
+                tp_result = self.tp_broker.send_signal(close_signal)
+                if tp_result and tp_result.get("success"):
+                    executed_via = "TradersPost"
+                else:
+                    log.error(f"TradersPost close failed for {symbol}: {tp_result}")
+                    # If broker has no position, this is a phantom - clean up internally
+                    if self._alpaca_position_exists(symbol) is False:
+                        log.warning(
+                            f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
+                            f"in broker. Cleaning up internal state."
+                        )
+                        executed_via = "Phantom-Cleanup"
+            except Exception as e:
+                log.error(f"TradersPost close exception for {symbol}: {e}")
+        elif not order and not self.tp_broker:
+            log.warning(f"No broker to close {symbol} - TRADERSPOST_WEBHOOK_URL not set")
 
         # Calculate P&L
         if pos["direction"] == "long":
@@ -998,6 +1109,10 @@ class TradingEngine:
 
         # Update win/loss stats
         self._update_performance_stats(pnl)
+
+        # Persist trade to disk (survives restarts for AI learning)
+        if self.trade_analyzer:
+            self.trade_analyzer.persist_trade(self.trade_history[-1])
 
         # Update watchlist performance tracking
         if symbol in self.watchlist:
@@ -1175,6 +1290,113 @@ class TradingEngine:
             "positions": len(self.positions),
             "daily_pnl": self.daily_pnl,
         })
+
+    # --- Alpaca Position Sync (prevents phantom positions) ---
+
+    def _init_alpaca_client(self):
+        """Lazily initialize Alpaca REST client for position verification."""
+        if hasattr(self, '_alpaca_client'):
+            return self._alpaca_client
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        base_url = self.config.alpaca_base_url
+        if api_key and secret_key:
+            try:
+                import alpaca_trade_api as tradeapi
+                self._alpaca_client = tradeapi.REST(
+                    api_key, secret_key, base_url, api_version='v2'
+                )
+                log.info("Alpaca REST client initialized for position sync")
+            except Exception as e:
+                log.warning(f"Alpaca client init failed: {e}")
+                self._alpaca_client = None
+        else:
+            self._alpaca_client = None
+        return self._alpaca_client
+
+    def _alpaca_position_exists(self, symbol):
+        """Check if a position exists on the Alpaca broker side.
+        Returns True/False, or None if unable to check."""
+        client = self._init_alpaca_client()
+        if not client:
+            return None  # Can't verify without Alpaca credentials
+        try:
+            pos = client.get_position(symbol)
+            return abs(float(pos.qty)) > 0
+        except Exception:
+            # 404 = no position exists, which is what we're checking for
+            return False
+
+    def _sync_positions_from_alpaca(self):
+        """On startup (Render), load actual positions from Alpaca so internal
+        state matches reality. Prevents exits for positions that don't exist."""
+        client = self._init_alpaca_client()
+        if not client:
+            log.info("Alpaca credentials not set - starting with empty positions")
+            return
+        try:
+            broker_positions = client.list_positions()
+            for p in broker_positions:
+                symbol = p.symbol.upper()
+                qty = abs(float(p.qty))
+                entry = float(p.avg_entry_price)
+                side = "long" if float(p.qty) > 0 else "short"
+                self.positions[symbol] = {
+                    "symbol": symbol,
+                    "direction": side,
+                    "quantity": int(qty) if qty == int(qty) else qty,
+                    "entry_price": entry,
+                    "entry_time": datetime.now(self.tz),
+                    "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
+                    "take_profit": entry * 1.04 if side == "long" else entry * 0.96,
+                    "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                    "strategy": "synced_from_alpaca",
+                    "executed_via": "TradersPost",
+                    "max_hold_bars": 40,
+                    "bar_seconds": 300,
+                }
+            if broker_positions:
+                log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
+            else:
+                log.info("Alpaca reports 0 open positions")
+        except Exception as e:
+            log.warning(f"Alpaca startup sync failed: {e}")
+
+    def _sync_positions_with_broker(self):
+        """Reconcile internal positions with actual Alpaca broker positions.
+        Removes phantom positions that exist internally but not at the broker."""
+        client = self._init_alpaca_client()
+        if not client:
+            return
+
+        try:
+            broker_positions = client.list_positions()
+            broker_symbols = {p.symbol.upper() for p in broker_positions}
+        except Exception as e:
+            log.warning(f"Alpaca position sync failed: {e}")
+            return
+
+        # Find phantom positions (in bot but not at broker)
+        phantoms = []
+        for symbol in list(self.positions.keys()):
+            if symbol.upper() not in broker_symbols:
+                phantoms.append(symbol)
+
+        for symbol in phantoms:
+            pos = self.positions[symbol]
+            # Only clean up positions that were sent to TradersPost (not simulated)
+            if pos.get("executed_via") in ("TradersPost", "Phantom-Cleanup"):
+                log.warning(
+                    f"POSITION SYNC: Removing phantom {symbol} "
+                    f"(in bot but not at Alpaca broker)"
+                )
+                del self.positions[symbol]
+
+        if phantoms:
+            log.info(
+                f"Position sync complete: removed {len(phantoms)} phantom(s), "
+                f"{len(self.positions)} positions remain"
+            )
 
     def _handle_tv_signal(self, signal):
         """Handle incoming TradingView webhook signal."""
@@ -1645,6 +1867,49 @@ class TradingEngine:
             if weight_adj:
                 log.info(f"LEARNING: Strategy weight adjustments: {weight_adj}")
 
+        # Run auto-tune after EOD learning (this is where the bot improves itself)
+        self._run_auto_tune()
+
+    def _run_auto_tune(self):
+        """Run autonomous parameter optimization using AI analysis."""
+        if not self.auto_tuner or not self.auto_tuner.is_available():
+            return
+
+        log.info("=== AUTO-TUNE CYCLE ===")
+        try:
+            regime_data = None
+            if self.regime_detector:
+                regime_data = {
+                    "regime": self.regime_detector.current_regime,
+                    "confidence": self.regime_detector.regime_confidence,
+                }
+
+            strategy_scores = {}
+            if self.trade_analyzer:
+                strategy_scores = self.trade_analyzer.strategy_scores
+
+            result = self.auto_tuner.run_auto_tune(
+                trade_history=self.trade_history,
+                performance_stats=self.performance_stats,
+                strategy_scores=strategy_scores,
+                regime_data=regime_data,
+                notifier=self.notifier,
+            )
+
+            if result.get("applied"):
+                # Reload strategy capital with new allocations
+                alloc = self.config.strategy_allocation
+                for name, strategy in self.strategies.items():
+                    new_alloc = alloc.get(name, 0.25)
+                    strategy.update_capital(self.current_balance * new_alloc)
+
+                log.info(f"Auto-Tune applied {result['total_changes']} changes - strategies reloaded")
+            else:
+                log.info(f"Auto-Tune: {result.get('reason', 'no changes')}")
+
+        except Exception as e:
+            log.error(f"Auto-Tune error: {e}", exc_info=True)
+
     def _health_check(self):
         """Periodic health check."""
         if not self.broker.is_connected():
@@ -1717,7 +1982,17 @@ class TradingEngine:
             "daily_trades": len(self.daily_trades),
             "broker_connected": self.broker.is_connected() if self.broker else False,
             "traderspost_connected": self.tp_broker._connected if self.tp_broker else False,
+            "traderspost_configured": self.tp_broker is not None,
             "traderspost_dual_mode": self.tp_broker.dual_mode if self.tp_broker else False,
+            "traderspost_signals_sent": len(self.tp_broker.signal_history) if self.tp_broker else 0,
+            "traderspost_last_signal": (
+                self.tp_broker.signal_history[-1] if self.tp_broker and self.tp_broker.signal_history else None
+            ),
+            "execution_broker": (
+                "IBKR" if (self.broker and self.broker.is_connected())
+                else "TradersPost" if self.tp_broker
+                else "Simulated"
+            ),
             "politician_tracker": self.politician_tracker.get_status() if self.politician_tracker else None,
             "regime": self.regime_detector.get_status() if self.regime_detector else None,
             "hedging": self.hedging_manager.get_status() if self.hedging_manager else None,
@@ -2549,3 +2824,211 @@ class TradingEngine:
         )
 
         return suggestions[:max_suggestions]
+
+    def get_swing_scanner(self):
+        """
+        Scan the market for swing trade opportunities (multi-day holds).
+
+        Analyzes watchlist + top movers for:
+        - Weekly/daily trend (50/200 EMA)
+        - Support/resistance levels
+        - Suggested hold period
+        - Profit target with reasoning
+
+        Returns list of swing trade dicts.
+        """
+        import numpy as np
+
+        results = []
+        if not self.market_data:
+            return results
+
+        # Scan watchlist + any high-RVOL additions
+        symbols = list(set(self.watchlist))
+
+        for symbol in symbols:
+            try:
+                bars = self.market_data.get_bars(symbol, 200)
+                if bars is None or len(bars) < 50:
+                    continue
+
+                closes = bars["close"].values.astype(float)
+                highs = bars["high"].values.astype(float)
+                lows = bars["low"].values.astype(float)
+                volumes = bars["volume"].values.astype(float) if "volume" in bars else None
+
+                current_price = float(closes[-1])
+                if current_price <= 0:
+                    continue
+
+                # --- Trend Analysis ---
+                ema20 = self.indicators.ema(closes, 20)
+                ema50 = self.indicators.ema(closes, 50)
+                ema200 = self.indicators.ema(closes, 200) if len(closes) >= 200 else None
+
+                # Determine trend
+                if ema200 is not None:
+                    if current_price > ema50 > ema200:
+                        trend = "STRONG UPTREND"
+                        trend_score = 3
+                    elif current_price > ema200:
+                        trend = "UPTREND"
+                        trend_score = 2
+                    elif current_price < ema50 < ema200:
+                        trend = "STRONG DOWNTREND"
+                        trend_score = -2
+                    elif current_price < ema200:
+                        trend = "DOWNTREND"
+                        trend_score = -1
+                    else:
+                        trend = "SIDEWAYS"
+                        trend_score = 0
+                else:
+                    if current_price > ema50:
+                        trend = "UPTREND"
+                        trend_score = 2
+                    elif current_price < ema50:
+                        trend = "DOWNTREND"
+                        trend_score = -1
+                    else:
+                        trend = "SIDEWAYS"
+                        trend_score = 0
+
+                # --- RSI ---
+                rsi = self.indicators.rsi(closes, 14)
+
+                # --- ATR for volatility ---
+                atr = self.indicators.atr(highs, lows, closes, period=14)
+                if atr is None or atr <= 0:
+                    continue
+                atr_pct = round(atr / current_price * 100, 2)
+
+                # --- Support / Resistance (recent swing highs/lows) ---
+                lookback = min(60, len(lows))
+                recent_lows = lows[-lookback:]
+                recent_highs = highs[-lookback:]
+                support = float(np.min(recent_lows))
+                resistance = float(np.max(recent_highs))
+
+                # Nearest support: lowest low in last 20 bars
+                near_support = float(np.min(lows[-20:]))
+                # Nearest resistance: highest high in last 20 bars
+                near_resistance = float(np.max(highs[-20:]))
+
+                dist_to_support_pct = round((current_price - near_support) / current_price * 100, 2)
+                dist_to_resistance_pct = round((near_resistance - current_price) / current_price * 100, 2)
+
+                # --- Volume trend ---
+                vol_rising = False
+                if volumes is not None and len(volumes) >= 20:
+                    avg_vol_10 = float(np.mean(volumes[-10:]))
+                    avg_vol_20 = float(np.mean(volumes[-20:]))
+                    vol_rising = avg_vol_10 > avg_vol_20 * 1.2
+
+                # --- Scoring & Recommendation ---
+                score = 0
+                reasons = []
+
+                # Trend points
+                if trend_score >= 2:
+                    score += 30
+                    reasons.append(f"{trend} - price above key moving averages")
+                elif trend_score == -1:
+                    reasons.append("Downtrend - wait for reversal confirmation")
+
+                # RSI oversold bounce opportunity
+                if rsi < 35:
+                    score += 25
+                    reasons.append(f"RSI oversold ({rsi:.0f}) - bounce likely")
+                elif rsi < 45 and trend_score >= 1:
+                    score += 15
+                    reasons.append(f"RSI pulling back ({rsi:.0f}) in uptrend - buy the dip")
+                elif rsi > 70:
+                    score -= 10
+                    reasons.append(f"RSI overbought ({rsi:.0f}) - wait for pullback")
+
+                # Near support = good entry
+                if dist_to_support_pct < 3:
+                    score += 20
+                    reasons.append(f"Near support (${near_support:.2f}) - {dist_to_support_pct:.1f}% away")
+                elif dist_to_support_pct < 5:
+                    score += 10
+                    reasons.append(f"Close to support (${near_support:.2f})")
+
+                # Volume rising
+                if vol_rising:
+                    score += 10
+                    reasons.append("Volume increasing - confirms momentum")
+
+                # Above 200 EMA
+                if ema200 is not None and current_price > ema200:
+                    score += 10
+                    reasons.append(f"Above 200 EMA (${ema200:.2f}) - long-term bullish")
+
+                # --- Calculate targets and hold period ---
+                # Target: next resistance or 2-3x ATR above
+                profit_target = max(near_resistance, current_price + 3 * atr)
+                stop_loss = max(near_support - atr * 0.5, current_price - 2.5 * atr)
+
+                profit_pct = round((profit_target - current_price) / current_price * 100, 2)
+                risk_pct = round((current_price - stop_loss) / current_price * 100, 2)
+                rr_ratio = round(profit_pct / risk_pct, 2) if risk_pct > 0 else 0
+
+                # Estimated hold: distance to target / avg daily move
+                avg_daily_move = atr_pct
+                if avg_daily_move > 0:
+                    est_hold_days = max(2, min(30, round(profit_pct / avg_daily_move)))
+                else:
+                    est_hold_days = 7
+
+                # Hold period description
+                if est_hold_days <= 5:
+                    hold_desc = f"{est_hold_days} days (short swing)"
+                elif est_hold_days <= 14:
+                    hold_desc = f"{est_hold_days} days (swing trade)"
+                else:
+                    hold_desc = f"{est_hold_days} days (position trade)"
+
+                # Only include if score >= 30 (decent opportunity)
+                if score < 30:
+                    continue
+
+                # Rating
+                if score >= 70:
+                    rating = "STRONG BUY"
+                elif score >= 50:
+                    rating = "BUY"
+                elif score >= 30:
+                    rating = "WATCH"
+                else:
+                    continue
+
+                results.append({
+                    "symbol": symbol,
+                    "price": round(current_price, 2),
+                    "rating": rating,
+                    "score": score,
+                    "trend": trend,
+                    "rsi": round(rsi, 1),
+                    "atr_pct": atr_pct,
+                    "support": round(near_support, 2),
+                    "resistance": round(near_resistance, 2),
+                    "profit_target": round(profit_target, 2),
+                    "stop_loss": round(stop_loss, 2),
+                    "profit_pct": profit_pct,
+                    "risk_pct": risk_pct,
+                    "rr_ratio": rr_ratio,
+                    "hold_period": hold_desc,
+                    "hold_days": est_hold_days,
+                    "vol_rising": vol_rising,
+                    "ema50": round(ema50, 2),
+                    "ema200": round(ema200, 2) if ema200 is not None else None,
+                    "reasons": reasons,
+                })
+
+            except Exception as e:
+                log.debug(f"Swing scanner error for {symbol}: {e}")
+
+        # Sort by score descending
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:15]

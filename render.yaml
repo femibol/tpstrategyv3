@@ -1,6 +1,9 @@
 # Render.com deployment blueprint
 # Deploys the trading bot + dashboard as a web service
 # Dashboard accessible from your phone at https://your-app.onrender.com
+#
+# ALL secrets are set manually in Render dashboard (sync: false)
+# Only non-sensitive config values are stored here.
 
 services:
   # Main trading bot + dashboard
@@ -9,7 +12,7 @@ services:
     runtime: python
     plan: starter  # $7/mo - always on, no sleep
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 --preload
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -18,19 +21,38 @@ services:
       - key: TRADING_MODE
         value: paper
       - key: IBKR_HOST
-        sync: false  # Set manually in Render dashboard
+        sync: false
       - key: IBKR_PORT
         value: "7497"
       - key: IBKR_CLIENT_ID
         value: "1"
+      # === Alpaca Markets (real-time data + paper trading) ===
+      - key: ALPACA_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: ALPACA_SECRET_KEY
+        sync: false  # Set in Render dashboard
+      - key: ALPACA_BASE_URL
+        value: "https://paper-api.alpaca.markets"
+      # === TradersPost (stock + crypto webhooks) ===
       - key: TRADERSPOST_WEBHOOK_URL
-        sync: false
+        sync: false  # Set in Render dashboard
+      - key: TRADERSPOST_WEBHOOK_URL_CRYPTO
+        sync: false  # Set in Render dashboard
       - key: TRADERSPOST_API_KEY
         sync: false
+      # === TradingView ===
       - key: TRADINGVIEW_WEBHOOK_SECRET
         sync: false
+      # === News API ===
+      - key: NEWS_API_KEY
+        sync: false  # Set in Render dashboard
+      # === Notifications ===
       - key: DISCORD_WEBHOOK_URL
         sync: false
+      # === Claude AI (trade analysis & insights) ===
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # === Dashboard ===
       - key: DASHBOARD_SECRET_KEY
         generateValue: true
       - key: DASHBOARD_HOST

@@ -148,6 +148,85 @@ class Dashboard:
                 return jsonify(result)
             return jsonify({"error": "Trade analyzer not enabled"}), 404
 
+        # --- AI Insights (Claude-powered trade analysis) ---
+
+        @self.app.route("/api/ai-insights")
+        def ai_insights():
+            """Get cached AI insights (no API call)."""
+            if self.engine.ai_insights:
+                return jsonify(self.engine.ai_insights.get_cached_insights())
+            return jsonify({"available": False, "message": "AI insights not configured"})
+
+        @self.app.route("/api/ai-insights/analyze", methods=["POST"])
+        @self._require_auth
+        def run_ai_analysis():
+            """Trigger Claude to analyze trades (costs API tokens)."""
+            if not self.engine.ai_insights or not self.engine.ai_insights.is_available():
+                return jsonify({"error": "Set ANTHROPIC_API_KEY to enable AI insights"}), 400
+
+            # Gather all data for Claude
+            trade_history = self.engine.trade_history
+            if not trade_history or len(trade_history) < 3:
+                return jsonify({"error": "Need at least 3 completed trades for analysis"}), 400
+
+            performance = self.engine.get_performance_summary()
+            positions = self.engine.positions
+            regime_data = (
+                self.engine.regime_detector.get_status()
+                if self.engine.regime_detector else None
+            )
+            strategy_scores = (
+                self.engine.trade_analyzer.strategy_scores
+                if self.engine.trade_analyzer else None
+            )
+
+            result = self.engine.ai_insights.analyze_trades(
+                trade_history=trade_history,
+                performance_stats=performance,
+                positions=positions,
+                regime_data=regime_data,
+                strategy_scores=strategy_scores,
+            )
+            return jsonify(result)
+
+        @self.app.route("/api/ai-insights/quick")
+        def ai_quick_insight():
+            """Get a quick 2-3 sentence insight (lighter API call)."""
+            if not self.engine.ai_insights or not self.engine.ai_insights.is_available():
+                return jsonify({"insight": None})
+
+            insight = self.engine.ai_insights.get_quick_insight(
+                self.engine.trade_history,
+                self.engine.get_performance_summary(),
+            )
+            return jsonify({"insight": insight})
+
+        # --- Auto-Tuner (autonomous parameter optimization) ---
+
+        @self.app.route("/api/auto-tuner")
+        def auto_tuner_status():
+            """Get auto-tuner status and recent changes."""
+            if self.engine.auto_tuner:
+                return jsonify(self.engine.auto_tuner.get_status())
+            return jsonify({"enabled": False})
+
+        @self.app.route("/api/auto-tuner/changelog")
+        def auto_tuner_changelog():
+            """Get full auto-tuner changelog."""
+            if self.engine.auto_tuner:
+                return jsonify(self.engine.auto_tuner.get_changelog())
+            return jsonify([])
+
+        @self.app.route("/api/auto-tuner/run", methods=["POST"])
+        @self._require_auth
+        def run_auto_tune():
+            """Manually trigger auto-tune cycle."""
+            if not self.engine.auto_tuner or not self.engine.auto_tuner.is_available():
+                return jsonify({"error": "Auto-tuner not available (set ANTHROPIC_API_KEY)"}), 400
+
+            self.engine._run_auto_tune()
+            return jsonify({"status": "Auto-tune cycle triggered"})
+
         @self.app.route("/api/hedging")
         def hedging():
             if self.engine.hedging_manager:
@@ -494,6 +573,13 @@ class Dashboard:
 
             results = self.engine.handle_manual_signal(signal)
             return jsonify({"status": "ok", "results": results})
+
+        # --- Swing Trade Scanner API ---
+
+        @self.app.route("/api/swing-scanner")
+        def swing_scanner():
+            """Get swing trade opportunities with hold duration & profit targets."""
+            return jsonify(self.engine.get_swing_scanner())
 
         # --- Quote API (real-time price lookup) ---
 
