@@ -42,6 +42,13 @@ class RiskManager:
         self.min_confidence = 0.4
         self.long_only = self.risk.get("long_only", False)
 
+        # Crypto-specific limits
+        crypto_risk = config.settings.get("crypto", {}).get("risk", {})
+        self.crypto_max_position_pct = crypto_risk.get("max_position_size_pct", 0.10)
+        self.crypto_suffixes = config.settings.get("crypto", {}).get(
+            "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
+        )
+
         # Tracking
         self.rejected_signals = []
 
@@ -129,8 +136,10 @@ class RiskManager:
                     f"market ${market_price:.2f} (max 5%)"
                 )
 
-        # --- Rule 7: Position size limit ---
-        max_position = balance * self.max_position_pct
+        # --- Rule 7: Position size limit (crypto gets smaller cap) ---
+        is_crypto = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
+        pos_pct = self.crypto_max_position_pct if is_crypto else self.max_position_pct
+        max_position = balance * pos_pct
         position_value = price * signal.get("quantity", 1)
         if position_value > max_position:
             return False, f"Position ${position_value:.0f} exceeds max ${max_position:.0f}"

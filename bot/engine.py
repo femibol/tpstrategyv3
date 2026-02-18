@@ -856,7 +856,8 @@ class TradingEngine:
             balance=self.current_balance,
             price=current_price,
             stop_loss=stop_loss_price,
-            strategy_allocation=self.config.strategy_allocation.get(strategy, 0.25)
+            strategy_allocation=self.config.strategy_allocation.get(strategy, 0.25),
+            symbol=symbol,
         )
 
         if qty <= 0:
