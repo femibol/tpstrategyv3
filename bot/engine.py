@@ -1199,9 +1199,49 @@ class TradingEngine:
                 else current_price * (1 - tp_pct)
 
         # --- Broker Execution Chain ---
-        # Priority: IBKR -> TradersPost -> Simulated
+        # Priority: IBKR -> TradersPost -> Alpaca Direct
         order = None
         executed_via = None
+
+        # HARD SAFETY CHECK: Verify actual Alpaca position count + buying power
+        # before placing ANY new entry order. Do NOT trust self.positions alone.
+        if action in ("buy", "short"):
+            try:
+                broker_positions = self._alpaca_api_call("/v2/positions") or []
+                actual_count = len(broker_positions)
+                if actual_count >= self.risk_manager.max_positions:
+                    log.error(
+                        f"HARD LIMIT: Alpaca has {actual_count} open positions "
+                        f"(max {self.risk_manager.max_positions}). BLOCKING {action.upper()} {symbol}. "
+                        f"Bot tracking {len(self.positions)} — DESYNC detected!"
+                    )
+                    return
+
+                # Check if we already hold this symbol at the broker
+                broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
+                if symbol.upper() in broker_symbols:
+                    log.warning(
+                        f"DUPLICATE BLOCKED: {symbol} already open at Alpaca broker. "
+                        f"Bot positions dict {'has' if symbol in self.positions else 'MISSING'} it."
+                    )
+                    # Re-sync this position into tracking if bot lost track
+                    if symbol not in self.positions:
+                        self._sync_positions_from_alpaca()
+                    return
+
+                # Check buying power — don't place orders we can't afford
+                account = self._alpaca_api_call("/v2/account")
+                if account:
+                    buying_power = float(account.get("buying_power", 0))
+                    order_cost = current_price * qty
+                    if order_cost > buying_power:
+                        log.error(
+                            f"INSUFFICIENT BUYING POWER: {symbol} order cost ${order_cost:,.2f} "
+                            f"but only ${buying_power:,.2f} available. BLOCKING."
+                        )
+                        return
+            except Exception as e:
+                log.warning(f"Alpaca pre-order safety check failed: {e} — proceeding with caution")
 
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
