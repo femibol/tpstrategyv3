@@ -43,6 +43,13 @@ class PositionSizer:
         self.max_position_pct = config.risk_config.get("max_position_size_pct", 0.15)
         self.reserve_pct = config.reserve_cash_pct
 
+        # Crypto-specific limits
+        crypto_risk = config.settings.get("crypto", {}).get("risk", {})
+        self.crypto_max_position_pct = crypto_risk.get("max_position_size_pct", 0.10)
+        self.crypto_suffixes = config.settings.get("crypto", {}).get(
+            "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
+        )
+
     def _get_tier_limits(self, price):
         """Get min/max share limits based on stock price tier."""
         for max_price, min_shares, max_shares in PRICE_TIERS:
@@ -50,7 +57,13 @@ class PositionSizer:
                 return min_shares, max_shares
         return 1, 10  # fallback
 
-    def calculate(self, balance, price, stop_loss, strategy_allocation=1.0):
+    def _is_crypto(self, symbol):
+        """Check if symbol is a crypto ticker."""
+        if not symbol:
+            return False
+        return any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
+
+    def calculate(self, balance, price, stop_loss, strategy_allocation=1.0, symbol=None):
         """
         Calculate position size in shares (or contracts for options).
 
@@ -59,6 +72,7 @@ class PositionSizer:
             price: Entry price
             stop_loss: Stop loss price
             strategy_allocation: Fraction of capital for this strategy (0-1)
+            symbol: Ticker symbol (used for crypto-specific sizing)
 
         Returns:
             int: Number of shares/contracts (0 if trade doesn't meet criteria)
@@ -69,9 +83,12 @@ class PositionSizer:
         # Available capital (after reserve)
         available = balance * (1 - self.reserve_pct) * strategy_allocation
 
+        # Crypto gets smaller position cap (more volatile)
+        position_pct = self.crypto_max_position_pct if self._is_crypto(symbol) else self.max_position_pct
+
         # Max position value scales with account size (no hard dollar cap)
         max_position = min(
-            balance * self.max_position_pct,
+            balance * position_pct,
             available
         )
 
