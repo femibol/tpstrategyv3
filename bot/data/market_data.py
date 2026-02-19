@@ -3,7 +3,7 @@ Market Data Feed - provides REAL price data to strategies.
 
 Data sources (in priority order):
 1. IBKR real-time (if connected)
-2. Alpaca Markets (free real-time with API key)
+2. Alpaca Markets via raw HTTP (free real-time with API key - NO library needed)
 3. Yahoo Finance direct API (free, ~15 min delay, no deps)
 
 No fake data. No simulated prices.
@@ -20,28 +20,25 @@ from bot.utils.logger import get_logger
 
 log = get_logger("data.market_data")
 
-# Try importing optional providers
+# yfinance is optional last-resort fallback
 try:
     import yfinance as yf
     HAS_YF = True
 except ImportError:
     HAS_YF = False
 
-try:
-    from alpaca_trade_api.rest import REST as AlpacaREST, TimeFrame
-    HAS_ALPACA = True
-except ImportError:
-    HAS_ALPACA = False
+# Alpaca data API base URL (does NOT need alpaca_trade_api library)
+ALPACA_DATA_BASE = "https://data.alpaca.markets"
 
 
 class MarketDataFeed:
     """
     Real market data provider with multiple sources and caching.
 
-    Priority: IBKR -> Alpaca -> Yahoo Finance Direct -> yfinance lib
+    Priority: IBKR -> Alpaca (raw HTTP) -> Yahoo Finance Direct -> yfinance lib
 
-    When IBKR is connected, streaming market data provides TRUE real-time
-    prices (no 15-min delay). Essential for RVOL momentum trading.
+    Alpaca calls use raw HTTP requests with API key auth headers.
+    No alpaca_trade_api library required.
     """
 
     def __init__(self, config, broker=None):
@@ -50,17 +47,17 @@ class MarketDataFeed:
         self.bar_size = config.settings.get("data", {}).get("bar_size", "5 mins")
         self.lookback_days = config.settings.get("data", {}).get("lookback_days", 30)
 
-        # Alpaca client (if configured)
-        self.alpaca = None
-        alpaca_key = getattr(config, 'alpaca_api_key', '') or ''
-        alpaca_secret = getattr(config, 'alpaca_secret_key', '') or ''
-        if alpaca_key and alpaca_secret and HAS_ALPACA:
-            try:
-                base_url = getattr(config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-                self.alpaca = AlpacaREST(alpaca_key, alpaca_secret, base_url)
-                log.info("Alpaca Markets data connected")
-            except Exception as e:
-                log.warning(f"Alpaca init failed: {e}")
+        # Alpaca API keys (raw HTTP - no library needed)
+        self._alpaca_key = getattr(config, 'alpaca_api_key', '') or ''
+        self._alpaca_secret = getattr(config, 'alpaca_secret_key', '') or ''
+        self._alpaca_ok = bool(self._alpaca_key and self._alpaca_secret)
+        if self._alpaca_ok:
+            log.info("Alpaca Markets data connected (raw HTTP)")
+        else:
+            log.warning(
+                "Alpaca API keys not set - falling back to Yahoo (15-min delay). "
+                "Set ALPACA_API_KEY and ALPACA_SECRET_KEY env vars for real-time data."
+            )
 
         # Cache
         self._bars_cache = {}       # symbol -> DataFrame (standard bars)
@@ -69,24 +66,25 @@ class MarketDataFeed:
         self._volume_cache = {}     # symbol -> volume
         self._last_update = {}      # symbol -> timestamp
         self._last_1m_update = {}   # symbol -> timestamp
-        self._cache_ttl = config.settings.get("data", {}).get("cache_ttl", 10)  # 10s default (was 30s)
-        self._cache_ttl_1m = 5      # 5-second TTL for 1-min bar cache (scalping needs speed)
+        self._cache_ttl = config.settings.get("data", {}).get("cache_ttl", 10)
+        self._cache_ttl_1m = 5      # 5-second TTL for 1-min bar cache
 
-        # Streaming state
+        # Streaming state (IBKR only)
         self._streaming_active = False
         self._subscribed_symbols = set()
 
-    def start_streaming(self, symbols):
-        """
-        Start IBKR real-time streaming for symbols.
-        Call once when engine starts - after that, prices update automatically.
-        """
-        if not self.broker or not self.broker.is_connected():
-            log.debug("IBKR not connected - streaming unavailable, using polling")
-            return False
+    def _alpaca_headers(self):
+        """Return Alpaca API auth headers."""
+        return {
+            "APCA-API-KEY-ID": self._alpaca_key,
+            "APCA-API-SECRET-KEY": self._alpaca_secret,
+        }
 
+    def start_streaming(self, symbols):
+        """Start IBKR real-time streaming for symbols."""
+        if not self.broker or not self.broker.is_connected():
+            return False
         if not hasattr(self.broker, 'subscribe_market_data'):
-            log.debug("Broker doesn't support streaming")
             return False
 
         new_symbols = [s for s in symbols if s not in self._subscribed_symbols]
@@ -133,7 +131,6 @@ class MarketDataFeed:
                 bars = self._fetch_bars(symbol)
                 if bars is not None and len(bars) > 0:
                     self._bars_cache[symbol] = bars
-                    # Only overwrite price from bars if we don't have a live stream
                     if symbol not in self._subscribed_symbols:
                         self._price_cache[symbol] = float(bars["close"].iloc[-1])
                     self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
@@ -159,10 +156,10 @@ class MarketDataFeed:
             except Exception as e:
                 log.debug(f"IBKR data failed for {symbol}: {e}")
 
-        # 2. Alpaca (real-time with free account)
-        if bars is None and self.alpaca:
+        # 2. Alpaca via raw HTTP (real-time with free account)
+        if bars is None and self._alpaca_ok:
             try:
-                bars = self._fetch_alpaca(symbol)
+                bars = self._fetch_alpaca_http(symbol, self.bar_size, self.lookback_days)
                 if bars is not None and len(bars) > 0:
                     return bars
             except Exception as e:
@@ -188,59 +185,263 @@ class MarketDataFeed:
 
         return bars
 
-    def _fetch_alpaca(self, symbol):
-        """Fetch real-time data from Alpaca Markets.
-        Routes crypto symbols to Alpaca crypto API with correct symbol format."""
-        if not self.alpaca:
-            return None
+    # =========================================================================
+    # Alpaca Raw HTTP Data Methods (no alpaca_trade_api library needed)
+    # =========================================================================
 
+    def _fetch_alpaca_http(self, symbol, bar_size="5 mins", lookback_days=30):
+        """Fetch bars from Alpaca Data API v2 via raw HTTP.
+
+        Stock bars:  GET /v2/stocks/{symbol}/bars
+        Crypto bars: GET /v1beta3/crypto/us/bars
+        """
         interval_map = {
-            "1 min": TimeFrame.Minute,
-            "5 mins": TimeFrame(5, "Min"),
-            "15 mins": TimeFrame(15, "Min"),
-            "30 mins": TimeFrame(30, "Min"),
-            "1 hour": TimeFrame.Hour,
-            "1 day": TimeFrame.Day,
+            "1 min": "1Min",
+            "5 mins": "5Min",
+            "15 mins": "15Min",
+            "30 mins": "30Min",
+            "1 hour": "1Hour",
+            "1 day": "1Day",
         }
-        timeframe = interval_map.get(self.bar_size, TimeFrame(5, "Min"))
+        timeframe = interval_map.get(bar_size, "5Min")
+        start = (datetime.utcnow() - timedelta(days=lookback_days)).strftime("%Y-%m-%dT00:00:00Z")
 
-        start = (datetime.now() - timedelta(days=self.lookback_days)).strftime("%Y-%m-%d")
-        end = datetime.now().strftime("%Y-%m-%d")
-
-        # Crypto uses different API endpoint and symbol format
         if self._is_crypto(symbol):
-            alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
-            bars = self.alpaca.get_crypto_bars(
-                alpaca_sym,
-                timeframe,
-                start=start,
-                end=end,
-                limit=500,
-            ).df
+            return self._fetch_alpaca_crypto_bars(symbol, timeframe, start)
         else:
-            bars = self.alpaca.get_bars(
-                symbol,
-                timeframe,
-                start=start,
-                end=end,
-                limit=500,
-            ).df
+            return self._fetch_alpaca_stock_bars(symbol, timeframe, start)
 
-        if bars.empty:
+    def _fetch_alpaca_stock_bars(self, symbol, timeframe, start):
+        """Fetch stock bars from Alpaca v2 API."""
+        url = f"{ALPACA_DATA_BASE}/v2/stocks/{symbol}/bars"
+        params = {
+            "timeframe": timeframe,
+            "start": start,
+            "limit": 500,
+            "adjustment": "raw",
+            "feed": "iex",
+        }
+        resp = _requests.get(url, headers=self._alpaca_headers(), params=params, timeout=10)
+        if resp.status_code != 200:
+            log.debug(f"Alpaca bars {symbol}: HTTP {resp.status_code}")
             return None
 
-        bars.columns = [c.lower() for c in bars.columns]
-        for drop_col in ("trade_count", "vwap", "exchange"):
-            if drop_col in bars.columns:
-                bars = bars.drop(columns=[drop_col], errors="ignore")
+        data = resp.json()
+        bars_list = data.get("bars", [])
+        if not bars_list:
+            return None
 
-        return bars
+        df = pd.DataFrame(bars_list)
+        df = df.rename(columns={"t": "timestamp", "o": "open", "h": "high",
+                                "l": "low", "c": "close", "v": "volume"})
+        df.index = pd.to_datetime(df["timestamp"])
+        df = df[["open", "high", "low", "close", "volume"]]
+        df = df.dropna(subset=["close"])
+        return df if not df.empty else None
+
+    def _fetch_alpaca_crypto_bars(self, symbol, timeframe, start):
+        """Fetch crypto bars from Alpaca v1beta3 crypto API."""
+        alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
+        url = f"{ALPACA_DATA_BASE}/v1beta3/crypto/us/bars"
+        params = {
+            "symbols": alpaca_sym,
+            "timeframe": timeframe,
+            "start": start,
+            "limit": 500,
+        }
+        resp = _requests.get(url, headers=self._alpaca_headers(), params=params, timeout=10)
+        if resp.status_code != 200:
+            log.debug(f"Alpaca crypto bars {symbol}: HTTP {resp.status_code}")
+            return None
+
+        data = resp.json()
+        bars_dict = data.get("bars", {})
+        bars_list = bars_dict.get(alpaca_sym, [])
+        if not bars_list:
+            return None
+
+        df = pd.DataFrame(bars_list)
+        df = df.rename(columns={"t": "timestamp", "o": "open", "h": "high",
+                                "l": "low", "c": "close", "v": "volume"})
+        df.index = pd.to_datetime(df["timestamp"])
+        df = df[["open", "high", "low", "close", "volume"]]
+        df = df.dropna(subset=["close"])
+        return df if not df.empty else None
+
+    def _fetch_alpaca_snapshot(self, symbol):
+        """Fetch real-time snapshot for a single symbol via raw HTTP.
+
+        Returns dict with price, prev_close, volume, change, change_pct.
+        """
+        if self._is_crypto(symbol):
+            return self._fetch_alpaca_crypto_snapshot(symbol)
+
+        url = f"{ALPACA_DATA_BASE}/v2/stocks/{symbol}/snapshot"
+        params = {"feed": "iex"}
+        try:
+            resp = _requests.get(url, headers=self._alpaca_headers(), params=params, timeout=8)
+            if resp.status_code != 200:
+                return None
+
+            snap = resp.json()
+            price = None
+            prev_close = None
+            volume = 0
+
+            # Latest trade price (real-time)
+            trade = snap.get("latestTrade") or snap.get("latest_trade", {})
+            if trade:
+                price = float(trade.get("p", 0))
+
+            # Minute bar fallback
+            if not price or price <= 0:
+                minute_bar = snap.get("minuteBar") or snap.get("minute_bar", {})
+                if minute_bar:
+                    price = float(minute_bar.get("c", 0))
+
+            # Previous daily bar for change calc
+            prev_bar = snap.get("prevDailyBar") or snap.get("prev_daily_bar", {})
+            if prev_bar:
+                prev_close = float(prev_bar.get("c", 0))
+
+            # Daily volume
+            daily_bar = snap.get("dailyBar") or snap.get("daily_bar", {})
+            if daily_bar:
+                volume = int(daily_bar.get("v", 0))
+
+            if price and price > 0:
+                change = (price - prev_close) if prev_close else 0
+                change_pct = (change / prev_close * 100) if prev_close else 0
+                return {
+                    "symbol": symbol,
+                    "price": price,
+                    "prev_close": prev_close or 0,
+                    "change": change,
+                    "change_pct": change_pct,
+                    "volume": volume,
+                    "source": "ALPACA",
+                }
+        except Exception as e:
+            log.debug(f"Alpaca snapshot {symbol}: {e}")
+
+        return None
+
+    def _fetch_alpaca_crypto_snapshot(self, symbol):
+        """Fetch crypto snapshot from Alpaca v1beta3 API."""
+        alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
+        url = f"{ALPACA_DATA_BASE}/v1beta3/crypto/us/snapshots"
+        params = {"symbols": alpaca_sym}
+        try:
+            resp = _requests.get(url, headers=self._alpaca_headers(), params=params, timeout=8)
+            if resp.status_code != 200:
+                return None
+
+            data = resp.json()
+            snap = data.get("snapshots", {}).get(alpaca_sym)
+            if not snap:
+                return None
+
+            price = None
+            trade = snap.get("latestTrade") or snap.get("latest_trade", {})
+            if trade:
+                price = float(trade.get("p", 0))
+
+            if not price or price <= 0:
+                minute_bar = snap.get("minuteBar") or snap.get("minute_bar", {})
+                if minute_bar:
+                    price = float(minute_bar.get("c", 0))
+
+            prev_bar = snap.get("prevDailyBar") or snap.get("prev_daily_bar", {})
+            prev_close = float(prev_bar.get("c", 0)) if prev_bar else 0
+
+            daily_bar = snap.get("dailyBar") or snap.get("daily_bar", {})
+            volume = int(daily_bar.get("v", 0)) if daily_bar else 0
+
+            if price and price > 0:
+                change = (price - prev_close) if prev_close else 0
+                change_pct = (change / prev_close * 100) if prev_close else 0
+                return {
+                    "symbol": symbol,
+                    "price": price,
+                    "prev_close": prev_close,
+                    "change": change,
+                    "change_pct": change_pct,
+                    "volume": volume,
+                    "source": "ALPACA_CRYPTO",
+                }
+        except Exception as e:
+            log.debug(f"Alpaca crypto snapshot {symbol}: {e}")
+
+        return None
+
+    def _fetch_alpaca_snapshots_batch(self, symbols):
+        """Fetch real-time snapshots for multiple stock symbols in one call.
+
+        Alpaca supports up to 200 symbols per batch request.
+        Returns dict of {symbol: price}.
+        """
+        results = {}
+        stock_syms = [s for s in symbols if not self._is_crypto(s)]
+        crypto_syms = [s for s in symbols if self._is_crypto(s)]
+
+        # Batch stock snapshots (up to 200 per call)
+        for i in range(0, len(stock_syms), 200):
+            batch = stock_syms[i:i + 200]
+            try:
+                url = f"{ALPACA_DATA_BASE}/v2/stocks/snapshots"
+                params = {"symbols": ",".join(batch), "feed": "iex"}
+                resp = _requests.get(url, headers=self._alpaca_headers(),
+                                     params=params, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for sym, snap in data.items():
+                        price = None
+                        trade = snap.get("latestTrade") or snap.get("latest_trade", {})
+                        if trade:
+                            price = float(trade.get("p", 0))
+                        if not price or price <= 0:
+                            minute_bar = snap.get("minuteBar") or snap.get("minute_bar", {})
+                            if minute_bar:
+                                price = float(minute_bar.get("c", 0))
+                        if price and price > 0:
+                            results[sym] = price
+            except Exception as e:
+                log.debug(f"Alpaca snapshot batch error: {e}")
+
+        # Crypto snapshots
+        if crypto_syms:
+            alpaca_crypto = [s.replace("-USD", "/USD").replace("-USDT", "/USDT") for s in crypto_syms]
+            try:
+                url = f"{ALPACA_DATA_BASE}/v1beta3/crypto/us/snapshots"
+                params = {"symbols": ",".join(alpaca_crypto)}
+                resp = _requests.get(url, headers=self._alpaca_headers(),
+                                     params=params, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for alpaca_sym, snap in data.get("snapshots", {}).items():
+                        # Convert back to our symbol format
+                        our_sym = alpaca_sym.replace("/USD", "-USD").replace("/USDT", "-USDT")
+                        price = None
+                        trade = snap.get("latestTrade") or snap.get("latest_trade", {})
+                        if trade:
+                            price = float(trade.get("p", 0))
+                        if not price or price <= 0:
+                            minute_bar = snap.get("minuteBar") or snap.get("minute_bar", {})
+                            if minute_bar:
+                                price = float(minute_bar.get("c", 0))
+                        if price and price > 0:
+                            results[our_sym] = price
+            except Exception as e:
+                log.debug(f"Alpaca crypto snapshot batch error: {e}")
+
+        return results
+
+    # =========================================================================
+    # Yahoo Finance Direct API (fallback - ~15 minute delay)
+    # =========================================================================
 
     def _fetch_yahoo_direct(self, symbol):
-        """
-        Fetch real market data directly from Yahoo Finance API.
-        No external library needed - just HTTP requests.
-        """
+        """Fetch real market data directly from Yahoo Finance API."""
         interval_map = {
             "1 min": "1m",
             "5 mins": "5m",
@@ -251,7 +452,6 @@ class MarketDataFeed:
         }
         interval = interval_map.get(self.bar_size, "5m")
 
-        # Yahoo limits: 1m=7d, 5m/15m/30m=60d, 1h=730d, 1d=unlimited
         if interval == "1m":
             range_str = "5d"
         elif interval in ("5m", "15m", "30m"):
@@ -265,7 +465,6 @@ class MarketDataFeed:
             f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
             f"?interval={interval}&range={range_str}"
         )
-
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
@@ -295,28 +494,18 @@ class MarketDataFeed:
             "volume": quote.get("volume", []),
         }, index=pd.to_datetime(timestamps, unit="s"))
 
-        # Drop rows with NaN prices
         df = df.dropna(subset=["close"])
-
-        if df.empty:
-            return None
-
-        return df
+        return df if not df.empty else None
 
     def _fetch_yfinance(self, symbol):
-        """Fetch data from yfinance library (fallback)."""
+        """Fetch data from yfinance library (last-resort fallback)."""
         if not HAS_YF:
             return None
 
         ticker = yf.Ticker(symbol)
-
         interval_map = {
-            "1 min": "1m",
-            "5 mins": "5m",
-            "15 mins": "15m",
-            "30 mins": "30m",
-            "1 hour": "1h",
-            "1 day": "1d",
+            "1 min": "1m", "5 mins": "5m", "15 mins": "15m",
+            "30 mins": "30m", "1 hour": "1h", "1 day": "1d",
         }
         interval = interval_map.get(self.bar_size, "5m")
 
@@ -328,24 +517,20 @@ class MarketDataFeed:
             period = f"{self.lookback_days}d"
 
         df = ticker.history(period=period, interval=interval)
-
         if df.empty:
             return None
 
         df.columns = [c.lower() for c in df.columns]
         if "adj close" in df.columns:
             df = df.drop(columns=["adj close"])
-
         return df
 
-    def get_bars(self, symbol, periods=None, bar_size=None):
-        """Get cached historical bars for a symbol.
+    # =========================================================================
+    # Public Data Access Methods
+    # =========================================================================
 
-        Args:
-            symbol: Ticker symbol
-            periods: Number of bars to return (most recent)
-            bar_size: Optional bar size override ("1 min" for scalp data)
-        """
+    def get_bars(self, symbol, periods=None, bar_size=None):
+        """Get cached historical bars for a symbol."""
         # If requesting 1-min bars, try 1-min cache first
         if bar_size and "1" in bar_size and "min" in bar_size.lower():
             bars = self._bars_1m_cache.get(symbol)
@@ -354,19 +539,16 @@ class MarketDataFeed:
                     return bars.iloc[-periods:]
                 return bars
 
-        # Fall back to standard bars cache
         bars = self._bars_cache.get(symbol)
         if bars is None:
             return None
 
         if periods and len(bars) > periods:
             return bars.iloc[-periods:]
-
         return bars
 
     def update_1m_bars(self, symbols):
-        """Fetch 1-minute bars for scalp strategy symbols.
-        Uses a separate cache with shorter TTL for fast updates."""
+        """Fetch 1-minute bars for scalp strategy symbols."""
         now = time.time()
         for symbol in symbols:
             last = self._last_1m_update.get(symbol, 0)
@@ -376,7 +558,6 @@ class MarketDataFeed:
                 bars = self._fetch_bars_1m(symbol)
                 if bars is not None and len(bars) > 0:
                     self._bars_1m_cache[symbol] = bars
-                    # Also update price cache from 1-min data (freshest)
                     self._price_cache[symbol] = float(bars["close"].iloc[-1])
                     self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
                     self._last_1m_update[symbol] = now
@@ -396,30 +577,16 @@ class MarketDataFeed:
             except Exception:
                 pass
 
-        # 2. Alpaca
-        if self.alpaca:
+        # 2. Alpaca raw HTTP (1-min bars)
+        if self._alpaca_ok:
             try:
-                start = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
-                end = datetime.now().strftime("%Y-%m-%d")
-                if self._is_crypto(symbol):
-                    alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
-                    bars = self.alpaca.get_crypto_bars(
-                        alpaca_sym, TimeFrame.Minute, start=start, end=end, limit=500
-                    ).df
-                else:
-                    bars = self.alpaca.get_bars(
-                        symbol, TimeFrame.Minute, start=start, end=end, limit=500
-                    ).df
-                if not bars.empty:
-                    bars.columns = [c.lower() for c in bars.columns]
-                    for drop_col in ("trade_count", "vwap", "exchange"):
-                        if drop_col in bars.columns:
-                            bars = bars.drop(columns=[drop_col], errors="ignore")
+                bars = self._fetch_alpaca_http(symbol, bar_size="1 min", lookback_days=2)
+                if bars is not None and len(bars) > 0:
                     return bars
             except Exception:
                 pass
 
-        # 3. Yahoo Finance direct (1m bars, 5-day range)
+        # 3. Yahoo Finance direct (1m bars, 2-day range)
         try:
             url = (
                 f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
@@ -465,7 +632,7 @@ class MarketDataFeed:
 
     def refresh_prices(self, symbols):
         """Rapid REAL-TIME price refresh for position monitoring.
-        Priority: IBKR streaming -> Alpaca snapshots (real-time) -> Yahoo (delayed fallback).
+        Priority: IBKR streaming -> Alpaca snapshots (real-time) -> Yahoo (delayed).
         Alpaca snapshots fetch up to 200 symbols in one batch call."""
         # 1. IBKR streaming (instant, batch)
         if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
@@ -478,35 +645,13 @@ class MarketDataFeed:
                     pass
             return
 
-        # 2. Alpaca snapshots - REAL-TIME, batch request (up to 200 per call)
-        if self.alpaca:
+        # 2. Alpaca snapshots via raw HTTP - REAL-TIME, batch request
+        if self._alpaca_ok:
             try:
-                stock_syms = [s for s in symbols if not self._is_crypto(s)]
-                crypto_syms = [s for s in symbols if self._is_crypto(s)]
-
-                if stock_syms:
-                    for i in range(0, len(stock_syms), 200):
-                        batch = stock_syms[i:i + 200]
-                        try:
-                            snapshots = self.alpaca.get_snapshots(batch)
-                            for sym, snap in snapshots.items():
-                                if snap and hasattr(snap, 'latest_trade') and snap.latest_trade:
-                                    self._price_cache[sym] = float(snap.latest_trade.p)
-                                elif snap and hasattr(snap, 'minute_bar') and snap.minute_bar:
-                                    self._price_cache[sym] = float(snap.minute_bar.c)
-                        except Exception as e:
-                            log.debug(f"Alpaca snapshot batch error: {e}")
-
-                for sym in crypto_syms:
-                    try:
-                        alpaca_sym = sym.replace("-USD", "/USD").replace("-USDT", "/USDT")
-                        snap = self.alpaca.get_crypto_snapshot(alpaca_sym)
-                        if snap and hasattr(snap, 'latest_trade') and snap.latest_trade:
-                            self._price_cache[sym] = float(snap.latest_trade.p)
-                    except Exception:
-                        pass
-
-                return  # Alpaca succeeded, skip Yahoo
+                prices = self._fetch_alpaca_snapshots_batch(symbols)
+                if prices:
+                    self._price_cache.update(prices)
+                    return  # Alpaca succeeded, skip Yahoo
             except Exception as e:
                 log.debug(f"Alpaca refresh failed, Yahoo fallback: {e}")
 
@@ -561,47 +706,18 @@ class MarketDataFeed:
             except Exception:
                 pass
 
-        # 2. Alpaca snapshot (real-time IEX data)
-        if self.alpaca:
+        # 2. Alpaca snapshot via raw HTTP (real-time IEX data)
+        if self._alpaca_ok:
             try:
-                if self._is_crypto(symbol):
-                    alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
-                    snap = self.alpaca.get_crypto_snapshot(alpaca_sym)
-                else:
-                    snap = self.alpaca.get_snapshot(symbol)
-
-                if snap:
-                    price = None
-                    prev_close = None
-                    volume = 0
-
-                    if hasattr(snap, 'latest_trade') and snap.latest_trade:
-                        price = float(snap.latest_trade.p)
-                    elif hasattr(snap, 'minute_bar') and snap.minute_bar:
-                        price = float(snap.minute_bar.c)
-
-                    if hasattr(snap, 'prev_daily_bar') and snap.prev_daily_bar:
-                        prev_close = float(snap.prev_daily_bar.c)
-
-                    if hasattr(snap, 'daily_bar') and snap.daily_bar:
-                        volume = int(snap.daily_bar.v) if snap.daily_bar.v else 0
-
-                    if price and price > 0:
-                        change = price - prev_close if prev_close else 0
-                        change_pct = (change / prev_close * 100) if prev_close else 0
-                        self._price_cache[symbol] = price
-                        if volume:
-                            self._volume_cache[symbol] = volume
-                        return {
-                            "symbol": symbol,
-                            "price": price,
-                            "prev_close": prev_close or 0,
-                            "change": change,
-                            "change_pct": change_pct,
-                            "volume": volume,
-                            "market_state": "OPEN",
-                            "source": "ALPACA",
-                        }
+                snap = self._fetch_alpaca_snapshot(symbol)
+                if snap and snap.get("price"):
+                    self._price_cache[symbol] = snap["price"]
+                    if snap.get("volume"):
+                        self._volume_cache[symbol] = snap["volume"]
+                    return {
+                        **snap,
+                        "market_state": "OPEN",
+                    }
             except Exception as e:
                 log.debug(f"Alpaca quote failed for {symbol}: {e}")
 
