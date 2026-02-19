@@ -261,7 +261,7 @@ Mobile-optimized with:
 
 1. **ALWAYS start with paper trading** - never go live until you've tested
 2. **Backtest first** - validate strategies on historical data
-3. **PDT Rule** - Under $25K you're limited to 3 day trades per 5 days
-4. **The bot respects this** - VWAP scalps count as day trades
+3. **PDT Rule** - US FINRA rule only. Does NOT apply to Canadian accounts/brokers
+4. **Pre-market enabled** - Bot scans and trades from 8:00 AM ET
 5. **Commission costs** - IBKR Pro charges ~$0.005/share
-6. **Market hours only** - Bot only trades 9:35 AM - 3:45 PM ET
+6. **Trading window** - 9:35 AM - 3:50 PM ET (plus pre-market 8:00-9:30 AM)
