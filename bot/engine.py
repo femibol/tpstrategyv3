@@ -2512,7 +2512,8 @@ class TradingEngine:
         rvol_strat = self.strategies.get("rvol_momentum")
         scalp_strat = self.strategies.get("rvol_scalp")
         mr_strat = self.strategies.get("mean_reversion")
-        if not rvol_strat and not scalp_strat and not mr_strat:
+        pb_strat = self.strategies.get("prebreakout")
+        if not rvol_strat and not scalp_strat and not mr_strat and not pb_strat:
             return
 
         try:
@@ -2551,6 +2552,12 @@ class TradingEngine:
                     scalp_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into RVOL scalp")
 
+                # Feed ALL unusual activity into pre-breakout scanner
+                # Pre-breakout wants to catch stocks EARLY (even small moves = accumulation)
+                if pb_strat and scalp_symbols:
+                    pb_strat.add_dynamic_symbols(scalp_symbols)
+                    log.debug(f"Injected {len(scalp_symbols)} movers into pre-breakout")
+
             # Also get losers from the movers data (already fetched via Alpaca in get_top_movers)
             # Losers are mean reversion bounce candidates
             if movers:
@@ -2568,7 +2575,10 @@ class TradingEngine:
                         mr_strat.symbols.extend(new)
                     if scalp_strat:
                         scalp_strat.add_dynamic_symbols(loser_syms)
-                    log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp")
+                    # Losers that base out and accumulate can also pre-breakout
+                    if pb_strat:
+                        pb_strat.add_dynamic_symbols(loser_syms)
+                    log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp + pre-breakout")
 
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
@@ -2579,7 +2589,9 @@ class TradingEngine:
                         rvol_strat.add_dynamic_symbols(runner_symbols)
                     if scalp_strat:
                         scalp_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL strategies")
+                    if pb_strat:
+                        pb_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL + pre-breakout strategies")
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")
