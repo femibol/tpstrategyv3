@@ -36,6 +36,7 @@ from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
+from bot.integrations.google_sheets import GoogleSheetsLogger
 from bot.utils.logger import setup_logger, get_logger
 from bot.utils.notifications import Notifier
 
@@ -78,6 +79,7 @@ class TradingEngine:
         self.auto_tuner = None
         self.regime_detector = None
         self.hedging_manager = None
+        self.sheets_logger = None
         self.scheduler = None
 
         # State
@@ -221,6 +223,11 @@ class TradingEngine:
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)
         log.info("Trade learning system enabled")
+
+        # Google Sheets trade logging
+        self.sheets_logger = GoogleSheetsLogger(self.config)
+        if self.sheets_logger.is_enabled():
+            log.info("Google Sheets trade logging ENABLED")
 
         # Claude AI Insights (analyzes trades for deeper learning)
         self.ai_insights = AIInsights(self.config)
@@ -987,10 +994,22 @@ class TradingEngine:
                 elif "max_hold_bars" in pos:
                     bar_seconds = pos.get("bar_seconds", 300)
                     if elapsed > pos["max_hold_bars"] * bar_seconds:
-                        positions_to_close.append(
-                            (symbol, "time_exit", "Max holding period exceeded")
-                        )
-                        continue
+                        # Runner override: if up big, don't force exit - tighten trail instead
+                        if pnl_pct >= 0.03 and not pos.get("scalp_mode"):
+                            pos["trailing_stop_pct"] = min(
+                                pos.get("trailing_stop_pct", 0.02), 0.008
+                            )
+                            if not pos.get("_runner_mode_logged"):
+                                log.info(
+                                    f"RUNNER MODE: {symbol} up {pnl_pct:+.1%} at max hold "
+                                    f"- keeping with 0.8% trail instead of forced exit"
+                                )
+                                pos["_runner_mode_logged"] = True
+                        else:
+                            positions_to_close.append(
+                                (symbol, "time_exit", "Max holding period exceeded")
+                            )
+                            continue
 
             # --- Stale Position Exit ---
             # If position hasn't moved >0.3% in 30+ minutes, exit to free capital
@@ -1378,6 +1397,10 @@ class TradingEngine:
         if self.trade_analyzer:
             self.trade_analyzer.persist_trade(self.trade_history[-1])
 
+        # Log trade to Google Sheets
+        if self.sheets_logger and self.sheets_logger.is_enabled():
+            self.sheets_logger.log_trade(self.trade_history[-1])
+
         # Update watchlist performance tracking
         if symbol in self.watchlist:
             self._update_watchlist_performance(symbol, pnl, pnl_pct)
@@ -1464,6 +1487,12 @@ class TradingEngine:
             "exit_time": datetime.now(self.tz).isoformat(),
             "partial": True,
         })
+
+        # Persist partial trade
+        if self.trade_analyzer:
+            self.trade_analyzer.persist_trade(self.trade_history[-1])
+        if self.sheets_logger and self.sheets_logger.is_enabled():
+            self.sheets_logger.log_trade(self.trade_history[-1])
 
         # Update performance stats
         self._update_performance_stats(pnl)
@@ -2150,6 +2179,26 @@ class TradingEngine:
 
         self.daily_stats.append(stats)
         self.notifier.daily_summary(stats)
+
+        # Log daily summary to Google Sheets
+        if self.sheets_logger and self.sheets_logger.is_enabled():
+            wins_list = [t for t in self.daily_trades if t.get("pnl", 0) > 0]
+            losses_list = [t for t in self.daily_trades if t.get("pnl", 0) <= 0]
+            best = max((t.get("pnl", 0) for t in self.daily_trades), default=0)
+            worst = min((t.get("pnl", 0) for t in self.daily_trades), default=0)
+            best_sym = next((t.get("symbol", "") for t in self.daily_trades if t.get("pnl", 0) == best), "") if self.daily_trades else ""
+            worst_sym = next((t.get("symbol", "") for t in self.daily_trades if t.get("pnl", 0) == worst), "") if self.daily_trades else ""
+            self.sheets_logger.log_daily_summary({
+                "date": stats["date"],
+                "trades": total_trades,
+                "wins": len(wins_list),
+                "losses": len(losses_list),
+                "pnl": self.daily_pnl,
+                "balance": self.current_balance,
+                "best_trade": f"{best_sym} ${best:+.2f}" if best_sym else "",
+                "worst_trade": f"{worst_sym} ${worst:+.2f}" if worst_sym else "",
+                "positions_held": len(self.positions),
+            })
         log.info(
             f"Day P&L: ${self.daily_pnl:+.2f} | Trades: {total_trades} | "
             f"Regime: {regime} | Overnight: {stats['overnight_holds']}"

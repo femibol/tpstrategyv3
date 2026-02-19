@@ -214,10 +214,23 @@ class RvolMomentumStrategy(BaseStrategy):
             score += 5
             score_reasons.append("Range expansion")
 
+        # Crypto gets lower thresholds (more volatile, volume patterns differ)
+        is_crypto = any(symbol.upper().endswith(s) for s in ("-USD", "-USDT"))
+        effective_min_rvol = self.min_rvol * 0.7 if is_crypto else self.min_rvol  # 1.26x for crypto vs 1.8x
+        effective_min_score = int(self.min_score * 0.8) if is_crypto else self.min_score  # 40 for crypto vs 50
+
+        # Breakout bonus: big intraday move deserves extra score
+        if change_pct >= 5.0:
+            score += 15
+            score_reasons.append(f"Breakout +{change_pct:.1f}%")
+        elif change_pct >= 3.0:
+            score += 10
+            score_reasons.append(f"Strong breakout +{change_pct:.1f}%")
+
         # Verdict
-        if rvol >= self.min_rvol and score >= self.min_score:
+        if rvol >= effective_min_rvol and score >= effective_min_score:
             verdict = "RVOL BUY SIGNAL"
-        elif rvol >= self.min_rvol and score >= 40:
+        elif rvol >= effective_min_rvol and score >= 40:
             verdict = "RVOL ACTIVE"
         elif rvol >= 1.5:
             verdict = "WARMING"
@@ -247,13 +260,17 @@ class RvolMomentumStrategy(BaseStrategy):
         # Generate signal if score qualifies
         if verdict == "RVOL BUY SIGNAL" and direction == "UP" and atr and atr > 0:
             stop_loss = current_price - (self.atr_stop_mult * atr)
-            take_profit = current_price + (self.atr_target_mult * atr)
+
+            # Breakout stocks get wider targets to capture the full move
+            is_breakout = change_pct >= 3.0
+            target_mult = self.atr_target_mult * 1.5 if is_breakout else self.atr_target_mult
+            take_profit = current_price + (target_mult * atr)
 
             # Multi-target exits for momentum
             targets = [
-                current_price + (1.5 * atr),   # Quick scalp target
+                current_price + (1.5 * atr),    # Quick scalp target
                 current_price + (3.0 * atr),    # Main target
-                current_price + (5.0 * atr),    # Runner target (let it ride)
+                current_price + (6.0 * atr),    # Runner target (wider for breakouts)
             ]
 
             risk = current_price - stop_loss
@@ -262,6 +279,9 @@ class RvolMomentumStrategy(BaseStrategy):
 
             if rr_ratio >= 1.5:  # Minimum 1.5:1 R/R
                 confidence = min(1.0, score / 100)
+
+                # Breakout stocks get day-based hold instead of bar-based
+                hold_days = 2 if is_breakout else 0  # 2 days for breakouts, 0 = use bar limit
 
                 result["signal"] = {
                     "symbol": symbol,
@@ -273,6 +293,7 @@ class RvolMomentumStrategy(BaseStrategy):
                     "confidence": round(confidence, 2),
                     "reason": " | ".join(score_reasons[:4]),
                     "max_hold_bars": int(self.max_hold_minutes / 5),  # 5-min bars
+                    "max_hold_days": hold_days,
                     "bar_seconds": 300,
                     "rvol": rvol,
                     "rr_ratio": rr_ratio,
