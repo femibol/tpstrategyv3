@@ -6,7 +6,7 @@
 # scalp = Quick trades, tight stops, intraday only
 # swing = Multi-day holds, medium stops, trend following
 # invest = Longer holds, wide stops, follow smart money
-trading_profile: swing
+trading_profile: scalp
 
 # --- Capital & Account ---
 capital:
@@ -55,16 +55,16 @@ schedule:
   market_close: "16:00"
   timezone: "US/Eastern"
   pre_market_scan: "09:15"       # Scan 15 min before open
-  avoid_first_minutes: 30         # Skip first 30 min (volatile open)
-  avoid_last_minutes: 30          # Avoid last 30 min (choppy close)
+  avoid_first_minutes: 5          # Only skip first 5 min (scalp the open volatility)
+  avoid_last_minutes: 5           # Trade close momentum
   trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
   # --- Pre-market / Extended Hours ---
   premarket:
-    enabled: false                 # Enable pre-market trading (4:00-9:30 AM)
-    start_time: "08:00"           # Start pre-market scanning at 8 AM
-    allowed_strategies: ["momentum", "news_sentiment"]  # Only these strategies pre-market
-    reduce_size_pct: 0.50         # Use 50% of normal position size (less liquidity)
+    enabled: true                  # Enable pre-market trading
+    start_time: "07:00"           # Start pre-market scanning at 7 AM for gap scanners
+    allowed_strategies: ["momentum", "rvol_momentum", "rvol_scalp"]  # RVOL scalp in premarket
+    reduce_size_pct: 0.60         # Use 60% of normal position size (decent liquidity on big names)
 
   # --- Overnight Holding ---
   overnight:
@@ -149,8 +149,11 @@ crypto:
 data:
   primary: "ibkr"                 # Primary data from IBKR
   fallback: "yfinance"            # Fallback to yfinance
-  bar_size: "5 mins"              # 5-minute bars for intraday
+  bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
+  scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback
+  price_poll_interval: 3          # Poll prices every 3 seconds for scalp exits
+  cache_ttl: 10                   # 10-second cache TTL (was 30s, too slow for scalps)
 
 # --- Execution ---
 execution:

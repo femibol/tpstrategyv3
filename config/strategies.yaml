@@ -5,10 +5,11 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  smc_forever: 0.25               # 25% - highest conviction model
-  mean_reversion: 0.15            # 15% of capital
-  momentum: 0.15                  # 15% of capital
-  rvol_momentum: 0.20             # 20% - Money Machine RVOL auto-trading
+  smc_forever: 0.15               # 15% - highest conviction model
+  mean_reversion: 0.10            # 10% of capital
+  momentum: 0.10                  # 10% of capital
+  rvol_momentum: 0.15             # 15% - Money Machine RVOL auto-trading (5-min)
+  rvol_scalp: 0.25                # 25% - RVOL scalp (1-min bars, quick in/out)
   vwap_scalp: 0.10                # 10% of capital
   pairs_trading: 0.15             # 15% of capital
 
@@ -158,7 +159,7 @@ rvol_momentum:
   atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR (momentum = fast exit)
   atr_target_multiplier: 3.0      # Target: 3x ATR (2:1 R/R)
   max_hold_minutes: 120            # Max 2 hours (intraday momentum only)
-  max_trades_per_day: 6            # Cap to prevent overtrading
+  max_trades_per_day: 12           # Increased from 6 - more aggressive
   symbols:                         # Base watchlist (dynamic symbols get added automatically)
     - SPY
     - QQQ
@@ -169,6 +170,58 @@ rvol_momentum:
     - TSLA
     - META
     - AMZN
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - CRWD
+    - SNOW
+    - SOFI
+    - HOOD
+    - MSTR
+
+# --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
+# Ultra-fast scalping on 1-minute bars with real-time profit taking
+# Catches quick RVOL breakouts, takes profit on same candle if uptick continues
+rvol_scalp:
+  enabled: true
+  timeframe: "1m"
+  min_rvol: 1.8                    # Slightly lower threshold (1-min volume spikes fast)
+  min_score: 50                    # Lower score threshold for speed
+  min_price: 2.00                  # Skip penny stocks below $2
+  max_price: 800.00                # Higher cap for big names
+  min_volume: 100000               # Lower min volume (1-min bars need less)
+  atr_stop_multiplier: 1.0        # Very tight stop: 1x ATR
+  atr_target_multiplier: 1.5      # Quick target: 1.5x ATR (take profit fast)
+  quick_scalp_target_pct: 0.008   # Take profit at +0.8% (quick scalp)
+  runner_target_pct: 0.02         # Let runners go to +2%
+  max_hold_minutes: 15             # Max 15 minutes (true scalps)
+  max_trades_per_day: 25           # High frequency scalping
+  same_candle_exit: true           # Exit on same candle if target hit
+  price_poll_seconds: 3            # Check price every 3 seconds for exits
+  breakout_confirmation_bars: 2    # 2 bars of confirmation before entry
+  momentum_acceleration: true      # Detect acceleration (bar-over-bar volume increase)
+  symbols:                         # Scans these + all dynamic movers
+    - SPY
+    - QQQ
+    - AAPL
+    - MSFT
+    - NVDA
+    - AMD
+    - TSLA
+    - META
+    - AMZN
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - CRWD
+    - SNOW
+    - SOFI
+    - HOOD
+    - MSTR
+    - GOOGL
+    - NFLX
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts

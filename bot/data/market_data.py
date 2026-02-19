@@ -63,11 +63,14 @@ class MarketDataFeed:
                 log.warning(f"Alpaca init failed: {e}")
 
         # Cache
-        self._bars_cache = {}   # symbol -> DataFrame
-        self._price_cache = {}  # symbol -> price
-        self._volume_cache = {} # symbol -> volume
-        self._last_update = {}  # symbol -> timestamp
-        self._cache_ttl = 30    # seconds
+        self._bars_cache = {}       # symbol -> DataFrame (standard bars)
+        self._bars_1m_cache = {}    # symbol -> DataFrame (1-min bars for scalping)
+        self._price_cache = {}      # symbol -> price
+        self._volume_cache = {}     # symbol -> volume
+        self._last_update = {}      # symbol -> timestamp
+        self._last_1m_update = {}   # symbol -> timestamp
+        self._cache_ttl = config.settings.get("data", {}).get("cache_ttl", 10)  # 10s default (was 30s)
+        self._cache_ttl_1m = 5      # 5-second TTL for 1-min bar cache (scalping needs speed)
 
         # Streaming state
         self._streaming_active = False
@@ -325,8 +328,23 @@ class MarketDataFeed:
 
         return df
 
-    def get_bars(self, symbol, periods=None):
-        """Get cached historical bars for a symbol."""
+    def get_bars(self, symbol, periods=None, bar_size=None):
+        """Get cached historical bars for a symbol.
+
+        Args:
+            symbol: Ticker symbol
+            periods: Number of bars to return (most recent)
+            bar_size: Optional bar size override ("1 min" for scalp data)
+        """
+        # If requesting 1-min bars, try 1-min cache first
+        if bar_size and "1" in bar_size and "min" in bar_size.lower():
+            bars = self._bars_1m_cache.get(symbol)
+            if bars is not None:
+                if periods and len(bars) > periods:
+                    return bars.iloc[-periods:]
+                return bars
+
+        # Fall back to standard bars cache
         bars = self._bars_cache.get(symbol)
         if bars is None:
             return None
@@ -335,6 +353,126 @@ class MarketDataFeed:
             return bars.iloc[-periods:]
 
         return bars
+
+    def update_1m_bars(self, symbols):
+        """Fetch 1-minute bars for scalp strategy symbols.
+        Uses a separate cache with shorter TTL for fast updates."""
+        now = time.time()
+        for symbol in symbols:
+            last = self._last_1m_update.get(symbol, 0)
+            if now - last < self._cache_ttl_1m:
+                continue
+            try:
+                bars = self._fetch_bars_1m(symbol)
+                if bars is not None and len(bars) > 0:
+                    self._bars_1m_cache[symbol] = bars
+                    # Also update price cache from 1-min data (freshest)
+                    self._price_cache[symbol] = float(bars["close"].iloc[-1])
+                    self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
+                    self._last_1m_update[symbol] = now
+            except Exception as e:
+                log.debug(f"1-min data failed for {symbol}: {e}")
+
+    def _fetch_bars_1m(self, symbol):
+        """Fetch 1-minute bars from available sources."""
+        # 1. IBKR
+        if self.broker and self.broker.is_connected():
+            try:
+                bars = self.broker.get_historical_bars(
+                    symbol, duration="2 D", bar_size="1 min"
+                )
+                if bars is not None and len(bars) > 0:
+                    return bars
+            except Exception:
+                pass
+
+        # 2. Alpaca
+        if self.alpaca:
+            try:
+                start = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+                end = datetime.now().strftime("%Y-%m-%d")
+                bars = self.alpaca.get_bars(
+                    symbol, TimeFrame.Minute, start=start, end=end, limit=500
+                ).df
+                if not bars.empty:
+                    bars.columns = [c.lower() for c in bars.columns]
+                    for drop_col in ("trade_count", "vwap"):
+                        if drop_col in bars.columns:
+                            bars = bars.drop(columns=[drop_col], errors="ignore")
+                    return bars
+            except Exception:
+                pass
+
+        # 3. Yahoo Finance direct (1m bars, 5-day range)
+        try:
+            url = (
+                f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+                f"?interval=1m&range=2d"
+            )
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            resp = _requests.get(url, headers=headers, timeout=8)
+            if resp.status_code == 200:
+                data = resp.json()
+                result = data.get("chart", {}).get("result", [])
+                if result:
+                    chart = result[0]
+                    timestamps = chart.get("timestamp", [])
+                    quote = chart.get("indicators", {}).get("quote", [{}])[0]
+                    if timestamps and quote:
+                        df = pd.DataFrame({
+                            "open": quote.get("open", []),
+                            "high": quote.get("high", []),
+                            "low": quote.get("low", []),
+                            "close": quote.get("close", []),
+                            "volume": quote.get("volume", []),
+                        }, index=pd.to_datetime(timestamps, unit="s"))
+                        df = df.dropna(subset=["close"])
+                        if not df.empty:
+                            return df
+        except Exception:
+            pass
+
+        # 4. yfinance library fallback
+        if HAS_YF:
+            try:
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(period="2d", interval="1m")
+                if not df.empty:
+                    df.columns = [c.lower() for c in df.columns]
+                    if "adj close" in df.columns:
+                        df = df.drop(columns=["adj close"])
+                    return df
+            except Exception:
+                pass
+
+        return None
+
+    def refresh_prices(self, symbols):
+        """Rapid price refresh for position monitoring (no bar fetch, just quotes).
+        Used by scalp exit monitor for same-candle profit taking."""
+        for symbol in symbols:
+            try:
+                # 1. IBKR streaming (instant)
+                if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
+                    live = self.broker.get_live_price(symbol)
+                    if live and live.get("price"):
+                        self._price_cache[symbol] = live["price"]
+                        continue
+
+                # 2. Quick Yahoo quote (faster than full bar fetch)
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
+                headers = {"User-Agent": "Mozilla/5.0"}
+                resp = _requests.get(url, headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    result = data.get("chart", {}).get("result", [])
+                    if result:
+                        meta = result[0].get("meta", {})
+                        price = meta.get("regularMarketPrice", 0)
+                        if price and price > 0:
+                            self._price_cache[symbol] = price
+            except Exception:
+                pass
 
     def get_price(self, symbol):
         """Get latest real price for a symbol."""
