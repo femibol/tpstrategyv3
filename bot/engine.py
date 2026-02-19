@@ -133,23 +133,37 @@ class TradingEngine:
         """Initialize all components."""
         log.info("=" * 60)
         log.info(f"ALGOBOT v1.0 - {self.config.mode.upper()} MODE")
-        log.info(f"Starting Capital: ${self.config.starting_balance:,.2f}")
+        log.info(f"Config Starting Capital: ${self.config.starting_balance:,.2f}")
         log.info("=" * 60)
 
         # Notifications
         self.notifier = Notifier(self.config)
+
+        # Connect to IBKR (also syncs Alpaca balance + positions on Render)
+        self._connect_broker()
+
+        # Log actual balance after broker/Alpaca sync
+        log.info(f"Active Capital: ${self.current_balance:,.2f} (after broker sync)")
         self.notifier.system_alert(
             f"Bot starting in {self.config.mode.upper()} mode "
-            f"with ${self.config.starting_balance:,.2f}",
+            f"with ${self.current_balance:,.2f}",
             level="success"
         )
-
-        # Connect to IBKR
-        self._connect_broker()
 
         # Initialize risk management
         self.risk_manager = RiskManager(self.config, self.notifier)
         self.position_sizer = PositionSizer(self.config)
+
+        # Apply scaling tier based on actual balance (after risk manager init)
+        scaling_tier = self.config.get_scaling_tier(self.current_balance)
+        if scaling_tier:
+            self.risk_manager.update_tier(scaling_tier)
+            log.info(
+                f"Scaling tier active: balance >= ${scaling_tier['min_balance']:,} | "
+                f"max_positions={scaling_tier['max_positions']} | "
+                f"risk_per_trade={scaling_tier['risk_per_trade']:.1%} | "
+                f"max_position_pct={scaling_tier['max_position_pct']:.0%}"
+            )
 
         # Market data feed
         self.market_data = MarketDataFeed(self.config, self.broker)
@@ -1549,11 +1563,32 @@ class TradingEngine:
 
     def _sync_positions_from_alpaca(self):
         """On startup (Render), load actual positions from Alpaca so internal
-        state matches reality. Prevents exits for positions that don't exist."""
+        state matches reality. Also syncs account balance so position sizing
+        is based on real equity, not the static settings.yaml value."""
         client = self._init_alpaca_client()
         if not client:
             log.info("Alpaca credentials not set - starting with empty positions")
             return
+
+        # --- Sync account balance from Alpaca ---
+        try:
+            account = client.get_account()
+            equity = float(account.equity)
+            buying_power = float(account.buying_power)
+            cash = float(account.cash)
+            if equity > 0:
+                self.current_balance = equity
+                self.peak_balance = max(self.peak_balance, equity)
+                self.start_of_day_balance = equity
+                log.info(
+                    f"Alpaca account synced: equity=${equity:,.2f} | "
+                    f"cash=${cash:,.2f} | buying_power=${buying_power:,.2f}"
+                )
+            else:
+                log.warning("Alpaca returned $0 equity - keeping config starting_balance")
+        except Exception as e:
+            log.warning(f"Alpaca account balance sync failed: {e}")
+
         try:
             broker_positions = client.list_positions()
             for p in broker_positions:
