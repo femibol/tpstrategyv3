@@ -5,8 +5,9 @@
 # --- Trading Mode ---
 # scalp = Quick trades, tight stops, intraday only
 # swing = Multi-day holds, medium stops, trend following
+# hybrid = Scalp + swing: quick intraday profits AND multi-day holds
 # invest = Longer holds, wide stops, follow smart money
-trading_profile: scalp
+trading_profile: hybrid
 
 # --- Capital & Account ---
 capital:
@@ -25,7 +26,7 @@ risk:
   max_correlated_positions: 2     # Max 2 positions in same sector
   stop_loss_pct: 0.025            # 2.5% stop loss (tighter = faster out on losers)
   trailing_stop_pct: 0.018        # 1.8% trailing stop (locks in profit faster)
-  take_profit_pct: 0.05           # 5% take profit (more realistic targets hit more often)
+  take_profit_pct: 0.10           # 10% take profit (let runners ride - partial exits lock in early)
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
 
   # --- Profit Taking (Partial Exits) ---
@@ -40,8 +41,11 @@ risk:
         close_pct: 0.33           # Close 33% of remaining
         tighten_trail: 0.01       # Tighten trailing stop to 1%
       - pct_from_entry: 0.05      # At +5% profit
+        close_pct: 0.33           # Close 33% of remaining
+        tighten_trail: 0.01       # Tighten trailing stop to 1%
+      - pct_from_entry: 0.08      # At +8% profit (runner territory)
         close_pct: 0.50           # Close 50% of remaining
-        tighten_trail: 0.008      # Very tight 0.8% trail on runner
+        tighten_trail: 0.006      # Very tight 0.6% trail on runner
 
   # --- Break Even Stop ---
   breakeven:
@@ -128,10 +132,14 @@ watchlist:
     - SPY
     - QQQ
     - AB          # Pelosi pick
-    # Crypto (trades 24/7 via Yahoo Finance tickers)
+    # Crypto (trades 24/7 via Alpaca)
     - BTC-USD     # Bitcoin
     - ETH-USD     # Ethereum
     - SOL-USD     # Solana
+    - DOGE-USD    # Dogecoin
+    - AVAX-USD    # Avalanche
+    - LINK-USD    # Chainlink
+    - XRP-USD     # Ripple
   auto_add_politician_picks: true   # Auto-add symbols from politician tracker
   track_weekly_performance: true    # Track weekly P&L per symbol
 

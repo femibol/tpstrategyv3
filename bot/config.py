@@ -237,6 +237,27 @@ class Config:
             },
             "preferred_strategies": ["momentum", "smc_forever", "pairs_trading"],
         },
+        "hybrid": {
+            "label": "Hybrid",
+            "description": "Scalp + swing: quick intraday profits AND multi-day holds",
+            "risk": {
+                "stop_loss_pct": 0.025,
+                "trailing_stop_pct": 0.018,
+                "take_profit_pct": 0.05,
+                "max_positions": 10,
+                "risk_per_trade_pct": 0.015,
+            },
+            "schedule": {
+                "avoid_first_minutes": 5,
+                "avoid_last_minutes": 5,
+                "overnight": {"enabled": True, "min_profit_pct": 0.01, "require_uptrend": True},
+                "premarket": {"enabled": True},
+            },
+            "preferred_strategies": [
+                "prebreakout", "rvol_scalp", "rvol_momentum", "vwap_scalp",
+                "momentum", "smc_forever", "mean_reversion", "pairs_trading",
+            ],
+        },
         "invest": {
             "label": "Invest",
             "description": "Longer holds, wide stops, follow smart money",

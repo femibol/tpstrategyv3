@@ -31,11 +31,13 @@ from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
+from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
+from bot.integrations.google_sheets import GoogleSheetsLogger
 from bot.utils.logger import setup_logger, get_logger
 from bot.utils.notifications import Notifier
 
@@ -78,6 +80,7 @@ class TradingEngine:
         self.auto_tuner = None
         self.regime_detector = None
         self.hedging_manager = None
+        self.sheets_logger = None
         self.scheduler = None
 
         # State
@@ -222,6 +225,11 @@ class TradingEngine:
         self.trade_analyzer = TradeAnalyzer(self.config)
         log.info("Trade learning system enabled")
 
+        # Google Sheets trade logging
+        self.sheets_logger = GoogleSheetsLogger(self.config)
+        if self.sheets_logger.is_enabled():
+            log.info("Google Sheets trade logging ENABLED")
+
         # Claude AI Insights (analyzes trades for deeper learning)
         self.ai_insights = AIInsights(self.config)
         if self.ai_insights.is_available():
@@ -290,6 +298,7 @@ class TradingEngine:
             "smc_forever": SMCForeverStrategy,
             "rvol_momentum": RvolMomentumStrategy,
             "rvol_scalp": RvolScalpStrategy,
+            "prebreakout": PreBreakoutStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -330,6 +339,11 @@ class TradingEngine:
         if scalp_strat and hasattr(scalp_strat, "add_dynamic_symbols"):
             scalp_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into RVOL scalp")
+
+        prebreakout_strat = self.strategies.get("prebreakout")
+        if prebreakout_strat and hasattr(prebreakout_strat, "add_dynamic_symbols"):
+            prebreakout_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into pre-breakout")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
@@ -867,10 +881,16 @@ class TradingEngine:
             # --- Partial Profit Taking ---
             if pt_enabled and pos["quantity"] > 1:
                 targets_hit = pos.get("targets_hit", [])
+                # Breakout plays: skip early profit-taking tiers (let runners run)
+                # Only start taking profit at tier 2+ (3%+) for breakout plays
+                is_breakout_pos = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                 for i, target in enumerate(pt_targets):
                     if i in targets_hit:
                         continue
                     target_pct = target.get("pct_from_entry", 0)
+                    # Skip the first (smallest) profit tier for breakout plays
+                    if is_breakout_pos and target_pct < 0.03:
+                        continue
                     if pnl_pct >= target_pct:
                         close_pct = target.get("close_pct", 0.33)
                         qty_to_close = max(1, int(pos["quantity"] * close_pct))
@@ -929,7 +949,19 @@ class TradingEngine:
                                  self.config.risk_config.get("trailing_stop_pct", 0.02))
 
             # Tighten trail dynamically based on profit level
-            if pnl_pct >= 0.05:
+            # Breakout plays get wider trails to ride the full move
+            is_breakout_play = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+            if is_breakout_play:
+                # Breakout plays: wider trail to let runners breathe
+                if pnl_pct >= 0.10:
+                    trailing_pct = base_trail * 0.5   # Tighten at 10%+ (protect the bag)
+                elif pnl_pct >= 0.05:
+                    trailing_pct = base_trail * 0.7   # Moderate at 5%+
+                elif pnl_pct >= 0.02:
+                    trailing_pct = base_trail * 0.85  # Gentle tighten at 2%+
+                else:
+                    trailing_pct = base_trail          # Full width while building
+            elif pnl_pct >= 0.05:
                 trailing_pct = base_trail * 0.4  # Very tight at 5%+ profit
             elif pnl_pct >= 0.03:
                 trailing_pct = base_trail * 0.5  # Tight at 3%+ profit
@@ -958,19 +990,83 @@ class TradingEngine:
                     )
 
             # --- Max Holding Period ---
-            if "entry_time" in pos and "max_hold_bars" in pos:
+            if "entry_time" in pos:
                 elapsed = (datetime.now(self.tz) - pos["entry_time"]).total_seconds()
-                bar_seconds = pos.get("bar_seconds", 300)
-                if elapsed > pos["max_hold_bars"] * bar_seconds:
-                    positions_to_close.append(
-                        (symbol, "time_exit", "Max holding period exceeded")
-                    )
+                elapsed_days = elapsed / 86400
+
+                # Days-based hold limit (swing/momentum trades)
+                max_hold_days = pos.get("max_hold_days", 0)
+                if max_hold_days > 0 and elapsed_days > max_hold_days:
+                    # Breakout plays in profit: keep riding with trail
+                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                    # If profitable, let it ride with tighter trail instead of hard exit
+                    if is_breakout and pnl_pct > 0.01:
+                        # Breakout runners get looser trail even at expiry
+                        trail = 0.02 if pnl_pct > 0.05 else 0.015
+                        pos["trailing_stop_pct"] = min(
+                            pos.get("trailing_stop_pct", 0.03), trail
+                        )
+                        log.info(
+                            f"BREAKOUT RUNNER: {symbol} held {elapsed_days:.1f}d "
+                            f"(max {max_hold_days}d) up {pnl_pct:+.1%} - "
+                            f"keeping with {trail:.1%} trail"
+                        )
+                    elif pnl_pct > 0.02:
+                        pos["trailing_stop_pct"] = min(
+                            pos.get("trailing_stop_pct", 0.02), 0.01
+                        )
+                        log.info(
+                            f"HOLD EXPIRING: {symbol} held {elapsed_days:.1f}d "
+                            f"(max {max_hold_days}d) but profitable ({pnl_pct:+.1%}) - "
+                            f"tightening trail to 1%"
+                        )
+                    else:
+                        positions_to_close.append(
+                            (symbol, "time_exit",
+                             f"Max hold {max_hold_days}d exceeded ({elapsed_days:.1f}d) "
+                             f"| P&L: {pnl_pct:+.1%}")
+                        )
+                        continue
+
+                # Bars-based hold limit (scalp/intraday trades)
+                elif "max_hold_bars" in pos:
+                    bar_seconds = pos.get("bar_seconds", 300)
+                    if elapsed > pos["max_hold_bars"] * bar_seconds:
+                        # Runner override: if up big, don't force exit - tighten trail instead
+                        if pnl_pct >= 0.03 and not pos.get("scalp_mode"):
+                            pos["trailing_stop_pct"] = min(
+                                pos.get("trailing_stop_pct", 0.02), 0.008
+                            )
+                            if not pos.get("_runner_mode_logged"):
+                                log.info(
+                                    f"RUNNER MODE: {symbol} up {pnl_pct:+.1%} at max hold "
+                                    f"- keeping with 0.8% trail instead of forced exit"
+                                )
+                                pos["_runner_mode_logged"] = True
+                        else:
+                            positions_to_close.append(
+                                (symbol, "time_exit", "Max holding period exceeded")
+                            )
+                            continue
 
             # --- Stale Position Exit ---
             # If position hasn't moved >0.3% in 30+ minutes, exit to free capital
+            # Only for scalp/intraday - swing trades get more room
+            # Breakout plays get the most room (they consolidate before moving)
             if "entry_time" in pos and not pos.get("scalp_mode"):
                 elapsed_min = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
-                if elapsed_min >= 30 and abs(pnl_pct) < 0.003:
+                max_hold_days = pos.get("max_hold_days", 0)
+                is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                if is_breakout:
+                    stale_threshold_min = 360  # 6 hours for breakout plays (they consolidate)
+                    stale_move_pct = 0.008     # 0.8% threshold (tight ranges expected)
+                elif max_hold_days > 0:
+                    stale_threshold_min = 120  # 2 hours for swing
+                    stale_move_pct = 0.005     # 0.5% for swing
+                else:
+                    stale_threshold_min = 30   # 30min for scalp
+                    stale_move_pct = 0.003     # 0.3% for scalp
+                if elapsed_min >= stale_threshold_min and abs(pnl_pct) < stale_move_pct:
                     positions_to_close.append(
                         (symbol, "stale_exit",
                          f"Stale position: {pnl_pct:+.2%} after {elapsed_min:.0f}min")
@@ -1197,11 +1293,15 @@ class TradingEngine:
             "executed_via": executed_via,
             "max_hold_bars": signal.get("max_hold_bars", 40),
             "bar_seconds": signal.get("bar_seconds", 300),
+            "max_hold_days": signal.get("max_hold_days", 0),  # 0 = use bar-based, >0 = days limit
             # Scalp-specific metadata
             "scalp_mode": signal.get("scalp_mode", False),
             "same_candle_exit": signal.get("same_candle_exit", False),
             "quick_scalp_pct": signal.get("quick_scalp_pct", 0),
             "runner_pct": signal.get("runner_pct", 0),
+            # Breakout play metadata (pre-breakout / rvol breakout signals)
+            "source": signal.get("source", ""),
+            "breakout_play": signal.get("breakout_play", False),
         }
 
         # Rich notification with full trade details
@@ -1347,6 +1447,10 @@ class TradingEngine:
         if self.trade_analyzer:
             self.trade_analyzer.persist_trade(self.trade_history[-1])
 
+        # Log trade to Google Sheets
+        if self.sheets_logger and self.sheets_logger.is_enabled():
+            self.sheets_logger.log_trade(self.trade_history[-1])
+
         # Update watchlist performance tracking
         if symbol in self.watchlist:
             self._update_watchlist_performance(symbol, pnl, pnl_pct)
@@ -1433,6 +1537,12 @@ class TradingEngine:
             "exit_time": datetime.now(self.tz).isoformat(),
             "partial": True,
         })
+
+        # Persist partial trade
+        if self.trade_analyzer:
+            self.trade_analyzer.persist_trade(self.trade_history[-1])
+        if self.sheets_logger and self.sheets_logger.is_enabled():
+            self.sheets_logger.log_trade(self.trade_history[-1])
 
         # Update performance stats
         self._update_performance_stats(pnl)
@@ -1620,6 +1730,7 @@ class TradingEngine:
                     "executed_via": "TradersPost",
                     "max_hold_bars": 40,
                     "bar_seconds": 300,
+                    "max_hold_days": 5,  # Synced positions: 5-day default hold limit
                 }
             if broker_positions:
                 log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
@@ -2055,6 +2166,10 @@ class TradingEngine:
                 should_hold = False
                 if overnight_enabled and in_profit and len(overnight_holds) < max_overnight:
                     min_profit = overnight_cfg.get("min_profit_pct", 0.01)
+                    # Breakout plays: lower threshold to hold overnight (these are multi-day plays)
+                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                    if is_breakout:
+                        min_profit = min(min_profit, 0.005)  # Only need 0.5% profit to hold breakout overnight
                     if pnl_pct >= min_profit:
                         # Check if in uptrend (price above entry, which we already know if profitable)
                         should_hold = True
@@ -2118,6 +2233,26 @@ class TradingEngine:
 
         self.daily_stats.append(stats)
         self.notifier.daily_summary(stats)
+
+        # Log daily summary to Google Sheets
+        if self.sheets_logger and self.sheets_logger.is_enabled():
+            wins_list = [t for t in self.daily_trades if t.get("pnl", 0) > 0]
+            losses_list = [t for t in self.daily_trades if t.get("pnl", 0) <= 0]
+            best = max((t.get("pnl", 0) for t in self.daily_trades), default=0)
+            worst = min((t.get("pnl", 0) for t in self.daily_trades), default=0)
+            best_sym = next((t.get("symbol", "") for t in self.daily_trades if t.get("pnl", 0) == best), "") if self.daily_trades else ""
+            worst_sym = next((t.get("symbol", "") for t in self.daily_trades if t.get("pnl", 0) == worst), "") if self.daily_trades else ""
+            self.sheets_logger.log_daily_summary({
+                "date": stats["date"],
+                "trades": total_trades,
+                "wins": len(wins_list),
+                "losses": len(losses_list),
+                "pnl": self.daily_pnl,
+                "balance": self.current_balance,
+                "best_trade": f"{best_sym} ${best:+.2f}" if best_sym else "",
+                "worst_trade": f"{worst_sym} ${worst:+.2f}" if worst_sym else "",
+                "positions_held": len(self.positions),
+            })
         log.info(
             f"Day P&L: ${self.daily_pnl:+.2f} | Trades: {total_trades} | "
             f"Regime: {regime} | Overnight: {stats['overnight_holds']}"
@@ -2377,7 +2512,8 @@ class TradingEngine:
         rvol_strat = self.strategies.get("rvol_momentum")
         scalp_strat = self.strategies.get("rvol_scalp")
         mr_strat = self.strategies.get("mean_reversion")
-        if not rvol_strat and not scalp_strat and not mr_strat:
+        pb_strat = self.strategies.get("prebreakout")
+        if not rvol_strat and not scalp_strat and not mr_strat and not pb_strat:
             return
 
         try:
@@ -2416,6 +2552,12 @@ class TradingEngine:
                     scalp_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into RVOL scalp")
 
+                # Feed ALL unusual activity into pre-breakout scanner
+                # Pre-breakout wants to catch stocks EARLY (even small moves = accumulation)
+                if pb_strat and scalp_symbols:
+                    pb_strat.add_dynamic_symbols(scalp_symbols)
+                    log.debug(f"Injected {len(scalp_symbols)} movers into pre-breakout")
+
             # Also get losers from the movers data (already fetched via Alpaca in get_top_movers)
             # Losers are mean reversion bounce candidates
             if movers:
@@ -2433,7 +2575,10 @@ class TradingEngine:
                         mr_strat.symbols.extend(new)
                     if scalp_strat:
                         scalp_strat.add_dynamic_symbols(loser_syms)
-                    log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp")
+                    # Losers that base out and accumulate can also pre-breakout
+                    if pb_strat:
+                        pb_strat.add_dynamic_symbols(loser_syms)
+                    log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp + pre-breakout")
 
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
@@ -2444,7 +2589,9 @@ class TradingEngine:
                         rvol_strat.add_dynamic_symbols(runner_symbols)
                     if scalp_strat:
                         scalp_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL strategies")
+                    if pb_strat:
+                        pb_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL + pre-breakout strategies")
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")

@@ -221,6 +221,7 @@ class MomentumStrategy(BaseStrategy):
                 "reason": f"Momentum BUY: {', '.join(reasons)}",
                 "max_hold_bars": self.max_hold,
                 "bar_seconds": self._timeframe_to_seconds(),
+                "max_hold_days": self.config.get("max_hold_days", 5),  # Swing: max 5 days
                 "trailing_stop_pct": atr / current_price,  # ATR-based trail
             }
 

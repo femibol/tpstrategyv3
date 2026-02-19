@@ -5,13 +5,14 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  smc_forever: 0.15               # 15% - highest conviction model
-  mean_reversion: 0.10            # 10% of capital
+  smc_forever: 0.12               # 12% - highest conviction model
+  mean_reversion: 0.08            # 8% of capital
   momentum: 0.10                  # 10% of capital
   rvol_momentum: 0.15             # 15% - Money Machine RVOL auto-trading (5-min)
-  rvol_scalp: 0.25                # 25% - RVOL scalp (1-min bars, quick in/out)
-  vwap_scalp: 0.10                # 10% of capital
-  pairs_trading: 0.15             # 15% of capital
+  rvol_scalp: 0.20                # 20% - RVOL scalp (1-min bars, quick in/out)
+  vwap_scalp: 0.08                # 8% of capital
+  pairs_trading: 0.12             # 12% of capital
+  prebreakout: 0.15               # 15% - Pre-breakout accumulation (catch runners early)
 
 # --- Mean Reversion Strategy ---
 # Buy oversold, sell overbought - bread & butter for small accounts
@@ -27,6 +28,7 @@ mean_reversion:
   bollinger_std: 2.0
   min_atr_multiplier: 1.5         # Min volatility filter
   max_holding_periods: 20         # Max hold 20 bars (100 min on 5m)
+  max_hold_days: 3                # Mean reversion: max 3 days to revert
   symbols:
     - SPY
     - QQQ
@@ -41,6 +43,10 @@ mean_reversion:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- Momentum / Trend Following ---
 # Ride strong trends - let winners run
@@ -56,6 +62,7 @@ momentum:
   atr_stop_multiplier: 1.8        # Tighter stop: 1.8x ATR (was 2.0)
   atr_target_multiplier: 3.5      # Target at 3.5x ATR (still great R:R)
   max_holding_bars: 40            # Max hold 40 bars (10 hours on 15m)
+  max_hold_days: 5                # Swing: hold up to 5 trading days
   breakout_lookback: 15           # Shorter lookback = more breakouts detected
   symbols:
     - SPY
@@ -73,6 +80,10 @@ momentum:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- VWAP Scalping ---
 # Trade around VWAP like institutional desks
@@ -106,6 +117,7 @@ pairs_trading:
   exit_zscore: 0.5                # Exit when spread narrows to 0.5
   stop_zscore: 3.5                # Stop if spread widens to 3.5
   max_holding_bars: 30            # Max hold 30 bars
+  max_hold_days: 5                # Pairs: max 5 days for convergence
   pairs:
     - ["AAPL", "MSFT"]
     - ["GOOGL", "META"]
@@ -125,6 +137,7 @@ smc_forever:
   displacement_atr_mult: 1.5        # Displacement candle = 1.5x ATR body
   risk_reward_min: 2.0              # Minimum 2:1 R/R or skip
   max_trades_per_week: 3            # Cap weekly trades (selectivity)
+  max_hold_days: 7                   # SMC setups: hold up to 7 days
   stop_buffer_pct: 0.002            # 0.2% buffer below FVG for stop
   smt_pairs:                        # Correlated pairs for SMT divergence
     - ["SPY", "QQQ"]
@@ -144,6 +157,10 @@ smc_forever:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- RVOL Momentum Strategy (Money Machine) ---
 # Auto-trades high relative volume stocks like Trade Ideas Money Machine
@@ -189,6 +206,10 @@ rvol_momentum:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
 # Ultra-fast scalping on 1-minute bars with real-time profit taking
@@ -240,6 +261,78 @@ rvol_scalp:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
+
+# --- Pre-Breakout Accumulation Strategy ---
+# Enters BEFORE the breakout by detecting accumulation:
+# BB squeeze + volume building + higher lows + MACD shift
+# Then enters on the first breakout candle for maximum runner potential
+# Catches plays like RXT (+227%), GERN (+7.8%) by entering early
+prebreakout:
+  enabled: true
+  timeframe: "5m"
+  min_score: 50                    # Composite score threshold
+  min_price: 0.50                  # Low price OK - these are where big % moves happen
+  max_price: 800.00                # Higher cap for big names
+  min_volume: 100000               # Min avg daily volume
+  bollinger_period: 20             # BB period
+  bollinger_std: 2.0               # BB standard deviations
+  squeeze_lookback: 50             # Bars to compare for squeeze detection
+  squeeze_percentile: 25           # Band width must be in bottom 25% = squeeze
+  vol_build_bars: 5                # Recent bars to measure volume buildup
+  vol_build_multiplier: 1.3        # Recent vol must be 1.3x the lookback avg
+  atr_stop_multiplier: 2.0         # Stop at 2x ATR below (room to breathe)
+  atr_target_multiplier: 5.0       # First target at 5x ATR (wide for runners)
+  runner_atr_multiplier: 10.0      # Runner target at 10x ATR (multi-bagger territory)
+  max_hold_days: 5                 # Hold up to 5 days (breakouts can take days to play out)
+  max_trades_per_day: 8            # Max 8 breakout entries per day
+  trailing_stop_pct: 0.03          # 3% trailing stop (wide - let it breathe)
+  symbols:
+    # High-beta stocks that make big breakout moves
+    - TSLA
+    - NVDA
+    - AMD
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - MSTR
+    - HOOD
+    - SOFI
+    - AFRM
+    - UPST
+    - IONQ
+    - RGTI
+    - SOUN
+    - AI
+    - BBAI
+    - RKLB
+    - LUNR
+    - ASTS
+    - RIVN
+    - LCID
+    - MARA
+    - RIOT
+    - CLSK
+    - GME
+    - AMC
+    - SNAP
+    - ROKU
+    - DKNG
+    # Crypto (huge breakout potential)
+    - BTC-USD
+    - ETH-USD
+    - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
+    - SHIB-USD
+    - PEPE-USD
+    - SUI-USD
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts

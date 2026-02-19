@@ -306,6 +306,7 @@ class SMCForeverStrategy(BaseStrategy):
                 "reason": f"Forever Model LONG: {', '.join(reasons)}",
                 "max_hold_bars": 80,
                 "bar_seconds": self._timeframe_to_seconds(),
+                "max_hold_days": 7,  # SMC setups can hold up to 7 days
                 "trailing_stop_pct": atr / current_price if atr else 0.02,
             }
 
@@ -351,6 +352,7 @@ class SMCForeverStrategy(BaseStrategy):
                 "reason": f"Forever Model SHORT: {', '.join(reasons)}",
                 "max_hold_bars": 80,
                 "bar_seconds": self._timeframe_to_seconds(),
+                "max_hold_days": 7,  # SMC setups can hold up to 7 days
                 "trailing_stop_pct": atr / current_price if atr else 0.02,
             }
 

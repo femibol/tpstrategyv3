@@ -230,10 +230,15 @@ class RvolScalpStrategy(BaseStrategy):
         elif rsi > 75:
             score -= 5  # Overbought penalty
 
+        # Crypto gets lower thresholds (more volatile, different volume patterns)
+        is_crypto = any(symbol.upper().endswith(s) for s in ("-USD", "-USDT"))
+        effective_min_rvol = self.min_rvol * 0.7 if is_crypto else self.min_rvol
+        effective_min_score = int(self.min_score * 0.8) if is_crypto else self.min_score
+
         # Verdict
-        if rvol >= self.min_rvol and score >= self.min_score and direction == "UP":
+        if rvol >= effective_min_rvol and score >= effective_min_score and direction == "UP":
             verdict = "SCALP SIGNAL"
-        elif rvol >= self.min_rvol and score >= 35:
+        elif rvol >= effective_min_rvol and score >= 35:
             verdict = "WARMING"
         elif rvol >= 1.5:
             verdict = "ACTIVE"
@@ -268,8 +273,9 @@ class RvolScalpStrategy(BaseStrategy):
             atr_target = current_price + (self.atr_target_mult * atr)
             take_profit = min(quick_target, atr_target)  # Whichever is closer
 
-            # Runner target for strong momentum
-            runner_target = current_price * (1 + self.runner_pct)
+            # Runner target for strong momentum (wider for crypto)
+            runner_mult = self.runner_pct * 2.0 if is_crypto else self.runner_pct  # 3% for crypto, 1.5% for stocks
+            runner_target = current_price * (1 + runner_mult)
 
             targets = [
                 round(take_profit, 2),      # Quick scalp exit

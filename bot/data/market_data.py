@@ -189,7 +189,8 @@ class MarketDataFeed:
         return bars
 
     def _fetch_alpaca(self, symbol):
-        """Fetch real-time data from Alpaca Markets."""
+        """Fetch real-time data from Alpaca Markets.
+        Routes crypto symbols to Alpaca crypto API with correct symbol format."""
         if not self.alpaca:
             return None
 
@@ -206,23 +207,32 @@ class MarketDataFeed:
         start = (datetime.now() - timedelta(days=self.lookback_days)).strftime("%Y-%m-%d")
         end = datetime.now().strftime("%Y-%m-%d")
 
-        bars = self.alpaca.get_bars(
-            symbol,
-            timeframe,
-            start=start,
-            end=end,
-            limit=500,
-        ).df
+        # Crypto uses different API endpoint and symbol format
+        if self._is_crypto(symbol):
+            alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
+            bars = self.alpaca.get_crypto_bars(
+                alpaca_sym,
+                timeframe,
+                start=start,
+                end=end,
+                limit=500,
+            ).df
+        else:
+            bars = self.alpaca.get_bars(
+                symbol,
+                timeframe,
+                start=start,
+                end=end,
+                limit=500,
+            ).df
 
         if bars.empty:
             return None
 
         bars.columns = [c.lower() for c in bars.columns]
-        # Ensure required columns
-        if "trade_count" in bars.columns:
-            bars = bars.drop(columns=["trade_count"], errors="ignore")
-        if "vwap" in bars.columns:
-            bars = bars.drop(columns=["vwap"], errors="ignore")
+        for drop_col in ("trade_count", "vwap", "exchange"):
+            if drop_col in bars.columns:
+                bars = bars.drop(columns=[drop_col], errors="ignore")
 
         return bars
 
@@ -391,12 +401,18 @@ class MarketDataFeed:
             try:
                 start = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
                 end = datetime.now().strftime("%Y-%m-%d")
-                bars = self.alpaca.get_bars(
-                    symbol, TimeFrame.Minute, start=start, end=end, limit=500
-                ).df
+                if self._is_crypto(symbol):
+                    alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
+                    bars = self.alpaca.get_crypto_bars(
+                        alpaca_sym, TimeFrame.Minute, start=start, end=end, limit=500
+                    ).df
+                else:
+                    bars = self.alpaca.get_bars(
+                        symbol, TimeFrame.Minute, start=start, end=end, limit=500
+                    ).df
                 if not bars.empty:
                     bars.columns = [c.lower() for c in bars.columns]
-                    for drop_col in ("trade_count", "vwap"):
+                    for drop_col in ("trade_count", "vwap", "exchange"):
                         if drop_col in bars.columns:
                             bars = bars.drop(columns=[drop_col], errors="ignore")
                     return bars
