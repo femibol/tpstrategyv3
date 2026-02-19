@@ -979,6 +979,7 @@ class TradingEngine:
                         (symbol, "trailing_stop",
                          f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")
                     )
+                    continue
             elif direction == "short":
                 new_trail = current_price * (1 + trailing_pct)
                 if "trailing_stop" not in pos or new_trail < pos["trailing_stop"]:
@@ -988,6 +989,7 @@ class TradingEngine:
                         (symbol, "trailing_stop",
                          f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")
                     )
+                    continue
 
             # --- Max Holding Period ---
             if "entry_time" in pos:
@@ -1006,11 +1008,13 @@ class TradingEngine:
                         pos["trailing_stop_pct"] = min(
                             pos.get("trailing_stop_pct", 0.03), trail
                         )
-                        log.info(
-                            f"BREAKOUT RUNNER: {symbol} held {elapsed_days:.1f}d "
-                            f"(max {max_hold_days}d) up {pnl_pct:+.1%} - "
-                            f"keeping with {trail:.1%} trail"
-                        )
+                        if not pos.get("_breakout_runner_logged"):
+                            log.info(
+                                f"BREAKOUT RUNNER: {symbol} held {elapsed_days:.1f}d "
+                                f"(max {max_hold_days}d) up {pnl_pct:+.1%} - "
+                                f"keeping with {trail:.1%} trail"
+                            )
+                            pos["_breakout_runner_logged"] = True
                     elif pnl_pct > 0.02:
                         pos["trailing_stop_pct"] = min(
                             pos.get("trailing_stop_pct", 0.02), 0.01
@@ -1029,7 +1033,7 @@ class TradingEngine:
                         continue
 
                 # Bars-based hold limit (scalp/intraday trades)
-                elif "max_hold_bars" in pos:
+                elif "max_hold_bars" in pos and pos["max_hold_bars"] > 0:
                     bar_seconds = pos.get("bar_seconds", 300)
                     if elapsed > pos["max_hold_bars"] * bar_seconds:
                         # Runner override: if up big, don't force exit - tighten trail instead
