@@ -92,7 +92,7 @@ class TradingEngine:
 
         # Signal deduplication - prevent duplicate entries
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
-        self._signal_cooldown_secs = 120  # Min seconds between signals for same symbol
+        self._signal_cooldown_secs = 60  # Min seconds between signals for same symbol (was 120)
 
         # Performance tracking
         self.trade_history = []
@@ -876,9 +876,20 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Trailing Stop ---
-            trailing_pct = pos.get("trailing_stop_pct",
-                                   self.config.risk_config.get("trailing_stop_pct", 0.02))
+            # --- Dynamic Trailing Stop (tightens as profit grows) ---
+            base_trail = pos.get("trailing_stop_pct",
+                                 self.config.risk_config.get("trailing_stop_pct", 0.02))
+
+            # Tighten trail dynamically based on profit level
+            if pnl_pct >= 0.05:
+                trailing_pct = base_trail * 0.4  # Very tight at 5%+ profit
+            elif pnl_pct >= 0.03:
+                trailing_pct = base_trail * 0.5  # Tight at 3%+ profit
+            elif pnl_pct >= 0.015:
+                trailing_pct = base_trail * 0.7  # Moderately tight at 1.5%+
+            else:
+                trailing_pct = base_trail
+
             if direction == "long":
                 new_trail = current_price * (1 - trailing_pct)
                 if "trailing_stop" not in pos or new_trail > pos["trailing_stop"]:
@@ -886,7 +897,7 @@ class TradingEngine:
                 if current_price <= pos.get("trailing_stop", 0):
                     positions_to_close.append(
                         (symbol, "trailing_stop",
-                         f"Trailing stop at ${current_price:.2f}")
+                         f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")
                     )
             elif direction == "short":
                 new_trail = current_price * (1 + trailing_pct)
@@ -895,7 +906,7 @@ class TradingEngine:
                 if current_price >= pos.get("trailing_stop", float("inf")):
                     positions_to_close.append(
                         (symbol, "trailing_stop",
-                         f"Trailing stop at ${current_price:.2f}")
+                         f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")
                     )
 
             # --- Max Holding Period ---
@@ -905,6 +916,16 @@ class TradingEngine:
                 if elapsed > pos["max_hold_bars"] * bar_seconds:
                     positions_to_close.append(
                         (symbol, "time_exit", "Max holding period exceeded")
+                    )
+
+            # --- Stale Position Exit ---
+            # If position hasn't moved >0.3% in 30+ minutes, exit to free capital
+            if "entry_time" in pos and not pos.get("scalp_mode"):
+                elapsed_min = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
+                if elapsed_min >= 30 and abs(pnl_pct) < 0.003:
+                    positions_to_close.append(
+                        (symbol, "stale_exit",
+                         f"Stale position: {pnl_pct:+.2%} after {elapsed_min:.0f}min")
                     )
 
         # Execute partial exits first
@@ -961,6 +982,16 @@ class TradingEngine:
         if action in ("short",):
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
+
+        # --- SELL/EXIT WITHOUT POSITION GUARD ---
+        # Never send sell/exit to broker for symbols we don't hold
+        if action in ("sell", "cover", "close", "exit"):
+            if symbol not in self.positions:
+                log.warning(
+                    f"BLOCKED: {action} {symbol} - no position held. "
+                    f"Preventing phantom exit signal to broker."
+                )
+                return
 
         # --- DUPLICATE ENTRY GUARD ---
         # Prevent same symbol from being entered twice within cooldown window
@@ -1496,14 +1527,25 @@ class TradingEngine:
                 qty = abs(float(p.qty))
                 entry = float(p.avg_entry_price)
                 side = "long" if float(p.qty) > 0 else "short"
+                # Use current market price for smarter stop/target
+                current_mkt = None
+                if self.market_data:
+                    try:
+                        current_mkt = self.market_data.get_price(symbol)
+                    except Exception:
+                        pass
+                ref_price = current_mkt or entry
+                is_crypto = any(symbol.upper().endswith(s) for s in ["-USD", "-USDT"])
+                stop_pct = 0.05 if is_crypto else 0.03
+                tp_pct = 0.08 if is_crypto else 0.06
                 self.positions[symbol] = {
                     "symbol": symbol,
                     "direction": side,
                     "quantity": int(qty) if qty == int(qty) else qty,
                     "entry_price": entry,
                     "entry_time": datetime.now(self.tz),
-                    "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
-                    "take_profit": entry * 1.04 if side == "long" else entry * 0.96,
+                    "stop_loss": ref_price * (1 - stop_pct) if side == "long" else ref_price * (1 + stop_pct),
+                    "take_profit": ref_price * (1 + tp_pct) if side == "long" else ref_price * (1 - tp_pct),
                     "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                     "strategy": "synced_from_alpaca",
                     "executed_via": "TradersPost",

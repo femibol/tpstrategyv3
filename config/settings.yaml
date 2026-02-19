@@ -23,9 +23,9 @@ risk:
   max_positions: 6                # Max 6 concurrent positions
   risk_per_trade_pct: 0.02        # Risk 2% per trade ($100)
   max_correlated_positions: 2     # Max 2 positions in same sector
-  stop_loss_pct: 0.03             # 3% stop loss default
-  trailing_stop_pct: 0.02         # 2% trailing stop
-  take_profit_pct: 0.06           # 6% take profit (2:1 reward/risk)
+  stop_loss_pct: 0.025            # 2.5% stop loss (tighter = faster out on losers)
+  trailing_stop_pct: 0.018        # 1.8% trailing stop (locks in profit faster)
+  take_profit_pct: 0.05           # 5% take profit (more realistic targets hit more often)
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
 
   # --- Profit Taking (Partial Exits) ---
@@ -33,18 +33,21 @@ risk:
     enabled: true
     # Scale out at multiple targets (percentage of position to close)
     targets:
-      - pct_from_entry: 0.03      # At +3% profit
-        close_pct: 0.33           # Close 33% of position
+      - pct_from_entry: 0.015     # At +1.5% profit - take first bite early
+        close_pct: 0.25           # Close 25% of position
         move_stop: "breakeven"    # Move stop to break even
-      - pct_from_entry: 0.06      # At +6% profit (take_profit_pct)
-        close_pct: 0.50           # Close 50% of remaining
+      - pct_from_entry: 0.03      # At +3% profit
+        close_pct: 0.33           # Close 33% of remaining
         tighten_trail: 0.01       # Tighten trailing stop to 1%
+      - pct_from_entry: 0.05      # At +5% profit
+        close_pct: 0.50           # Close 50% of remaining
+        tighten_trail: 0.008      # Very tight 0.8% trail on runner
 
   # --- Break Even Stop ---
   breakeven:
     enabled: true
-    trigger_pct: 0.015            # Move stop to BE after 1.5% profit
-    buffer_pct: 0.002             # Small buffer above entry (0.2%) to cover commissions
+    trigger_pct: 0.01             # Move stop to BE after 1% profit (faster protection)
+    buffer_pct: 0.001             # Small buffer above entry (0.1%) to cover commissions
   min_volume: 500000              # Minimum avg daily volume
   min_price: 5.00                 # No penny stocks
   max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)

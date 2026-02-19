@@ -122,21 +122,55 @@ class MeanReversionStrategy(BaseStrategy):
         }
 
         # --- BUY Signal (Oversold) ---
-        if zscore <= self.entry_zscore and rsi < self.rsi_oversold:
-            # Price is 2+ std devs below mean AND RSI is oversold
+        # Multi-confirmation: need z-score OR (RSI oversold + at lower BB)
+        zscore_trigger = zscore <= self.entry_zscore
+        rsi_trigger = rsi < self.rsi_oversold
+        at_lower_bb = current_price <= bb_lower
+        near_lower_bb = current_price <= bb_lower * 1.005  # Within 0.5% of lower BB
+
+        # Flexible entry: z-score trigger, OR RSI + BB, OR strong z-score alone
+        buy_signal = False
+        if zscore_trigger and rsi_trigger:
+            buy_signal = True  # Classic double confirmation
+        elif zscore_trigger and (at_lower_bb or near_lower_bb):
+            buy_signal = True  # Z-score + BB confirmation
+        elif rsi_trigger and at_lower_bb and vol_ratio > 1.2:
+            buy_signal = True  # RSI + BB + volume (no z-score needed)
+        elif zscore <= self.entry_zscore * 1.3 and rsi < self.rsi_oversold + 5:
+            buy_signal = True  # Slightly relaxed thresholds when both near trigger
+
+        if buy_signal:
             confidence = min(1.0, abs(zscore) / 3.0 * 0.5 + (1 - rsi / 100) * 0.5)
 
             # Stronger signal if at lower Bollinger Band
-            at_lower_bb = current_price <= bb_lower
             if at_lower_bb:
                 confidence = min(1.0, confidence + 0.15)
 
-            # Volume confirmation
+            # Volume confirmation boosts confidence
             if vol_ratio > 1.3:
                 confidence = min(1.0, confidence + 0.1)
+            elif vol_ratio > 1.0:
+                confidence = min(1.0, confidence + 0.05)
 
-            stop_loss = current_price * 0.97  # 3% stop
-            take_profit = sma  # Target the mean
+            # Reversal candle pattern: current bar closing above open (buying pressure)
+            if len(bars) >= 1:
+                current_open = bars["open"].values[-1]
+                if current_price > current_open:
+                    confidence = min(1.0, confidence + 0.05)
+
+            # ATR-based stop loss (smarter than flat 3%)
+            atr = self.indicators.atr(
+                bars["high"].values, bars["low"].values, closes, period=14
+            )
+            if atr and atr > 0:
+                stop_loss = current_price - (2.0 * atr)
+                # Target: distance to mean, but at least 2x risk
+                distance_to_mean = sma - current_price
+                min_target = current_price + 2 * (current_price - stop_loss)
+                take_profit = max(sma, min_target)
+            else:
+                stop_loss = current_price * 0.97  # Fallback 3%
+                take_profit = sma
 
             signal = {
                 "symbol": symbol,
