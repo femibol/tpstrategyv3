@@ -448,18 +448,55 @@ class MarketDataFeed:
         return None
 
     def refresh_prices(self, symbols):
-        """Rapid price refresh for position monitoring (no bar fetch, just quotes).
-        Used by scalp exit monitor for same-candle profit taking."""
-        for symbol in symbols:
-            try:
-                # 1. IBKR streaming (instant)
-                if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
+        """Rapid REAL-TIME price refresh for position monitoring.
+        Priority: IBKR streaming -> Alpaca snapshots (real-time) -> Yahoo (delayed fallback).
+        Alpaca snapshots fetch up to 200 symbols in one batch call."""
+        # 1. IBKR streaming (instant, batch)
+        if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
+            for symbol in symbols:
+                try:
                     live = self.broker.get_live_price(symbol)
                     if live and live.get("price"):
                         self._price_cache[symbol] = live["price"]
-                        continue
+                except Exception:
+                    pass
+            return
 
-                # 2. Quick Yahoo quote (faster than full bar fetch)
+        # 2. Alpaca snapshots - REAL-TIME, batch request (up to 200 per call)
+        if self.alpaca:
+            try:
+                stock_syms = [s for s in symbols if not self._is_crypto(s)]
+                crypto_syms = [s for s in symbols if self._is_crypto(s)]
+
+                if stock_syms:
+                    for i in range(0, len(stock_syms), 200):
+                        batch = stock_syms[i:i + 200]
+                        try:
+                            snapshots = self.alpaca.get_snapshots(batch)
+                            for sym, snap in snapshots.items():
+                                if snap and hasattr(snap, 'latest_trade') and snap.latest_trade:
+                                    self._price_cache[sym] = float(snap.latest_trade.p)
+                                elif snap and hasattr(snap, 'minute_bar') and snap.minute_bar:
+                                    self._price_cache[sym] = float(snap.minute_bar.c)
+                        except Exception as e:
+                            log.debug(f"Alpaca snapshot batch error: {e}")
+
+                for sym in crypto_syms:
+                    try:
+                        alpaca_sym = sym.replace("-USD", "/USD").replace("-USDT", "/USDT")
+                        snap = self.alpaca.get_crypto_snapshot(alpaca_sym)
+                        if snap and hasattr(snap, 'latest_trade') and snap.latest_trade:
+                            self._price_cache[sym] = float(snap.latest_trade.p)
+                    except Exception:
+                        pass
+
+                return  # Alpaca succeeded, skip Yahoo
+            except Exception as e:
+                log.debug(f"Alpaca refresh failed, Yahoo fallback: {e}")
+
+        # 3. Yahoo fallback (15-min delayed - only if no Alpaca)
+        for symbol in symbols:
+            try:
                 url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
                 headers = {"User-Agent": "Mozilla/5.0"}
                 resp = _requests.get(url, headers=headers, timeout=5)
@@ -473,6 +510,10 @@ class MarketDataFeed:
                             self._price_cache[symbol] = price
             except Exception:
                 pass
+
+    def _is_crypto(self, symbol):
+        """Check if symbol is a crypto ticker."""
+        return any(symbol.upper().endswith(s) for s in ("-USD", "-USDT", "-BTC", "-ETH"))
 
     def get_price(self, symbol):
         """Get latest real price for a symbol."""
@@ -493,7 +534,7 @@ class MarketDataFeed:
     def get_quote(self, symbol):
         """
         Get a real-time quote for a single symbol.
-        Priority: IBKR streaming (instant) -> Yahoo Finance API (delayed).
+        Priority: IBKR streaming -> Alpaca snapshot (real-time) -> Yahoo (delayed).
         """
         # 1. Try IBKR live streaming (TRUE real-time, no delay)
         if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_quote'):
@@ -504,7 +545,51 @@ class MarketDataFeed:
             except Exception:
                 pass
 
-        # 2. Fallback: Yahoo Finance direct API (~15 min delay)
+        # 2. Alpaca snapshot (real-time IEX data)
+        if self.alpaca:
+            try:
+                if self._is_crypto(symbol):
+                    alpaca_sym = symbol.replace("-USD", "/USD").replace("-USDT", "/USDT")
+                    snap = self.alpaca.get_crypto_snapshot(alpaca_sym)
+                else:
+                    snap = self.alpaca.get_snapshot(symbol)
+
+                if snap:
+                    price = None
+                    prev_close = None
+                    volume = 0
+
+                    if hasattr(snap, 'latest_trade') and snap.latest_trade:
+                        price = float(snap.latest_trade.p)
+                    elif hasattr(snap, 'minute_bar') and snap.minute_bar:
+                        price = float(snap.minute_bar.c)
+
+                    if hasattr(snap, 'prev_daily_bar') and snap.prev_daily_bar:
+                        prev_close = float(snap.prev_daily_bar.c)
+
+                    if hasattr(snap, 'daily_bar') and snap.daily_bar:
+                        volume = int(snap.daily_bar.v) if snap.daily_bar.v else 0
+
+                    if price and price > 0:
+                        change = price - prev_close if prev_close else 0
+                        change_pct = (change / prev_close * 100) if prev_close else 0
+                        self._price_cache[symbol] = price
+                        if volume:
+                            self._volume_cache[symbol] = volume
+                        return {
+                            "symbol": symbol,
+                            "price": price,
+                            "prev_close": prev_close or 0,
+                            "change": change,
+                            "change_pct": change_pct,
+                            "volume": volume,
+                            "market_state": "OPEN",
+                            "source": "ALPACA",
+                        }
+            except Exception as e:
+                log.debug(f"Alpaca quote failed for {symbol}: {e}")
+
+        # 3. Yahoo fallback (~15 min delay)
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
             headers = {"User-Agent": "Mozilla/5.0"}
