@@ -27,6 +27,7 @@ mean_reversion:
   bollinger_std: 2.0
   min_atr_multiplier: 1.5         # Min volatility filter
   max_holding_periods: 20         # Max hold 20 bars (100 min on 5m)
+  max_hold_days: 3                # Mean reversion: max 3 days to revert
   symbols:
     - SPY
     - QQQ
@@ -41,6 +42,10 @@ mean_reversion:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- Momentum / Trend Following ---
 # Ride strong trends - let winners run
@@ -56,6 +61,7 @@ momentum:
   atr_stop_multiplier: 1.8        # Tighter stop: 1.8x ATR (was 2.0)
   atr_target_multiplier: 3.5      # Target at 3.5x ATR (still great R:R)
   max_holding_bars: 40            # Max hold 40 bars (10 hours on 15m)
+  max_hold_days: 5                # Swing: hold up to 5 trading days
   breakout_lookback: 15           # Shorter lookback = more breakouts detected
   symbols:
     - SPY
@@ -73,6 +79,10 @@ momentum:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- VWAP Scalping ---
 # Trade around VWAP like institutional desks
@@ -106,6 +116,7 @@ pairs_trading:
   exit_zscore: 0.5                # Exit when spread narrows to 0.5
   stop_zscore: 3.5                # Stop if spread widens to 3.5
   max_holding_bars: 30            # Max hold 30 bars
+  max_hold_days: 5                # Pairs: max 5 days for convergence
   pairs:
     - ["AAPL", "MSFT"]
     - ["GOOGL", "META"]
@@ -125,6 +136,7 @@ smc_forever:
   displacement_atr_mult: 1.5        # Displacement candle = 1.5x ATR body
   risk_reward_min: 2.0              # Minimum 2:1 R/R or skip
   max_trades_per_week: 3            # Cap weekly trades (selectivity)
+  max_hold_days: 7                   # SMC setups: hold up to 7 days
   stop_buffer_pct: 0.002            # 0.2% buffer below FVG for stop
   smt_pairs:                        # Correlated pairs for SMT divergence
     - ["SPY", "QQQ"]
@@ -144,6 +156,10 @@ smc_forever:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- RVOL Momentum Strategy (Money Machine) ---
 # Auto-trades high relative volume stocks like Trade Ideas Money Machine
@@ -189,6 +205,10 @@ rvol_momentum:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
 # Ultra-fast scalping on 1-minute bars with real-time profit taking
@@ -240,6 +260,10 @@ rvol_scalp:
     - BTC-USD
     - ETH-USD
     - SOL-USD
+    - DOGE-USD
+    - AVAX-USD
+    - LINK-USD
+    - XRP-USD
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts

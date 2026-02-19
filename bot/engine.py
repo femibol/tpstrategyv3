@@ -958,19 +958,49 @@ class TradingEngine:
                     )
 
             # --- Max Holding Period ---
-            if "entry_time" in pos and "max_hold_bars" in pos:
+            if "entry_time" in pos:
                 elapsed = (datetime.now(self.tz) - pos["entry_time"]).total_seconds()
-                bar_seconds = pos.get("bar_seconds", 300)
-                if elapsed > pos["max_hold_bars"] * bar_seconds:
-                    positions_to_close.append(
-                        (symbol, "time_exit", "Max holding period exceeded")
-                    )
+                elapsed_days = elapsed / 86400
+
+                # Days-based hold limit (swing/momentum trades)
+                max_hold_days = pos.get("max_hold_days", 0)
+                if max_hold_days > 0 and elapsed_days > max_hold_days:
+                    # If profitable, let it ride with tighter trail instead of hard exit
+                    if pnl_pct > 0.02:
+                        pos["trailing_stop_pct"] = min(
+                            pos.get("trailing_stop_pct", 0.02), 0.01
+                        )
+                        log.info(
+                            f"HOLD EXPIRING: {symbol} held {elapsed_days:.1f}d "
+                            f"(max {max_hold_days}d) but profitable ({pnl_pct:+.1%}) - "
+                            f"tightening trail to 1%"
+                        )
+                    else:
+                        positions_to_close.append(
+                            (symbol, "time_exit",
+                             f"Max hold {max_hold_days}d exceeded ({elapsed_days:.1f}d) "
+                             f"| P&L: {pnl_pct:+.1%}")
+                        )
+                        continue
+
+                # Bars-based hold limit (scalp/intraday trades)
+                elif "max_hold_bars" in pos:
+                    bar_seconds = pos.get("bar_seconds", 300)
+                    if elapsed > pos["max_hold_bars"] * bar_seconds:
+                        positions_to_close.append(
+                            (symbol, "time_exit", "Max holding period exceeded")
+                        )
+                        continue
 
             # --- Stale Position Exit ---
             # If position hasn't moved >0.3% in 30+ minutes, exit to free capital
+            # Only for scalp/intraday - swing trades get more room
             if "entry_time" in pos and not pos.get("scalp_mode"):
                 elapsed_min = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
-                if elapsed_min >= 30 and abs(pnl_pct) < 0.003:
+                max_hold_days = pos.get("max_hold_days", 0)
+                stale_threshold_min = 120 if max_hold_days > 0 else 30  # 2 hours for swing, 30min for scalp
+                stale_move_pct = 0.005 if max_hold_days > 0 else 0.003  # 0.5% for swing, 0.3% for scalp
+                if elapsed_min >= stale_threshold_min and abs(pnl_pct) < stale_move_pct:
                     positions_to_close.append(
                         (symbol, "stale_exit",
                          f"Stale position: {pnl_pct:+.2%} after {elapsed_min:.0f}min")
@@ -1197,6 +1227,7 @@ class TradingEngine:
             "executed_via": executed_via,
             "max_hold_bars": signal.get("max_hold_bars", 40),
             "bar_seconds": signal.get("bar_seconds", 300),
+            "max_hold_days": signal.get("max_hold_days", 0),  # 0 = use bar-based, >0 = days limit
             # Scalp-specific metadata
             "scalp_mode": signal.get("scalp_mode", False),
             "same_candle_exit": signal.get("same_candle_exit", False),
@@ -1620,6 +1651,7 @@ class TradingEngine:
                     "executed_via": "TradersPost",
                     "max_hold_bars": 40,
                     "bar_seconds": 300,
+                    "max_hold_days": 5,  # Synced positions: 5-day default hold limit
                 }
             if broker_positions:
                 log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")

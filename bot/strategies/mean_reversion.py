@@ -186,6 +186,7 @@ class MeanReversionStrategy(BaseStrategy):
                 ),
                 "max_hold_bars": self.max_hold,
                 "bar_seconds": self._timeframe_to_seconds(),
+                "max_hold_days": self.config.get("max_hold_days", 3),  # Mean reversion: max 3 days
             }
 
             log.info(f"SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f}")

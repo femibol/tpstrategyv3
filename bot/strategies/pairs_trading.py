@@ -137,6 +137,7 @@ class PairsTradingStrategy(BaseStrategy):
                     ),
                     "max_hold_bars": self.max_hold,
                     "bar_seconds": self._timeframe_to_seconds(),
+                    "max_hold_days": 5,  # Pairs trades: max 5 days
                     "pair": pair_key,
                     "pair_leg": "short",
                 })
@@ -153,6 +154,7 @@ class PairsTradingStrategy(BaseStrategy):
                     ),
                     "max_hold_bars": self.max_hold,
                     "bar_seconds": self._timeframe_to_seconds(),
+                    "max_hold_days": 5,  # Pairs trades: max 5 days
                     "pair": pair_key,
                     "pair_leg": "long",
                 })
@@ -178,6 +180,7 @@ class PairsTradingStrategy(BaseStrategy):
                     ),
                     "max_hold_bars": self.max_hold,
                     "bar_seconds": self._timeframe_to_seconds(),
+                    "max_hold_days": 5,  # Pairs trades: max 5 days
                     "pair": pair_key,
                     "pair_leg": "long",
                 })
@@ -194,6 +197,7 @@ class PairsTradingStrategy(BaseStrategy):
                     ),
                     "max_hold_bars": self.max_hold,
                     "bar_seconds": self._timeframe_to_seconds(),
+                    "max_hold_days": 5,  # Pairs trades: max 5 days
                     "pair": pair_key,
                     "pair_leg": "short",
                 })
