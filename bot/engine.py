@@ -160,8 +160,15 @@ class TradingEngine:
             self.market_data.start_streaming(all_symbols)
             log.info("IBKR real-time streaming initialized for watchlist")
 
+        # Load trading universe (200+ symbols for RVOL scanning)
+        self.universe = self.config.get_universe()
+        log.info(f"Trading universe loaded: {len(self.universe)} symbols")
+
         # Load strategies
         self._load_strategies()
+
+        # Inject full universe into RVOL strategies for broad scanning
+        self._inject_universe_into_strategies()
 
         # TradersPost integration
         if self.config.traderspost_webhook_url:
@@ -289,6 +296,33 @@ class TradingEngine:
                 )
 
         log.info(f"Total strategies loaded: {len(self.strategies)}")
+
+    def _inject_universe_into_strategies(self):
+        """Inject the full trading universe into RVOL and momentum strategies.
+        This gives them 200+ symbols to scan instead of just 20-30."""
+        if not self.universe:
+            return
+
+        rvol_strat = self.strategies.get("rvol_momentum")
+        scalp_strat = self.strategies.get("rvol_scalp")
+        momentum_strat = self.strategies.get("momentum")
+
+        universe_count = len(self.universe)
+
+        if rvol_strat and hasattr(rvol_strat, "add_dynamic_symbols"):
+            rvol_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into RVOL momentum")
+
+        if scalp_strat and hasattr(scalp_strat, "add_dynamic_symbols"):
+            scalp_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into RVOL scalp")
+
+        # Momentum strategy uses static symbols, so we extend the list directly
+        if momentum_strat:
+            existing = set(s.upper() for s in momentum_strat.symbols)
+            new_syms = [s for s in self.universe if s.upper() not in existing]
+            momentum_strat.symbols.extend(new_syms)
+            log.info(f"Extended momentum strategy to {len(momentum_strat.symbols)} symbols")
 
     def _setup_schedule(self):
         """Set up scheduled tasks."""
@@ -2298,19 +2332,21 @@ class TradingEngine:
 
     def _discover_dynamic_symbols(self):
         """
-        Dynamically discover hot stocks from top movers and inject into
-        BOTH RVOL strategies for auto-trading. Runs every cycle.
+        Dynamically discover hot stocks from top movers, losers, and trending
+        and inject into ALL scanning strategies. Runs every cycle.
 
-        Aggressive discovery: lower thresholds, scan more sources,
-        feed into both rvol_momentum (5-min) and rvol_scalp (1-min).
+        Aggressive discovery: very low thresholds, scan gainers + losers +
+        most active + trending. Feed into RVOL (momentum + scalp) and
+        mean_reversion (oversold losers are mean reversion candidates).
         """
         rvol_strat = self.strategies.get("rvol_momentum")
         scalp_strat = self.strategies.get("rvol_scalp")
-        if not rvol_strat and not scalp_strat:
+        mr_strat = self.strategies.get("mean_reversion")
+        if not rvol_strat and not scalp_strat and not mr_strat:
             return
 
         try:
-            # Get top movers from Yahoo Finance (big gainers, trending)
+            # Get top movers from Yahoo Finance (big gainers, trending, most active)
             movers = self.get_top_movers()
             if movers:
                 mover_symbols = []
@@ -2324,14 +2360,19 @@ class TradingEngine:
                     if not sym or price < 2.0:
                         continue
 
-                    # Feed big movers into momentum strategy (5-min)
-                    if change_pct >= 3.0:
+                    # Feed movers with >2% move into momentum RVOL (lowered from 3%)
+                    if change_pct >= 2.0:
                         mover_symbols.append(sym)
 
-                    # Feed ANY mover with decent volume into scalp strategy (1-min)
-                    # Lower threshold for scalps - we just need volatility
-                    if change_pct >= 1.5 or rvol >= 1.5:
+                    # Feed ANY stock showing unusual activity into scalp
+                    # Very low threshold - just needs movement or volume
+                    if abs(change_pct) >= 1.0 or rvol >= 1.3:
                         scalp_symbols.append(sym)
+
+                    # Feed big losers into mean reversion (oversold bounces)
+                    if change_pct <= -3.0 and mr_strat:
+                        if sym not in mr_strat.symbols:
+                            mr_strat.symbols.append(sym)
 
                 if mover_symbols and rvol_strat:
                     rvol_strat.add_dynamic_symbols(mover_symbols)
@@ -2339,6 +2380,34 @@ class TradingEngine:
                 if scalp_symbols and scalp_strat:
                     scalp_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into RVOL scalp")
+
+            # Also scan day_losers for mean reversion candidates
+            try:
+                import requests as _req
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+                params = {"scrIds": "day_losers", "count": 30}
+                resp = _req.get(url, params=params, headers=headers, timeout=8)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results = data.get("finance", {}).get("result", [])
+                    if results:
+                        loser_syms = []
+                        for q in results[0].get("quotes", [])[:30]:
+                            sym = q.get("symbol", "")
+                            price = q.get("regularMarketPrice", 0)
+                            if sym and "." not in sym and price >= 5.0:
+                                loser_syms.append(sym)
+                        if loser_syms:
+                            if mr_strat:
+                                existing = set(mr_strat.symbols)
+                                new = [s for s in loser_syms if s not in existing]
+                                mr_strat.symbols.extend(new)
+                            if scalp_strat:
+                                scalp_strat.add_dynamic_symbols(loser_syms)
+                            log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp")
+            except Exception as e:
+                log.debug(f"Day losers fetch error: {e}")
 
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
@@ -2722,10 +2791,10 @@ class TradingEngine:
 
         movers = []
 
-        # Yahoo Finance screener: day gainers (expanded to 50 for broader universe)
+        # Yahoo Finance screener: day gainers (100 for maximum coverage)
         try:
             url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params = {"scrIds": "day_gainers", "count": 50}
+            params = {"scrIds": "day_gainers", "count": 100}
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             resp = _req.get(url, params=params, headers=headers, timeout=10)
 
@@ -2734,7 +2803,7 @@ class TradingEngine:
                 results = data.get("finance", {}).get("result", [])
                 if results:
                     quotes = results[0].get("quotes", [])
-                    for q in quotes[:50]:
+                    for q in quotes[:100]:
                         symbol = q.get("symbol", "")
                         if not symbol or "." in symbol:  # Skip foreign tickers
                             continue
@@ -2765,13 +2834,13 @@ class TradingEngine:
         # Also scan most active (high volume stocks = opportunities)
         try:
             url_active = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params_active = {"scrIds": "most_actives", "count": 30}
+            params_active = {"scrIds": "most_actives", "count": 50}
             resp_active = _req.get(url_active, params=params_active, headers=headers, timeout=10)
             if resp_active.status_code == 200:
                 data_active = resp_active.json()
                 results_active = data_active.get("finance", {}).get("result", [])
                 if results_active:
-                    for q in results_active[0].get("quotes", [])[:30]:
+                    for q in results_active[0].get("quotes", [])[:50]:
                         sym = q.get("symbol", "")
                         if not sym or "." in sym or any(m["symbol"] == sym for m in movers):
                             continue

@@ -178,6 +178,27 @@ class Config:
     def get_strategy_config(self, strategy_name):
         return self.strategies.get(strategy_name, {})
 
+    # --- Trading Universe ---
+    def get_universe(self):
+        """Load full trading universe from universe.yaml.
+        Returns flat deduplicated list of all symbols across all sectors."""
+        universe_data = self._load_yaml("universe.yaml")
+        if not universe_data:
+            return []
+        all_symbols = []
+        for section, symbols in universe_data.items():
+            if isinstance(symbols, list):
+                all_symbols.extend(s for s in symbols if isinstance(s, str))
+        # Deduplicate preserving order
+        seen = set()
+        unique = []
+        for s in all_symbols:
+            s_upper = s.upper()
+            if s_upper not in seen:
+                seen.add(s_upper)
+                unique.append(s)
+        return unique
+
     # --- Trading Mode Profiles ---
     TRADING_PROFILES = {
         "scalp": {
