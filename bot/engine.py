@@ -1405,7 +1405,8 @@ class TradingEngine:
             current_price = pos.get("current_price", pos["entry_price"])
 
         action = "SELL" if pos["direction"] == "long" else "BUY"
-        executed_via = pos.get("executed_via", "Simulated")
+        original_broker = pos.get("executed_via", "Simulated")
+        close_broker = None  # Track which broker ACTUALLY closed it (None = nothing worked)
 
         # Try to close via broker chain
         order = None
@@ -1417,7 +1418,7 @@ class TradingEngine:
                 order_type="MARKET",
             )
             if order:
-                executed_via = "IBKR"
+                close_broker = "IBKR"
 
         if not order:
             # Always try Alpaca direct close FIRST — Alpaca is the actual broker
@@ -1429,7 +1430,7 @@ class TradingEngine:
                 log.info(f"Closing {symbol} via Alpaca direct API...")
                 alpaca_result = self._close_via_alpaca(symbol)
                 if alpaca_result and alpaca_result.get("success"):
-                    executed_via = "Alpaca-Direct"
+                    close_broker = "Alpaca-Direct"
                     alpaca_closed = True
                 else:
                     log.warning(f"Alpaca direct close failed for {symbol}, trying TradersPost...")
@@ -1439,7 +1440,7 @@ class TradingEngine:
                     f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
                     f"in broker. Cleaning up internal state."
                 )
-                executed_via = "Phantom-Cleanup"
+                close_broker = "Phantom-Cleanup"
                 alpaca_closed = True  # Nothing to close at broker
 
             # If Alpaca direct didn't work, try TradersPost as fallback
@@ -1455,14 +1456,15 @@ class TradingEngine:
                 try:
                     tp_result = self.tp_broker.send_signal(close_signal)
                     if tp_result and tp_result.get("success"):
-                        executed_via = "TradersPost"
-                    else:
-                        log.error(f"Both Alpaca and TradersPost close failed for {symbol}")
+                        close_broker = "TradersPost"
                 except Exception as e:
                     log.error(f"TradersPost fallback close exception for {symbol}: {e}")
 
+            if not close_broker:
+                log.error(f"ALL close attempts failed for {symbol}")
+
             # Best-effort: also notify TradersPost so it can sync its state
-            if alpaca_closed and self.tp_broker and executed_via == "Alpaca-Direct":
+            if alpaca_closed and self.tp_broker and close_broker == "Alpaca-Direct":
                 try:
                     close_signal = {
                         "symbol": symbol, "action": "exit",
@@ -1473,15 +1475,15 @@ class TradingEngine:
                 except Exception:
                     pass  # Best-effort notification, don't care if it fails
 
-        # Only remove position if broker close actually succeeded
-        # If all close paths failed, keep tracking so we retry next monitoring cycle
-        close_succeeded = executed_via in ("IBKR", "TradersPost", "Alpaca-Direct", "Phantom-Cleanup")
-        if not close_succeeded:
+        # Only remove position if a broker ACTUALLY closed it this cycle
+        if not close_broker:
             log.error(
                 f"CLOSE FAILED for {symbol} — position stays tracked for retry next cycle. "
-                f"executed_via={executed_via}"
+                f"original_broker={original_broker}"
             )
             return
+
+        executed_via = close_broker
 
         # Calculate P&L
         if pos["direction"] == "long":
@@ -1560,7 +1562,7 @@ class TradingEngine:
             current_price = pos.get("current_price", pos["entry_price"])
 
         action = "SELL" if pos["direction"] == "long" else "BUY"
-        executed_via = pos.get("executed_via", "Simulated")
+        close_broker = None  # Track which broker ACTUALLY closed it
 
         # Execute via broker chain
         order = None
@@ -1570,18 +1572,16 @@ class TradingEngine:
                 quantity=qty_to_close, order_type="MARKET",
             )
             if order:
-                executed_via = "IBKR"
+                close_broker = "IBKR"
 
         if not order:
-            # Alpaca-first: close directly at the broker, then notify TradersPost
-            alpaca_closed = False
+            # Alpaca-first: close directly at the broker
             if self._alpaca_position_exists(symbol):
                 alpaca_result = self._close_via_alpaca(symbol, qty=qty_to_close)
                 if alpaca_result and alpaca_result.get("success"):
-                    executed_via = "Alpaca-Direct"
-                    alpaca_closed = True
+                    close_broker = "Alpaca-Direct"
 
-            if not alpaca_closed and self.tp_broker:
+            if not close_broker and self.tp_broker:
                 close_signal = {
                     "symbol": symbol, "action": "exit",
                     "quantity": qty_to_close, "price": current_price,
@@ -1589,7 +1589,14 @@ class TradingEngine:
                 }
                 tp_result = self.tp_broker.send_signal(close_signal)
                 if tp_result and tp_result.get("success"):
-                    executed_via = "TradersPost"
+                    close_broker = "TradersPost"
+
+        # If nothing actually closed, don't update position
+        if not close_broker:
+            log.error(f"PARTIAL CLOSE FAILED for {symbol} — no broker executed")
+            return
+
+        executed_via = close_broker
 
         # Calculate P&L for partial
         if pos["direction"] == "long":
@@ -1785,6 +1792,9 @@ class TradingEngine:
                 "APCA-API-SECRET-KEY": secret_key,
                 "Content-Type": "application/json",
             }
+            # Simple market order — the bot manages all exits (stops, trailing,
+            # profit taking) internally. Don't use bracket orders to avoid
+            # dual-control conflicts with the bot's exit monitoring.
             order_data = {
                 "symbol": symbol,
                 "qty": str(qty),
@@ -1792,18 +1802,6 @@ class TradingEngine:
                 "type": "market",
                 "time_in_force": "day",
             }
-            if limit_price:
-                order_data["type"] = "limit"
-                order_data["limit_price"] = str(round(limit_price, 2))
-
-            # Add bracket order legs for stop loss / take profit
-            if stop_loss and take_profit:
-                order_data["order_class"] = "bracket"
-                order_data["stop_loss"] = {"stop_price": str(round(stop_loss, 2))}
-                order_data["take_profit"] = {"limit_price": str(round(take_profit, 2))}
-            elif stop_loss:
-                order_data["order_class"] = "oto"
-                order_data["stop_loss"] = {"stop_price": str(round(stop_loss, 2))}
 
             resp = _req.post(
                 f"{base_url}/v2/orders",
