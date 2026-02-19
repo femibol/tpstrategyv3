@@ -1641,75 +1641,102 @@ class TradingEngine:
 
     # --- Alpaca Position Sync (prevents phantom positions) ---
 
-    def _init_alpaca_client(self):
-        """Lazily initialize Alpaca REST client for position verification."""
-        if hasattr(self, '_alpaca_client'):
-            return self._alpaca_client
+    def _alpaca_api_call(self, endpoint, method="GET"):
+        """Make a raw HTTP call to Alpaca Trading API.
+        No alpaca_trade_api library needed - uses requests directly.
+        Returns parsed JSON or None on failure."""
         api_key = self.config.alpaca_api_key
         secret_key = self.config.alpaca_secret_key
-        base_url = self.config.alpaca_base_url
-        if api_key and secret_key:
-            try:
-                import alpaca_trade_api as tradeapi
-                self._alpaca_client = tradeapi.REST(
-                    api_key, secret_key, base_url, api_version='v2'
-                )
-                log.info("Alpaca REST client initialized for position sync")
-            except Exception as e:
-                log.warning(f"Alpaca client init failed: {e}")
-                self._alpaca_client = None
-        else:
-            self._alpaca_client = None
-        return self._alpaca_client
+        if not api_key or not secret_key:
+            return None
+        base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+        try:
+            import requests as _req
+            resp = _req.request(
+                method,
+                f"{base_url}{endpoint}",
+                headers={
+                    "APCA-API-KEY-ID": api_key,
+                    "APCA-API-SECRET-KEY": secret_key,
+                },
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 404:
+                return []  # No position / resource not found
+            else:
+                log.debug(f"Alpaca API {endpoint}: HTTP {resp.status_code}")
+                return None
+        except Exception as e:
+            log.debug(f"Alpaca API {endpoint} error: {e}")
+            return None
 
     def _alpaca_position_exists(self, symbol):
-        """Check if a position exists on the Alpaca broker side.
+        """Check if a position exists on the Alpaca broker side via raw HTTP.
         Returns True/False, or None if unable to check."""
-        client = self._init_alpaca_client()
-        if not client:
-            return None  # Can't verify without Alpaca credentials
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        if not api_key or not secret_key:
+            return None
         try:
-            pos = client.get_position(symbol)
-            return abs(float(pos.qty)) > 0
+            import requests as _req
+            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+            resp = _req.get(
+                f"{base_url}/v2/positions/{symbol}",
+                headers={
+                    "APCA-API-KEY-ID": api_key,
+                    "APCA-API-SECRET-KEY": secret_key,
+                },
+                timeout=5,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return abs(float(data.get("qty", 0))) > 0
+            elif resp.status_code == 404:
+                return False
+            return None
         except Exception:
-            # 404 = no position exists, which is what we're checking for
-            return False
+            return None
 
     def _sync_positions_from_alpaca(self):
         """On startup (Render), load actual positions from Alpaca so internal
         state matches reality. Also syncs account balance so position sizing
-        is based on real equity, not the static settings.yaml value."""
-        client = self._init_alpaca_client()
-        if not client:
+        is based on real equity, not the static settings.yaml value.
+        Uses raw HTTP - no alpaca_trade_api library needed."""
+        if not self.config.alpaca_api_key or not self.config.alpaca_secret_key:
             log.info("Alpaca credentials not set - starting with empty positions")
             return
 
         # --- Sync account balance from Alpaca ---
         try:
-            account = client.get_account()
-            equity = float(account.equity)
-            buying_power = float(account.buying_power)
-            cash = float(account.cash)
-            if equity > 0:
-                self.current_balance = equity
-                self.peak_balance = max(self.peak_balance, equity)
-                self.start_of_day_balance = equity
-                log.info(
-                    f"Alpaca account synced: equity=${equity:,.2f} | "
-                    f"cash=${cash:,.2f} | buying_power=${buying_power:,.2f}"
-                )
+            account = self._alpaca_api_call("/v2/account")
+            if account:
+                equity = float(account.get("equity", 0))
+                buying_power = float(account.get("buying_power", 0))
+                cash = float(account.get("cash", 0))
+                if equity > 0:
+                    self.current_balance = equity
+                    self.peak_balance = max(self.peak_balance, equity)
+                    self.start_of_day_balance = equity
+                    log.info(
+                        f"Alpaca account synced: equity=${equity:,.2f} | "
+                        f"cash=${cash:,.2f} | buying_power=${buying_power:,.2f}"
+                    )
+                else:
+                    log.warning("Alpaca returned $0 equity - keeping config starting_balance")
             else:
-                log.warning("Alpaca returned $0 equity - keeping config starting_balance")
+                log.warning("Alpaca account API returned no data")
         except Exception as e:
             log.warning(f"Alpaca account balance sync failed: {e}")
 
         try:
-            broker_positions = client.list_positions()
+            broker_positions = self._alpaca_api_call("/v2/positions") or []
             for p in broker_positions:
-                symbol = p.symbol.upper()
-                qty = abs(float(p.qty))
-                entry = float(p.avg_entry_price)
-                side = "long" if float(p.qty) > 0 else "short"
+                symbol = p.get("symbol", "").upper()
+                qty = abs(float(p.get("qty", 0)))
+                entry = float(p.get("avg_entry_price", 0))
+                side = "long" if float(p.get("qty", 0)) > 0 else "short"
                 # Use current market price for smarter stop/target
                 current_mkt = None
                 if self.market_data:
@@ -1745,14 +1772,14 @@ class TradingEngine:
 
     def _sync_positions_with_broker(self):
         """Reconcile internal positions with actual Alpaca broker positions.
-        Removes phantom positions that exist internally but not at the broker."""
-        client = self._init_alpaca_client()
-        if not client:
+        Removes phantom positions that exist internally but not at the broker.
+        Uses raw HTTP - no alpaca_trade_api library needed."""
+        if not self.config.alpaca_api_key or not self.config.alpaca_secret_key:
             return
 
         try:
-            broker_positions = client.list_positions()
-            broker_symbols = {p.symbol.upper() for p in broker_positions}
+            broker_positions = self._alpaca_api_call("/v2/positions") or []
+            broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
         except Exception as e:
             log.warning(f"Alpaca position sync failed: {e}")
             return
