@@ -205,12 +205,20 @@ class TradersPostBroker(BaseBroker):
                 timeout=10
             )
 
-            success = response.status_code in (200, 201, 202)
+            http_ok = response.status_code in (200, 201, 202)
+
+            # Check response body for rejection — TradersPost can return
+            # HTTP 200 but still reject the signal (no matching position, etc.)
+            resp_text = response.text[:500]
+            resp_lower = resp_text.lower()
+            rejected = "rejected" in resp_lower or "no open position" in resp_lower
+            success = http_ok and not rejected
 
             result = {
                 "success": success,
+                "rejected": rejected,
                 "status_code": response.status_code,
-                "response": response.text[:200],
+                "response": resp_text[:200],
                 "payload": payload,
                 "webhook": "crypto" if (is_crypto and self.webhook_url_crypto) else "primary",
                 "time": datetime.now().isoformat(),
@@ -223,10 +231,15 @@ class TradersPostBroker(BaseBroker):
                     f"TradersPost signal sent: {action.upper()} "
                     f"{payload['ticker']} | Response: {response.status_code}"
                 )
+            elif rejected:
+                log.warning(
+                    f"TradersPost REJECTED {action.upper()} {payload['ticker']} "
+                    f"(HTTP {response.status_code}) | {resp_text[:100]}"
+                )
             else:
                 log.error(
                     f"TradersPost signal failed: {response.status_code} "
-                    f"| {response.text[:100]}"
+                    f"| {resp_text[:100]}"
                 )
 
             # Also send to secondary webhook (dual mode)

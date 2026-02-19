@@ -1368,32 +1368,76 @@ class TradingEngine:
             if order:
                 executed_via = "IBKR"
 
-        if not order and self.tp_broker:
-            log.info(f"Closing {symbol} via TradersPost webhook...")
-            close_signal = {
-                "symbol": symbol,
-                "action": "exit",
-                "quantity": pos["quantity"],
-                "price": current_price,
-                "source": "exit",
-            }
-            try:
-                tp_result = self.tp_broker.send_signal(close_signal)
-                if tp_result and tp_result.get("success"):
-                    executed_via = "TradersPost"
+        if not order:
+            # Positions synced directly from Alpaca should close via Alpaca API,
+            # not TradersPost (which has no record of them and will reject)
+            use_alpaca_direct = executed_via in ("Alpaca", "Alpaca-Direct")
+
+            if use_alpaca_direct:
+                log.info(f"Closing {symbol} via Alpaca direct API (synced position)...")
+                alpaca_result = self._close_via_alpaca(symbol)
+                if alpaca_result and alpaca_result.get("success"):
+                    executed_via = "Alpaca-Direct"
+                elif self.tp_broker:
+                    # Alpaca direct failed — try TradersPost as fallback
+                    log.warning(f"Alpaca direct close failed for {symbol}, trying TradersPost...")
+                    close_signal = {
+                        "symbol": symbol, "action": "exit",
+                        "quantity": pos["quantity"], "price": current_price,
+                        "source": "exit",
+                    }
+                    tp_result = self.tp_broker.send_signal(close_signal)
+                    if tp_result and tp_result.get("success"):
+                        executed_via = "TradersPost"
+                    else:
+                        log.error(f"Both Alpaca and TradersPost close failed for {symbol}")
+            elif self.tp_broker:
+                log.info(f"Closing {symbol} via TradersPost webhook...")
+                close_signal = {
+                    "symbol": symbol,
+                    "action": "exit",
+                    "quantity": pos["quantity"],
+                    "price": current_price,
+                    "source": "exit",
+                }
+                try:
+                    tp_result = self.tp_broker.send_signal(close_signal)
+                    if tp_result and tp_result.get("success"):
+                        executed_via = "TradersPost"
+                    else:
+                        log.warning(f"TradersPost close rejected for {symbol}: {tp_result}")
+                        # TradersPost rejected — try closing directly via Alpaca API
+                        if self._alpaca_position_exists(symbol):
+                            log.info(f"Falling back to Alpaca direct close for {symbol}")
+                            alpaca_result = self._close_via_alpaca(symbol)
+                            if alpaca_result and alpaca_result.get("success"):
+                                executed_via = "Alpaca-Direct"
+                            else:
+                                log.error(f"Alpaca direct close also failed for {symbol}")
+                        elif self._alpaca_position_exists(symbol) is False:
+                            log.warning(
+                                f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
+                                f"in broker. Cleaning up internal state."
+                            )
+                            executed_via = "Phantom-Cleanup"
+                except Exception as e:
+                    log.error(f"TradersPost close exception for {symbol}: {e}")
+                    # If TradersPost threw an exception, also try Alpaca direct close
+                    if self._alpaca_position_exists(symbol):
+                        log.info(f"TradersPost exception — trying Alpaca direct close for {symbol}")
+                        try:
+                            alpaca_result = self._close_via_alpaca(symbol)
+                            if alpaca_result and alpaca_result.get("success"):
+                                executed_via = "Alpaca-Direct"
+                        except Exception as e2:
+                            log.error(f"Alpaca fallback also failed for {symbol}: {e2}")
+            else:
+                # No TradersPost webhook — try Alpaca direct as last resort
+                alpaca_result = self._close_via_alpaca(symbol)
+                if alpaca_result and alpaca_result.get("success"):
+                    executed_via = "Alpaca-Direct"
                 else:
-                    log.error(f"TradersPost close failed for {symbol}: {tp_result}")
-                    # If broker has no position, this is a phantom - clean up internally
-                    if self._alpaca_position_exists(symbol) is False:
-                        log.warning(
-                            f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
-                            f"in broker. Cleaning up internal state."
-                        )
-                        executed_via = "Phantom-Cleanup"
-            except Exception as e:
-                log.error(f"TradersPost close exception for {symbol}: {e}")
-        elif not order and not self.tp_broker:
-            log.warning(f"No broker to close {symbol} - TRADERSPOST_WEBHOOK_URL not set")
+                    log.warning(f"No broker to close {symbol} - no TradersPost or Alpaca available")
 
         # Calculate P&L
         if pos["direction"] == "long":
@@ -1672,6 +1716,39 @@ class TradingEngine:
             log.debug(f"Alpaca API {endpoint} error: {e}")
             return None
 
+    def _close_via_alpaca(self, symbol, qty=None, side="sell"):
+        """Close a position directly via Alpaca API (fallback when TradersPost rejects).
+        Uses DELETE /v2/positions/{symbol} for full close, or POST /v2/orders for partial."""
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        if not api_key or not secret_key:
+            return None
+        try:
+            import requests as _req
+            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+            headers = {
+                "APCA-API-KEY-ID": api_key,
+                "APCA-API-SECRET-KEY": secret_key,
+            }
+            # Full close: DELETE the position
+            resp = _req.delete(
+                f"{base_url}/v2/positions/{symbol}",
+                headers=headers,
+                timeout=10,
+            )
+            if resp.status_code in (200, 204):
+                log.info(f"ALPACA DIRECT CLOSE: {symbol} closed successfully (HTTP {resp.status_code})")
+                return {"success": True, "method": "alpaca_direct", "status_code": resp.status_code}
+            else:
+                log.error(
+                    f"ALPACA DIRECT CLOSE FAILED: {symbol} HTTP {resp.status_code} "
+                    f"| {resp.text[:200]}"
+                )
+                return {"success": False, "status_code": resp.status_code}
+        except Exception as e:
+            log.error(f"ALPACA DIRECT CLOSE exception for {symbol}: {e}")
+            return None
+
     def _alpaca_position_exists(self, symbol):
         """Check if a position exists on the Alpaca broker side via raw HTTP.
         Returns True/False, or None if unable to check."""
@@ -1758,7 +1835,7 @@ class TradingEngine:
                     "take_profit": ref_price * (1 + tp_pct) if side == "long" else ref_price * (1 - tp_pct),
                     "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                     "strategy": "synced_from_alpaca",
-                    "executed_via": "TradersPost",
+                    "executed_via": "Alpaca",
                     "max_hold_bars": 40,
                     "bar_seconds": 300,
                     "max_hold_days": 5,  # Synced positions: 5-day default hold limit
@@ -1792,8 +1869,8 @@ class TradingEngine:
 
         for symbol in phantoms:
             pos = self.positions[symbol]
-            # Only clean up positions that were sent to TradersPost (not simulated)
-            if pos.get("executed_via") in ("TradersPost", "Phantom-Cleanup"):
+            # Clean up positions that were broker-executed (not simulated)
+            if pos.get("executed_via") in ("TradersPost", "Alpaca", "Alpaca-Direct", "Phantom-Cleanup"):
                 log.warning(
                     f"POSITION SYNC: Removing phantom {symbol} "
                     f"(in bot but not at Alpaca broker)"
