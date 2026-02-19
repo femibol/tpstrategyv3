@@ -1199,9 +1199,49 @@ class TradingEngine:
                 else current_price * (1 - tp_pct)
 
         # --- Broker Execution Chain ---
-        # Priority: IBKR -> TradersPost -> Simulated
+        # Priority: IBKR -> TradersPost -> Alpaca Direct
         order = None
         executed_via = None
+
+        # HARD SAFETY CHECK: Verify actual Alpaca position count + buying power
+        # before placing ANY new entry order. Do NOT trust self.positions alone.
+        if action in ("buy", "short"):
+            try:
+                broker_positions = self._alpaca_api_call("/v2/positions") or []
+                actual_count = len(broker_positions)
+                if actual_count >= self.risk_manager.max_positions:
+                    log.error(
+                        f"HARD LIMIT: Alpaca has {actual_count} open positions "
+                        f"(max {self.risk_manager.max_positions}). BLOCKING {action.upper()} {symbol}. "
+                        f"Bot tracking {len(self.positions)} — DESYNC detected!"
+                    )
+                    return
+
+                # Check if we already hold this symbol at the broker
+                broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
+                if symbol.upper() in broker_symbols:
+                    log.warning(
+                        f"DUPLICATE BLOCKED: {symbol} already open at Alpaca broker. "
+                        f"Bot positions dict {'has' if symbol in self.positions else 'MISSING'} it."
+                    )
+                    # Re-sync this position into tracking if bot lost track
+                    if symbol not in self.positions:
+                        self._sync_positions_from_alpaca()
+                    return
+
+                # Check buying power — don't place orders we can't afford
+                account = self._alpaca_api_call("/v2/account")
+                if account:
+                    buying_power = float(account.get("buying_power", 0))
+                    order_cost = current_price * qty
+                    if order_cost > buying_power:
+                        log.error(
+                            f"INSUFFICIENT BUYING POWER: {symbol} order cost ${order_cost:,.2f} "
+                            f"but only ${buying_power:,.2f} available. BLOCKING."
+                        )
+                        return
+            except Exception as e:
+                log.warning(f"Alpaca pre-order safety check failed: {e} — proceeding with caution")
 
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
@@ -1243,34 +1283,45 @@ class TradingEngine:
                     executed_via = "TradersPost"
                     log.info(f"TradersPost accepted {action.upper()} {symbol} (status {tp_result.get('status_code')})")
                 else:
-                    log.error(
-                        f"TradersPost REJECTED {symbol}: "
+                    log.warning(
+                        f"TradersPost REJECTED {action.upper()} {symbol}: "
                         f"status={tp_result.get('status_code') if tp_result else 'None'} "
                         f"response={tp_result.get('response', 'no response') if tp_result else 'send_signal returned None'}"
                     )
             except Exception as e:
                 log.error(f"TradersPost exception for {symbol}: {e}")
-        elif not order and not self.tp_broker:
-            log.warning(
-                f"TradersPost NOT configured - tp_broker is None. "
-                f"Set TRADERSPOST_WEBHOOK_URL env var on Render!"
-            )
 
-        # 3. If no broker available, track as simulated
-        if not order:
-            order = {
-                "order_id": f"sim_{int(datetime.now(self.tz).timestamp())}",
-                "symbol": symbol,
-                "action": action,
-                "quantity": qty,
-                "status": "simulated",
-            }
-            executed_via = "Simulated"
-            log.warning(
-                f"SIMULATED order for {symbol} - no broker executed. "
-                f"IBKR={'connected' if self.broker and self.broker.is_connected() else 'disconnected'}, "
-                f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}"
+        # 3. Alpaca direct order (fallback when TradersPost rejects/unavailable)
+        if not order and self.config.alpaca_api_key:
+            log.info(f"Trying Alpaca direct order for {action.upper()} {symbol}...")
+            alpaca_side = "buy" if action in ("buy",) else "sell"
+            alpaca_result = self._place_order_via_alpaca(
+                symbol=symbol, qty=qty, side=alpaca_side,
+                stop_loss=stop_loss_price, take_profit=take_profit_price,
             )
+            if alpaca_result and alpaca_result.get("success"):
+                order = {
+                    "order_id": alpaca_result.get("order_id", f"alp_{int(datetime.now(self.tz).timestamp())}"),
+                    "symbol": symbol,
+                    "action": action,
+                    "quantity": qty,
+                    "status": alpaca_result.get("status", "submitted"),
+                }
+                executed_via = "Alpaca-Direct"
+                log.info(f"Alpaca direct accepted {action.upper()} {symbol}")
+            else:
+                log.error(f"Alpaca direct order also failed for {symbol}")
+
+        # 4. If ALL brokers failed, do NOT create a simulated phantom position
+        if not order:
+            log.error(
+                f"ALL BROKERS FAILED for {action.upper()} {symbol} - "
+                f"NO position created. "
+                f"IBKR={'connected' if self.broker and self.broker.is_connected() else 'disconnected'}, "
+                f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}, "
+                f"Alpaca={'configured' if self.config.alpaca_api_key else 'NOT configured'}"
+            )
+            return
 
         log.info(
             f"ORDER {action.upper()} {symbol} via {executed_via} | "
@@ -1421,6 +1472,16 @@ class TradingEngine:
                     self.tp_broker.send_signal(close_signal)
                 except Exception:
                     pass  # Best-effort notification, don't care if it fails
+
+        # Only remove position if broker close actually succeeded
+        # If all close paths failed, keep tracking so we retry next monitoring cycle
+        close_succeeded = executed_via in ("IBKR", "TradersPost", "Alpaca-Direct", "Phantom-Cleanup")
+        if not close_succeeded:
+            log.error(
+                f"CLOSE FAILED for {symbol} — position stays tracked for retry next cycle. "
+                f"executed_via={executed_via}"
+            )
+            return
 
         # Calculate P&L
         if pos["direction"] == "long":
@@ -1706,6 +1767,70 @@ class TradingEngine:
                 return None
         except Exception as e:
             log.debug(f"Alpaca API {endpoint} error: {e}")
+            return None
+
+    def _place_order_via_alpaca(self, symbol, qty, side, limit_price=None,
+                                stop_loss=None, take_profit=None):
+        """Place an entry order directly via Alpaca API.
+        Uses market order by default, limit order if limit_price provided."""
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        if not api_key or not secret_key:
+            return None
+        try:
+            import requests as _req
+            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+            headers = {
+                "APCA-API-KEY-ID": api_key,
+                "APCA-API-SECRET-KEY": secret_key,
+                "Content-Type": "application/json",
+            }
+            order_data = {
+                "symbol": symbol,
+                "qty": str(qty),
+                "side": side,
+                "type": "market",
+                "time_in_force": "day",
+            }
+            if limit_price:
+                order_data["type"] = "limit"
+                order_data["limit_price"] = str(round(limit_price, 2))
+
+            # Add bracket order legs for stop loss / take profit
+            if stop_loss and take_profit:
+                order_data["order_class"] = "bracket"
+                order_data["stop_loss"] = {"stop_price": str(round(stop_loss, 2))}
+                order_data["take_profit"] = {"limit_price": str(round(take_profit, 2))}
+            elif stop_loss:
+                order_data["order_class"] = "oto"
+                order_data["stop_loss"] = {"stop_price": str(round(stop_loss, 2))}
+
+            resp = _req.post(
+                f"{base_url}/v2/orders",
+                headers=headers,
+                json=order_data,
+                timeout=10,
+            )
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                log.info(
+                    f"ALPACA DIRECT ORDER: {side.upper()} {qty} {symbol} "
+                    f"| order_id={data.get('id', 'unknown')} status={data.get('status')}"
+                )
+                return {
+                    "success": True,
+                    "order_id": data.get("id"),
+                    "status": data.get("status"),
+                    "method": "alpaca_direct",
+                }
+            else:
+                log.error(
+                    f"ALPACA DIRECT ORDER FAILED: {side.upper()} {symbol} "
+                    f"HTTP {resp.status_code} | {resp.text[:200]}"
+                )
+                return {"success": False, "status_code": resp.status_code}
+        except Exception as e:
+            log.error(f"ALPACA DIRECT ORDER exception for {symbol}: {e}")
             return None
 
     def _close_via_alpaca(self, symbol, qty=None, side="sell"):
