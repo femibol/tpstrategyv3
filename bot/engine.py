@@ -2381,33 +2381,24 @@ class TradingEngine:
                     scalp_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into RVOL scalp")
 
-            # Also scan day_losers for mean reversion candidates
-            try:
-                import requests as _req
-                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-                url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-                params = {"scrIds": "day_losers", "count": 30}
-                resp = _req.get(url, params=params, headers=headers, timeout=8)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    results = data.get("finance", {}).get("result", [])
-                    if results:
-                        loser_syms = []
-                        for q in results[0].get("quotes", [])[:30]:
-                            sym = q.get("symbol", "")
-                            price = q.get("regularMarketPrice", 0)
-                            if sym and "." not in sym and price >= 5.0:
-                                loser_syms.append(sym)
-                        if loser_syms:
-                            if mr_strat:
-                                existing = set(mr_strat.symbols)
-                                new = [s for s in loser_syms if s not in existing]
-                                mr_strat.symbols.extend(new)
-                            if scalp_strat:
-                                scalp_strat.add_dynamic_symbols(loser_syms)
-                            log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp")
-            except Exception as e:
-                log.debug(f"Day losers fetch error: {e}")
+            # Also get losers from the movers data (already fetched via Alpaca in get_top_movers)
+            # Losers are mean reversion bounce candidates
+            if movers:
+                loser_syms = []
+                for m in movers:
+                    sym = m.get("symbol", "")
+                    change_pct = m.get("change_pct", 0)
+                    price = m.get("price", 0)
+                    if change_pct <= -2.0 and price >= 5.0 and sym:
+                        loser_syms.append(sym)
+                if loser_syms:
+                    if mr_strat:
+                        existing = set(mr_strat.symbols)
+                        new = [s for s in loser_syms if s not in existing]
+                        mr_strat.symbols.extend(new)
+                    if scalp_strat:
+                        scalp_strat.add_dynamic_symbols(loser_syms)
+                    log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp")
 
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
@@ -2483,142 +2474,111 @@ class TradingEngine:
 
     def get_low_float_runners(self):
         """
-        Scan for low-float stocks that recently went through reverse splits
-        and are showing explosive volume. These are squeeze candidates.
+        Scan for explosive movers using REAL-TIME Alpaca data.
+        Catches 100%+ runners, squeeze candidates, extreme volume stocks.
 
-        Like RIME +222%, JDZG +125% etc - typically low float + post-split
-        + high RVOL = potential squeeze.
+        Uses Alpaca movers API (real-time) with Yahoo fallback for float data.
 
         Returns list of runner dicts sorted by change_pct descending.
         """
         import requests as _req
 
         runners = []
+        seen = set()
 
-        try:
-            # Yahoo Finance screener: small cap gainers with high volume
-            url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params = {"scrIds": "small_cap_gainers", "count": 25}
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            resp = _req.get(url, params=params, headers=headers, timeout=10)
-
-            if resp.status_code == 200:
-                data = resp.json()
-                results = data.get("finance", {}).get("result", [])
-                if results:
-                    quotes = results[0].get("quotes", [])
-                    for q in quotes[:25]:
-                        symbol = q.get("symbol", "")
-                        if not symbol or "." in symbol:
+        # --- 1. Alpaca Movers: real-time top gainers with extreme moves ---
+        alpaca_key = self.config.alpaca_api_key
+        alpaca_secret = self.config.alpaca_secret_key
+        if alpaca_key and alpaca_secret:
+            try:
+                data_base = "https://data.alpaca.markets"
+                headers_alpaca = {
+                    "APCA-API-KEY-ID": alpaca_key,
+                    "APCA-API-SECRET-KEY": alpaca_secret,
+                }
+                resp = _req.get(
+                    f"{data_base}/v1beta1/screener/stocks/movers",
+                    headers=headers_alpaca,
+                    params={"top": 50},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for item in data.get("gainers", []):
+                        sym = item.get("symbol", "")
+                        if not sym or "." in sym:
                             continue
+                        price = item.get("price", 0) or 0
+                        change_pct = item.get("change", 0) or 0
+                        volume = item.get("volume", 0) or 0
 
-                        price = q.get("regularMarketPrice", 0)
-                        change_pct = q.get("regularMarketChangePercent", 0)
-                        volume = q.get("regularMarketVolume", 0)
-                        avg_vol = q.get("averageDailyVolume3Month", 1)
-                        market_cap = q.get("marketCap", 0)
-                        shares_outstanding = q.get("sharesOutstanding", 0)
-                        float_shares = q.get("floatShares", shares_outstanding)
-                        name = q.get("shortName", symbol)
-
-                        rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
-
-                        # Low float criteria:
-                        # - Float < 20M shares (very low float)
-                        # - Or float < 50M with high RVOL (moderately low float)
-                        is_low_float = (
-                            (float_shares > 0 and float_shares < 20_000_000) or
-                            (float_shares > 0 and float_shares < 50_000_000 and rvol >= 3.0)
-                        )
-
-                        # Runner criteria: big move + volume
-                        is_runner = (
-                            change_pct >= 20.0 and  # At least +20% move
-                            volume >= 500_000 and   # Decent volume
-                            price >= 1.00 and       # Not a sub-penny
-                            price <= 50.00           # Typically low-priced
-                        )
-
-                        if is_runner:
-                            runner_type = "LOW FLOAT SQUEEZE" if is_low_float else "HIGH MOMENTUM"
-
-                            # Check for split indicators
-                            # Post-split stocks often have: low price + low float + extreme move
-                            is_post_split = (
-                                price < 10.0 and
-                                float_shares > 0 and float_shares < 10_000_000 and
-                                change_pct >= 50.0
-                            )
-                            if is_post_split:
-                                runner_type = "POST-SPLIT SQUEEZE"
-
-                            runners.append({
-                                "symbol": symbol,
-                                "name": name[:30],
-                                "price": round(price, 2),
-                                "change_pct": round(change_pct, 2),
-                                "volume": volume,
-                                "avg_volume": avg_vol,
-                                "rvol": rvol,
-                                "market_cap": market_cap,
-                                "float_shares": float_shares,
-                                "float_display": self._format_float(float_shares),
-                                "shares_outstanding": shares_outstanding,
-                                "runner_type": runner_type,
-                                "is_low_float": is_low_float,
-                                "is_post_split": is_post_split,
-                                "on_watchlist": symbol in self.watchlist,
-                            })
-
-        except Exception as e:
-            log.debug(f"Low float runner scan error: {e}")
-
-        # Also scan day gainers for extreme movers
-        try:
-            url2 = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params2 = {"scrIds": "day_gainers", "count": 25}
-            resp2 = _req.get(url2, params=params2, headers=headers, timeout=10)
-
-            if resp2.status_code == 200:
-                data2 = resp2.json()
-                results2 = data2.get("finance", {}).get("result", [])
-                if results2:
-                    for q in results2[0].get("quotes", [])[:25]:
-                        sym = q.get("symbol", "")
-                        if not sym or "." in sym or any(r["symbol"] == sym for r in runners):
-                            continue
-
-                        price = q.get("regularMarketPrice", 0)
-                        change_pct = q.get("regularMarketChangePercent", 0)
-                        volume = q.get("regularMarketVolume", 0)
-                        avg_vol = q.get("averageDailyVolume3Month", 1)
-                        float_shares = q.get("floatShares", 0)
-
-                        # Only add extreme movers not already captured
-                        if change_pct >= 40.0 and price >= 1.0 and volume >= 300_000:
-                            rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
-                            is_low_float = float_shares > 0 and float_shares < 20_000_000
-
+                        # Runner = 10%+ move with decent volume
+                        if change_pct >= 10.0 and price >= 1.0 and price <= 100.0:
                             runners.append({
                                 "symbol": sym,
-                                "name": q.get("shortName", sym)[:30],
+                                "name": sym,
                                 "price": round(price, 2),
                                 "change_pct": round(change_pct, 2),
                                 "volume": volume,
-                                "avg_volume": avg_vol,
-                                "rvol": rvol,
-                                "market_cap": q.get("marketCap", 0),
-                                "float_shares": float_shares,
-                                "float_display": self._format_float(float_shares),
-                                "shares_outstanding": q.get("sharesOutstanding", 0),
-                                "runner_type": "LOW FLOAT SQUEEZE" if is_low_float else "DAY RUNNER",
-                                "is_low_float": is_low_float,
+                                "avg_volume": 0,
+                                "rvol": 0,
+                                "market_cap": 0,
+                                "float_shares": 0,
+                                "float_display": "N/A",
+                                "shares_outstanding": 0,
+                                "runner_type": "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER",
+                                "is_low_float": False,
                                 "is_post_split": False,
                                 "on_watchlist": sym in self.watchlist,
                             })
+                            seen.add(sym)
+            except Exception as e:
+                log.debug(f"Alpaca runners error: {e}")
 
-        except Exception as e:
-            log.debug(f"Day gainer runner scan error: {e}")
+        # --- 2. Yahoo fallback for float data + small cap scan ---
+        if len(runners) < 3:
+            try:
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+                params = {"scrIds": "small_cap_gainers", "count": 25}
+                resp = _req.get(url, params=params, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results = data.get("finance", {}).get("result", [])
+                    if results:
+                        for q in results[0].get("quotes", [])[:25]:
+                            sym = q.get("symbol", "")
+                            if not sym or "." in sym or sym in seen:
+                                continue
+                            price = q.get("regularMarketPrice", 0)
+                            change_pct = q.get("regularMarketChangePercent", 0)
+                            volume = q.get("regularMarketVolume", 0)
+                            avg_vol = q.get("averageDailyVolume3Month", 1)
+                            float_shares = q.get("floatShares", 0)
+                            rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
+                            is_low_float = float_shares > 0 and float_shares < 20_000_000
+
+                            if change_pct >= 15.0 and volume >= 300_000 and price >= 1.0:
+                                runners.append({
+                                    "symbol": sym,
+                                    "name": q.get("shortName", sym)[:30],
+                                    "price": round(price, 2),
+                                    "change_pct": round(change_pct, 2),
+                                    "volume": volume,
+                                    "avg_volume": avg_vol,
+                                    "rvol": rvol,
+                                    "market_cap": q.get("marketCap", 0),
+                                    "float_shares": float_shares,
+                                    "float_display": self._format_float(float_shares),
+                                    "shares_outstanding": q.get("sharesOutstanding", 0),
+                                    "runner_type": "LOW FLOAT SQUEEZE" if is_low_float else "DAY RUNNER",
+                                    "is_low_float": is_low_float,
+                                    "is_post_split": False,
+                                    "on_watchlist": sym in self.watchlist,
+                                })
+                                seen.add(sym)
+            except Exception as e:
+                log.debug(f"Yahoo runner scan fallback error: {e}")
 
         runners.sort(key=lambda x: x["change_pct"], reverse=True)
         return runners
@@ -2782,117 +2742,182 @@ class TradingEngine:
 
     def get_top_movers(self):
         """
-        Fetch top gaining stocks from Yahoo Finance trending/movers.
-        Catches 300%+ runners and hot movers you're not watching yet.
+        Fetch top movers using REAL-TIME data.
+        Priority: Alpaca screener API (real-time) -> Yahoo Finance (delayed fallback).
 
         Returns list of dicts: [{symbol, name, price, change_pct, volume, ...}]
         """
         import requests as _req
 
         movers = []
+        seen_symbols = set()
 
-        # Yahoo Finance screener: day gainers (100 for maximum coverage)
-        try:
-            url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params = {"scrIds": "day_gainers", "count": 100}
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            resp = _req.get(url, params=params, headers=headers, timeout=10)
+        # --- 1. Alpaca Screener API (REAL-TIME) ---
+        alpaca_key = self.config.alpaca_api_key
+        alpaca_secret = self.config.alpaca_secret_key
+        if alpaca_key and alpaca_secret:
+            data_base = "https://data.alpaca.markets"
+            headers_alpaca = {
+                "APCA-API-KEY-ID": alpaca_key,
+                "APCA-API-SECRET-KEY": alpaca_secret,
+            }
 
-            if resp.status_code == 200:
-                data = resp.json()
-                results = data.get("finance", {}).get("result", [])
-                if results:
-                    quotes = results[0].get("quotes", [])
-                    for q in quotes[:100]:
-                        symbol = q.get("symbol", "")
-                        if not symbol or "." in symbol:  # Skip foreign tickers
+            # 1a. Top movers (gainers + losers) - real-time
+            try:
+                resp = _req.get(
+                    f"{data_base}/v1beta1/screener/stocks/movers",
+                    headers=headers_alpaca,
+                    params={"top": 50},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    # Gainers
+                    for item in data.get("gainers", []):
+                        sym = item.get("symbol", "")
+                        if not sym or "." in sym:
                             continue
-                        change_pct = q.get("regularMarketChangePercent", 0)
-                        price = q.get("regularMarketPrice", 0)
-                        volume = q.get("regularMarketVolume", 0)
-                        avg_vol = q.get("averageDailyVolume3Month", 1)
-                        rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
-                        name = q.get("shortName", symbol)
-
-                        # Is this already in our watchlist?
-                        on_watchlist = symbol in self.watchlist
-
-                        movers.append({
-                            "symbol": symbol,
-                            "name": name[:30],
-                            "price": round(price, 2),
-                            "change_pct": round(change_pct, 2),
-                            "volume": volume,
-                            "avg_volume": avg_vol,
-                            "rvol": rvol,
-                            "market_cap": q.get("marketCap", 0),
-                            "on_watchlist": on_watchlist,
-                        })
-        except Exception as e:
-            log.debug(f"Top movers fetch error: {e}")
-
-        # Also scan most active (high volume stocks = opportunities)
-        try:
-            url_active = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params_active = {"scrIds": "most_actives", "count": 50}
-            resp_active = _req.get(url_active, params=params_active, headers=headers, timeout=10)
-            if resp_active.status_code == 200:
-                data_active = resp_active.json()
-                results_active = data_active.get("finance", {}).get("result", [])
-                if results_active:
-                    for q in results_active[0].get("quotes", [])[:50]:
-                        sym = q.get("symbol", "")
-                        if not sym or "." in sym or any(m["symbol"] == sym for m in movers):
-                            continue
-                        change_pct = q.get("regularMarketChangePercent", 0)
-                        price = q.get("regularMarketPrice", 0)
-                        volume = q.get("regularMarketVolume", 0)
-                        avg_vol = q.get("averageDailyVolume3Month", 1)
-                        rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
-                        if price >= 2.0 and volume >= 100000:
+                        price = item.get("price", 0)
+                        change_pct = item.get("change", 0)  # Already percentage
+                        volume = item.get("volume", 0) or 0
+                        if price >= 2.0:
                             movers.append({
                                 "symbol": sym,
-                                "name": q.get("shortName", sym)[:30],
+                                "name": sym,
                                 "price": round(price, 2),
                                 "change_pct": round(change_pct, 2),
                                 "volume": volume,
-                                "avg_volume": avg_vol,
-                                "rvol": rvol,
-                                "market_cap": q.get("marketCap", 0),
+                                "avg_volume": 0,
+                                "rvol": 0,
+                                "market_cap": 0,
                                 "on_watchlist": sym in self.watchlist,
                             })
-        except Exception as e:
-            log.debug(f"Most active fetch error: {e}")
-
-        # Also try trending tickers as fallback
-        if len(movers) < 5:
-            try:
-                url2 = "https://query1.finance.yahoo.com/v1/finance/trending/US"
-                resp2 = _req.get(url2, headers=headers, timeout=10)
-                if resp2.status_code == 200:
-                    data2 = resp2.json()
-                    trending = data2.get("finance", {}).get("result", [])
-                    if trending:
-                        for t in trending[0].get("quotes", [])[:15]:
-                            sym = t.get("symbol", "")
-                            if sym and sym not in [m["symbol"] for m in movers] and "." not in sym:
-                                # Get quote for this trending ticker
-                                if self.market_data:
-                                    quote = self.market_data.get_quote(sym)
-                                    if quote and quote.get("price", 0) > 0:
-                                        movers.append({
-                                            "symbol": sym,
-                                            "name": sym,
-                                            "price": round(quote["price"], 2),
-                                            "change_pct": round(quote.get("change_pct", 0), 2),
-                                            "volume": 0,
-                                            "avg_volume": 0,
-                                            "rvol": 0,
-                                            "market_cap": 0,
-                                            "on_watchlist": sym in self.watchlist,
-                                        })
+                            seen_symbols.add(sym)
+                    # Losers (for mean reversion)
+                    for item in data.get("losers", []):
+                        sym = item.get("symbol", "")
+                        if not sym or "." in sym:
+                            continue
+                        price = item.get("price", 0)
+                        change_pct = item.get("change", 0)
+                        volume = item.get("volume", 0) or 0
+                        if price >= 5.0 and sym not in seen_symbols:
+                            movers.append({
+                                "symbol": sym,
+                                "name": sym,
+                                "price": round(price, 2),
+                                "change_pct": round(change_pct, 2),
+                                "volume": volume,
+                                "avg_volume": 0,
+                                "rvol": 0,
+                                "market_cap": 0,
+                                "on_watchlist": sym in self.watchlist,
+                            })
+                            seen_symbols.add(sym)
             except Exception as e:
-                log.debug(f"Trending fetch error: {e}")
+                log.debug(f"Alpaca movers error: {e}")
+
+            # 1b. Most active by volume - real-time
+            try:
+                resp_active = _req.get(
+                    f"{data_base}/v1beta1/screener/stocks/most-actives",
+                    headers=headers_alpaca,
+                    params={"top": 50, "by": "volume"},
+                    timeout=10,
+                )
+                if resp_active.status_code == 200:
+                    data_active = resp_active.json()
+                    for item in data_active.get("most_actives", []):
+                        sym = item.get("symbol", "")
+                        if not sym or "." in sym or sym in seen_symbols:
+                            continue
+                        price = item.get("price", 0) or 0
+                        volume = item.get("volume", 0) or 0
+                        change_pct = item.get("change", 0) or 0
+                        if price >= 2.0 and volume >= 100000:
+                            movers.append({
+                                "symbol": sym,
+                                "name": sym,
+                                "price": round(price, 2),
+                                "change_pct": round(change_pct, 2),
+                                "volume": volume,
+                                "avg_volume": 0,
+                                "rvol": 0,
+                                "market_cap": 0,
+                                "on_watchlist": sym in self.watchlist,
+                            })
+                            seen_symbols.add(sym)
+            except Exception as e:
+                log.debug(f"Alpaca most-active error: {e}")
+
+            # 1c. Most active by trades - catches hot retail stocks
+            try:
+                resp_trades = _req.get(
+                    f"{data_base}/v1beta1/screener/stocks/most-actives",
+                    headers=headers_alpaca,
+                    params={"top": 30, "by": "trades"},
+                    timeout=10,
+                )
+                if resp_trades.status_code == 200:
+                    data_trades = resp_trades.json()
+                    for item in data_trades.get("most_actives", []):
+                        sym = item.get("symbol", "")
+                        if not sym or "." in sym or sym in seen_symbols:
+                            continue
+                        price = item.get("price", 0) or 0
+                        change_pct = item.get("change", 0) or 0
+                        if price >= 2.0:
+                            movers.append({
+                                "symbol": sym,
+                                "name": sym,
+                                "price": round(price, 2),
+                                "change_pct": round(change_pct, 2),
+                                "volume": item.get("volume", 0) or 0,
+                                "avg_volume": 0,
+                                "rvol": 0,
+                                "market_cap": 0,
+                                "on_watchlist": sym in self.watchlist,
+                            })
+                            seen_symbols.add(sym)
+            except Exception as e:
+                log.debug(f"Alpaca most-active-by-trades error: {e}")
+
+        # --- 2. Yahoo fallback (only if Alpaca returned nothing) ---
+        if len(movers) < 5:
+            log.debug("Alpaca screener returned few results, using Yahoo fallback")
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            try:
+                url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+                params = {"scrIds": "day_gainers", "count": 50}
+                resp = _req.get(url, params=params, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results = data.get("finance", {}).get("result", [])
+                    if results:
+                        for q in results[0].get("quotes", [])[:50]:
+                            sym = q.get("symbol", "")
+                            if not sym or "." in sym or sym in seen_symbols:
+                                continue
+                            price = q.get("regularMarketPrice", 0)
+                            change_pct = q.get("regularMarketChangePercent", 0)
+                            volume = q.get("regularMarketVolume", 0)
+                            avg_vol = q.get("averageDailyVolume3Month", 1)
+                            rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
+                            if price >= 2.0:
+                                movers.append({
+                                    "symbol": sym,
+                                    "name": q.get("shortName", sym)[:30],
+                                    "price": round(price, 2),
+                                    "change_pct": round(change_pct, 2),
+                                    "volume": volume,
+                                    "avg_volume": avg_vol,
+                                    "rvol": rvol,
+                                    "market_cap": q.get("marketCap", 0),
+                                    "on_watchlist": sym in self.watchlist,
+                                })
+                                seen_symbols.add(sym)
+            except Exception as e:
+                log.debug(f"Yahoo fallback error: {e}")
 
         # Sort by change % descending
         movers.sort(key=lambda x: x["change_pct"], reverse=True)
