@@ -254,7 +254,7 @@ class Config:
                 "premarket": {"enabled": True},
             },
             "preferred_strategies": [
-                "rvol_scalp", "rvol_momentum", "vwap_scalp",
+                "prebreakout", "rvol_scalp", "rvol_momentum", "vwap_scalp",
                 "momentum", "smc_forever", "mean_reversion", "pairs_trading",
             ],
         },

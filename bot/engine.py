@@ -31,6 +31,7 @@ from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
+from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
@@ -297,6 +298,7 @@ class TradingEngine:
             "smc_forever": SMCForeverStrategy,
             "rvol_momentum": RvolMomentumStrategy,
             "rvol_scalp": RvolScalpStrategy,
+            "prebreakout": PreBreakoutStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -337,6 +339,11 @@ class TradingEngine:
         if scalp_strat and hasattr(scalp_strat, "add_dynamic_symbols"):
             scalp_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into RVOL scalp")
+
+        prebreakout_strat = self.strategies.get("prebreakout")
+        if prebreakout_strat and hasattr(prebreakout_strat, "add_dynamic_symbols"):
+            prebreakout_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into pre-breakout")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
@@ -874,10 +881,16 @@ class TradingEngine:
             # --- Partial Profit Taking ---
             if pt_enabled and pos["quantity"] > 1:
                 targets_hit = pos.get("targets_hit", [])
+                # Breakout plays: skip early profit-taking tiers (let runners run)
+                # Only start taking profit at tier 2+ (3%+) for breakout plays
+                is_breakout_pos = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                 for i, target in enumerate(pt_targets):
                     if i in targets_hit:
                         continue
                     target_pct = target.get("pct_from_entry", 0)
+                    # Skip the first (smallest) profit tier for breakout plays
+                    if is_breakout_pos and target_pct < 0.03:
+                        continue
                     if pnl_pct >= target_pct:
                         close_pct = target.get("close_pct", 0.33)
                         qty_to_close = max(1, int(pos["quantity"] * close_pct))
@@ -936,7 +949,19 @@ class TradingEngine:
                                  self.config.risk_config.get("trailing_stop_pct", 0.02))
 
             # Tighten trail dynamically based on profit level
-            if pnl_pct >= 0.05:
+            # Breakout plays get wider trails to ride the full move
+            is_breakout_play = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+            if is_breakout_play:
+                # Breakout plays: wider trail to let runners breathe
+                if pnl_pct >= 0.10:
+                    trailing_pct = base_trail * 0.5   # Tighten at 10%+ (protect the bag)
+                elif pnl_pct >= 0.05:
+                    trailing_pct = base_trail * 0.7   # Moderate at 5%+
+                elif pnl_pct >= 0.02:
+                    trailing_pct = base_trail * 0.85  # Gentle tighten at 2%+
+                else:
+                    trailing_pct = base_trail          # Full width while building
+            elif pnl_pct >= 0.05:
                 trailing_pct = base_trail * 0.4  # Very tight at 5%+ profit
             elif pnl_pct >= 0.03:
                 trailing_pct = base_trail * 0.5  # Tight at 3%+ profit
@@ -972,8 +997,21 @@ class TradingEngine:
                 # Days-based hold limit (swing/momentum trades)
                 max_hold_days = pos.get("max_hold_days", 0)
                 if max_hold_days > 0 and elapsed_days > max_hold_days:
+                    # Breakout plays in profit: keep riding with trail
+                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                     # If profitable, let it ride with tighter trail instead of hard exit
-                    if pnl_pct > 0.02:
+                    if is_breakout and pnl_pct > 0.01:
+                        # Breakout runners get looser trail even at expiry
+                        trail = 0.02 if pnl_pct > 0.05 else 0.015
+                        pos["trailing_stop_pct"] = min(
+                            pos.get("trailing_stop_pct", 0.03), trail
+                        )
+                        log.info(
+                            f"BREAKOUT RUNNER: {symbol} held {elapsed_days:.1f}d "
+                            f"(max {max_hold_days}d) up {pnl_pct:+.1%} - "
+                            f"keeping with {trail:.1%} trail"
+                        )
+                    elif pnl_pct > 0.02:
                         pos["trailing_stop_pct"] = min(
                             pos.get("trailing_stop_pct", 0.02), 0.01
                         )
@@ -1014,11 +1052,20 @@ class TradingEngine:
             # --- Stale Position Exit ---
             # If position hasn't moved >0.3% in 30+ minutes, exit to free capital
             # Only for scalp/intraday - swing trades get more room
+            # Breakout plays get the most room (they consolidate before moving)
             if "entry_time" in pos and not pos.get("scalp_mode"):
                 elapsed_min = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
                 max_hold_days = pos.get("max_hold_days", 0)
-                stale_threshold_min = 120 if max_hold_days > 0 else 30  # 2 hours for swing, 30min for scalp
-                stale_move_pct = 0.005 if max_hold_days > 0 else 0.003  # 0.5% for swing, 0.3% for scalp
+                is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                if is_breakout:
+                    stale_threshold_min = 360  # 6 hours for breakout plays (they consolidate)
+                    stale_move_pct = 0.008     # 0.8% threshold (tight ranges expected)
+                elif max_hold_days > 0:
+                    stale_threshold_min = 120  # 2 hours for swing
+                    stale_move_pct = 0.005     # 0.5% for swing
+                else:
+                    stale_threshold_min = 30   # 30min for scalp
+                    stale_move_pct = 0.003     # 0.3% for scalp
                 if elapsed_min >= stale_threshold_min and abs(pnl_pct) < stale_move_pct:
                     positions_to_close.append(
                         (symbol, "stale_exit",
@@ -1252,6 +1299,9 @@ class TradingEngine:
             "same_candle_exit": signal.get("same_candle_exit", False),
             "quick_scalp_pct": signal.get("quick_scalp_pct", 0),
             "runner_pct": signal.get("runner_pct", 0),
+            # Breakout play metadata (pre-breakout / rvol breakout signals)
+            "source": signal.get("source", ""),
+            "breakout_play": signal.get("breakout_play", False),
         }
 
         # Rich notification with full trade details
@@ -2116,6 +2166,10 @@ class TradingEngine:
                 should_hold = False
                 if overnight_enabled and in_profit and len(overnight_holds) < max_overnight:
                     min_profit = overnight_cfg.get("min_profit_pct", 0.01)
+                    # Breakout plays: lower threshold to hold overnight (these are multi-day plays)
+                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                    if is_breakout:
+                        min_profit = min(min_profit, 0.005)  # Only need 0.5% profit to hold breakout overnight
                     if pnl_pct >= min_profit:
                         # Check if in uptrend (price above entry, which we already know if profitable)
                         should_hold = True
