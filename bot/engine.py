@@ -1422,26 +1422,35 @@ class TradingEngine:
 
         if not order:
             # Always try Alpaca direct close FIRST — Alpaca is the actual broker
-            # and the source of truth. TradersPost can lose track of positions
-            # (e.g. if it executes its own stops, or after restarts), so relying
-            # on it for exits causes "No position open to exit" rejections.
+            # and source of truth.
             alpaca_closed = False
-            if self._alpaca_position_exists(symbol):
+            alpaca_exists = self._alpaca_position_exists(symbol)  # Single API call
+
+            if alpaca_exists is True:
                 log.info(f"Closing {symbol} via Alpaca direct API...")
                 alpaca_result = self._close_via_alpaca(symbol)
                 if alpaca_result and alpaca_result.get("success"):
                     close_broker = "Alpaca-Direct"
                     alpaca_closed = True
                 else:
-                    log.warning(f"Alpaca direct close failed for {symbol}, trying TradersPost...")
-            elif self._alpaca_position_exists(symbol) is False:
-                # Position doesn't exist at Alpaca — phantom, clean up internally
+                    log.warning(
+                        f"Alpaca direct close failed for {symbol}: {alpaca_result} "
+                        f"— trying TradersPost..."
+                    )
+            elif alpaca_exists is False:
+                # Position confirmed NOT at Alpaca — phantom, clean up internally
                 log.warning(
                     f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
                     f"in broker. Cleaning up internal state."
                 )
                 close_broker = "Phantom-Cleanup"
-                alpaca_closed = True  # Nothing to close at broker
+                alpaca_closed = True
+            else:
+                # alpaca_exists is None — API call failed, can't confirm
+                log.warning(
+                    f"Alpaca position check failed for {symbol} (API error) "
+                    f"— trying TradersPost fallback..."
+                )
 
             # If Alpaca direct didn't work, try TradersPost as fallback
             if not alpaca_closed and self.tp_broker:
@@ -1576,7 +1585,8 @@ class TradingEngine:
 
         if not order:
             # Alpaca-first: close directly at the broker
-            if self._alpaca_position_exists(symbol):
+            alpaca_exists = self._alpaca_position_exists(symbol)
+            if alpaca_exists is True:
                 alpaca_result = self._close_via_alpaca(symbol, qty=qty_to_close)
                 if alpaca_result and alpaca_result.get("success"):
                     close_broker = "Alpaca-Direct"
@@ -1833,6 +1843,7 @@ class TradingEngine:
 
     def _close_via_alpaca(self, symbol, qty=None, side="sell"):
         """Close a position directly via Alpaca API.
+        First cancels any pending orders for the symbol, then closes.
         Full close: DELETE /v2/positions/{symbol}
         Partial close: DELETE /v2/positions/{symbol}?qty={qty}"""
         api_key = self.config.alpaca_api_key
@@ -1846,6 +1857,31 @@ class TradingEngine:
                 "APCA-API-KEY-ID": api_key,
                 "APCA-API-SECRET-KEY": secret_key,
             }
+
+            # Step 1: Cancel ALL pending orders for this symbol first
+            # Alpaca rejects position close if there are pending orders
+            try:
+                orders_resp = _req.get(
+                    f"{base_url}/v2/orders",
+                    headers=headers,
+                    params={"status": "open", "symbols": symbol},
+                    timeout=10,
+                )
+                if orders_resp.status_code == 200:
+                    open_orders = orders_resp.json()
+                    for order in open_orders:
+                        order_id = order.get("id")
+                        if order_id:
+                            _req.delete(
+                                f"{base_url}/v2/orders/{order_id}",
+                                headers=headers,
+                                timeout=5,
+                            )
+                            log.info(f"Cancelled pending order {order_id} for {symbol} before close")
+            except Exception as e:
+                log.warning(f"Could not cancel orders for {symbol} before close: {e}")
+
+            # Step 2: Try DELETE /v2/positions/{symbol} first
             url = f"{base_url}/v2/positions/{symbol}"
             if qty:
                 url += f"?qty={qty}"
@@ -1853,13 +1889,49 @@ class TradingEngine:
             if resp.status_code in (200, 204):
                 close_type = f"partial ({qty} shares)" if qty else "full"
                 log.info(f"ALPACA DIRECT CLOSE: {symbol} {close_type} closed (HTTP {resp.status_code})")
-                return {"success": True, "method": "alpaca_direct", "status_code": resp.status_code}
-            else:
-                log.error(
-                    f"ALPACA DIRECT CLOSE FAILED: {symbol} HTTP {resp.status_code} "
-                    f"| {resp.text[:200]}"
+                return {"success": True, "method": "alpaca_delete", "status_code": resp.status_code}
+
+            log.warning(
+                f"ALPACA DELETE failed for {symbol} (HTTP {resp.status_code}: {resp.text[:100]})"
+                f" — trying POST /v2/orders sell fallback..."
+            )
+
+            # Step 3: Fallback — submit a market sell order directly
+            # DELETE can fail if there are order conflicts; a direct sell always works
+            pos_resp = _req.get(
+                f"{base_url}/v2/positions/{symbol}",
+                headers=headers,
+                timeout=5,
+            )
+            if pos_resp.status_code == 200:
+                pos_data = pos_resp.json()
+                sell_qty = str(qty) if qty else str(abs(int(float(pos_data.get("qty", 0)))))
+                sell_side = "sell" if float(pos_data.get("qty", 0)) > 0 else "buy"
+                sell_resp = _req.post(
+                    f"{base_url}/v2/orders",
+                    headers={**headers, "Content-Type": "application/json"},
+                    json={
+                        "symbol": symbol,
+                        "qty": sell_qty,
+                        "side": sell_side,
+                        "type": "market",
+                        "time_in_force": "day",
+                    },
+                    timeout=10,
                 )
-                return {"success": False, "status_code": resp.status_code}
+                if sell_resp.status_code in (200, 201):
+                    log.info(
+                        f"ALPACA SELL ORDER: {symbol} {sell_qty} shares submitted "
+                        f"(HTTP {sell_resp.status_code})"
+                    )
+                    return {"success": True, "method": "alpaca_sell_order", "status_code": sell_resp.status_code}
+                else:
+                    log.error(
+                        f"ALPACA SELL ORDER ALSO FAILED: {symbol} HTTP {sell_resp.status_code} "
+                        f"| {sell_resp.text[:200]}"
+                    )
+
+            return {"success": False, "status_code": resp.status_code}
         except Exception as e:
             log.error(f"ALPACA DIRECT CLOSE exception for {symbol}: {e}")
             return None
