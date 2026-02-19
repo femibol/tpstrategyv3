@@ -6,26 +6,26 @@
 # scalp = Quick trades, tight stops, intraday only
 # swing = Multi-day holds, medium stops, trend following
 # invest = Longer holds, wide stops, follow smart money
-trading_profile: swing
+trading_profile: scalp
 
 # --- Capital & Account ---
 capital:
   starting_balance: 5000
-  max_portfolio_risk: 0.06        # Max 6% of capital at risk at any time
-  max_daily_loss: 0.02            # Stop trading if down 2% in a day ($100)
-  max_drawdown: 0.10              # Emergency stop if down 10% from peak ($500)
-  reserve_cash_pct: 0.20          # Always keep 20% cash ($1000 minimum)
+  max_portfolio_risk: 0.10        # Max 10% of capital at risk at any time
+  max_daily_loss: 0.04            # Stop trading if down 4% in a day ($200)
+  max_drawdown: 0.12              # Emergency stop if down 12% from peak ($600)
+  reserve_cash_pct: 0.10          # Keep 10% cash reserve ($500)
 
 # --- Risk Management ---
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
-  max_position_size_pct: 0.15     # Max 15% of capital per position (scales with balance)
-  max_positions: 5                # Max 5 concurrent positions
-  risk_per_trade_pct: 0.01        # Risk 1% per trade ($50)
+  max_position_size_pct: 0.25     # Max 25% of capital per position ($1,250 at $5K)
+  max_positions: 6                # Max 6 concurrent positions
+  risk_per_trade_pct: 0.02        # Risk 2% per trade ($100)
   max_correlated_positions: 2     # Max 2 positions in same sector
-  stop_loss_pct: 0.03             # 3% stop loss default
-  trailing_stop_pct: 0.02         # 2% trailing stop
-  take_profit_pct: 0.06           # 6% take profit (2:1 reward/risk)
+  stop_loss_pct: 0.025            # 2.5% stop loss (tighter = faster out on losers)
+  trailing_stop_pct: 0.018        # 1.8% trailing stop (locks in profit faster)
+  take_profit_pct: 0.05           # 5% take profit (more realistic targets hit more often)
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
 
   # --- Profit Taking (Partial Exits) ---
@@ -33,18 +33,21 @@ risk:
     enabled: true
     # Scale out at multiple targets (percentage of position to close)
     targets:
-      - pct_from_entry: 0.03      # At +3% profit
-        close_pct: 0.33           # Close 33% of position
+      - pct_from_entry: 0.015     # At +1.5% profit - take first bite early
+        close_pct: 0.25           # Close 25% of position
         move_stop: "breakeven"    # Move stop to break even
-      - pct_from_entry: 0.06      # At +6% profit (take_profit_pct)
-        close_pct: 0.50           # Close 50% of remaining
+      - pct_from_entry: 0.03      # At +3% profit
+        close_pct: 0.33           # Close 33% of remaining
         tighten_trail: 0.01       # Tighten trailing stop to 1%
+      - pct_from_entry: 0.05      # At +5% profit
+        close_pct: 0.50           # Close 50% of remaining
+        tighten_trail: 0.008      # Very tight 0.8% trail on runner
 
   # --- Break Even Stop ---
   breakeven:
     enabled: true
-    trigger_pct: 0.015            # Move stop to BE after 1.5% profit
-    buffer_pct: 0.002             # Small buffer above entry (0.2%) to cover commissions
+    trigger_pct: 0.01             # Move stop to BE after 1% profit (faster protection)
+    buffer_pct: 0.001             # Small buffer above entry (0.1%) to cover commissions
   min_volume: 500000              # Minimum avg daily volume
   min_price: 5.00                 # No penny stocks
   max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)
@@ -55,16 +58,16 @@ schedule:
   market_close: "16:00"
   timezone: "US/Eastern"
   pre_market_scan: "09:15"       # Scan 15 min before open
-  avoid_first_minutes: 30         # Skip first 30 min (volatile open)
-  avoid_last_minutes: 30          # Avoid last 30 min (choppy close)
+  avoid_first_minutes: 5          # Quick 5 min buffer, then catch opening momentum
+  avoid_last_minutes: 5           # Trade close momentum, exit 5 min before close
   trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
   # --- Pre-market / Extended Hours ---
   premarket:
-    enabled: false                 # Enable pre-market trading (4:00-9:30 AM)
-    start_time: "08:00"           # Start pre-market scanning at 8 AM
-    allowed_strategies: ["momentum", "news_sentiment"]  # Only these strategies pre-market
-    reduce_size_pct: 0.50         # Use 50% of normal position size (less liquidity)
+    enabled: true                  # Pre-market trading enabled (catches gap plays)
+    start_time: "07:00"           # Start pre-market scanning at 7 AM for gap scanners
+    allowed_strategies: ["momentum", "news_sentiment", "rvol_momentum", "rvol_scalp"]  # All aggressive strategies
+    reduce_size_pct: 0.60         # Use 60% of normal position size (decent liquidity on big names)
 
   # --- Overnight Holding ---
   overnight:
@@ -82,13 +85,13 @@ scaling:
   enabled: true
   tiers:
     - min_balance: 5000
-      max_positions: 5
-      risk_per_trade: 0.01
-      max_position_pct: 0.15
+      max_positions: 6
+      risk_per_trade: 0.02
+      max_position_pct: 0.25
     - min_balance: 10000
       max_positions: 8
-      risk_per_trade: 0.015
-      max_position_pct: 0.12
+      risk_per_trade: 0.02
+      max_position_pct: 0.20
     - min_balance: 25000
       max_positions: 12
       risk_per_trade: 0.015
@@ -149,8 +152,11 @@ crypto:
 data:
   primary: "ibkr"                 # Primary data from IBKR
   fallback: "yfinance"            # Fallback to yfinance
-  bar_size: "5 mins"              # 5-minute bars for intraday
+  bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
+  scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback
+  price_poll_interval: 3          # Poll prices every 3 seconds for scalp exits
+  cache_ttl: 10                   # 10-second cache TTL (was 30s, too slow for scalps)
 
 # --- Execution ---
 execution:

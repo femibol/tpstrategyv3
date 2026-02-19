@@ -30,6 +30,7 @@ from bot.strategies.vwap import VWAPScalpStrategy
 from bot.strategies.pairs_trading import PairsTradingStrategy
 from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
+from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
@@ -91,7 +92,7 @@ class TradingEngine:
 
         # Signal deduplication - prevent duplicate entries
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
-        self._signal_cooldown_secs = 120  # Min seconds between signals for same symbol
+        self._signal_cooldown_secs = 60  # Min seconds between signals for same symbol (was 120)
 
         # Performance tracking
         self.trade_history = []
@@ -159,8 +160,15 @@ class TradingEngine:
             self.market_data.start_streaming(all_symbols)
             log.info("IBKR real-time streaming initialized for watchlist")
 
+        # Load trading universe (200+ symbols for RVOL scanning)
+        self.universe = self.config.get_universe()
+        log.info(f"Trading universe loaded: {len(self.universe)} symbols")
+
         # Load strategies
         self._load_strategies()
+
+        # Inject full universe into RVOL strategies for broad scanning
+        self._inject_universe_into_strategies()
 
         # TradersPost integration
         if self.config.traderspost_webhook_url:
@@ -267,6 +275,7 @@ class TradingEngine:
             "pairs_trading": PairsTradingStrategy,
             "smc_forever": SMCForeverStrategy,
             "rvol_momentum": RvolMomentumStrategy,
+            "rvol_scalp": RvolScalpStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -287,6 +296,33 @@ class TradingEngine:
                 )
 
         log.info(f"Total strategies loaded: {len(self.strategies)}")
+
+    def _inject_universe_into_strategies(self):
+        """Inject the full trading universe into RVOL and momentum strategies.
+        This gives them 200+ symbols to scan instead of just 20-30."""
+        if not self.universe:
+            return
+
+        rvol_strat = self.strategies.get("rvol_momentum")
+        scalp_strat = self.strategies.get("rvol_scalp")
+        momentum_strat = self.strategies.get("momentum")
+
+        universe_count = len(self.universe)
+
+        if rvol_strat and hasattr(rvol_strat, "add_dynamic_symbols"):
+            rvol_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into RVOL momentum")
+
+        if scalp_strat and hasattr(scalp_strat, "add_dynamic_symbols"):
+            scalp_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into RVOL scalp")
+
+        # Momentum strategy uses static symbols, so we extend the list directly
+        if momentum_strat:
+            existing = set(s.upper() for s in momentum_strat.symbols)
+            new_syms = [s for s in self.universe if s.upper() not in existing]
+            momentum_strat.symbols.extend(new_syms)
+            log.info(f"Extended momentum strategy to {len(momentum_strat.symbols)} symbols")
 
     def _setup_schedule(self):
         """Set up scheduled tasks."""
@@ -398,8 +434,14 @@ class TradingEngine:
             log.error(f"Scanner cycle error: {e}", exc_info=True)
 
     def _main_loop(self):
-        """Main trading loop - runs continuously during market hours."""
+        """Main trading loop - runs continuously during market hours.
+
+        Two-speed loop:
+        - Full cycle every 10s: data update + strategies + signals
+        - Fast scalp monitor every 3s: price refresh + position exits
+        """
         scan_timer = 0
+        scalp_tick = 0  # Sub-loop counter for fast scalp monitoring
         while self.running:
             try:
                 now = datetime.now(self.tz)
@@ -445,87 +487,97 @@ class TradingEngine:
                     self.running = False
                     break
 
-                # --- Core Loop ---
-                # 0. Dynamic discovery: feed top movers into RVOL strategy
-                self._discover_dynamic_symbols()
+                # --- FAST SCALP MONITOR (every 3 seconds) ---
+                # Refresh prices for open positions and check for quick exits
+                scalp_tick += 1
+                if self.positions:
+                    self._fast_scalp_monitor()
 
-                # 1. Update market data
-                self._update_data()
+                # --- FULL CYCLE (every ~10 seconds = 3 fast ticks) ---
+                if scalp_tick >= 3:
+                    scalp_tick = 0
 
-                # 2. Detect market regime (every cycle, uses cached data)
-                regime_result = self.regime_detector.detect(self.market_data)
+                    # 0. Dynamic discovery: feed top movers into RVOL strategies
+                    self._discover_dynamic_symbols()
 
-                # 3. Monitor existing positions (stops, targets, trailing)
-                self._monitor_positions()
+                    # 1. Update market data (standard 5-min + 1-min for scalps)
+                    self._update_data()
+                    self._update_scalp_data()
 
-                # 4. Run strategies and generate signals
-                signals = self._run_strategies()
+                    # 2. Detect market regime (every cycle, uses cached data)
+                    regime_result = self.regime_detector.detect(self.market_data)
 
-                # 5. Check hedging needs
-                if self.hedging_manager and self.hedging_manager.auto_hedge:
-                    hedge_signals = self.hedging_manager.evaluate(
-                        self.positions, self.current_balance, regime_result
+                    # 3. Monitor existing positions (stops, targets, trailing)
+                    self._monitor_positions()
+
+                    # 4. Run strategies and generate signals
+                    signals = self._run_strategies()
+
+                    # 5. Check hedging needs
+                    if self.hedging_manager and self.hedging_manager.auto_hedge:
+                        hedge_signals = self.hedging_manager.evaluate(
+                            self.positions, self.current_balance, regime_result
+                        )
+                        signals.extend(hedge_signals)
+
+                    # 6. Filter signals through risk manager
+                    approved = self.risk_manager.filter_signals(
+                        signals, self.positions, self.current_balance
                     )
-                    signals.extend(hedge_signals)
 
-                # 6. Filter signals through risk manager
-                approved = self.risk_manager.filter_signals(
-                    signals, self.positions, self.current_balance
-                )
+                    # 7a. Pre-market filtering: limit strategies and reduce size
+                    if getattr(self, "_in_premarket", False):
+                        pm_config = self.config.schedule_config.get("premarket", {})
+                        allowed = pm_config.get("allowed_strategies", [])
+                        size_mult = pm_config.get("reduce_size_pct", 0.5)
+                        if allowed:
+                            approved = [s for s in approved if s.get("strategy") in allowed]
+                        for sig in approved:
+                            if sig.get("quantity"):
+                                sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
 
-                # 7a. Pre-market filtering: limit strategies and reduce size
-                if getattr(self, "_in_premarket", False):
-                    pm_config = self.config.schedule_config.get("premarket", {})
-                    allowed = pm_config.get("allowed_strategies", [])
-                    size_mult = pm_config.get("reduce_size_pct", 0.5)
-                    if allowed:
-                        approved = [s for s in approved if s.get("strategy") in allowed]
-                    for sig in approved:
-                        if sig.get("quantity"):
-                            sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
+                    # 7b. Apply regime-based filtering
+                    if regime_result and regime_result.get("regime") == "crisis":
+                        # In crisis, only allow hedge signals and exits
+                        approved = [s for s in approved if
+                                    s.get("source") == "hedging" or
+                                    s.get("action") in ("sell", "cover", "close")]
 
-                # 7b. Apply regime-based filtering
-                if regime_result and regime_result.get("regime") == "crisis":
-                    # In crisis, only allow hedge signals and exits
-                    approved = [s for s in approved if
-                                s.get("source") == "hedging" or
-                                s.get("action") in ("sell", "cover", "close")]
-
-                # 7c. Scanner summary notification
-                symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
-                regime_str = regime_result.get("regime") if regime_result else None
-                spy_change = None
-                if self.market_data:
-                    spy_data = self.market_data.get_data("SPY")
+                    # 7c. Scanner summary notification
+                    symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
+                    regime_str = regime_result.get("regime") if regime_result else None
+                    spy_change = None
+                    if self.market_data:
+                        spy_data = self.market_data.get_data("SPY")
                     if spy_data is not None and len(spy_data) >= 2:
                         spy_change = (spy_data["close"].iloc[-1] - spy_data["close"].iloc[-2]) / spy_data["close"].iloc[-2] * 100
-                rejected_count = len(signals) - len(approved) if signals else 0
-                if signals or approved:
-                    self.notifier.scanner_summary(
-                        symbols_scanned=symbols_scanned,
-                        signals_found=signals,
-                        regime=regime_str,
-                        spy_change=spy_change,
-                        approved=approved,
-                        rejected=rejected_count if rejected_count > 0 else None,
-                    )
-
-                # 8. Execute approved signals
-                for sig in approved:
-                    self._execute_signal(sig)
-                    # Record regime context for learning
-                    if self.trade_analyzer and regime_result:
-                        self.trade_analyzer.record_regime_trade(
-                            sig.get("strategy", "unknown"),
-                            regime_result.get("regime", "unknown"),
-                            0  # P&L recorded at close
+                    rejected_count = len(signals) - len(approved) if signals else 0
+                    if signals or approved:
+                        self.notifier.scanner_summary(
+                            symbols_scanned=symbols_scanned,
+                            signals_found=signals,
+                            regime=regime_str,
+                            spy_change=spy_change,
+                            approved=approved,
+                            rejected=rejected_count if rejected_count > 0 else None,
                         )
 
-                # 9. Update account state
-                self._update_account()
+                    # 8. Execute approved signals
+                    for sig in approved:
+                        self._execute_signal(sig)
+                        # Record regime context for learning
+                        if self.trade_analyzer and regime_result:
+                            self.trade_analyzer.record_regime_trade(
+                                sig.get("strategy", "unknown"),
+                                regime_result.get("regime", "unknown"),
+                                0  # P&L recorded at close
+                            )
 
-                # Sleep based on fastest strategy timeframe
-                time.sleep(15)
+                    # 9. Update account state
+                    self._update_account()
+
+                # Sleep 3 seconds (fast scalp tick rate)
+                time.sleep(3)
 
             except Exception as e:
                 log.error(f"Main loop error: {e}", exc_info=True)
@@ -604,6 +656,136 @@ class TradingEngine:
         all_symbols.update(self.watchlist)
 
         self.market_data.update(list(all_symbols))
+
+    def _update_scalp_data(self):
+        """Fetch 1-minute bars for scalp strategy symbols."""
+        scalp_strat = self.strategies.get("rvol_scalp")
+        if not scalp_strat:
+            return
+        scalp_symbols = scalp_strat.get_symbols()
+        # Also include open scalp positions
+        for sym, pos in self.positions.items():
+            if pos.get("strategy") == "rvol_scalp" and sym not in scalp_symbols:
+                scalp_symbols.append(sym)
+        if scalp_symbols and self.market_data:
+            self.market_data.update_1m_bars(scalp_symbols)
+
+    def _fast_scalp_monitor(self):
+        """Fast position monitor for scalp exits (runs every 3 seconds).
+
+        Refreshes prices for all open positions and checks for:
+        - Same-candle profit taking (scalp positions)
+        - Quick stop loss exits
+        - Trailing stop updates
+        This gives near-real-time exit capability without waiting for the
+        full 10-second strategy cycle.
+        """
+        if not self.positions:
+            return
+
+        # Refresh prices for all open position symbols
+        position_symbols = list(self.positions.keys())
+        if self.market_data:
+            self.market_data.refresh_prices(position_symbols)
+
+        # Check each position for quick exits
+        positions_to_close = []
+        partial_exits = []
+
+        for symbol, pos in self.positions.items():
+            current_price = self.market_data.get_price(symbol) if self.market_data else None
+            if current_price is None:
+                continue
+
+            entry_price = pos["entry_price"]
+            direction = pos.get("direction", "long")
+
+            # Calculate current P&L
+            if direction == "long":
+                pnl_pct = (current_price - entry_price) / entry_price
+            else:
+                pnl_pct = (entry_price - current_price) / entry_price
+
+            pos["unrealized_pnl_pct"] = pnl_pct
+            pos["current_price"] = current_price
+
+            # --- SCALP QUICK EXIT (same-candle profit taking) ---
+            if pos.get("strategy") in ("rvol_scalp",) or pos.get("scalp_mode"):
+                quick_target_pct = pos.get("quick_scalp_pct", 0.008)
+                runner_pct = pos.get("runner_pct", 0.02)
+
+                # Quick scalp target hit - take partial profit
+                if pnl_pct >= quick_target_pct and not pos.get("scalp_target_1_hit"):
+                    pos["scalp_target_1_hit"] = True
+                    qty = pos["quantity"]
+                    if qty > 1:
+                        # Close 50% at quick target
+                        close_qty = max(1, int(qty * 0.5))
+                        partial_exits.append((symbol, close_qty, 0, {
+                            "pct_from_entry": quick_target_pct,
+                            "close_pct": 0.5,
+                        }))
+                        # Move stop to breakeven
+                        if direction == "long":
+                            pos["stop_loss"] = entry_price * 1.001
+                        pos["breakeven_hit"] = True
+                        log.info(
+                            f"SCALP TARGET 1: {symbol} +{pnl_pct:.1%} | "
+                            f"Closing 50% at ${current_price:.2f}"
+                        )
+                    else:
+                        # Single share - close all at quick target
+                        positions_to_close.append(
+                            (symbol, "scalp_target", f"Quick scalp +{pnl_pct:.1%} at ${current_price:.2f}")
+                        )
+                        continue
+
+                # Runner target hit - close remaining
+                if pnl_pct >= runner_pct and pos.get("scalp_target_1_hit"):
+                    positions_to_close.append(
+                        (symbol, "scalp_runner", f"Runner target +{pnl_pct:.1%} at ${current_price:.2f}")
+                    )
+                    continue
+
+                # Tight trailing for scalps (0.5% trail)
+                trail_pct = pos.get("trailing_stop_pct", 0.005)
+                if direction == "long":
+                    new_trail = current_price * (1 - trail_pct)
+                    if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+                        pos["trailing_stop"] = new_trail
+                    if current_price <= pos.get("trailing_stop", 0):
+                        positions_to_close.append(
+                            (symbol, "scalp_trail", f"Scalp trail stop at ${current_price:.2f}")
+                        )
+                        continue
+
+            # --- Quick stop loss check for ALL positions ---
+            stop_price = pos.get("stop_loss")
+            if stop_price:
+                hit = (direction == "long" and current_price <= stop_price) or \
+                      (direction == "short" and current_price >= stop_price)
+                if hit:
+                    positions_to_close.append(
+                        (symbol, "stop_loss", f"Stop hit at ${current_price:.2f}")
+                    )
+                    continue
+
+            # --- Quick take profit check for ALL positions ---
+            target_price = pos.get("take_profit")
+            if target_price:
+                hit = (direction == "long" and current_price >= target_price) or \
+                      (direction == "short" and current_price <= target_price)
+                if hit:
+                    positions_to_close.append(
+                        (symbol, "take_profit", f"Target hit at ${current_price:.2f}")
+                    )
+
+        # Execute exits
+        for symbol, qty, target_idx, target in partial_exits:
+            self._partial_close(symbol, qty, target_idx, target)
+
+        for symbol, reason_type, reason_msg in positions_to_close:
+            self._close_position(symbol, reason_type, reason_msg)
 
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
@@ -728,9 +910,20 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Trailing Stop ---
-            trailing_pct = pos.get("trailing_stop_pct",
-                                   self.config.risk_config.get("trailing_stop_pct", 0.02))
+            # --- Dynamic Trailing Stop (tightens as profit grows) ---
+            base_trail = pos.get("trailing_stop_pct",
+                                 self.config.risk_config.get("trailing_stop_pct", 0.02))
+
+            # Tighten trail dynamically based on profit level
+            if pnl_pct >= 0.05:
+                trailing_pct = base_trail * 0.4  # Very tight at 5%+ profit
+            elif pnl_pct >= 0.03:
+                trailing_pct = base_trail * 0.5  # Tight at 3%+ profit
+            elif pnl_pct >= 0.015:
+                trailing_pct = base_trail * 0.7  # Moderately tight at 1.5%+
+            else:
+                trailing_pct = base_trail
+
             if direction == "long":
                 new_trail = current_price * (1 - trailing_pct)
                 if "trailing_stop" not in pos or new_trail > pos["trailing_stop"]:
@@ -738,7 +931,7 @@ class TradingEngine:
                 if current_price <= pos.get("trailing_stop", 0):
                     positions_to_close.append(
                         (symbol, "trailing_stop",
-                         f"Trailing stop at ${current_price:.2f}")
+                         f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")
                     )
             elif direction == "short":
                 new_trail = current_price * (1 + trailing_pct)
@@ -747,7 +940,7 @@ class TradingEngine:
                 if current_price >= pos.get("trailing_stop", float("inf")):
                     positions_to_close.append(
                         (symbol, "trailing_stop",
-                         f"Trailing stop at ${current_price:.2f}")
+                         f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")
                     )
 
             # --- Max Holding Period ---
@@ -757,6 +950,16 @@ class TradingEngine:
                 if elapsed > pos["max_hold_bars"] * bar_seconds:
                     positions_to_close.append(
                         (symbol, "time_exit", "Max holding period exceeded")
+                    )
+
+            # --- Stale Position Exit ---
+            # If position hasn't moved >0.3% in 30+ minutes, exit to free capital
+            if "entry_time" in pos and not pos.get("scalp_mode"):
+                elapsed_min = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
+                if elapsed_min >= 30 and abs(pnl_pct) < 0.003:
+                    positions_to_close.append(
+                        (symbol, "stale_exit",
+                         f"Stale position: {pnl_pct:+.2%} after {elapsed_min:.0f}min")
                     )
 
         # Execute partial exits first
@@ -813,6 +1016,16 @@ class TradingEngine:
         if action in ("short",):
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
+
+        # --- SELL/EXIT WITHOUT POSITION GUARD ---
+        # Never send sell/exit to broker for symbols we don't hold
+        if action in ("sell", "cover", "close", "exit"):
+            if symbol not in self.positions:
+                log.warning(
+                    f"BLOCKED: {action} {symbol} - no position held. "
+                    f"Preventing phantom exit signal to broker."
+                )
+                return
 
         # --- DUPLICATE ENTRY GUARD ---
         # Prevent same symbol from being entered twice within cooldown window
@@ -970,6 +1183,11 @@ class TradingEngine:
             "executed_via": executed_via,
             "max_hold_bars": signal.get("max_hold_bars", 40),
             "bar_seconds": signal.get("bar_seconds", 300),
+            # Scalp-specific metadata
+            "scalp_mode": signal.get("scalp_mode", False),
+            "same_candle_exit": signal.get("same_candle_exit", False),
+            "quick_scalp_pct": signal.get("quick_scalp_pct", 0),
+            "runner_pct": signal.get("runner_pct", 0),
         }
 
         # Rich notification with full trade details
@@ -1343,14 +1561,25 @@ class TradingEngine:
                 qty = abs(float(p.qty))
                 entry = float(p.avg_entry_price)
                 side = "long" if float(p.qty) > 0 else "short"
+                # Use current market price for smarter stop/target
+                current_mkt = None
+                if self.market_data:
+                    try:
+                        current_mkt = self.market_data.get_price(symbol)
+                    except Exception:
+                        pass
+                ref_price = current_mkt or entry
+                is_crypto = any(symbol.upper().endswith(s) for s in ["-USD", "-USDT"])
+                stop_pct = 0.05 if is_crypto else 0.03
+                tp_pct = 0.08 if is_crypto else 0.06
                 self.positions[symbol] = {
                     "symbol": symbol,
                     "direction": side,
                     "quantity": int(qty) if qty == int(qty) else qty,
                     "entry_price": entry,
                     "entry_time": datetime.now(self.tz),
-                    "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
-                    "take_profit": entry * 1.04 if side == "long" else entry * 0.96,
+                    "stop_loss": ref_price * (1 - stop_pct) if side == "long" else ref_price * (1 + stop_pct),
+                    "take_profit": ref_price * (1 + tp_pct) if side == "long" else ref_price * (1 - tp_pct),
                     "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                     "strategy": "synced_from_alpaca",
                     "executed_via": "TradersPost",
@@ -2103,40 +2332,93 @@ class TradingEngine:
 
     def _discover_dynamic_symbols(self):
         """
-        Dynamically discover hot stocks from top movers and inject into
-        the RVOL strategy for auto-trading. Runs every cycle.
+        Dynamically discover hot stocks from top movers, losers, and trending
+        and inject into ALL scanning strategies. Runs every cycle.
 
-        This is what makes it a true Money Machine: the bot finds the runners,
-        not just your static watchlist.
+        Aggressive discovery: very low thresholds, scan gainers + losers +
+        most active + trending. Feed into RVOL (momentum + scalp) and
+        mean_reversion (oversold losers are mean reversion candidates).
         """
         rvol_strat = self.strategies.get("rvol_momentum")
-        if not rvol_strat:
+        scalp_strat = self.strategies.get("rvol_scalp")
+        mr_strat = self.strategies.get("mean_reversion")
+        if not rvol_strat and not scalp_strat and not mr_strat:
             return
 
         try:
-            # Get top movers from Yahoo Finance (big gainers, trending)
+            # Get top movers from Yahoo Finance (big gainers, trending, most active)
             movers = self.get_top_movers()
             if movers:
                 mover_symbols = []
+                scalp_symbols = []
                 for m in movers:
                     sym = m.get("symbol", "")
                     price = m.get("price", 0)
                     change_pct = m.get("change_pct", 0)
-                    # Filter: price > $2, big move, not already in watchlist
-                    if sym and price >= 2.0 and change_pct >= 5.0:
+                    rvol = m.get("rvol", 0)
+
+                    if not sym or price < 2.0:
+                        continue
+
+                    # Feed movers with >2% move into momentum RVOL (lowered from 3%)
+                    if change_pct >= 2.0:
                         mover_symbols.append(sym)
 
-                if mover_symbols:
+                    # Feed ANY stock showing unusual activity into scalp
+                    # Very low threshold - just needs movement or volume
+                    if abs(change_pct) >= 1.0 or rvol >= 1.3:
+                        scalp_symbols.append(sym)
+
+                    # Feed big losers into mean reversion (oversold bounces)
+                    if change_pct <= -3.0 and mr_strat:
+                        if sym not in mr_strat.symbols:
+                            mr_strat.symbols.append(sym)
+
+                if mover_symbols and rvol_strat:
                     rvol_strat.add_dynamic_symbols(mover_symbols)
-                    log.debug(f"Injected {len(mover_symbols)} movers into RVOL strategy")
+                    log.debug(f"Injected {len(mover_symbols)} movers into RVOL momentum")
+                if scalp_symbols and scalp_strat:
+                    scalp_strat.add_dynamic_symbols(scalp_symbols)
+                    log.debug(f"Injected {len(scalp_symbols)} movers into RVOL scalp")
+
+            # Also scan day_losers for mean reversion candidates
+            try:
+                import requests as _req
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+                params = {"scrIds": "day_losers", "count": 30}
+                resp = _req.get(url, params=params, headers=headers, timeout=8)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results = data.get("finance", {}).get("result", [])
+                    if results:
+                        loser_syms = []
+                        for q in results[0].get("quotes", [])[:30]:
+                            sym = q.get("symbol", "")
+                            price = q.get("regularMarketPrice", 0)
+                            if sym and "." not in sym and price >= 5.0:
+                                loser_syms.append(sym)
+                        if loser_syms:
+                            if mr_strat:
+                                existing = set(mr_strat.symbols)
+                                new = [s for s in loser_syms if s not in existing]
+                                mr_strat.symbols.extend(new)
+                            if scalp_strat:
+                                scalp_strat.add_dynamic_symbols(loser_syms)
+                            log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp")
+            except Exception as e:
+                log.debug(f"Day losers fetch error: {e}")
 
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
             if runners:
                 runner_symbols = [r["symbol"] for r in runners if r.get("symbol")]
                 if runner_symbols:
-                    rvol_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} low-float runners into RVOL strategy")
+                    if rvol_strat:
+                        rvol_strat.add_dynamic_symbols(runner_symbols)
+                    if scalp_strat:
+                        scalp_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL strategies")
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")
@@ -2509,10 +2791,10 @@ class TradingEngine:
 
         movers = []
 
-        # Yahoo Finance screener: day gainers
+        # Yahoo Finance screener: day gainers (100 for maximum coverage)
         try:
             url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-            params = {"scrIds": "day_gainers", "count": 25}
+            params = {"scrIds": "day_gainers", "count": 100}
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             resp = _req.get(url, params=params, headers=headers, timeout=10)
 
@@ -2521,7 +2803,7 @@ class TradingEngine:
                 results = data.get("finance", {}).get("result", [])
                 if results:
                     quotes = results[0].get("quotes", [])
-                    for q in quotes[:20]:
+                    for q in quotes[:100]:
                         symbol = q.get("symbol", "")
                         if not symbol or "." in symbol:  # Skip foreign tickers
                             continue
@@ -2548,6 +2830,39 @@ class TradingEngine:
                         })
         except Exception as e:
             log.debug(f"Top movers fetch error: {e}")
+
+        # Also scan most active (high volume stocks = opportunities)
+        try:
+            url_active = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+            params_active = {"scrIds": "most_actives", "count": 50}
+            resp_active = _req.get(url_active, params=params_active, headers=headers, timeout=10)
+            if resp_active.status_code == 200:
+                data_active = resp_active.json()
+                results_active = data_active.get("finance", {}).get("result", [])
+                if results_active:
+                    for q in results_active[0].get("quotes", [])[:50]:
+                        sym = q.get("symbol", "")
+                        if not sym or "." in sym or any(m["symbol"] == sym for m in movers):
+                            continue
+                        change_pct = q.get("regularMarketChangePercent", 0)
+                        price = q.get("regularMarketPrice", 0)
+                        volume = q.get("regularMarketVolume", 0)
+                        avg_vol = q.get("averageDailyVolume3Month", 1)
+                        rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
+                        if price >= 2.0 and volume >= 100000:
+                            movers.append({
+                                "symbol": sym,
+                                "name": q.get("shortName", sym)[:30],
+                                "price": round(price, 2),
+                                "change_pct": round(change_pct, 2),
+                                "volume": volume,
+                                "avg_volume": avg_vol,
+                                "rvol": rvol,
+                                "market_cap": q.get("marketCap", 0),
+                                "on_watchlist": sym in self.watchlist,
+                            })
+        except Exception as e:
+            log.debug(f"Most active fetch error: {e}")
 
         # Also try trending tickers as fallback
         if len(movers) < 5:

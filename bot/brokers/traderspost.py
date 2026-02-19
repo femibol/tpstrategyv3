@@ -43,8 +43,8 @@ class TradersPostBroker(BaseBroker):
 
     # Rate limiting: max signals per symbol within a window
     RATE_LIMIT_WINDOW = 60   # seconds
-    RATE_LIMIT_MAX = 2       # max signals per symbol per window
-    GLOBAL_MIN_INTERVAL = 5  # minimum seconds between ANY webhook call
+    RATE_LIMIT_MAX = 3       # max signals per symbol per window (was 2)
+    GLOBAL_MIN_INTERVAL = 3  # minimum seconds between ANY webhook call (was 5)
 
     def __init__(self, config):
         self.config = config

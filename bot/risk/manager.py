@@ -39,7 +39,7 @@ class RiskManager:
         self.min_price = self.risk.get("min_price", 5.0)
         self.max_price = self.risk.get("max_price", 500.0)
         self.max_correlated = self.risk.get("max_correlated_positions", 2)
-        self.min_confidence = 0.4
+        self.min_confidence = 0.35
         self.long_only = self.risk.get("long_only", False)
 
         # Crypto-specific limits

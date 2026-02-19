@@ -22,6 +22,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 from collections import defaultdict
+from pathlib import Path
 
 import requests
 
@@ -96,8 +97,11 @@ class PoliticianTradeTracker:
         self._running = False
         self._thread = None
 
-        # Trade history to avoid duplicates
-        self.seen_trades = set()
+        # Trade history to avoid duplicates - persisted to disk
+        self._data_dir = Path(__file__).parent.parent.parent / "data"
+        self._data_dir.mkdir(exist_ok=True)
+        self._seen_file = self._data_dir / "politician_seen_trades.json"
+        self.seen_trades = self._load_seen_trades()
         self.recent_disclosures = []
         self.signals_generated = []
 
@@ -108,12 +112,35 @@ class PoliticianTradeTracker:
         self.last_check = None
         self.total_signals = 0
 
+    def _load_seen_trades(self):
+        """Load seen trade IDs from disk (survive restarts)."""
+        try:
+            if self._seen_file.exists():
+                with open(self._seen_file, "r") as f:
+                    data = json.load(f)
+                loaded = set(data) if isinstance(data, list) else set()
+                log.info(f"Loaded {len(loaded)} seen politician trades from disk")
+                return loaded
+        except Exception as e:
+            log.warning(f"Failed to load seen trades: {e}")
+        return set()
+
+    def _save_seen_trades(self):
+        """Persist seen trade IDs to disk."""
+        try:
+            # Keep last 2000 entries to prevent unbounded growth
+            trimmed = list(self.seen_trades)[-2000:]
+            with open(self._seen_file, "w") as f:
+                json.dump(trimmed, f)
+        except Exception as e:
+            log.warning(f"Failed to save seen trades: {e}")
+
     def start(self):
         """Start the tracker in a background thread."""
         self._running = True
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
-        log.info("Politician trade tracker started")
+        log.info(f"Politician trade tracker started ({len(self.seen_trades)} trades already seen)")
 
     def stop(self):
         """Stop the tracker."""
@@ -168,6 +195,7 @@ class PoliticianTradeTracker:
 
             if new_count > 0:
                 log.info(f"Found {new_count} new politician trades")
+                self._save_seen_trades()  # Persist to disk immediately
             else:
                 log.info("No new trades found")
 

@@ -42,7 +42,7 @@ class RvolMomentumStrategy(BaseStrategy):
         self.atr_stop_mult = config.get("atr_stop_multiplier", 1.5)
         self.atr_target_mult = config.get("atr_target_multiplier", 3.0)
         self.max_hold_minutes = config.get("max_hold_minutes", 120)
-        self.max_trades_per_day = config.get("max_trades_per_day", 6)
+        self.max_trades_per_day = config.get("max_trades_per_day", 12)
         self.trades_today = 0
         self.last_trade_date = None
 

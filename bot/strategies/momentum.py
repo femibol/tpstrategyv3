@@ -135,9 +135,24 @@ class MomentumStrategy(BaseStrategy):
             "verdict": verdict,
         }
 
+        # --- Pullback detection for better entries ---
+        # Price pulling back to fast EMA in an uptrend = ideal entry
+        pullback_to_ema = (
+            ema_bullish and
+            current_price <= fast_ema[-1] * 1.005 and  # Within 0.5% of fast EMA
+            current_price >= slow_ema[-1]  # Still above slow EMA (trend intact)
+        )
+
+        # Higher lows pattern (last 3 bars)
+        higher_lows = len(lows) >= 4 and lows[-1] > lows[-2] and lows[-2] > lows[-3]
+
         # --- BUY Signal ---
-        # Need: EMA bullish + (strong trend OR breakout) + volume
-        if ema_bullish and (strong_trend or breakout) and vol_confirmed:
+        # Primary: EMA bullish + (strong trend OR breakout) + volume
+        # Secondary: EMA bullish + pullback to EMA + higher lows
+        primary_signal = ema_bullish and (strong_trend or breakout) and vol_confirmed
+        pullback_signal = ema_bullish and pullback_to_ema and higher_lows and adx is not None and adx > 20
+
+        if primary_signal or pullback_signal:
             confidence = 0.5
 
             # Bonus for fresh crossover
@@ -147,6 +162,8 @@ class MomentumStrategy(BaseStrategy):
             # Bonus for strong ADX
             if adx and adx > 30:
                 confidence += 0.1
+            elif adx and adx > 25:
+                confidence += 0.05
 
             # Bonus for breakout
             if breakout:
@@ -155,6 +172,16 @@ class MomentumStrategy(BaseStrategy):
             # Volume strength bonus
             if vol_ratio > 2.0:
                 confidence += 0.1
+            elif vol_ratio > 1.3:
+                confidence += 0.05
+
+            # Pullback entry is higher quality (buying at support)
+            if pullback_signal and not primary_signal:
+                confidence += 0.1
+
+            # Higher lows = accumulation
+            if higher_lows:
+                confidence += 0.05
 
             confidence = min(1.0, confidence)
 
@@ -162,15 +189,26 @@ class MomentumStrategy(BaseStrategy):
             stop_loss = current_price - (self.atr_stop_mult * atr)
             take_profit = current_price + (self.atr_target_mult * atr)
 
+            # Ensure minimum 2:1 R:R
+            risk = current_price - stop_loss
+            if risk > 0:
+                reward = take_profit - current_price
+                if reward / risk < 2.0:
+                    take_profit = current_price + (2.0 * risk)
+
             reasons = []
             if ema_just_crossed:
                 reasons.append("EMA cross")
+            elif pullback_signal:
+                reasons.append("pullback entry")
             elif ema_bullish:
                 reasons.append("EMA trend")
             if strong_trend:
                 reasons.append(f"ADX={adx:.0f}")
             if breakout:
                 reasons.append(f"breakout>{lookback_high:.2f}")
+            if higher_lows:
+                reasons.append("higher lows")
             reasons.append(f"Vol={vol_ratio:.1f}x")
 
             signal = {
