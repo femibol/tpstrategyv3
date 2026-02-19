@@ -152,17 +152,10 @@ class TradersPostBroker(BaseBroker):
             "close": "exit",
         }
 
-        sentiment_map = {
-            "buy": "bullish",
-            "sell": "bearish",
-            "short": "bearish",
-            "cover": "flat",
-            "close": "flat",
-        }
-
         tp_action = action_map.get(action, action)
-        # For closing positions (exits), use "exit" for cleaner TradersPost handling
-        if is_exit and tp_action in ("buy", "sell"):
+        # CRITICAL: ALL exit/close/sell signals MUST use "exit" action
+        # TradersPost is bullish-only — "sell" with "bearish" sentiment gets rejected
+        if is_exit and tp_action != "buy":
             tp_action = "exit"
 
         payload = {
@@ -170,10 +163,10 @@ class TradersPostBroker(BaseBroker):
             "action": tp_action,
         }
 
-        # sentiment can ONLY be used when action is "buy" or "sell"
-        # TradersPost rejects it on "exit" / "cancel" with INVALID SENTIMENT ACTION
-        if tp_action in ("buy", "sell"):
-            payload["sentiment"] = sentiment_map.get(action, "flat")
+        # Sentiment: ONLY add for "buy" entries (bullish)
+        # NEVER add sentiment for exits — TradersPost rejects bearish sentiment
+        if tp_action == "buy":
+            payload["sentiment"] = "bullish"
 
         # Add optional fields
         if "quantity" in signal:

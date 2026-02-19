@@ -1036,7 +1036,7 @@ class TradingEngine:
             log.info(f"Closing {symbol} via TradersPost webhook...")
             close_signal = {
                 "symbol": symbol,
-                "action": action.lower(),
+                "action": "exit",
                 "quantity": pos["quantity"],
                 "price": current_price,
                 "source": "exit",
@@ -1146,8 +1146,9 @@ class TradingEngine:
 
         if not order and self.tp_broker:
             close_signal = {
-                "symbol": symbol, "action": action.lower(),
+                "symbol": symbol, "action": "exit",
                 "quantity": qty_to_close, "price": current_price,
+                "source": "exit",
             }
             tp_result = self.tp_broker.send_signal(close_signal)
             if tp_result and tp_result.get("success"):
