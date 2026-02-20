@@ -151,8 +151,9 @@ class RiskManager:
             for p in positions.values()
         )
         available = balance - invested - reserve
-        if price > available:
-            return False, f"Insufficient available capital (${available:.0f} after reserve)"
+        # Compare total position cost (not just single share price)
+        if position_value > available:
+            return False, f"Insufficient available capital (${available:.0f} after reserve, order ${position_value:.0f})"
 
         # --- Rule 9: Confidence threshold ---
         confidence = signal.get("confidence", 0)
