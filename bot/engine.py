@@ -83,8 +83,11 @@ class TradingEngine:
         self.sheets_logger = None
         self.scheduler = None
 
-        # State
+        # State — protected by _positions_lock for thread safety
+        # (BackgroundScheduler, webhook handlers, and main loop all access self.positions)
         self.positions = {}
+        self._positions_lock = threading.Lock()
+        self._closing_in_progress = set()  # Prevents double-close from concurrent monitors
         self.orders = {}
         self.strategies = {}
         self.daily_trades = []
@@ -131,6 +134,7 @@ class TradingEngine:
         # Timezone
         self.tz = pytz.timezone(self.config.timezone)
         self._in_premarket = False
+        self._equity_market_open = False
 
     def initialize(self):
         """Initialize all components."""
@@ -571,10 +575,15 @@ class TradingEngine:
                                     s.get("source") == "hedging" or
                                     s.get("action") in ("sell", "cover", "close")]
 
-                    # 7c. Scanner summary notification
+                    # 7c. Off-hours filter: Only allow crypto signals when equity market closed
+                    if not getattr(self, '_equity_market_open', True):
+                        approved = [s for s in approved if self._is_crypto_symbol(s.get("symbol", ""))]
+
+                    # 7d. Scanner summary notification
                     symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
                     regime_str = regime_result.get("regime") if regime_result else None
                     spy_change = None
+                    spy_data = None
                     if self.market_data:
                         spy_data = self.market_data.get_data("SPY")
                     if spy_data is not None and len(spy_data) >= 2:
@@ -621,16 +630,22 @@ class TradingEngine:
 
     def _has_crypto_symbols(self):
         """Check if any watched/traded symbols are crypto (enables 24/7 mode)."""
-        all_syms = set(self.watchlist) | set(self.positions.keys())
+        all_syms = set(self.watchlist)
+        with self._positions_lock:
+            all_syms.update(self.positions.keys())
         for s in self.strategies.values():
-            all_syms.update(s.get_symbols())
+            try:
+                all_syms.update(s.get_symbols())
+            except Exception:
+                pass
         return any(self._is_crypto_symbol(sym) for sym in all_syms)
 
     def _is_market_hours(self, now):
-        """Check if within trading hours (includes optional premarket + crypto 24/7)."""
-        # Crypto trades 24/7 - if we have any crypto symbols, always run
-        if self._has_crypto_symbols():
-            return True
+        """Check if within trading hours (includes optional premarket + crypto 24/7).
+        When crypto symbols exist but market is closed, we still return True
+        but set a flag so equity strategies are skipped during off-hours."""
+        # Crypto trades 24/7 - but only flag it, don't skip market hour checks
+        has_crypto = self._has_crypto_symbols()
 
         sched = self.config.schedule_config
         day_name = now.strftime("%A")
@@ -639,7 +654,10 @@ class TradingEngine:
         ])
 
         if day_name not in trading_days:
-            return False
+            # On weekends, only run if crypto symbols exist (crypto trades 24/7)
+            self._in_premarket = False
+            self._equity_market_open = False
+            return has_crypto
 
         # Check premarket window
         premarket = sched.get("premarket", {})
@@ -650,6 +668,7 @@ class TradingEngine:
             regular_open = now.replace(hour=9, minute=30, second=0)
             if pm_open <= now < regular_open:
                 self._in_premarket = True
+                self._equity_market_open = True
                 return True
 
         self._in_premarket = False
@@ -669,7 +688,11 @@ class TradingEngine:
         actual_open = market_open + timedelta(minutes=avoid_first)
         actual_close = market_close - timedelta(minutes=avoid_last)
 
-        return actual_open <= now <= actual_close
+        equity_open = actual_open <= now <= actual_close
+        self._equity_market_open = equity_open
+
+        # Return True if equity market is open OR if we have crypto (24/7)
+        return equity_open or has_crypto
 
     def _update_data(self):
         """Fetch latest market data for all strategy symbols + watchlist."""
@@ -711,8 +734,12 @@ class TradingEngine:
         if not self.positions:
             return
 
+        # Snapshot positions for safe iteration (dict may be mutated by sync thread)
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
         # Refresh prices for all open position symbols
-        position_symbols = list(self.positions.keys())
+        position_symbols = list(positions_snapshot.keys())
         if self.market_data:
             self.market_data.refresh_prices(position_symbols)
 
@@ -720,7 +747,7 @@ class TradingEngine:
         positions_to_close = []
         partial_exits = []
 
-        for symbol, pos in self.positions.items():
+        for symbol, pos in positions_snapshot.items():
             current_price = self.market_data.get_price(symbol) if self.market_data else None
             if current_price is None:
                 continue
@@ -829,7 +856,11 @@ class TradingEngine:
         be_trigger = be_config.get("trigger_pct", 0.015)
         be_buffer = be_config.get("buffer_pct", 0.002)
 
-        for symbol, pos in self.positions.items():
+        # Snapshot for safe iteration
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
+        for symbol, pos in positions_snapshot.items():
             current_price = self.market_data.get_price(symbol)
             if current_price is None:
                 continue
@@ -1207,7 +1238,14 @@ class TradingEngine:
         # before placing ANY new entry order. Do NOT trust self.positions alone.
         if action in ("buy", "short"):
             try:
-                broker_positions = self._alpaca_api_call("/v2/positions") or []
+                broker_positions = self._alpaca_api_call("/v2/positions")
+                # FAIL-CLOSED: If API fails, BLOCK the entry (never guess)
+                if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
+                    log.error(f"Alpaca pre-order check FAILED (API error) — BLOCKING {action.upper()} {symbol}")
+                    return
+                if not isinstance(broker_positions, list):
+                    log.error(f"Alpaca pre-order check returned unexpected type — BLOCKING {action.upper()} {symbol}")
+                    return
                 actual_count = len(broker_positions)
                 if actual_count >= self.risk_manager.max_positions:
                     log.error(
@@ -1301,15 +1339,24 @@ class TradingEngine:
                 stop_loss=stop_loss_price, take_profit=take_profit_price,
             )
             if alpaca_result and alpaca_result.get("success"):
-                order = {
-                    "order_id": alpaca_result.get("order_id", f"alp_{int(datetime.now(self.tz).timestamp())}"),
-                    "symbol": symbol,
-                    "action": action,
-                    "quantity": qty,
-                    "status": alpaca_result.get("status", "submitted"),
-                }
-                executed_via = "Alpaca-Direct"
-                log.info(f"Alpaca direct accepted {action.upper()} {symbol}")
+                order_id = alpaca_result.get("order_id", "")
+                # Verify the order actually filled (wait up to 5 seconds)
+                filled = self._verify_order_fill(order_id, timeout=5)
+                if filled:
+                    order = {
+                        "order_id": order_id,
+                        "symbol": symbol,
+                        "action": action,
+                        "quantity": qty,
+                        "status": "filled",
+                    }
+                    executed_via = "Alpaca-Direct"
+                    # Use actual fill price if available
+                    if isinstance(filled, dict) and filled.get("filled_avg_price"):
+                        current_price = float(filled["filled_avg_price"])
+                    log.info(f"Alpaca direct FILLED {action.upper()} {symbol} @ ${current_price:.2f}")
+                else:
+                    log.warning(f"Alpaca order {order_id} submitted but NOT filled for {symbol} — NOT tracking position")
             else:
                 log.error(f"Alpaca direct order also failed for {symbol}")
 
@@ -1331,34 +1378,35 @@ class TradingEngine:
             f"Strategy: {strategy}"
         )
 
-        # Track position
-        self.positions[symbol] = {
-            "symbol": symbol,
-            "direction": "long" if action in ("buy",) else "short",
-            "quantity": qty,
-            "entry_price": current_price,
-            "entry_time": datetime.now(self.tz),
-            "stop_loss": stop_loss_price,
-            "take_profit": take_profit_price,
-            "trailing_stop_pct": signal.get(
-                "trailing_stop_pct",
-                self.config.risk_config.get("trailing_stop_pct", 0.02)
-            ),
-            "strategy": strategy,
-            "order_id": order.get("order_id"),
-            "executed_via": executed_via,
-            "max_hold_bars": signal.get("max_hold_bars", 40),
-            "bar_seconds": signal.get("bar_seconds", 300),
-            "max_hold_days": signal.get("max_hold_days", 0),  # 0 = use bar-based, >0 = days limit
-            # Scalp-specific metadata
-            "scalp_mode": signal.get("scalp_mode", False),
-            "same_candle_exit": signal.get("same_candle_exit", False),
-            "quick_scalp_pct": signal.get("quick_scalp_pct", 0),
-            "runner_pct": signal.get("runner_pct", 0),
-            # Breakout play metadata (pre-breakout / rvol breakout signals)
-            "source": signal.get("source", ""),
-            "breakout_play": signal.get("breakout_play", False),
-        }
+        # Track position (thread-safe)
+        with self._positions_lock:
+            self.positions[symbol] = {
+                "symbol": symbol,
+                "direction": "long" if action in ("buy",) else "short",
+                "quantity": qty,
+                "entry_price": current_price,
+                "entry_time": datetime.now(self.tz),
+                "stop_loss": stop_loss_price,
+                "take_profit": take_profit_price,
+                "trailing_stop_pct": signal.get(
+                    "trailing_stop_pct",
+                    self.config.risk_config.get("trailing_stop_pct", 0.02)
+                ),
+                "strategy": strategy,
+                "order_id": order.get("order_id"),
+                "executed_via": executed_via,
+                "max_hold_bars": signal.get("max_hold_bars", 40),
+                "bar_seconds": signal.get("bar_seconds", 300),
+                "max_hold_days": signal.get("max_hold_days", 0),  # 0 = use bar-based, >0 = days limit
+                # Scalp-specific metadata
+                "scalp_mode": signal.get("scalp_mode", False),
+                "same_candle_exit": signal.get("same_candle_exit", False),
+                "quick_scalp_pct": signal.get("quick_scalp_pct", 0),
+                "runner_pct": signal.get("runner_pct", 0),
+                # Breakout play metadata (pre-breakout / rvol breakout signals)
+                "source": signal.get("source", ""),
+                "breakout_play": signal.get("breakout_play", False),
+            }
 
         # Rich notification with full trade details
         self.notifier.trade_entry(
@@ -1396,7 +1444,20 @@ class TradingEngine:
         })
 
     def _close_position(self, symbol, reason_type, reason_msg):
-        """Close a position through broker chain."""
+        """Close a position through broker chain. Thread-safe with double-close guard."""
+        # Double-close guard: prevent concurrent close attempts
+        if symbol in self._closing_in_progress:
+            log.debug(f"Close already in progress for {symbol} — skipping duplicate")
+            return
+        self._closing_in_progress.add(symbol)
+
+        try:
+            self._close_position_inner(symbol, reason_type, reason_msg)
+        finally:
+            self._closing_in_progress.discard(symbol)
+
+    def _close_position_inner(self, symbol, reason_type, reason_msg):
+        """Inner close logic — called by _close_position with double-close guard."""
         pos = self.positions.get(symbol)
         if not pos:
             return
@@ -1559,7 +1620,8 @@ class TradingEngine:
         if symbol in self.watchlist:
             self._update_watchlist_performance(symbol, pnl, pnl_pct)
 
-        del self.positions[symbol]
+        with self._positions_lock:
+            self.positions.pop(symbol, None)
 
     def _partial_close(self, symbol, qty_to_close, target_idx, target):
         """Close part of a position (profit taking)."""
@@ -1668,7 +1730,8 @@ class TradingEngine:
 
         # If position fully closed via partials
         if pos["quantity"] <= 0:
-            del self.positions[symbol]
+            with self._positions_lock:
+                self.positions.pop(symbol, None)
 
     def _update_performance_stats(self, pnl):
         """Update win/loss tracking stats after a trade closes."""
@@ -1702,31 +1765,29 @@ class TradingEngine:
     def _close_all_positions(self, reason):
         """Emergency close all positions."""
         log.warning(f"Closing all positions: {reason}")
-        symbols = list(self.positions.keys())
+        with self._positions_lock:
+            symbols = list(self.positions.keys())
         for symbol in symbols:
             self._close_position(symbol, "emergency", reason)
 
     def _update_account(self):
         """Update account balance and tracking (works with or without IBKR)."""
-        # Try to sync from IBKR if connected
-        if self.broker and self.broker.is_connected():
+        # Try to sync from Alpaca first (source of truth on Render)
+        if self.config.alpaca_api_key:
+            try:
+                account = self._alpaca_api_call("/v2/account")
+                if account and isinstance(account, dict):
+                    equity = float(account.get("equity", 0))
+                    if equity > 0:
+                        self.current_balance = equity
+            except Exception:
+                pass
+        elif self.broker and self.broker.is_connected():
             account = self.broker.get_account_summary()
             if account:
                 self.current_balance = account.get(
                     "net_liquidation", self.current_balance
                 )
-        else:
-            # Internal balance tracking: base + unrealized P&L
-            unrealized = 0
-            for symbol, pos in self.positions.items():
-                price = self.market_data.get_price(symbol)
-                if price is not None:
-                    if pos["direction"] == "long":
-                        unrealized += (price - pos["entry_price"]) * pos["quantity"]
-                    else:
-                        unrealized += (pos["entry_price"] - price) * pos["quantity"]
-            # current_balance already includes realized P&L from _close_position
-            # Just need to track unrealized for equity curve
 
         self.peak_balance = max(self.peak_balance, self.current_balance)
 
@@ -1737,8 +1798,10 @@ class TradingEngine:
 
         # Track equity curve (include unrealized P&L)
         unrealized_pnl = 0
-        for symbol, pos in self.positions.items():
-            price = self.market_data.get_price(symbol)
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+        for symbol, pos in positions_snapshot.items():
+            price = self.market_data.get_price(symbol) if self.market_data else None
             if price is not None:
                 if pos["direction"] == "long":
                     unrealized_pnl += (price - pos["entry_price"]) * pos["quantity"]
@@ -1750,16 +1813,79 @@ class TradingEngine:
             "balance": self.current_balance,
             "equity": self.current_balance + unrealized_pnl,
             "unrealized_pnl": unrealized_pnl,
-            "positions": len(self.positions),
+            "positions": len(positions_snapshot),
             "daily_pnl": self.daily_pnl,
         })
 
+    # --- Alpaca Helpers ---
+
+    def _verify_order_fill(self, order_id, timeout=5):
+        """Check if an Alpaca order has filled within timeout seconds.
+        Returns order dict if filled, False if not filled, None on error."""
+        if not order_id:
+            return False
+        import requests as _req
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+        headers = {
+            "APCA-API-KEY-ID": api_key,
+            "APCA-API-SECRET-KEY": secret_key,
+        }
+        # Poll order status every 0.5s up to timeout
+        checks = int(timeout / 0.5)
+        for _ in range(max(checks, 1)):
+            try:
+                resp = _req.get(
+                    f"{base_url}/v2/orders/{order_id}",
+                    headers=headers,
+                    timeout=5,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    status = data.get("status", "")
+                    if status == "filled":
+                        return data
+                    elif status in ("canceled", "expired", "rejected"):
+                        log.warning(f"Order {order_id} {status}")
+                        return False
+                    # Still pending — wait and retry
+                time.sleep(0.5)
+            except Exception as e:
+                log.debug(f"Order fill check error: {e}")
+                time.sleep(0.5)
+        # Timeout — order may still be pending
+        log.warning(f"Order {order_id} not filled within {timeout}s")
+        return False
+
+    def _get_time_in_force(self):
+        """Return 'day' during regular market hours, 'gtc' otherwise.
+        Crypto always uses 'gtc' since it trades 24/7."""
+        now = datetime.now(self.tz)
+        # Crypto is always GTC
+        # During regular hours (9:30-16:00 ET, Mon-Fri), use DAY
+        day_name = now.strftime("%A")
+        if day_name in ("Saturday", "Sunday"):
+            return "gtc"
+        regular_open = now.replace(hour=9, minute=30, second=0)
+        regular_close = now.replace(hour=16, minute=0, second=0)
+        if regular_open <= now <= regular_close:
+            return "day"
+        return "gtc"
+
     # --- Alpaca Position Sync (prevents phantom positions) ---
+
+    # Sentinel for 404 responses — distinct from None (error) and [] (empty list)
+    _ALPACA_NOT_FOUND = "NOT_FOUND"
 
     def _alpaca_api_call(self, endpoint, method="GET"):
         """Make a raw HTTP call to Alpaca Trading API.
         No alpaca_trade_api library needed - uses requests directly.
-        Returns parsed JSON or None on failure."""
+        Returns:
+          - Parsed JSON on success (200)
+          - _ALPACA_NOT_FOUND sentinel on 404
+          - None on any other error (timeout, 500, etc.)
+        Callers MUST check for None before using the result."""
         api_key = self.config.alpaca_api_key
         secret_key = self.config.alpaca_secret_key
         if not api_key or not secret_key:
@@ -1779,7 +1905,7 @@ class TradingEngine:
             if resp.status_code == 200:
                 return resp.json()
             elif resp.status_code == 404:
-                return []  # No position / resource not found
+                return self._ALPACA_NOT_FOUND
             else:
                 log.debug(f"Alpaca API {endpoint}: HTTP {resp.status_code}")
                 return None
@@ -1806,13 +1932,20 @@ class TradingEngine:
             # Simple market order — the bot manages all exits (stops, trailing,
             # profit taking) internally. Don't use bracket orders to avoid
             # dual-control conflicts with the bot's exit monitoring.
+            # Use 'gtc' outside regular hours (pre-market/after-hours), 'day' during market
+            tif = self._get_time_in_force()
             order_data = {
                 "symbol": symbol,
                 "qty": str(qty),
                 "side": side,
                 "type": "market",
-                "time_in_force": "day",
+                "time_in_force": tif,
             }
+            # Extended hours require 'limit' orders on Alpaca, not 'market'
+            if tif == "gtc" and limit_price:
+                order_data["type"] = "limit"
+                order_data["limit_price"] = str(round(limit_price, 2))
+                order_data["extended_hours"] = True
 
             resp = _req.post(
                 f"{base_url}/v2/orders",
@@ -1908,6 +2041,7 @@ class TradingEngine:
                 pos_data = pos_resp.json()
                 sell_qty = str(qty) if qty else str(abs(int(float(pos_data.get("qty", 0)))))
                 sell_side = "sell" if float(pos_data.get("qty", 0)) > 0 else "buy"
+                tif = self._get_time_in_force()
                 sell_resp = _req.post(
                     f"{base_url}/v2/orders",
                     headers={**headers, "Content-Type": "application/json"},
@@ -1916,7 +2050,7 @@ class TradingEngine:
                         "qty": sell_qty,
                         "side": sell_side,
                         "type": "market",
-                        "time_in_force": "day",
+                        "time_in_force": tif,
                     },
                     timeout=10,
                 )
@@ -1996,7 +2130,15 @@ class TradingEngine:
             log.warning(f"Alpaca account balance sync failed: {e}")
 
         try:
-            broker_positions = self._alpaca_api_call("/v2/positions") or []
+            broker_positions = self._alpaca_api_call("/v2/positions")
+            # FAIL-SAFE: If API returned None (error) or NOT_FOUND sentinel,
+            # do NOT assume 0 positions — skip sync to avoid wiping tracking
+            if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
+                log.warning("Alpaca startup sync: API returned no data — skipping position sync")
+                return
+            if not isinstance(broker_positions, list):
+                log.warning(f"Alpaca startup sync: unexpected response type {type(broker_positions)} — skipping")
+                return
             for p in broker_positions:
                 symbol = p.get("symbol", "").upper()
                 qty = abs(float(p.get("qty", 0)))
@@ -2039,7 +2181,8 @@ class TradingEngine:
         """Reconcile internal positions with actual Alpaca broker positions.
         Removes phantom positions that exist internally but not at the broker.
         Uses raw HTTP - no alpaca_trade_api library needed.
-        CRITICAL: If the API call fails, do NOT touch positions (fail-safe)."""
+        CRITICAL: If the API call fails, do NOT touch positions (fail-safe).
+        Thread-safe: uses _positions_lock for all position dict mutations."""
         if not self.config.alpaca_api_key or not self.config.alpaca_secret_key:
             return
 
@@ -2049,57 +2192,62 @@ class TradingEngine:
             log.warning(f"Alpaca position sync failed: {e}")
             return
 
-        # FAIL-SAFE: If API returned None (error), do NOT wipe positions.
-        # Only proceed if we got an actual list response from Alpaca.
-        if broker_positions is None:
-            log.warning("Alpaca position sync: API returned None — skipping sync to avoid wiping tracking")
+        # FAIL-SAFE: If API returned None (error) or NOT_FOUND, do NOT wipe positions.
+        if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
+            log.warning("Alpaca position sync: API returned None/NotFound — skipping sync to avoid wiping tracking")
+            return
+        if not isinstance(broker_positions, list):
+            log.warning(f"Alpaca position sync: unexpected response type {type(broker_positions)} — skipping")
             return
 
         broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
 
-        # Also sync positions that exist at broker but NOT in bot tracking
-        for p in broker_positions:
-            sym = p.get("symbol", "").upper()
-            if sym and sym not in self.positions:
-                qty = abs(float(p.get("qty", 0)))
-                entry = float(p.get("avg_entry_price", 0))
-                side = "long" if float(p.get("qty", 0)) > 0 else "short"
-                self.positions[sym] = {
-                    "symbol": sym,
-                    "direction": side,
-                    "quantity": int(qty) if qty == int(qty) else qty,
-                    "entry_price": entry,
-                    "entry_time": datetime.now(self.tz),
-                    "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
-                    "take_profit": entry * 1.06 if side == "long" else entry * 0.94,
-                    "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
-                    "strategy": "synced_from_alpaca",
-                    "executed_via": "Alpaca",
-                    "max_hold_bars": 40,
-                    "bar_seconds": 300,
-                    "max_hold_days": 5,
-                }
-                log.info(f"POSITION SYNC: Added missing {sym} from Alpaca broker to bot tracking")
+        with self._positions_lock:
+            # Also sync positions that exist at broker but NOT in bot tracking
+            for p in broker_positions:
+                sym = p.get("symbol", "").upper()
+                if sym and sym not in self.positions:
+                    qty = abs(float(p.get("qty", 0)))
+                    entry = float(p.get("avg_entry_price", 0))
+                    side = "long" if float(p.get("qty", 0)) > 0 else "short"
+                    self.positions[sym] = {
+                        "symbol": sym,
+                        "direction": side,
+                        "quantity": int(qty) if qty == int(qty) else qty,
+                        "entry_price": entry,
+                        "entry_time": datetime.now(self.tz),
+                        "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
+                        "take_profit": entry * 1.06 if side == "long" else entry * 0.94,
+                        "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                        "strategy": "synced_from_alpaca",
+                        "executed_via": "Alpaca",
+                        "max_hold_bars": 40,
+                        "bar_seconds": 300,
+                        "max_hold_days": 5,
+                    }
+                    log.info(f"POSITION SYNC: Added missing {sym} from Alpaca broker to bot tracking")
 
-        # Find phantom positions (in bot but not at broker)
-        phantoms = []
-        for symbol in list(self.positions.keys()):
-            if symbol.upper() not in broker_symbols:
-                phantoms.append(symbol)
+            # Find phantom positions (in bot but not at broker)
+            phantoms = []
+            for symbol in list(self.positions.keys()):
+                if symbol.upper() not in broker_symbols:
+                    phantoms.append(symbol)
 
-        for symbol in phantoms:
-            pos = self.positions[symbol]
-            # Clean up positions that were broker-executed (not simulated)
-            if pos.get("executed_via") in ("TradersPost", "Alpaca", "Alpaca-Direct", "Phantom-Cleanup"):
-                log.warning(
-                    f"POSITION SYNC: Removing phantom {symbol} "
-                    f"(in bot but not at Alpaca broker)"
-                )
-                del self.positions[symbol]
+            removed = 0
+            for symbol in phantoms:
+                pos = self.positions[symbol]
+                # Clean up positions that were broker-executed (not simulated)
+                if pos.get("executed_via") in ("TradersPost", "Alpaca", "Alpaca-Direct", "Phantom-Cleanup"):
+                    log.warning(
+                        f"POSITION SYNC: Removing phantom {symbol} "
+                        f"(in bot but not at Alpaca broker)"
+                    )
+                    del self.positions[symbol]
+                    removed += 1
 
-        if phantoms:
+        if removed > 0:
             log.info(
-                f"Position sync complete: removed {len(phantoms)} phantom(s), "
+                f"Position sync complete: removed {removed} phantom(s), "
                 f"{len(self.positions)} positions remain"
             )
 
@@ -2641,9 +2789,28 @@ class TradingEngine:
 
     def _health_check(self):
         """Periodic health check."""
-        if not self.broker.is_connected():
-            log.warning("Broker disconnected - attempting reconnect")
-            self.broker.reconnect()
+        try:
+            if self.broker and not self.broker.is_connected():
+                log.warning("Broker disconnected - attempting reconnect")
+                self.broker.reconnect()
+
+            # Trim unbounded lists to prevent memory leaks
+            if len(self.analysis_log) > self.max_analysis_log:
+                self.analysis_log = self.analysis_log[-self.max_analysis_log:]
+            if len(self.equity_curve) > 2000:
+                self.equity_curve = self.equity_curve[-1000:]
+            if self.tp_broker and len(self.tp_broker.signal_history) > 500:
+                self.tp_broker.signal_history = self.tp_broker.signal_history[-250:]
+            if self.risk_manager and len(self.risk_manager.rejected_signals) > 500:
+                self.risk_manager.rejected_signals = self.risk_manager.rejected_signals[-250:]
+            # Trim signal cooldowns older than 5 minutes
+            now = datetime.now(self.tz)
+            stale_keys = [k for k, v in self._signal_cooldowns.items()
+                          if (now - v).total_seconds() > 300]
+            for k in stale_keys:
+                del self._signal_cooldowns[k]
+        except Exception as e:
+            log.error(f"Health check error: {e}")
 
     def _shutdown(self, signum=None, frame=None):
         """Graceful shutdown."""
@@ -3718,33 +3885,39 @@ class TradingEngine:
                 ema50 = self.indicators.ema(closes, 50)
                 ema200 = self.indicators.ema(closes, 200) if len(closes) >= 200 else None
 
-                # Determine trend
-                if ema200 is not None:
-                    if current_price > ema50 > ema200:
+                # Determine trend (use last value of EMA arrays)
+                ema50_val = float(ema50[-1]) if ema50 is not None and len(ema50) > 0 else None
+                ema200_val = float(ema200[-1]) if ema200 is not None and len(ema200) > 0 else None
+
+                if ema200_val is not None and ema50_val is not None:
+                    if current_price > ema50_val > ema200_val:
                         trend = "STRONG UPTREND"
                         trend_score = 3
-                    elif current_price > ema200:
+                    elif current_price > ema200_val:
                         trend = "UPTREND"
                         trend_score = 2
-                    elif current_price < ema50 < ema200:
+                    elif current_price < ema50_val < ema200_val:
                         trend = "STRONG DOWNTREND"
                         trend_score = -2
-                    elif current_price < ema200:
+                    elif current_price < ema200_val:
+                        trend = "DOWNTREND"
+                        trend_score = -1
+                    else:
+                        trend = "SIDEWAYS"
+                        trend_score = 0
+                elif ema50_val is not None:
+                    if current_price > ema50_val:
+                        trend = "UPTREND"
+                        trend_score = 2
+                    elif current_price < ema50_val:
                         trend = "DOWNTREND"
                         trend_score = -1
                     else:
                         trend = "SIDEWAYS"
                         trend_score = 0
                 else:
-                    if current_price > ema50:
-                        trend = "UPTREND"
-                        trend_score = 2
-                    elif current_price < ema50:
-                        trend = "DOWNTREND"
-                        trend_score = -1
-                    else:
-                        trend = "SIDEWAYS"
-                        trend_score = 0
+                    trend = "SIDEWAYS"
+                    trend_score = 0
 
                 # --- RSI ---
                 rsi = self.indicators.rsi(closes, 14)
