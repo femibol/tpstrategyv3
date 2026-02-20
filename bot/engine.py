@@ -1303,53 +1303,46 @@ class TradingEngine:
         order = None
         executed_via = None
 
-        # HARD SAFETY CHECK: Verify actual Alpaca position count + buying power
-        # before placing ANY new entry order. Do NOT trust self.positions alone.
+        # SAFETY CHECK: Verify Alpaca position count + buying power before entry.
+        # If the API is unreachable, fall through (rely on risk manager limits).
         if action in ("buy", "short"):
             try:
                 broker_positions = self._alpaca_api_call("/v2/positions")
-                # FAIL-CLOSED: If API fails, BLOCK the entry (never guess)
                 if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
-                    log.error(f"Alpaca pre-order check FAILED (API error) — BLOCKING {action.upper()} {symbol}")
-                    return
-                if not isinstance(broker_positions, list):
-                    log.error(f"Alpaca pre-order check returned unexpected type — BLOCKING {action.upper()} {symbol}")
-                    return
-                actual_count = len(broker_positions)
-                if actual_count >= self.risk_manager.max_positions:
-                    log.error(
-                        f"HARD LIMIT: Alpaca has {actual_count} open positions "
-                        f"(max {self.risk_manager.max_positions}). BLOCKING {action.upper()} {symbol}. "
-                        f"Bot tracking {len(self.positions)} — DESYNC detected!"
-                    )
-                    return
-
-                # Check if we already hold this symbol at the broker
-                broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
-                if symbol.upper() in broker_symbols:
-                    log.warning(
-                        f"DUPLICATE BLOCKED: {symbol} already open at Alpaca broker. "
-                        f"Bot positions dict {'has' if symbol in self.positions else 'MISSING'} it."
-                    )
-                    # Re-sync this position into tracking if bot lost track
-                    if symbol not in self.positions:
-                        self._sync_positions_from_alpaca()
-                    return
-
-                # Check buying power — don't place orders we can't afford
-                account = self._alpaca_api_call("/v2/account")
-                if isinstance(account, dict):
-                    buying_power = float(account.get("buying_power", 0))
-                    order_cost = current_price * qty
-                    if order_cost > buying_power:
+                    # API unreachable — warn but allow trade (risk manager already checked)
+                    log.warning(f"Alpaca pre-check unavailable — proceeding with {action.upper()} {symbol} (risk manager approved)")
+                elif isinstance(broker_positions, list):
+                    actual_count = len(broker_positions)
+                    if actual_count >= self.risk_manager.max_positions:
                         log.error(
-                            f"INSUFFICIENT BUYING POWER: {symbol} order cost ${order_cost:,.2f} "
-                            f"but only ${buying_power:,.2f} available. BLOCKING."
+                            f"HARD LIMIT: Alpaca has {actual_count} open positions "
+                            f"(max {self.risk_manager.max_positions}). BLOCKING {action.upper()} {symbol}."
                         )
                         return
+
+                    # Check if we already hold this symbol at the broker
+                    broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
+                    if symbol.upper() in broker_symbols:
+                        log.warning(
+                            f"DUPLICATE BLOCKED: {symbol} already open at Alpaca broker."
+                        )
+                        if symbol not in self.positions:
+                            self._sync_positions_from_alpaca()
+                        return
+
+                    # Check buying power
+                    account = self._alpaca_api_call("/v2/account")
+                    if isinstance(account, dict):
+                        buying_power = float(account.get("buying_power", 0))
+                        order_cost = current_price * qty
+                        if order_cost > buying_power:
+                            log.error(
+                                f"INSUFFICIENT BUYING POWER: {symbol} ${order_cost:,.2f} "
+                                f"> ${buying_power:,.2f} available. BLOCKING."
+                            )
+                            return
             except Exception as e:
-                log.error(f"Alpaca pre-order safety check failed: {e} — BLOCKING entry (fail-safe)")
-                return
+                log.warning(f"Alpaca pre-check error: {e} — proceeding anyway (risk manager approved)")
 
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
