@@ -54,20 +54,25 @@ def _start_engine():
         return  # Already running
 
     def _run_engine():
-        """Wrapper that catches crashes and logs them."""
+        """Wrapper that catches ALL crashes (including SystemExit) and logs them."""
         try:
             _engine_started.set()
+            log.info("Engine thread starting engine.start()...")
             engine.start()
-        except Exception as e:
-            log.error(f"ENGINE CRASHED: {e}", exc_info=True)
+            log.warning("engine.start() returned normally (engine stopped)")
+        except BaseException as e:
+            # Catch EVERYTHING — SystemExit, KeyboardInterrupt, Exception
+            log.error(f"ENGINE THREAD DIED: {type(e).__name__}: {e}", exc_info=True)
+            import traceback
+            traceback.print_exc()
             # Try to restart after a delay
             time.sleep(10)
             log.info("Attempting engine restart after crash...")
             try:
                 engine.running = False  # Reset state
                 engine.start()
-            except Exception as e2:
-                log.error(f"ENGINE RESTART FAILED: {e2}", exc_info=True)
+            except BaseException as e2:
+                log.error(f"ENGINE RESTART FAILED: {type(e2).__name__}: {e2}", exc_info=True)
 
     _engine_thread = threading.Thread(
         target=_run_engine,
