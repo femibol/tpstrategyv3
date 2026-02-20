@@ -6,6 +6,7 @@ The dashboard serves on Render's $PORT, and the engine runs in a background thre
 
 IMPORTANT: Gunicorn must run with --workers 1 to avoid duplicate engines.
 We use --threads 4 for concurrent request handling instead.
+Do NOT use --preload (engine daemon thread won't survive fork).
 
 Render URL: https://your-app.onrender.com
 """
@@ -41,19 +42,35 @@ engine = TradingEngine(config)
 dashboard = Dashboard(engine, config)
 app = dashboard.app
 
-# --- Start the trading engine immediately in a background thread ---
-# This ensures the engine is running as soon as gunicorn loads the app,
-# not waiting for the first HTTP request (which may be a health check).
+# --- Start the trading engine in a background thread ---
 _engine_thread = None
+_engine_started = threading.Event()
 
 
 def _start_engine():
-    """Start the trading engine in a daemon thread."""
+    """Start the trading engine in a daemon thread with crash recovery."""
     global _engine_thread
     if _engine_thread is not None and _engine_thread.is_alive():
         return  # Already running
+
+    def _run_engine():
+        """Wrapper that catches crashes and logs them."""
+        try:
+            _engine_started.set()
+            engine.start()
+        except Exception as e:
+            log.error(f"ENGINE CRASHED: {e}", exc_info=True)
+            # Try to restart after a delay
+            time.sleep(10)
+            log.info("Attempting engine restart after crash...")
+            try:
+                engine.running = False  # Reset state
+                engine.start()
+            except Exception as e2:
+                log.error(f"ENGINE RESTART FAILED: {e2}", exc_info=True)
+
     _engine_thread = threading.Thread(
-        target=engine.start,
+        target=_run_engine,
         name="TradingEngine",
         daemon=True,
     )
@@ -72,7 +89,6 @@ def _stop_engine():
 # --- Self-ping keep-alive (prevents Render from sleeping the service) ---
 def _keep_alive():
     """Ping our own /health endpoint every 10 minutes to stay awake."""
-    # Render sets RENDER_EXTERNAL_URL automatically (e.g. https://algobot.onrender.com)
     base_url = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
     if not base_url:
         log.info("RENDER_EXTERNAL_URL not set - keep-alive disabled")
@@ -89,7 +105,7 @@ def _keep_alive():
             log.warning(f"Keep-alive ping failed: {e}")
 
 
-# Start engine now (at import time / gunicorn preload)
+# Start engine immediately (without --preload, this runs in the worker process)
 _start_engine()
 
 # Start keep-alive thread on Render

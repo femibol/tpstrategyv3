@@ -424,24 +424,34 @@ class TradingEngine:
             # Running in a background thread (e.g., Render/gunicorn)
             log.info("Running in background thread - signal handlers skipped")
 
-        # Start scheduler
-        self.scheduler.start()
+        # Start auxiliary services — each wrapped so one failure doesn't kill the engine
+        try:
+            self.scheduler.start()
+            log.info("Scheduler started")
+        except Exception as e:
+            log.error(f"Scheduler failed to start: {e}", exc_info=True)
 
-        # Start TradingView webhook server in background
         if self.tv_receiver:
-            tv_thread = threading.Thread(
-                target=self.tv_receiver.start,
-                daemon=True
-            )
-            tv_thread.start()
+            try:
+                tv_thread = threading.Thread(
+                    target=self.tv_receiver.start,
+                    daemon=True
+                )
+                tv_thread.start()
+            except Exception as e:
+                log.error(f"TradingView receiver failed: {e}")
 
-        # Start politician trade tracker
         if self.politician_tracker:
-            self.politician_tracker.start()
+            try:
+                self.politician_tracker.start()
+            except Exception as e:
+                log.error(f"Politician tracker failed to start: {e}")
 
-        # Start news feed
         if self.news_feed:
-            self.news_feed.start()
+            try:
+                self.news_feed.start()
+            except Exception as e:
+                log.error(f"News feed failed to start: {e}")
 
         log.info("Trading engine started - entering main loop")
         self.notifier.system_alert("Trading engine started", level="success")
