@@ -67,7 +67,7 @@ class RiskManager:
                 approved.append(signal)
                 log.info(f"APPROVED: {signal['action']} {signal['symbol']} | {signal.get('reason', '')}")
             else:
-                log.debug(f"REJECTED: {signal['action']} {signal['symbol']} | {reason}")
+                log.info(f"REJECTED: {signal['action']} {signal['symbol']} | {reason}")
                 self.rejected_signals.append({
                     "time": datetime.now().isoformat(),
                     "signal": signal,
