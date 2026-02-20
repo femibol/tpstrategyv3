@@ -1241,7 +1241,8 @@ class TradingEngine:
                         )
                         return
             except Exception as e:
-                log.warning(f"Alpaca pre-order safety check failed: {e} — proceeding with caution")
+                log.error(f"Alpaca pre-order safety check failed: {e} — BLOCKING entry (fail-safe)")
+                return
 
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
@@ -2037,16 +2038,48 @@ class TradingEngine:
     def _sync_positions_with_broker(self):
         """Reconcile internal positions with actual Alpaca broker positions.
         Removes phantom positions that exist internally but not at the broker.
-        Uses raw HTTP - no alpaca_trade_api library needed."""
+        Uses raw HTTP - no alpaca_trade_api library needed.
+        CRITICAL: If the API call fails, do NOT touch positions (fail-safe)."""
         if not self.config.alpaca_api_key or not self.config.alpaca_secret_key:
             return
 
         try:
-            broker_positions = self._alpaca_api_call("/v2/positions") or []
-            broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
+            broker_positions = self._alpaca_api_call("/v2/positions")
         except Exception as e:
             log.warning(f"Alpaca position sync failed: {e}")
             return
+
+        # FAIL-SAFE: If API returned None (error), do NOT wipe positions.
+        # Only proceed if we got an actual list response from Alpaca.
+        if broker_positions is None:
+            log.warning("Alpaca position sync: API returned None — skipping sync to avoid wiping tracking")
+            return
+
+        broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
+
+        # Also sync positions that exist at broker but NOT in bot tracking
+        for p in broker_positions:
+            sym = p.get("symbol", "").upper()
+            if sym and sym not in self.positions:
+                qty = abs(float(p.get("qty", 0)))
+                entry = float(p.get("avg_entry_price", 0))
+                side = "long" if float(p.get("qty", 0)) > 0 else "short"
+                self.positions[sym] = {
+                    "symbol": sym,
+                    "direction": side,
+                    "quantity": int(qty) if qty == int(qty) else qty,
+                    "entry_price": entry,
+                    "entry_time": datetime.now(self.tz),
+                    "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
+                    "take_profit": entry * 1.06 if side == "long" else entry * 0.94,
+                    "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                    "strategy": "synced_from_alpaca",
+                    "executed_via": "Alpaca",
+                    "max_hold_bars": 40,
+                    "bar_seconds": 300,
+                    "max_hold_days": 5,
+                }
+                log.info(f"POSITION SYNC: Added missing {sym} from Alpaca broker to bot tracking")
 
         # Find phantom positions (in bot but not at broker)
         phantoms = []
