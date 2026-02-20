@@ -754,6 +754,21 @@ class TradingEngine:
 
         self.market_data.update(list(all_symbols))
 
+        # Diagnostic: log data coverage every ~5 cycles (avoid log spam)
+        if not hasattr(self, '_data_log_counter'):
+            self._data_log_counter = 0
+        self._data_log_counter += 1
+        if self._data_log_counter >= 5:
+            self._data_log_counter = 0
+            with_data = sum(1 for s in all_symbols if self.market_data.get_data(s) is not None)
+            with_price = sum(1 for s in all_symbols if self.market_data._price_cache.get(s))
+            log.info(
+                f"DATA COVERAGE: {with_data}/{len(all_symbols)} symbols have bars, "
+                f"{with_price}/{len(all_symbols)} have prices"
+            )
+            if with_data == 0:
+                log.warning("ZERO DATA: No market data received — strategies cannot generate signals!")
+
     def _update_scalp_data(self):
         """Fetch 1-minute bars for scalp strategy symbols."""
         scalp_strat = self.strategies.get("rvol_scalp")
@@ -1173,6 +1188,14 @@ class TradingEngine:
                 all_signals.extend(signals)
             except Exception as e:
                 log.error(f"Strategy {name} error: {e}", exc_info=True)
+
+        if all_signals:
+            log.info(f"SIGNALS GENERATED: {len(all_signals)} signals from strategies")
+            for sig in all_signals:
+                log.info(
+                    f"  -> {sig.get('strategy')}: {sig.get('action')} {sig.get('symbol')} "
+                    f"@ ${sig.get('price', 0):.2f} conf={sig.get('confidence', 0):.2f}"
+                )
 
         # Log analysis cycle
         if all_signals:
