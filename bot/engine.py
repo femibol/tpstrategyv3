@@ -1269,7 +1269,7 @@ class TradingEngine:
 
                 # Check buying power — don't place orders we can't afford
                 account = self._alpaca_api_call("/v2/account")
-                if account:
+                if isinstance(account, dict):
                     buying_power = float(account.get("buying_power", 0))
                     order_cost = current_price * qty
                     if order_cost > buying_power:
@@ -1339,24 +1339,24 @@ class TradingEngine:
                 stop_loss=stop_loss_price, take_profit=take_profit_price,
             )
             if alpaca_result and alpaca_result.get("success"):
-                order_id = alpaca_result.get("order_id", "")
-                # Verify the order actually filled (wait up to 5 seconds)
-                filled = self._verify_order_fill(order_id, timeout=5)
-                if filled:
-                    order = {
-                        "order_id": order_id,
-                        "symbol": symbol,
-                        "action": action,
-                        "quantity": qty,
-                        "status": "filled",
-                    }
-                    executed_via = "Alpaca-Direct"
-                    # Use actual fill price if available
-                    if isinstance(filled, dict) and filled.get("filled_avg_price"):
-                        current_price = float(filled["filled_avg_price"])
-                    log.info(f"Alpaca direct FILLED {action.upper()} {symbol} @ ${current_price:.2f}")
-                else:
-                    log.warning(f"Alpaca order {order_id} submitted but NOT filled for {symbol} — NOT tracking position")
+                order_id = alpaca_result.get("order_id", f"alp_{int(datetime.now(self.tz).timestamp())}")
+                # Try to verify fill (best-effort, don't block if can't confirm)
+                filled = self._verify_order_fill(order_id, timeout=3)
+                order = {
+                    "order_id": order_id,
+                    "symbol": symbol,
+                    "action": action,
+                    "quantity": qty,
+                    "status": "filled" if filled else "submitted",
+                }
+                executed_via = "Alpaca-Direct"
+                # Use actual fill price if available
+                if isinstance(filled, dict) and filled.get("filled_avg_price"):
+                    current_price = float(filled["filled_avg_price"])
+                log.info(
+                    f"Alpaca direct {'FILLED' if filled else 'SUBMITTED'} "
+                    f"{action.upper()} {symbol} @ ${current_price:.2f}"
+                )
             else:
                 log.error(f"Alpaca direct order also failed for {symbol}")
 
@@ -2110,7 +2110,7 @@ class TradingEngine:
         # --- Sync account balance from Alpaca ---
         try:
             account = self._alpaca_api_call("/v2/account")
-            if account:
+            if isinstance(account, dict):
                 equity = float(account.get("equity", 0))
                 buying_power = float(account.get("buying_power", 0))
                 cash = float(account.get("cash", 0))
