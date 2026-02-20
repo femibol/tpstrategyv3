@@ -413,16 +413,22 @@ class TradingEngine:
 
     def start(self):
         """Start the trading engine main loop."""
-        self.initialize()
+        try:
+            self.initialize()
+        except Exception as e:
+            log.error(f"INIT FAILED: {e}", exc_info=True)
+            raise
+
         self.running = True
+        log.info("Engine state set to RUNNING")
 
         # Handle graceful shutdown (only works in main thread)
         try:
             signal.signal(signal.SIGINT, self._shutdown)
             signal.signal(signal.SIGTERM, self._shutdown)
-        except ValueError:
+        except (ValueError, OSError) as e:
             # Running in a background thread (e.g., Render/gunicorn)
-            log.info("Running in background thread - signal handlers skipped")
+            log.info(f"Signal handlers skipped (background thread): {e}")
 
         # Start auxiliary services — each wrapped so one failure doesn't kill the engine
         try:
@@ -454,16 +460,23 @@ class TradingEngine:
                 log.error(f"News feed failed to start: {e}")
 
         log.info("Trading engine started - entering main loop")
-        self.notifier.system_alert("Trading engine started", level="success")
+        try:
+            self.notifier.system_alert("Trading engine started", level="success")
+        except Exception as e:
+            log.error(f"Notification failed: {e}")
 
         # Run initial scan immediately so dashboard has data on load
         self._run_scanner_cycle()
+        log.info("Initial scan complete - main loop starting")
 
         try:
             self._main_loop()
         except Exception as e:
-            log.error(f"Engine error: {e}", exc_info=True)
-            self.notifier.system_alert(f"Engine error: {e}", level="error")
+            log.error(f"MAIN LOOP CRASHED: {e}", exc_info=True)
+            try:
+                self.notifier.system_alert(f"Engine error: {e}", level="error")
+            except Exception:
+                pass
         finally:
             self.stop()
 
