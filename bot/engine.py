@@ -134,6 +134,7 @@ class TradingEngine:
         # Timezone
         self.tz = pytz.timezone(self.config.timezone)
         self._in_premarket = False
+        self._in_postmarket = False
         self._equity_market_open = False
 
     def initialize(self):
@@ -557,9 +558,19 @@ class TradingEngine:
                         signals, self.positions, self.current_balance
                     )
 
-                    # 7a. Pre-market filtering: limit strategies and reduce size
+                    # 7a. Pre-market / Post-market filtering: limit strategies and reduce size
                     if getattr(self, "_in_premarket", False):
                         pm_config = self.config.schedule_config.get("premarket", {})
+                        allowed = pm_config.get("allowed_strategies", [])
+                        size_mult = pm_config.get("reduce_size_pct", 0.5)
+                        if allowed:
+                            approved = [s for s in approved if s.get("strategy") in allowed]
+                        for sig in approved:
+                            if sig.get("quantity"):
+                                sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
+
+                    if getattr(self, "_in_postmarket", False):
+                        pm_config = self.config.schedule_config.get("postmarket", {})
                         allowed = pm_config.get("allowed_strategies", [])
                         size_mult = pm_config.get("reduce_size_pct", 0.5)
                         if allowed:
@@ -690,6 +701,18 @@ class TradingEngine:
 
         equity_open = actual_open <= now <= actual_close
         self._equity_market_open = equity_open
+
+        # Check postmarket window (after market close)
+        postmarket = sched.get("postmarket", {})
+        if postmarket.get("enabled", False) and now > market_close:
+            pm_end = postmarket.get("end_time", "18:00")
+            h_pm, m_pm = map(int, pm_end.split(":"))
+            pm_close = now.replace(hour=h_pm, minute=m_pm, second=0)
+            if now <= pm_close:
+                self._in_postmarket = True
+                self._equity_market_open = True
+                return True
+        self._in_postmarket = False
 
         # Return True if equity market is open OR if we have crypto (24/7)
         return equity_open or has_crypto
@@ -1934,6 +1957,7 @@ class TradingEngine:
             # dual-control conflicts with the bot's exit monitoring.
             # Use 'gtc' outside regular hours (pre-market/after-hours), 'day' during market
             tif = self._get_time_in_force()
+            extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
             order_data = {
                 "symbol": symbol,
                 "qty": str(qty),
@@ -1942,10 +1966,30 @@ class TradingEngine:
                 "time_in_force": tif,
             }
             # Extended hours require 'limit' orders on Alpaca, not 'market'
-            if tif == "gtc" and limit_price:
-                order_data["type"] = "limit"
-                order_data["limit_price"] = str(round(limit_price, 2))
-                order_data["extended_hours"] = True
+            # Auto-convert: use current price + small buffer to ensure fill
+            if extended or (tif == "gtc" and limit_price):
+                if not limit_price:
+                    # Fetch current price for limit order
+                    try:
+                        snap = _req.get(
+                            f"{base_url}/v2/snapshot?symbols={symbol}",
+                            headers=headers, timeout=5,
+                        )
+                        if snap.status_code == 200:
+                            snap_data = snap.json().get(symbol, {})
+                            last = float(snap_data.get("latestTrade", {}).get("p", 0))
+                            if last > 0:
+                                # Add 0.5% buffer for buys, subtract for sells
+                                buffer = 0.005
+                                limit_price = last * (1 + buffer) if side == "buy" else last * (1 - buffer)
+                    except Exception:
+                        pass
+                if limit_price:
+                    order_data["type"] = "limit"
+                    order_data["limit_price"] = str(round(limit_price, 2))
+                    order_data["extended_hours"] = True
+                    order_data["time_in_force"] = "day"  # Alpaca requires 'day' for extended_hours
+                    log.info(f"Extended hours limit order: {side} {symbol} @ ${limit_price:.2f}")
 
             resp = _req.post(
                 f"{base_url}/v2/orders",
@@ -2041,17 +2085,28 @@ class TradingEngine:
                 pos_data = pos_resp.json()
                 sell_qty = str(qty) if qty else str(abs(int(float(pos_data.get("qty", 0)))))
                 sell_side = "sell" if float(pos_data.get("qty", 0)) > 0 else "buy"
-                tif = self._get_time_in_force()
+                extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
+                sell_order = {
+                    "symbol": symbol,
+                    "qty": sell_qty,
+                    "side": sell_side,
+                    "type": "market",
+                    "time_in_force": self._get_time_in_force(),
+                }
+                # Extended hours: convert to limit order
+                if extended:
+                    cur_price = float(pos_data.get("current_price", 0))
+                    if cur_price > 0:
+                        buffer = 0.005
+                        lp = cur_price * (1 - buffer) if sell_side == "sell" else cur_price * (1 + buffer)
+                        sell_order["type"] = "limit"
+                        sell_order["limit_price"] = str(round(lp, 2))
+                        sell_order["extended_hours"] = True
+                        sell_order["time_in_force"] = "day"
                 sell_resp = _req.post(
                     f"{base_url}/v2/orders",
                     headers={**headers, "Content-Type": "application/json"},
-                    json={
-                        "symbol": symbol,
-                        "qty": sell_qty,
-                        "side": sell_side,
-                        "type": "market",
-                        "time_in_force": tif,
-                    },
+                    json=sell_order,
                     timeout=10,
                 )
                 if sell_resp.status_code in (200, 201):

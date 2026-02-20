@@ -73,6 +73,12 @@ schedule:
     allowed_strategies: ["momentum", "news_sentiment", "rvol_momentum", "rvol_scalp"]  # All aggressive strategies
     reduce_size_pct: 0.60         # Use 60% of normal position size (decent liquidity on big names)
 
+  postmarket:
+    enabled: true                  # Post-market trading enabled (catch after-hours moves)
+    end_time: "18:00"             # Trade until 6 PM ET (liquidity drops after that)
+    allowed_strategies: ["momentum", "news_sentiment", "mean_reversion"]
+    reduce_size_pct: 0.50         # Use 50% size — wider spreads after hours
+
   # --- Overnight Holding ---
   overnight:
     enabled: true                  # Allow holding overnight
