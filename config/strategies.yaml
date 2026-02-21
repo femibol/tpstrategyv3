@@ -5,14 +5,14 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  smc_forever: 0.12               # 12% - highest conviction model
-  mean_reversion: 0.08            # 8% of capital
-  momentum: 0.10                  # 10% of capital
-  rvol_momentum: 0.15             # 15% - Money Machine RVOL auto-trading (5-min)
-  rvol_scalp: 0.20                # 20% - RVOL scalp (1-min bars, quick in/out)
-  vwap_scalp: 0.08                # 8% of capital
-  pairs_trading: 0.12             # 12% of capital
-  prebreakout: 0.15               # 15% - Pre-breakout accumulation (catch runners early)
+  smc_forever: 0.08               # 8% - highest conviction but only 3 trades/week (was 12%)
+  mean_reversion: 0.10            # 10% - reliable on crypto + equities (was 8%)
+  momentum: 0.08                  # 8% - swing trades, slower timeframe (was 10%)
+  rvol_momentum: 0.18             # 18% - Money Machine RVOL, crypto-tuned (was 15%)
+  rvol_scalp: 0.25                # 25% - Best performer, 24/7 crypto capable (was 20%)
+  vwap_scalp: 0.05                # 5% - market hours only, 6 symbols (was 8%)
+  pairs_trading: 0.08             # 8% - adding crypto pairs (was 12%)
+  prebreakout: 0.18               # 18% - crypto-tuned breakout detection (was 15%)
 
 # --- Mean Reversion Strategy ---
 # Buy oversold, sell overbought - bread & butter for small accounts
@@ -22,13 +22,14 @@ mean_reversion:
   lookback_period: 20             # 20-period lookback
   entry_zscore: -1.8              # Lowered from -2.0 - catch more reversals
   exit_zscore: 0.0                # Exit at mean
-  rsi_oversold: 35                # Raised from 30 - more entries
-  rsi_overbought: 70              # RSI above 70
+  rsi_oversold: 32                # Lowered from 35 - crypto needs deeper oversold for real reversals
+  rsi_overbought: 72              # Slightly more room for crypto momentum
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5         # Min volatility filter
   max_holding_periods: 20         # Max hold 20 bars (100 min on 5m)
   max_hold_days: 3                # Mean reversion: max 3 days to revert
+  max_trades_per_day: 10          # Rate limit to prevent overtrading
   symbols:
     - SPY
     - QQQ
@@ -142,6 +143,11 @@ pairs_trading:
     - ["AMD", "NVDA"]
     - ["XLF", "JPM"]
     - ["SPY", "QQQ"]
+    # Crypto pairs (trade 24/7 - high correlation)
+    - ["BTC-USD", "ETH-USD"]      # Strongest crypto correlation
+    - ["SOL-USD", "AVAX-USD"]     # L1 competitors
+    - ["LINK-USD", "UNI-USD"]     # DeFi infrastructure
+    - ["DOGE-USD", "SHIB-USD"]    # Meme coins move together
 
 # --- SMC Forever Model (ICT / Smart Money Concepts) ---
 # Highest-conviction model: stacks liquidity + SMT + CISD + FVG + DOL
@@ -195,15 +201,15 @@ smc_forever:
 rvol_momentum:
   enabled: true
   timeframe: "5m"
-  min_rvol: 1.8                    # Lowered from 2.0 - catch more setups
-  min_score: 50                    # Lowered from 60 - more aggressive entry
+  min_rvol: 1.6                    # Lowered from 1.8 - catch more crypto setups (code applies 0.7x for crypto)
+  min_score: 48                    # Lowered from 50 - more aggressive (code applies 0.8x for crypto = 38)
   min_price: 2.00                  # Skip penny stocks below $2
   max_price: 800.00                # Higher cap for big names like NVDA
   min_volume: 150000               # Lowered from 200K - catch mid-caps
   atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR (momentum = fast exit)
   atr_target_multiplier: 3.0      # Target: 3x ATR (2:1 R/R)
   max_hold_minutes: 120            # Max 2 hours (intraday momentum only)
-  max_trades_per_day: 15           # Increased from 12 - more aggressive
+  max_trades_per_day: 18           # More trades per day (was 15)
   symbols:                         # Base watchlist (dynamic symbols get added automatically)
     - SPY
     - QQQ
@@ -260,10 +266,10 @@ rvol_scalp:
   min_volume: 80000                # Lowered from 100K - catch more setups
   atr_stop_multiplier: 1.0        # Very tight stop: 1x ATR
   atr_target_multiplier: 1.5      # Quick target: 1.5x ATR (take profit fast)
-  quick_scalp_target_pct: 0.006   # Take profit at +0.6% (faster exits)
-  runner_target_pct: 0.015        # Let runners go to +1.5%
-  max_hold_minutes: 12             # Max 12 minutes (faster turnover)
-  max_trades_per_day: 30           # More scalps per day (was 25)
+  quick_scalp_target_pct: 0.005   # Take profit at +0.5% (quicker exits, more trades)
+  runner_target_pct: 0.012        # Runners to +1.2% (tighter to lock in)
+  max_hold_minutes: 10             # Max 10 minutes (faster turnover for more volume)
+  max_trades_per_day: 35           # More scalps per day (was 30)
   same_candle_exit: true           # Exit on same candle if target hit
   price_poll_seconds: 3            # Check price every 3 seconds for exits
   breakout_confirmation_bars: 2    # 2 bars of confirmation before entry
