@@ -100,6 +100,11 @@ class TradingEngine:
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
         self._signal_cooldown_secs = 60  # Min seconds between signals for same symbol (was 120)
 
+        # Exit cooldown - prevent re-closing recently closed positions
+        # Tracks {symbol: close_datetime} to block re-entry via Alpaca sync
+        self._recently_closed = {}  # {symbol: datetime when closed}
+        self._exit_cooldown_secs = 300  # 5 minutes: don't re-add/re-close within this window
+
         # Performance tracking
         self.trade_history = []
         self.equity_curve = []
@@ -1507,6 +1512,20 @@ class TradingEngine:
 
     def _close_position(self, symbol, reason_type, reason_msg):
         """Close a position through broker chain. Thread-safe with double-close guard."""
+        # Exit cooldown: skip if this symbol was recently closed
+        # (prevents Alpaca sync re-add → monitor re-close → TradersPost rejection loop)
+        if symbol in self._recently_closed:
+            elapsed = (datetime.now(self.tz) - self._recently_closed[symbol]).total_seconds()
+            if elapsed < self._exit_cooldown_secs:
+                log.debug(
+                    f"EXIT COOLDOWN: {symbol} closed {elapsed:.0f}s ago "
+                    f"(cooldown {self._exit_cooldown_secs}s) — skipping re-close"
+                )
+                # Also clean up the re-added phantom position
+                with self._positions_lock:
+                    self.positions.pop(symbol, None)
+                return
+
         # Double-close guard: prevent concurrent close attempts
         if symbol in self._closing_in_progress:
             log.debug(f"Close already in progress for {symbol} — skipping duplicate")
@@ -1596,17 +1615,30 @@ class TradingEngine:
             if not close_broker:
                 log.error(f"ALL close attempts failed for {symbol}")
 
-            # Best-effort: also notify TradersPost so it can sync its state
+            # Best-effort: notify TradersPost so it can sync its state.
+            # Only send if the original position was entered via TradersPost
+            # (otherwise TradersPost has nothing to close, causing rejections).
             if alpaca_closed and self.tp_broker and close_broker == "Alpaca-Direct":
-                try:
-                    close_signal = {
-                        "symbol": symbol, "action": "exit",
-                        "quantity": pos["quantity"], "price": current_price,
-                        "source": "exit",
-                    }
-                    self.tp_broker.send_signal(close_signal)
-                except Exception:
-                    pass  # Best-effort notification, don't care if it fails
+                if original_broker in ("TradersPost",):
+                    try:
+                        close_signal = {
+                            "symbol": symbol, "action": "exit",
+                            "quantity": pos["quantity"], "price": current_price,
+                            "source": "exit",
+                        }
+                        tp_result = self.tp_broker.send_signal(close_signal)
+                        if tp_result and tp_result.get("rejected"):
+                            log.debug(
+                                f"TradersPost sync notification for {symbol} was rejected "
+                                f"(position may already be closed at TP) — ignoring"
+                            )
+                    except Exception:
+                        pass  # Best-effort notification
+                else:
+                    log.debug(
+                        f"Skipping TradersPost sync for {symbol} — "
+                        f"original broker was {original_broker}, not TradersPost"
+                    )
 
         # Only remove position if a broker ACTUALLY closed it this cycle
         if not close_broker:
@@ -1684,6 +1716,10 @@ class TradingEngine:
 
         with self._positions_lock:
             self.positions.pop(symbol, None)
+
+        # Record exit cooldown — prevents Alpaca sync from re-adding this
+        # position during settlement delay (causes duplicate exit rejections)
+        self._recently_closed[symbol] = datetime.now(self.tz)
 
     def _partial_close(self, symbol, qty_to_close, target_idx, target):
         """Close part of a position (profit taking)."""
@@ -2296,11 +2332,29 @@ class TradingEngine:
 
         broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
 
+        # Clean up expired entries from _recently_closed (older than cooldown window)
+        now = datetime.now(self.tz)
+        expired = [s for s, t in self._recently_closed.items()
+                   if (now - t).total_seconds() > self._exit_cooldown_secs]
+        for s in expired:
+            del self._recently_closed[s]
+
         with self._positions_lock:
             # Also sync positions that exist at broker but NOT in bot tracking
             for p in broker_positions:
                 sym = p.get("symbol", "").upper()
                 if sym and sym not in self.positions:
+                    # Skip symbols that were recently closed (settlement delay
+                    # can cause Alpaca to still show positions we already exited,
+                    # re-adding them causes duplicate exit signals to TradersPost)
+                    if sym in self._recently_closed:
+                        elapsed = (now - self._recently_closed[sym]).total_seconds()
+                        log.debug(
+                            f"POSITION SYNC: Skipping {sym} — closed {elapsed:.0f}s ago "
+                            f"(cooldown {self._exit_cooldown_secs}s)"
+                        )
+                        continue
+
                     qty = abs(float(p.get("qty", 0)))
                     entry = float(p.get("avg_entry_price", 0))
                     side = "long" if float(p.get("qty", 0)) > 0 else "short"
