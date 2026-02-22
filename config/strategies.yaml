@@ -5,14 +5,15 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  smc_forever: 0.08               # 8% - highest conviction but only 3 trades/week (was 12%)
-  mean_reversion: 0.10            # 10% - reliable on crypto + equities (was 8%)
-  momentum: 0.08                  # 8% - swing trades, slower timeframe (was 10%)
-  rvol_momentum: 0.18             # 18% - Money Machine RVOL, crypto-tuned (was 15%)
-  rvol_scalp: 0.25                # 25% - Best performer, 24/7 crypto capable (was 20%)
-  vwap_scalp: 0.05                # 5% - market hours only, 6 symbols (was 8%)
-  pairs_trading: 0.08             # 8% - adding crypto pairs (was 12%)
-  prebreakout: 0.18               # 18% - crypto-tuned breakout detection (was 15%)
+  smc_forever: 0.07               # 7% - highest conviction, 6 trades/week
+  mean_reversion: 0.08            # 8% - reliable on crypto + equities
+  momentum: 0.07                  # 7% - swing trades
+  rvol_momentum: 0.17             # 17% - Money Machine RVOL, crypto-tuned
+  rvol_scalp: 0.22                # 22% - Best performer, 24/7 crypto
+  vwap_scalp: 0.04                # 4% - market hours only, 6 symbols
+  pairs_trading: 0.07             # 7% - equity + crypto pairs
+  prebreakout: 0.16               # 16% - crypto-tuned breakout detection
+  premarket_gap: 0.12             # 12% - NEW: pre-market gap + pullback (6AM-10AM money maker)
 
 # --- Mean Reversion Strategy ---
 # Buy oversold, sell overbought - bread & butter for small accounts
@@ -393,6 +394,66 @@ prebreakout:
     - SHIB-USD
     - PEPE-USD
     - SUI-USD
+
+# --- Pre-Market Gap Scanner Strategy ---
+# Finds extreme pre-market gap-ups, waits for pullback, enters on structure break.
+# Based on proven approach: top 3 gainers + 10x volume + pullback entry
+premarket_gap:
+  enabled: true
+  timeframe: "5m"
+  min_gap_pct: 0.05               # Minimum 5% gap up from prior close
+  min_rvol: 10.0                  # 10x relative volume (extreme = institutional interest)
+  min_price: 1.00                 # Allow cheap stocks ($1+) - big % movers live here
+  max_price: 50.00                # Focus under $50 (low float, high % potential)
+  min_volume: 50000               # Min pre-market volume
+  pullback_min_pct: 0.02          # Min 2% pullback from leg 1 high
+  pullback_max_pct: 0.50          # Max 50% retracement (healthy = 30-50%)
+  atr_stop_multiplier: 1.2       # Tight stop: 1.2x ATR below pullback low
+  atr_target_multiplier: 3.0     # First target at 3x ATR
+  runner_atr_multiplier: 8.0     # Runner target at 8x ATR (let winners fly)
+  max_hold_minutes: 60            # Max 1 hour hold (pre-market moves are fast)
+  max_trades_per_day: 6           # Max 6 gap plays per day (only best setups)
+  max_candidates: 3               # Focus on top 3 gappers only
+  trailing_stop_pct: 0.025        # 2.5% trailing stop
+  start_hour: 6                   # Start scanning at 6 AM ET
+  end_hour: 10                    # Stop entries by 10 AM ET (morning fakeouts after)
+  symbols:
+    # High-beta stocks that gap hard on catalysts
+    - TSLA
+    - NVDA
+    - AMD
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - MSTR
+    - HOOD
+    - SOFI
+    - AFRM
+    - UPST
+    - IONQ
+    - RGTI
+    - SOUN
+    - AI
+    - BBAI
+    - RKLB
+    - LUNR
+    - ASTS
+    - RIVN
+    - LCID
+    - MARA
+    - RIOT
+    - CLSK
+    - GME
+    - AMC
+    - SNAP
+    - ROKU
+    - DKNG
+    - UBER
+    - CRWD
+    - SNOW
+    - MU
+    - AVGO
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts
