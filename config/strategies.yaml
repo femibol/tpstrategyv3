@@ -29,7 +29,7 @@ mean_reversion:
   min_atr_multiplier: 1.5         # Min volatility filter
   max_holding_periods: 20         # Max hold 20 bars (100 min on 5m)
   max_hold_days: 3                # Mean reversion: max 3 days to revert
-  max_trades_per_day: 10          # Rate limit to prevent overtrading
+  max_trades_per_day: 15          # More mean reversion trades (was 10)
   symbols:
     - SPY
     - QQQ
@@ -66,13 +66,13 @@ momentum:
   fast_ema: 8
   slow_ema: 21
   signal_ema: 5
-  adx_threshold: 22               # Lowered from 25 - catch trends earlier
-  volume_surge_multiplier: 1.3    # Lowered from 1.5 - more signals
+  adx_threshold: 20               # Even lower (was 22) - catch trends earliest
+  volume_surge_multiplier: 1.2    # Even lower (was 1.3) - more signals on crypto
   atr_period: 14
-  atr_stop_multiplier: 1.8        # Tighter stop: 1.8x ATR (was 2.0)
-  atr_target_multiplier: 3.5      # Target at 3.5x ATR (still great R:R)
+  atr_stop_multiplier: 1.5        # Tighter stop: 1.5x ATR (was 1.8 - faster cut)
+  atr_target_multiplier: 4.0      # Wider target: 4x ATR (was 3.5 - let winners ride)
   max_holding_bars: 40            # Max hold 40 bars (10 hours on 15m)
-  max_hold_days: 5                # Swing: hold up to 5 trading days
+  max_hold_days: 7                # Swing: hold up to 7 trading days (was 5 - catch week-long moves)
   breakout_lookback: 15           # Shorter lookback = more breakouts detected
   symbols:
     - SPY
@@ -112,11 +112,11 @@ vwap_scalp:
   vwap_bands: 2                   # Number of VWAP standard deviation bands
   entry_band: 1                   # Enter at 1st band
   exit_at_vwap: true              # Exit at VWAP
-  min_distance_from_vwap: 0.003   # Min 0.3% from VWAP to enter
-  max_distance_from_vwap: 0.015   # Max 1.5% from VWAP
+  min_distance_from_vwap: 0.002   # Min 0.2% from VWAP (was 0.3% - catch tighter bounces)
+  max_distance_from_vwap: 0.02    # Max 2% from VWAP (was 1.5% - catch bigger deviations)
   volume_confirmation: true        # Need volume spike to confirm
-  max_trades_per_day: 6           # Limit overtrading
-  max_holding_minutes: 30         # Quick scalps only
+  max_trades_per_day: 10          # More VWAP trades (was 6)
+  max_holding_minutes: 45         # Longer hold (was 30 min - let mean reversion work)
   symbols:
     - SPY
     - QQQ
@@ -131,9 +131,9 @@ pairs_trading:
   enabled: true
   timeframe: "15m"
   lookback_period: 60             # 60-period correlation window
-  min_correlation: 0.80           # Minimum correlation
-  entry_zscore: 2.0               # Enter when spread is 2 std devs
-  exit_zscore: 0.5                # Exit when spread narrows to 0.5
+  min_correlation: 0.70           # Lower correlation (was 0.80 - more pairs qualify)
+  entry_zscore: 1.8               # Enter earlier (was 2.0 - catch more divergences)
+  exit_zscore: 0.3                # Tighter exit (was 0.5 - squeeze more profit from convergence)
   stop_zscore: 3.5                # Stop if spread widens to 3.5
   max_holding_bars: 30            # Max hold 30 bars
   max_hold_days: 5                # Pairs: max 5 days for convergence
@@ -159,9 +159,9 @@ smc_forever:
   fvg_min_size_pct: 0.001           # Min FVG size as % of price (0.1%)
   smt_lookback: 10                  # Bars to compare for SMT divergence
   displacement_atr_mult: 1.5        # Displacement candle = 1.5x ATR body
-  risk_reward_min: 2.0              # Minimum 2:1 R/R or skip
-  max_trades_per_week: 3            # Cap weekly trades (selectivity)
-  max_hold_days: 7                   # SMC setups: hold up to 7 days
+  risk_reward_min: 1.5              # Lower R:R (was 2.0 - take more setups)
+  max_trades_per_week: 6            # Double weekly trades (was 3 - don't leave money on table)
+  max_hold_days: 10                  # SMC setups: hold up to 10 days (was 7 - let big moves play out)
   stop_buffer_pct: 0.002            # 0.2% buffer below FVG for stop
   smt_pairs:                        # Correlated pairs for SMT divergence
     - ["SPY", "QQQ"]
@@ -201,15 +201,15 @@ smc_forever:
 rvol_momentum:
   enabled: true
   timeframe: "5m"
-  min_rvol: 1.6                    # Lowered from 1.8 - catch more crypto setups (code applies 0.7x for crypto)
-  min_score: 48                    # Lowered from 50 - more aggressive (code applies 0.8x for crypto = 38)
-  min_price: 2.00                  # Skip penny stocks below $2
-  max_price: 800.00                # Higher cap for big names like NVDA
-  min_volume: 150000               # Lowered from 200K - catch mid-caps
+  min_rvol: 1.5                    # Lower threshold (crypto 0.7x = 1.05x effective - catch more)
+  min_score: 45                    # Lower score (crypto 0.8x = 36 effective - more aggressive)
+  min_price: 1.00                  # Allow $1+ stocks (was $2 - big % movers are cheap)
+  max_price: 1500.00               # Higher cap (was $800 - don't miss AVGO, GOOG)
+  min_volume: 100000               # Lower volume (was 150K - catch more mid-caps)
   atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR (momentum = fast exit)
-  atr_target_multiplier: 3.0      # Target: 3x ATR (2:1 R/R)
-  max_hold_minutes: 120            # Max 2 hours (intraday momentum only)
-  max_trades_per_day: 18           # More trades per day (was 15)
+  atr_target_multiplier: 4.0      # Wider target: 4x ATR (was 3x - let runners go)
+  max_hold_minutes: 180            # Max 3 hours (was 2 - give momentum time to play out)
+  max_trades_per_day: 25           # 25 trades/day (was 18 - this is the money machine)
   symbols:                         # Base watchlist (dynamic symbols get added automatically)
     - SPY
     - QQQ
@@ -259,17 +259,17 @@ rvol_momentum:
 rvol_scalp:
   enabled: true
   timeframe: "1m"
-  min_rvol: 1.5                    # Lowered from 1.8 - catch more scalp setups
-  min_score: 45                    # Lowered from 50 - faster entries on momentum
+  min_rvol: 1.8                    # Back to 1.8 (crypto 0.7x = 1.26x effective, was 1.05x = noise)
+  min_score: 50                    # Back to 50 (crypto 0.8x = 40 effective, was 36 = too loose)
   min_price: 2.00                  # Skip penny stocks below $2
   max_price: 800.00                # Higher cap for big names
   min_volume: 80000                # Lowered from 100K - catch more setups
   atr_stop_multiplier: 1.0        # Very tight stop: 1x ATR
   atr_target_multiplier: 1.5      # Quick target: 1.5x ATR (take profit fast)
-  quick_scalp_target_pct: 0.005   # Take profit at +0.5% (quicker exits, more trades)
-  runner_target_pct: 0.012        # Runners to +1.2% (tighter to lock in)
-  max_hold_minutes: 10             # Max 10 minutes (faster turnover for more volume)
-  max_trades_per_day: 35           # More scalps per day (was 30)
+  quick_scalp_target_pct: 0.004   # Take profit at +0.4% (even quicker - high frequency)
+  runner_target_pct: 0.015        # Runners to +1.5% (let strong ones go further)
+  max_hold_minutes: 8              # Max 8 minutes (even faster turnover)
+  max_trades_per_day: 50           # 50 scalps/day (was 35 - this is the volume machine)
   same_candle_exit: true           # Exit on same candle if target hit
   price_poll_seconds: 3            # Check price every 3 seconds for exits
   breakout_confirmation_bars: 2    # 2 bars of confirmation before entry
@@ -325,22 +325,22 @@ rvol_scalp:
 prebreakout:
   enabled: true
   timeframe: "5m"
-  min_score: 50                    # Composite score threshold
+  min_score: 45                    # Lower threshold (was 50 - catch more breakouts)
   min_price: 0.50                  # Low price OK - these are where big % moves happen
-  max_price: 800.00                # Higher cap for big names
-  min_volume: 100000               # Min avg daily volume
+  max_price: 1500.00               # Higher cap (was $800 - don't miss expensive runners)
+  min_volume: 75000                # Lower volume (was 100K - catch early-stage runners)
   bollinger_period: 20             # BB period
   bollinger_std: 2.0               # BB standard deviations
   squeeze_lookback: 50             # Bars to compare for squeeze detection
-  squeeze_percentile: 25           # Band width must be in bottom 25% = squeeze
+  squeeze_percentile: 30           # Wider squeeze detection (was 25% - catch more setups)
   vol_build_bars: 5                # Recent bars to measure volume buildup
-  vol_build_multiplier: 1.3        # Recent vol must be 1.3x the lookback avg
+  vol_build_multiplier: 1.2        # Lower vol requirement (was 1.3x - earlier detection)
   atr_stop_multiplier: 2.0         # Stop at 2x ATR below (room to breathe)
-  atr_target_multiplier: 5.0       # First target at 5x ATR (wide for runners)
-  runner_atr_multiplier: 10.0      # Runner target at 10x ATR (multi-bagger territory)
-  max_hold_days: 5                 # Hold up to 5 days (breakouts can take days to play out)
-  max_trades_per_day: 8            # Max 8 breakout entries per day
-  trailing_stop_pct: 0.03          # 3% trailing stop (wide - let it breathe)
+  atr_target_multiplier: 6.0       # First target at 6x ATR (was 5x - bigger targets)
+  runner_atr_multiplier: 15.0      # Runner target at 15x ATR (was 10x - full send on runners)
+  max_hold_days: 7                 # Hold up to 7 days (was 5 - give breakouts time to develop)
+  max_trades_per_day: 12           # Max 12 breakout entries (was 8 - catch more setups)
+  trailing_stop_pct: 0.035         # 3.5% trailing stop (was 3% - wider to survive shakeouts)
   symbols:
     # High-beta stocks that make big breakout moves
     - TSLA

@@ -12,48 +12,50 @@ trading_profile: hybrid
 # --- Capital & Account ---
 capital:
   starting_balance: 47000         # Synced to real Alpaca paper account (overridden on startup)
-  max_portfolio_risk: 0.10        # Max 10% of capital at risk at any time
-  max_daily_loss: 0.04            # Stop trading if down 4% in a day (~$1,880)
-  max_drawdown: 0.12              # Emergency stop if down 12% from peak (~$5,640)
-  reserve_cash_pct: 0.10          # Keep 10% cash reserve (~$4,700)
+  max_portfolio_risk: 0.20        # Max 20% of capital at risk (was 10% - deploy more)
+  max_daily_loss: 0.06            # Stop trading if down 6% (~$2,820) - more room to recover
+  max_drawdown: 0.18              # Emergency stop at 18% from peak (~$8,460) - paper = learn aggro
+  reserve_cash_pct: 0.05          # Only 5% cash reserve (~$2,350) - put money to work
 
 # --- Risk Management ---
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
-  max_position_size_pct: 0.12     # Max 12% of capital per position (~$5.6K) - smaller to fit more positions
-  max_positions: 12               # Max 12 concurrent positions (was 10) - more crypto + equity slots
-  risk_per_trade_pct: 0.015       # Risk 1.5% per trade (~$705)
-  max_correlated_positions: 3     # Max 3 positions in same sector (was 2) - crypto counts as one sector
-  stop_loss_pct: 0.025            # 2.5% stop loss (tighter = faster out on losers)
-  trailing_stop_pct: 0.016        # 1.6% trailing stop (was 1.8% - lock in faster)
-  take_profit_pct: 0.10           # 10% take profit (let runners ride - partial exits lock in early)
+  max_position_size_pct: 0.15     # Max 15% of capital per position (~$7K) - bigger bets
+  max_positions: 18               # Max 18 concurrent positions (was 12 - much more active)
+  max_equity_positions: 12        # Max 12 equity positions (was 8 - catch more morning plays)
+  max_crypto_positions: 8         # Max 8 crypto positions (was 6 - crypto runs 24/7)
+  risk_per_trade_pct: 0.02        # Risk 2% per trade (~$940) - more aggressive sizing
+  max_correlated_positions: 4     # Max 4 in same sector (was 3 - let winners cluster)
+  stop_loss_pct: 0.025            # 2.5% stop loss (keep tight - fast out on losers)
+  trailing_stop_pct: 0.014        # 1.4% trailing stop (was 1.6% - lock in even faster)
+  take_profit_pct: 0.15           # 15% take profit (was 10% - let the big runners RUN)
   max_slippage_pct: 0.005         # Max 0.5% slippage allowed
 
   # --- Profit Taking (Partial Exits) ---
   profit_taking:
     enabled: true
-    # Scale out at multiple targets (percentage of position to close)
+    # Scale out at multiple targets - WIDER to let profits run
     targets:
-      - pct_from_entry: 0.015     # At +1.5% profit - take first bite early
-        close_pct: 0.25           # Close 25% of position
+      - pct_from_entry: 0.02      # At +2% profit (was 1.5% - give more room)
+        close_pct: 0.20           # Close only 20% (was 25% - keep more in play)
         move_stop: "breakeven"    # Move stop to break even
-      - pct_from_entry: 0.03      # At +3% profit
-        close_pct: 0.33           # Close 33% of remaining
+      - pct_from_entry: 0.05      # At +5% profit (was 3% - let it cook)
+        close_pct: 0.25           # Close 25% of remaining (was 33%)
+        tighten_trail: 0.012      # Tighten to 1.2% trail (was 1%)
+      - pct_from_entry: 0.08      # At +8% profit (was 5%)
+        close_pct: 0.25           # Close 25% of remaining (was 33%)
         tighten_trail: 0.01       # Tighten trailing stop to 1%
-      - pct_from_entry: 0.05      # At +5% profit
-        close_pct: 0.33           # Close 33% of remaining
-        tighten_trail: 0.01       # Tighten trailing stop to 1%
-      - pct_from_entry: 0.08      # At +8% profit (runner territory)
+      - pct_from_entry: 0.12      # At +12% profit (was 8% - REAL runner territory)
         close_pct: 0.50           # Close 50% of remaining
-        tighten_trail: 0.006      # Very tight 0.6% trail on runner
+        tighten_trail: 0.008      # 0.8% trail on runner (protect the bag)
 
   # --- Break Even Stop ---
   breakeven:
     enabled: true
     trigger_pct: 0.01             # Move stop to BE after 1% profit (faster protection)
     buffer_pct: 0.001             # Small buffer above entry (0.1%) to cover commissions
-  min_volume: 500000              # Minimum avg daily volume
-  min_price: 5.00                 # No penny stocks
+  min_volume: 300000              # Lower volume threshold (was 500K - catch more movers)
+  min_price: 2.00                 # Allow low-priced stocks (was $5 - big % movers are here)
   max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)
 
 # --- Trading Schedule ---
@@ -69,24 +71,24 @@ schedule:
   # --- Pre-market / Extended Hours ---
   premarket:
     enabled: true                  # Pre-market trading enabled (catches gap plays)
-    start_time: "07:00"           # Start pre-market scanning at 7 AM for gap scanners
-    allowed_strategies: ["momentum", "news_sentiment", "rvol_momentum", "rvol_scalp"]  # All aggressive strategies
-    reduce_size_pct: 0.60         # Use 60% of normal position size (decent liquidity on big names)
+    start_time: "06:00"           # Start earlier at 6 AM (was 7 AM - catch early movers)
+    allowed_strategies: ["momentum", "news_sentiment", "rvol_momentum", "rvol_scalp", "prebreakout"]
+    reduce_size_pct: 0.70         # Use 70% of normal size (was 60% - be bolder)
 
   postmarket:
     enabled: true                  # Post-market trading enabled (catch after-hours moves)
-    end_time: "18:00"             # Trade until 6 PM ET (liquidity drops after that)
-    allowed_strategies: ["momentum", "news_sentiment", "mean_reversion"]
-    reduce_size_pct: 0.50         # Use 50% size — wider spreads after hours
+    end_time: "20:00"             # Trade until 8 PM ET (was 6 PM - catch earnings reactions)
+    allowed_strategies: ["momentum", "news_sentiment", "mean_reversion", "rvol_momentum"]
+    reduce_size_pct: 0.60         # Use 60% size (was 50% - more conviction)
 
   # --- Overnight Holding ---
   overnight:
     enabled: true                  # Allow holding overnight
     require_profit: true           # Only hold if position is in profit
-    min_profit_pct: 0.01          # Minimum 1% profit to hold overnight
+    min_profit_pct: 0.005         # Minimum 0.5% profit to hold overnight (was 1% - hold more winners)
     require_uptrend: true          # Only hold if in uptrend (EMA fast > slow)
-    tighten_stop_pct: 0.02        # Tighten stop to 2% for overnight holds
-    max_overnight_positions: 3    # Max 3 positions held overnight
+    tighten_stop_pct: 0.018       # Tighten stop to 1.8% for overnight (was 2%)
+    max_overnight_positions: 6    # Max 6 positions held overnight (was 3 - carry more winners)
     close_losers: true            # Always close losing positions at EOD
 
 # --- Scaling Plan ---
@@ -95,25 +97,25 @@ scaling:
   enabled: true
   tiers:
     - min_balance: 5000
-      max_positions: 6
-      risk_per_trade: 0.02
+      max_positions: 8
+      risk_per_trade: 0.025
       max_position_pct: 0.25
     - min_balance: 10000
-      max_positions: 8
-      risk_per_trade: 0.02
-      max_position_pct: 0.20
+      max_positions: 12
+      risk_per_trade: 0.025
+      max_position_pct: 0.18
     - min_balance: 25000
-      max_positions: 14
-      risk_per_trade: 0.015
-      max_position_pct: 0.10
-    - min_balance: 50000
       max_positions: 18
-      risk_per_trade: 0.018
-      max_position_pct: 0.08
-    - min_balance: 100000
-      max_positions: 25
       risk_per_trade: 0.02
-      max_position_pct: 0.06
+      max_position_pct: 0.12
+    - min_balance: 50000
+      max_positions: 25
+      risk_per_trade: 0.025
+      max_position_pct: 0.10
+    - min_balance: 100000
+      max_positions: 35
+      risk_per_trade: 0.025
+      max_position_pct: 0.08
 
 # --- Hedging ---
 # Automatic portfolio protection via inverse ETFs during bearish regimes
@@ -167,9 +169,9 @@ crypto:
     trading_24h: true             # Trade crypto 24 hours a day
     trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
   risk:
-    max_position_size_pct: 0.10   # Smaller size for crypto (more volatile)
-    stop_loss_pct: 0.035          # Tighter stop for crypto (was 5% - too much drawdown)
-    trailing_stop_pct: 0.025      # Tighter trailing (was 3% - gave back too much profit)
+    max_position_size_pct: 0.12   # Bigger crypto positions (was 10% - crypto is the 24/7 money maker)
+    stop_loss_pct: 0.04           # 4% stop for crypto (tight enough to limit damage, wide enough to breathe)
+    trailing_stop_pct: 0.025      # 2.5% trailing (locks in crypto profits)
 
 # --- Data Sources ---
 data:
