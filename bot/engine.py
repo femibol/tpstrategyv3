@@ -32,6 +32,7 @@ from bot.strategies.smc_forever import SMCForeverStrategy
 from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
+from bot.strategies.premarket_gap import PreMarketGapStrategy
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
@@ -309,6 +310,7 @@ class TradingEngine:
             "rvol_momentum": RvolMomentumStrategy,
             "rvol_scalp": RvolScalpStrategy,
             "prebreakout": PreBreakoutStrategy,
+            "premarket_gap": PreMarketGapStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -354,6 +356,11 @@ class TradingEngine:
         if prebreakout_strat and hasattr(prebreakout_strat, "add_dynamic_symbols"):
             prebreakout_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into pre-breakout")
+
+        gap_strat = self.strategies.get("premarket_gap")
+        if gap_strat and hasattr(gap_strat, "add_dynamic_symbols"):
+            gap_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into pre-market gap")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
