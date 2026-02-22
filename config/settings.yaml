@@ -22,8 +22,8 @@ risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
   max_position_size_pct: 0.15     # Max 15% of capital per position (~$7K) - bigger bets
   max_positions: 18               # Max 18 concurrent positions (was 12 - much more active)
-  max_equity_positions: 12        # Max 12 equity positions (was 8 - catch more morning plays)
-  max_crypto_positions: 8         # Max 8 crypto positions (was 6 - crypto runs 24/7)
+  max_equity_positions: 18        # Max 18 equity positions (crypto paused - all slots for stocks)
+  max_crypto_positions: 0         # Crypto paused - all capital redirected to equities
   risk_per_trade_pct: 0.02        # Risk 2% per trade (~$940) - more aggressive sizing
   max_correlated_positions: 4     # Max 4 in same sector (was 3 - let winners cluster)
   stop_loss_pct: 0.025            # 2.5% stop loss (keep tight - fast out on losers)
@@ -140,38 +140,30 @@ watchlist:
     - SPY
     - QQQ
     - AB          # Pelosi pick
-    # Crypto (trades 24/7 via Alpaca)
-    - BTC-USD     # Bitcoin
-    - ETH-USD     # Ethereum
-    - SOL-USD     # Solana
-    - DOGE-USD    # Dogecoin
-    - AVAX-USD    # Avalanche
-    - LINK-USD    # Chainlink
-    - XRP-USD     # Ripple
-    - ADA-USD     # Cardano
-    - MATIC-USD   # Polygon
-    - SHIB-USD    # Shiba Inu
-    - PEPE-USD    # Pepe
-    - DOT-USD     # Polkadot
-    - UNI-USD     # Uniswap
-    - LTC-USD     # Litecoin
-    - NEAR-USD    # Near Protocol
-    - AAVE-USD    # Aave
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - AVGO
+    - SOFI
+    - HOOD
+    - MSTR
+    - CRWD
   auto_add_politician_picks: true   # Auto-add symbols from politician tracker
   track_weekly_performance: true    # Track weekly P&L per symbol
 
 # --- Crypto Configuration ---
-# Crypto symbols trade 24/7 and bypass stock market hours
+# PAUSED: All capital redirected to equities for more stock positions
 crypto:
-  enabled: true
+  enabled: false                  # PAUSED - focusing all capital on equities
   symbols_suffix: ["-USD", "-USDT", "-BTC", "-ETH"]  # How we detect crypto tickers
   schedule:
-    trading_24h: true             # Trade crypto 24 hours a day
+    trading_24h: false            # Disabled - no 24/7 trading
     trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
   risk:
-    max_position_size_pct: 0.12   # Bigger crypto positions (was 10% - crypto is the 24/7 money maker)
-    stop_loss_pct: 0.04           # 4% stop for crypto (tight enough to limit damage, wide enough to breathe)
-    trailing_stop_pct: 0.025      # 2.5% trailing (locks in crypto profits)
+    max_position_size_pct: 0.12
+    stop_loss_pct: 0.04
+    trailing_stop_pct: 0.025
 
 # --- Data Sources ---
 data:

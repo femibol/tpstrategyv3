@@ -5,15 +5,15 @@
 # --- Strategy Allocation ---
 # How capital is split across strategies
 allocation:
-  smc_forever: 0.07               # 7% - highest conviction, 6 trades/week
-  mean_reversion: 0.08            # 8% - reliable on crypto + equities
-  momentum: 0.07                  # 7% - swing trades
-  rvol_momentum: 0.17             # 17% - Money Machine RVOL, crypto-tuned
-  rvol_scalp: 0.22                # 22% - Best performer, 24/7 crypto
-  vwap_scalp: 0.04                # 4% - market hours only, 6 symbols
-  pairs_trading: 0.07             # 7% - equity + crypto pairs
-  prebreakout: 0.16               # 16% - crypto-tuned breakout detection
-  premarket_gap: 0.12             # 12% - NEW: pre-market gap + pullback (6AM-10AM money maker)
+  smc_forever: 0.07               # 7% - highest conviction, equities only now
+  mean_reversion: 0.08            # 8% - reliable, equities only now
+  momentum: 0.08                  # 8% - swing trades, equities only (+1%)
+  rvol_momentum: 0.20             # 20% - Money Machine, ALL stocks now (+3%)
+  rvol_scalp: 0.22                # 22% - Best performer, ALL stocks now
+  vwap_scalp: 0.05                # 5% - market hours scalping (+1%)
+  pairs_trading: 0.04             # 4% - equity pairs only now (-3%)
+  prebreakout: 0.12               # 12% - equities only now (-4%)
+  premarket_gap: 0.14             # 14% - pre-market gap plays (+2%)
 
 # --- Mean Reversion Strategy ---
 # Buy oversold, sell overbought - bread & butter for small accounts
@@ -42,22 +42,12 @@ mean_reversion:
     - META
     - NVDA
     - AMD
-    - BTC-USD
-    - ETH-USD
-    - SOL-USD
-    - DOGE-USD
-    - AVAX-USD
-    - LINK-USD
-    - XRP-USD
-    - ADA-USD
-    - MATIC-USD
-    - SHIB-USD
-    - PEPE-USD
-    - DOT-USD
-    - UNI-USD
-    - LTC-USD
-    - NEAR-USD
-    - AAVE-USD
+    - TSLA
+    - PLTR
+    - SOFI
+    - COIN
+    - AVGO
+    - MU
 
 # --- Momentum / Trend Following ---
 # Ride strong trends - let winners run
@@ -88,22 +78,14 @@ momentum:
     - META
     - GOOGL
     - NFLX
-    - BTC-USD
-    - ETH-USD
-    - SOL-USD
-    - DOGE-USD
-    - AVAX-USD
-    - LINK-USD
-    - XRP-USD
-    - ADA-USD
-    - MATIC-USD
-    - SHIB-USD
-    - PEPE-USD
-    - DOT-USD
-    - UNI-USD
-    - LTC-USD
-    - NEAR-USD
-    - AAVE-USD
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - AVGO
+    - CRWD
+    - UBER
+    - DKNG
 
 # --- VWAP Scalping ---
 # Trade around VWAP like institutional desks
@@ -144,11 +126,9 @@ pairs_trading:
     - ["AMD", "NVDA"]
     - ["XLF", "JPM"]
     - ["SPY", "QQQ"]
-    # Crypto pairs (trade 24/7 - high correlation)
-    - ["BTC-USD", "ETH-USD"]      # Strongest crypto correlation
-    - ["SOL-USD", "AVAX-USD"]     # L1 competitors
-    - ["LINK-USD", "UNI-USD"]     # DeFi infrastructure
-    - ["DOGE-USD", "SHIB-USD"]    # Meme coins move together
+    - ["TSLA", "RIVN"]            # EV sector pair
+    - ["COIN", "HOOD"]            # Fintech/crypto exposure pair
+    - ["CRWD", "SNOW"]            # Cloud/cyber pair
 
 # --- SMC Forever Model (ICT / Smart Money Concepts) ---
 # Highest-conviction model: stacks liquidity + SMT + CISD + FVG + DOL
@@ -179,22 +159,12 @@ smc_forever:
     - META
     - GOOGL
     - TSLA
-    - BTC-USD
-    - ETH-USD
-    - SOL-USD
-    - DOGE-USD
-    - AVAX-USD
-    - LINK-USD
-    - XRP-USD
-    - ADA-USD
-    - MATIC-USD
-    - SHIB-USD
-    - PEPE-USD
-    - DOT-USD
-    - UNI-USD
-    - LTC-USD
-    - NEAR-USD
-    - AAVE-USD
+    - PLTR
+    - COIN
+    - SMCI
+    - ARM
+    - AVGO
+    - NFLX
 
 # --- RVOL Momentum Strategy (Money Machine) ---
 # Auto-trades high relative volume stocks like Trade Ideas Money Machine
@@ -237,22 +207,11 @@ rvol_momentum:
     - UBER
     - DKNG
     - RBLX
-    - BTC-USD
-    - ETH-USD
-    - SOL-USD
-    - DOGE-USD
-    - AVAX-USD
-    - LINK-USD
-    - XRP-USD
-    - ADA-USD
-    - MATIC-USD
-    - SHIB-USD
-    - PEPE-USD
-    - DOT-USD
-    - UNI-USD
-    - LTC-USD
-    - NEAR-USD
-    - AAVE-USD
+    - AFRM
+    - UPST
+    - IONQ
+    - RGTI
+    - SOUN
 
 # --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
 # Ultra-fast scalping on 1-minute bars with real-time profit taking
@@ -301,22 +260,16 @@ rvol_scalp:
     - UBER
     - DKNG
     - RBLX
-    - BTC-USD
-    - ETH-USD
-    - SOL-USD
-    - DOGE-USD
-    - AVAX-USD
-    - LINK-USD
-    - XRP-USD
-    - ADA-USD
-    - MATIC-USD
-    - SHIB-USD
-    - PEPE-USD
-    - DOT-USD
-    - UNI-USD
-    - LTC-USD
-    - NEAR-USD
-    - AAVE-USD
+    - AFRM
+    - UPST
+    - IONQ
+    - RGTI
+    - SOUN
+    - AI
+    - BBAI
+    - RKLB
+    - MARA
+    - RIOT
 
 # --- Pre-Breakout Accumulation Strategy ---
 # Enters BEFORE the breakout by detecting accumulation:
@@ -374,26 +327,15 @@ prebreakout:
     - SNAP
     - ROKU
     - DKNG
-    # Crypto (huge breakout potential)
-    - BTC-USD
-    - ETH-USD
-    - SOL-USD
-    - DOGE-USD
-    - AVAX-USD
-    - LINK-USD
-    - XRP-USD
-    - ADA-USD
-    - MATIC-USD
-    - SHIB-USD
-    - PEPE-USD
-    - DOT-USD
-    - UNI-USD
-    - LTC-USD
-    - NEAR-USD
-    - AAVE-USD
-    - SHIB-USD
-    - PEPE-USD
-    - SUI-USD
+    - UBER
+    - CRWD
+    - SNOW
+    - MU
+    - AVGO
+    - NFLX
+    - RBLX
+    - AI
+    - BBAI
 
 # --- Pre-Market Gap Scanner Strategy ---
 # Finds extreme pre-market gap-ups, waits for pullback, enters on structure break.
