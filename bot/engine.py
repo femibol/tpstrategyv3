@@ -976,7 +976,10 @@ class TradingEngine:
                     )
 
             # --- Partial Profit Taking ---
-            if pt_enabled and pos["quantity"] > 1:
+            # Skip tiered profit-taking entirely for scalp strategies
+            # (they use their own quick_scalp_target / runner exits)
+            is_scalp_pos = pos.get("strategy") in ("rvol_scalp", "vwap_scalp")
+            if pt_enabled and pos["quantity"] > 1 and not is_scalp_pos:
                 targets_hit = pos.get("targets_hit", [])
                 # Breakout plays: skip early profit-taking tiers (let runners run)
                 # Only start taking profit at tier 2+ (3%+) for breakout plays
@@ -1322,6 +1325,27 @@ class TradingEngine:
                         log.error(
                             f"HARD LIMIT: Alpaca has {actual_count} open positions "
                             f"(max {self.risk_manager.max_positions}). BLOCKING {action.upper()} {symbol}."
+                        )
+                        return
+
+                    # Enforce separate crypto/equity position limits
+                    is_crypto_entry = self._is_crypto_symbol(symbol)
+                    risk_cfg = self.config.settings.get("risk", {})
+                    max_crypto = risk_cfg.get("max_crypto_positions", 6)
+                    max_equity = risk_cfg.get("max_equity_positions", 8)
+                    crypto_count = sum(1 for p in broker_positions
+                                       if self._is_crypto_symbol(p.get("symbol", "")))
+                    equity_count = actual_count - crypto_count
+                    if is_crypto_entry and crypto_count >= max_crypto:
+                        log.warning(
+                            f"CRYPTO LIMIT: {crypto_count} crypto positions open "
+                            f"(max {max_crypto}). BLOCKING {symbol}."
+                        )
+                        return
+                    if not is_crypto_entry and equity_count >= max_equity:
+                        log.warning(
+                            f"EQUITY LIMIT: {equity_count} equity positions open "
+                            f"(max {max_equity}). BLOCKING {symbol}."
                         )
                         return
 
@@ -2781,10 +2805,16 @@ class TradingEngine:
                     positions_to_close.append(symbol)
                     continue
 
-                # NEVER hold RVOL momentum plays overnight (these are intraday only)
-                if pos.get("strategy") == "rvol_momentum":
-                    log.info(f"RVOL EXIT: Closing {symbol} - RVOL momentum is intraday only")
+                # NEVER hold RVOL scalp or RVOL momentum plays overnight (intraday only)
+                if pos.get("strategy") in ("rvol_momentum", "rvol_scalp"):
+                    log.info(f"RVOL EXIT: Closing {symbol} - {pos.get('strategy')} is intraday only")
                     positions_to_close.append(symbol)
+                    continue
+
+                # Crypto positions trade 24/7 - skip EOD close entirely
+                if self._is_crypto_symbol(symbol):
+                    log.info(f"CRYPTO HOLD: {symbol} trades 24/7 - skipping EOD close | P&L: {pnl_pct:.1%}")
+                    overnight_holds.append(symbol)
                     continue
 
                 should_hold = False
@@ -2792,8 +2822,10 @@ class TradingEngine:
                     min_profit = overnight_cfg.get("min_profit_pct", 0.01)
                     # Breakout plays: lower threshold to hold overnight (these are multi-day plays)
                     is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
-                    if is_breakout:
-                        min_profit = min(min_profit, 0.005)  # Only need 0.5% profit to hold breakout overnight
+                    # SMC Forever: A+ setups are designed for multi-day holds
+                    is_smc = pos.get("strategy") == "smc_forever"
+                    if is_breakout or is_smc:
+                        min_profit = min(min_profit, 0.005)  # Only need 0.5% profit to hold overnight
                     if pnl_pct >= min_profit:
                         # Check if in uptrend (price above entry, which we already know if profitable)
                         should_hold = True

@@ -21,7 +21,9 @@ capital:
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
   max_position_size_pct: 0.12     # Max 12% of capital per position (~$5.6K) - smaller to fit more positions
-  max_positions: 12               # Max 12 concurrent positions (was 10) - more crypto + equity slots
+  max_positions: 12               # Max 12 concurrent positions (total cap)
+  max_equity_positions: 8         # Max 8 equity positions (prevents crypto eating equity slots)
+  max_crypto_positions: 6         # Max 6 crypto positions (prevents overexposure to one sector)
   risk_per_trade_pct: 0.015       # Risk 1.5% per trade (~$705)
   max_correlated_positions: 3     # Max 3 positions in same sector (was 2) - crypto counts as one sector
   stop_loss_pct: 0.025            # 2.5% stop loss (tighter = faster out on losers)
