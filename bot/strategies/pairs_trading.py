@@ -70,15 +70,18 @@ class PairsTradingStrategy(BaseStrategy):
         closes_a = bars_a["close"].values[-self.lookback:]
         closes_b = bars_b["close"].values[-self.lookback:]
 
-        # Check correlation
-        correlation = np.corrcoef(closes_a, closes_b)[0, 1]
+        # Check correlation (guard against NaN from constant/flat price data)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            correlation = np.corrcoef(closes_a, closes_b)[0, 1]
+        if np.isnan(correlation) or np.isinf(correlation):
+            return signals
 
         # Calculate spread (ratio method - more stable than difference)
         ratio = closes_a / np.where(closes_b > 0, closes_b, 1)
         mean_ratio = np.mean(ratio)
         std_ratio = np.std(ratio)
 
-        if std_ratio == 0:
+        if std_ratio < 1e-10:
             return signals
 
         current_ratio = ratio[-1]
@@ -102,15 +105,19 @@ class PairsTradingStrategy(BaseStrategy):
         else:
             verdict = "NEUTRAL"
 
+        # Sanitize all numeric values to prevent NaN in JSON responses
+        def _safe(v, decimals=2):
+            return round(v, decimals) if np.isfinite(v) else 0.0
+
         self.scan_results[pair_key] = {
             "symbol_a": symbol_a,
             "symbol_b": symbol_b,
-            "price_a": round(price_a, 2),
-            "price_b": round(price_b, 2),
-            "correlation": round(correlation, 3),
-            "zscore": round(zscore, 2),
-            "ratio": round(current_ratio, 4),
-            "mean_ratio": round(mean_ratio, 4),
+            "price_a": _safe(price_a, 2),
+            "price_b": _safe(price_b, 2),
+            "correlation": _safe(correlation, 3),
+            "zscore": _safe(zscore, 2),
+            "ratio": _safe(current_ratio, 4),
+            "mean_ratio": _safe(mean_ratio, 4),
             "is_active": is_active,
             "entry_threshold": self.entry_zscore,
             "verdict": verdict,
