@@ -4,8 +4,10 @@ Shows live P&L, positions, equity curve, and system status.
 Mobile-responsive with touch controls for phone access via Render.
 """
 import os
+import io
+import csv
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import Flask, render_template, jsonify, request
@@ -98,7 +100,52 @@ class Dashboard:
 
         @self.app.route("/api/trades")
         def trades():
-            return jsonify(self.engine.trade_history[-50:])
+            from flask import request as req
+            trades_list = list(self.engine.trade_history)
+            # Optional date filtering
+            start = req.args.get("start")  # ISO date: 2026-02-21
+            end = req.args.get("end")
+            strategy = req.args.get("strategy")
+            symbol = req.args.get("symbol")
+            limit = int(req.args.get("limit", 100))
+
+            if start:
+                trades_list = [t for t in trades_list
+                               if str(t.get("exit_time", t.get("entry_time", ""))) >= start]
+            if end:
+                trades_list = [t for t in trades_list
+                               if str(t.get("exit_time", t.get("entry_time", ""))) <= end + "T23:59:59"]
+            if strategy:
+                trades_list = [t for t in trades_list if t.get("strategy") == strategy]
+            if symbol:
+                trades_list = [t for t in trades_list if t.get("symbol") == symbol.upper()]
+
+            return jsonify(trades_list[-limit:])
+
+        @self.app.route("/api/trades/export")
+        def trades_export():
+            """Export all trades as CSV for review."""
+            from flask import request as req, Response
+            trades_list = list(self.engine.trade_history)
+            start = req.args.get("start")
+            end = req.args.get("end")
+            if start:
+                trades_list = [t for t in trades_list
+                               if str(t.get("exit_time", t.get("entry_time", ""))) >= start]
+            if end:
+                trades_list = [t for t in trades_list
+                               if str(t.get("exit_time", t.get("entry_time", ""))) <= end + "T23:59:59"]
+
+            output = io.StringIO()
+            fields = ["symbol", "direction", "strategy", "entry_price", "exit_price",
+                       "quantity", "pnl", "pnl_pct", "reason", "executed_via",
+                       "entry_time", "exit_time", "hold_time"]
+            writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for t in trades_list:
+                writer.writerow(t)
+            return Response(output.getvalue(), mimetype="text/csv",
+                            headers={"Content-Disposition": "attachment;filename=trades.csv"})
 
         @self.app.route("/api/equity")
         def equity():
