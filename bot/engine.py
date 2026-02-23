@@ -668,11 +668,14 @@ class TradingEngine:
 
     def _is_crypto_symbol(self, symbol):
         """Check if a symbol is a crypto ticker (e.g. BTC-USD, ETH-USDT)."""
-        crypto_cfg = self.config.settings.get("crypto", {})
-        if not crypto_cfg.get("enabled", False):
-            return False
-        suffixes = crypto_cfg.get("symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"])
+        suffixes = self.config.settings.get("crypto", {}).get(
+            "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
+        )
         return any(symbol.upper().endswith(s) for s in suffixes)
+
+    def _is_crypto_enabled(self):
+        """Check if crypto trading is enabled in config."""
+        return self.config.settings.get("crypto", {}).get("enabled", False)
 
     def _has_crypto_symbols(self):
         """Check if any watched/traded symbols are crypto (enables 24/7 mode)."""
@@ -1246,6 +1249,14 @@ class TradingEngine:
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
 
+        # CRYPTO BLOCK: Reject all crypto signals when crypto is disabled
+        if self._is_crypto_symbol(symbol) and not self._is_crypto_enabled():
+            log.warning(
+                f"CRYPTO BLOCKED: {action.upper()} {symbol} rejected - "
+                f"crypto trading is disabled. Strategy: {strategy}"
+            )
+            return
+
         # --- SELL/EXIT WITHOUT POSITION GUARD ---
         # Never send sell/exit to broker for symbols we don't hold
         if action in ("sell", "cover", "close", "exit"):
@@ -1469,11 +1480,17 @@ class TradingEngine:
             )
             return
 
+        risk_amount = abs(current_price - stop_loss_price) * qty
+        reward_amount = abs(take_profit_price - current_price) * qty
+        total_cost = current_price * qty
+        rr = round(reward_amount / risk_amount, 1) if risk_amount > 0 else 0
         log.info(
             f"ORDER {action.upper()} {symbol} via {executed_via} | "
             f"Qty: {qty} | Price: ${current_price:.2f} | "
-            f"Stop: ${stop_loss_price:.2f} | Target: ${take_profit_price:.2f} | "
-            f"Strategy: {strategy}"
+            f"Cost: ${total_cost:,.2f} | "
+            f"Stop: ${stop_loss_price:.2f} (risk ${risk_amount:,.2f}) | "
+            f"Target: ${take_profit_price:.2f} (reward ${reward_amount:,.2f}) | "
+            f"R:R {rr}:1 | Strategy: {strategy}"
         )
 
         # Track position (thread-safe)
@@ -3195,7 +3212,8 @@ class TradingEngine:
         scalp_strat = self.strategies.get("rvol_scalp")
         mr_strat = self.strategies.get("mean_reversion")
         pb_strat = self.strategies.get("prebreakout")
-        if not rvol_strat and not scalp_strat and not mr_strat and not pb_strat:
+        gap_strat = self.strategies.get("premarket_gap")
+        if not rvol_strat and not scalp_strat and not mr_strat and not pb_strat and not gap_strat:
             return
 
         try:
@@ -3210,7 +3228,11 @@ class TradingEngine:
                     change_pct = m.get("change_pct", 0)
                     rvol = m.get("rvol", 0)
 
-                    if not sym or price < 2.0:
+                    if not sym or price < 1.0:
+                        continue
+
+                    # Skip crypto symbols when crypto is disabled
+                    if self._is_crypto_symbol(sym) and not self._is_crypto_enabled():
                         continue
 
                     # Feed movers with >2% move into momentum RVOL (lowered from 3%)
@@ -3227,6 +3249,14 @@ class TradingEngine:
                         if sym not in mr_strat.symbols:
                             mr_strat.symbols.append(sym)
 
+                # Feed big gap-ups into pre-market gap scanner (5%+ movers)
+                gap_symbols = []
+                for m in movers:
+                    sym = m.get("symbol", "")
+                    change_pct = m.get("change_pct", 0)
+                    if sym and change_pct >= 5.0:
+                        gap_symbols.append(sym)
+
                 if mover_symbols and rvol_strat:
                     rvol_strat.add_dynamic_symbols(mover_symbols)
                     log.debug(f"Injected {len(mover_symbols)} movers into RVOL momentum")
@@ -3235,10 +3265,14 @@ class TradingEngine:
                     log.debug(f"Injected {len(scalp_symbols)} movers into RVOL scalp")
 
                 # Feed ALL unusual activity into pre-breakout scanner
-                # Pre-breakout wants to catch stocks EARLY (even small moves = accumulation)
                 if pb_strat and scalp_symbols:
                     pb_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into pre-breakout")
+
+                # Feed gap-up stocks into pre-market gap strategy
+                if gap_strat and gap_symbols:
+                    gap_strat.add_dynamic_symbols(gap_symbols)
+                    log.debug(f"Injected {len(gap_symbols)} gap-ups into pre-market gap")
 
             # Also get losers from the movers data (already fetched via Alpaca in get_top_movers)
             # Losers are mean reversion bounce candidates
@@ -3273,7 +3307,9 @@ class TradingEngine:
                         scalp_strat.add_dynamic_symbols(runner_symbols)
                     if pb_strat:
                         pb_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL + pre-breakout strategies")
+                    if gap_strat:
+                        gap_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL + pre-breakout + gap strategies")
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")
@@ -3644,7 +3680,7 @@ class TradingEngine:
                         price = item.get("price", 0)
                         change_pct = item.get("change", 0)  # Already percentage
                         volume = item.get("volume", 0) or 0
-                        if price >= 2.0:
+                        if price >= 1.0:
                             movers.append({
                                 "symbol": sym,
                                 "name": sym,
@@ -3698,7 +3734,7 @@ class TradingEngine:
                         price = item.get("price", 0) or 0
                         volume = item.get("volume", 0) or 0
                         change_pct = item.get("change", 0) or 0
-                        if price >= 2.0 and volume >= 100000:
+                        if price >= 1.0 and volume >= 100000:
                             movers.append({
                                 "symbol": sym,
                                 "name": sym,
@@ -3730,7 +3766,7 @@ class TradingEngine:
                             continue
                         price = item.get("price", 0) or 0
                         change_pct = item.get("change", 0) or 0
-                        if price >= 2.0:
+                        if price >= 1.0:
                             movers.append({
                                 "symbol": sym,
                                 "name": sym,
@@ -3746,13 +3782,12 @@ class TradingEngine:
             except Exception as e:
                 log.debug(f"Alpaca most-active-by-trades error: {e}")
 
-        # --- 2. Yahoo fallback (only if Alpaca returned nothing) ---
-        if len(movers) < 5:
-            log.debug("Alpaca screener returned few results, using Yahoo fallback")
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        # --- 2. Yahoo day gainers (ALWAYS runs alongside Alpaca for broader coverage) ---
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        for screen_id in ("day_gainers", "small_cap_gainers"):
             try:
                 url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-                params = {"scrIds": "day_gainers", "count": 50}
+                params = {"scrIds": screen_id, "count": 50}
                 resp = _req.get(url, params=params, headers=headers, timeout=10)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -3767,7 +3802,7 @@ class TradingEngine:
                             volume = q.get("regularMarketVolume", 0)
                             avg_vol = q.get("averageDailyVolume3Month", 1)
                             rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
-                            if price >= 2.0:
+                            if price >= 1.0:
                                 movers.append({
                                     "symbol": sym,
                                     "name": q.get("shortName", sym)[:30],
@@ -3781,7 +3816,7 @@ class TradingEngine:
                                 })
                                 seen_symbols.add(sym)
             except Exception as e:
-                log.debug(f"Yahoo fallback error: {e}")
+                log.debug(f"Yahoo {screen_id} error: {e}")
 
         # Sort by change % descending
         movers.sort(key=lambda x: x["change_pct"], reverse=True)
