@@ -156,6 +156,20 @@ class Config:
     def news_api_key(self):
         return os.getenv("NEWS_API_KEY", "")
 
+    # --- Polygon.io ---
+    @property
+    def polygon_api_key(self):
+        return os.getenv("POLYGON_API_KEY", "")
+
+    # --- Google Sheets ---
+    @property
+    def google_sheets_credentials(self):
+        return os.getenv("GOOGLE_SHEETS_CREDENTIALS", "")
+
+    @property
+    def google_sheets_spreadsheet_id(self):
+        return os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
+
     # --- Notifications ---
     @property
     def discord_webhook_url(self):
