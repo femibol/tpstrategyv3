@@ -55,8 +55,8 @@ risk:
     trigger_pct: 0.01             # Move stop to BE after 1% profit (faster protection)
     buffer_pct: 0.001             # Small buffer above entry (0.1%) to cover commissions
   min_volume: 300000              # Lower volume threshold (was 500K - catch more movers)
-  min_price: 2.00                 # Allow low-priced stocks (was $5 - big % movers are here)
-  max_price: 2000.00              # Cap price (accommodates NVDA, MSFT, etc)
+  min_price: 0.50                 # Floor: $0.50 — catch cheap runners before they explode
+  max_price: 50.00                # Cap at $50 — focus on high-% movers, not mega-caps
 
 # --- Trading Schedule ---
 schedule:
@@ -128,27 +128,30 @@ hedging:
 # --- Weekly Watchlist ---
 # Symbols actively monitored each week. Auto-includes politician picks.
 watchlist:
+  # Focus: $2-$50 high-beta names that move 10-100%+ on catalysts
+  # Mega-caps (GOOGL, AAPL, SPY) removed — too slow for small accounts
+  # Polygon scanner dynamically adds ALL movers anyway
   symbols:
-    - NVDA
-    - AAPL
-    - MSFT
-    - GOOGL
-    - AMZN
-    - META
-    - TSLA
-    - AMD
-    - SPY
-    - QQQ
-    - AB          # Pelosi pick
-    - PLTR
-    - COIN
-    - SMCI
-    - ARM
-    - AVGO
-    - SOFI
-    - HOOD
-    - MSTR
-    - CRWD
+    - SOFI        # Fintech, volatile, $5-15 range
+    - HOOD        # Retail favorite, big swings
+    - PLTR        # High beta tech
+    - IONQ        # Quantum computing, explosive moves
+    - MARA        # Crypto miner proxy, huge % swings
+    - RIOT        # Crypto miner proxy
+    - SOUN        # AI small cap, runner
+    - GSAT        # Low float satellite play
+    - DNA         # Biotech, big catalyst moves
+    - OPEN        # Real estate tech, volatile
+    - WISH        # Low float, short squeeze candidate
+    - PLUG        # Clean energy, volatile
+    - LCID        # EV, big % moves
+    - RIVN        # EV, volatile
+    - JOBY        # Air taxi, speculative
+    - SKLZ        # Gaming, low float
+    - CLSK        # Crypto miner, volatile
+    - AFRM        # BNPL fintech
+    - UPST        # AI lending, big earnings moves
+    - SWN         # Energy, moves on gas prices
   auto_add_politician_picks: true   # Auto-add symbols from politician tracker
   track_weekly_performance: true    # Track weekly P&L per symbol
 

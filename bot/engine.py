@@ -1306,6 +1306,13 @@ class TradingEngine:
             log.warning(f"No price for {symbol} - skipping signal")
             return
 
+        # Price range filter: only trade $0.50-$50 stocks (max % gains)
+        min_price = self.config.settings.get("risk", {}).get("min_price", 0.50)
+        max_price = self.config.settings.get("risk", {}).get("max_price", 50.0)
+        if action == "buy" and (current_price < min_price or current_price > max_price):
+            log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} outside ${min_price}-${max_price} range")
+            return
+
         stop_loss_price = signal.get("stop_loss")
         if not stop_loss_price:
             # Use wider stops for crypto (more volatile)
@@ -3274,7 +3281,7 @@ class TradingEngine:
                         if gap_strat:
                             gap_strat.add_dynamic_symbols(runner_syms)
                         log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
-            # Get top movers from Yahoo Finance (big gainers, trending, most active)
+            # Get top movers from Polygon (filtered to $0.50-$50 range)
             movers = self.get_top_movers()
             if movers:
                 mover_symbols = []
@@ -3285,7 +3292,7 @@ class TradingEngine:
                     change_pct = m.get("change_pct", 0)
                     rvol = m.get("rvol", 0)
 
-                    if not sym or price < 1.0:
+                    if not sym or price < 0.50 or price > 50.0:
                         continue
 
                     # Skip crypto symbols when crypto is disabled

@@ -58,10 +58,11 @@ class PolygonScanner:
     # Full-Market Snapshot (scanning + price cache)
     # =========================================================================
 
-    def scan_full_market(self, min_change_pct=2.0, min_price=1.0, min_volume=50000):
+    def scan_full_market(self, min_change_pct=2.0, min_price=0.50, max_price=50.0, min_volume=50000):
         """
         Scan the entire US market for movers.
         Also caches prices for ALL tickers (used by market_data for quotes).
+        Filters movers to $0.50-$50 range for maximum % gains.
 
         Returns tuple: (movers, runners, gap_ups)
         """
@@ -126,8 +127,10 @@ class PolygonScanner:
                     "open": round(open_price, 2),
                 }
 
-                # Apply mover filters
+                # Apply mover filters ($0.50-$50 range for max % gains)
                 if price < min_price:
+                    continue
+                if max_price and price > max_price:
                     continue
                 if volume < min_volume:
                     continue
@@ -154,7 +157,7 @@ class PolygonScanner:
 
                 if change_pct >= 2.0:
                     movers.append(entry)
-                if change_pct >= 10.0 and price <= 100.0:
+                if change_pct >= 10.0 and price <= max_price:
                     runners.append(entry)
                 if gap_pct >= 5.0:
                     gap_ups.append(entry)
@@ -333,10 +336,10 @@ class PolygonScanner:
         return gap_ups[:limit]
 
     def get_losers(self, limit=100):
-        """Get top losers from cached scan data."""
+        """Get top losers from cached scan data ($0.50-$50 range)."""
         losers = []
         for sym, data in self._price_cache.items():
-            if data["change_pct"] <= -2.0 and data["price"] >= 5.0 and data["volume"] >= 50000:
+            if data["change_pct"] <= -2.0 and data["price"] >= 0.50 and data["price"] <= 50.0 and data["volume"] >= 50000:
                 losers.append({
                     "symbol": sym,
                     "name": sym,
