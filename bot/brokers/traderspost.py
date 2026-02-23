@@ -220,6 +220,7 @@ class TradersPostBroker(BaseBroker):
                 "status_code": response.status_code,
                 "response": resp_text[:200],
                 "payload": payload,
+                "strategy": signal.get("strategy", signal.get("source", "unknown")),
                 "webhook": "crypto" if (is_crypto and self.webhook_url_crypto) else "primary",
                 "time": datetime.now().isoformat(),
             }
@@ -227,9 +228,11 @@ class TradersPostBroker(BaseBroker):
             self.signal_history.append(result)
 
             if success:
+                source_strategy = signal.get("strategy", signal.get("source", "unknown"))
                 log.info(
                     f"TradersPost signal sent: {action.upper()} "
-                    f"{payload['ticker']} | Response: {response.status_code}"
+                    f"{payload['ticker']} | Strategy: {source_strategy} | "
+                    f"Response: {response.status_code}"
                 )
             elif rejected:
                 log.warning(

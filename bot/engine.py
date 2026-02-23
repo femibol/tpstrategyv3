@@ -668,11 +668,14 @@ class TradingEngine:
 
     def _is_crypto_symbol(self, symbol):
         """Check if a symbol is a crypto ticker (e.g. BTC-USD, ETH-USDT)."""
-        crypto_cfg = self.config.settings.get("crypto", {})
-        if not crypto_cfg.get("enabled", False):
-            return False
-        suffixes = crypto_cfg.get("symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"])
+        suffixes = self.config.settings.get("crypto", {}).get(
+            "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
+        )
         return any(symbol.upper().endswith(s) for s in suffixes)
+
+    def _is_crypto_enabled(self):
+        """Check if crypto trading is enabled in config."""
+        return self.config.settings.get("crypto", {}).get("enabled", False)
 
     def _has_crypto_symbols(self):
         """Check if any watched/traded symbols are crypto (enables 24/7 mode)."""
@@ -1244,6 +1247,14 @@ class TradingEngine:
         # LONG-ONLY MODE: Block all short signals
         if action in ("short",):
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
+            return
+
+        # CRYPTO BLOCK: Reject all crypto signals when crypto is disabled
+        if self._is_crypto_symbol(symbol) and not self._is_crypto_enabled():
+            log.warning(
+                f"CRYPTO BLOCKED: {action.upper()} {symbol} rejected - "
+                f"crypto trading is disabled. Strategy: {strategy}"
+            )
             return
 
         # --- SELL/EXIT WITHOUT POSITION GUARD ---
@@ -3211,6 +3222,10 @@ class TradingEngine:
                     rvol = m.get("rvol", 0)
 
                     if not sym or price < 2.0:
+                        continue
+
+                    # Skip crypto symbols when crypto is disabled
+                    if self._is_crypto_symbol(sym) and not self._is_crypto_enabled():
                         continue
 
                     # Feed movers with >2% move into momentum RVOL (lowered from 3%)
