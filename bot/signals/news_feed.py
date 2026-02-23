@@ -1,10 +1,12 @@
 """
-Polygon.io News-Driven Trading - Scans real-time financial news for profitable catalysts.
+Polygon.io News-Driven Trading (v3 Official Client)
+Scans real-time financial news for profitable catalysts.
 
-Uses Polygon's /v2/reference/news endpoint which returns:
-- Ticker-tagged articles (knows EXACTLY which stocks are mentioned)
-- Real-time publishing (no 10-minute delay)
-- Multiple news sources (Benzinga, GlobeNewsWire, etc.)
+Uses the official polygon-api-client library:
+  - list_ticker_news() → Auto-paginated news with typed TickerNews models
+  - Ticker-tagged articles (knows EXACTLY which stocks are mentioned)
+  - Real-time publishing (no 10-minute delay)
+  - Multiple news sources (Benzinga, GlobeNewsWire, etc.)
 
 Generates actionable BUY/SELL signals based on catalyst scoring:
 - FDA approvals, contract wins, earnings beats → BUY
@@ -15,7 +17,9 @@ import time
 import threading
 from datetime import datetime, timedelta
 
-import requests
+from polygon import RESTClient
+from polygon.rest.models import TickerNews
+from polygon.exceptions import BadResponse
 
 from bot.utils.logger import get_logger
 
@@ -81,21 +85,20 @@ BEARISH_CATALYSTS = {
 
 class NewsFeed:
     """
-    Polygon.io news-driven trading signal generator.
+    Polygon.io news-driven trading signal generator (v3 official client).
 
     Scans real-time news every 2 minutes, scores catalysts,
     and generates BUY/SELL signals for the engine to execute.
     """
 
-    POLYGON_NEWS_URL = "https://api.polygon.io/v2/reference/news"
-
     def __init__(self, config, callback=None, polygon_api_key=None):
         self.config = config
         self.callback = callback
         self.api_key = polygon_api_key or config.polygon_api_key
-        self.poll_interval = 120  # 2 minutes (was 10 min with old API)
+        self.poll_interval = 120  # 2 minutes
         self._running = False
         self._thread = None
+        self._client = None
 
         # Track seen articles to avoid duplicates
         self.seen_articles = set()
@@ -105,19 +108,26 @@ class NewsFeed:
         # Dynamic watchlist — updated from engine's active symbols
         self.watched_symbols = set()
 
+        if self.api_key:
+            self._client = RESTClient(
+                api_key=self.api_key,
+                retries=2,
+                trace=False,
+            )
+
     def update_watchlist(self, symbols):
         """Update the symbols to monitor for news (called by engine each cycle)."""
         self.watched_symbols = set(symbols)
 
     def start(self):
         """Start the news feed in a background thread."""
-        if not self.api_key:
+        if not self._client:
             log.warning("Polygon API key not set — news trading disabled")
             return
         self._running = True
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
-        log.info("Polygon news scanner started — scanning for catalysts every 2 min")
+        log.info("Polygon news scanner started (v3 client) — scanning for catalysts every 2 min")
 
     def stop(self):
         self._running = False
@@ -131,7 +141,7 @@ class NewsFeed:
 
     def _check_news(self):
         """Fetch and analyze latest news from Polygon."""
-        if not self.api_key:
+        if not self._client:
             return
 
         try:
@@ -143,7 +153,7 @@ class NewsFeed:
             signal_count = 0
 
             for article in articles:
-                article_id = article.get("id", "") or article.get("article_url", "")
+                article_id = article.get("id", "") or article.get("url", "")
                 if article_id in self.seen_articles:
                     continue
 
@@ -154,10 +164,10 @@ class NewsFeed:
                 self.recent_news.append({
                     "title": article.get("title", ""),
                     "description": article.get("description", ""),
-                    "url": article.get("article_url", ""),
-                    "published": article.get("published_utc", ""),
+                    "url": article.get("url", ""),
+                    "published": article.get("published", ""),
                     "tickers": article.get("tickers", []),
-                    "publisher": article.get("publisher", {}).get("name", ""),
+                    "publisher": article.get("publisher", ""),
                     "source": "polygon",
                 })
 
@@ -187,50 +197,72 @@ class NewsFeed:
             log.warning(f"News check error: {e}")
 
     def _fetch_news(self):
-        """Fetch latest news from Polygon /v2/reference/news."""
+        """Fetch latest news using the official Polygon client's list_ticker_news()."""
         all_articles = []
 
         # 1. General market news (catches broad catalysts)
         try:
-            params = {
-                "apiKey": self.api_key,
-                "limit": 50,
-                "sort": "published_utc",
-                "order": "desc",
-            }
-            resp = requests.get(self.POLYGON_NEWS_URL, params=params, timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                all_articles.extend(data.get("results", []))
-            elif resp.status_code == 429:
+            for n in self._client.list_ticker_news(
+                order="desc",
+                limit=50,
+                sort="published_utc",
+            ):
+                if isinstance(n, TickerNews):
+                    all_articles.append(self._normalize_article(n))
+                # Stop after 50 total for general news
+                if len(all_articles) >= 50:
+                    break
+        except BadResponse as e:
+            if "429" in str(e):
                 log.debug("Polygon news rate limited")
             else:
-                log.debug(f"Polygon news: HTTP {resp.status_code}")
+                log.debug(f"Polygon news error: {e}")
         except Exception as e:
             log.debug(f"Polygon news fetch error: {e}")
 
         # 2. Ticker-specific news for symbols we hold or are watching
-        # Only check top priority symbols to stay within rate limits
         priority_symbols = list(self.watched_symbols)[:10]
         for symbol in priority_symbols:
             try:
-                params = {
-                    "apiKey": self.api_key,
-                    "ticker": symbol,
-                    "limit": 10,
-                    "sort": "published_utc",
-                    "order": "desc",
-                }
-                resp = requests.get(self.POLYGON_NEWS_URL, params=params, timeout=8)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    all_articles.extend(data.get("results", []))
-                elif resp.status_code == 429:
+                count = 0
+                for n in self._client.list_ticker_news(
+                    ticker=symbol,
+                    order="desc",
+                    limit=10,
+                    sort="published_utc",
+                ):
+                    if isinstance(n, TickerNews):
+                        all_articles.append(self._normalize_article(n))
+                    count += 1
+                    if count >= 10:
+                        break
+            except BadResponse as e:
+                if "429" in str(e):
                     break  # Stop if rate limited
             except Exception:
                 continue
 
         return all_articles
+
+    def _normalize_article(self, news_item):
+        """Convert a TickerNews model object to a plain dict for processing."""
+        tickers = []
+        if hasattr(news_item, 'tickers') and news_item.tickers:
+            tickers = list(news_item.tickers)
+
+        publisher_name = ""
+        if hasattr(news_item, 'publisher') and news_item.publisher:
+            publisher_name = getattr(news_item.publisher, 'name', str(news_item.publisher))
+
+        return {
+            "id": getattr(news_item, 'id', "") or "",
+            "title": getattr(news_item, 'title', "") or "",
+            "description": getattr(news_item, 'description', "") or "",
+            "url": getattr(news_item, 'article_url', "") or "",
+            "published": getattr(news_item, 'published_utc', "") or "",
+            "tickers": tickers,
+            "publisher": publisher_name,
+        }
 
     def _score_article(self, article, ticker):
         """
@@ -283,7 +315,7 @@ class NewsFeed:
         if confidence < 0.45:
             return None
 
-        headline = article.get("title", "")[:80]
+        headline = (article.get("title") or "")[:80]
         reason_str = ", ".join(reasons) if reasons else "sentiment"
 
         signal = {
@@ -293,8 +325,8 @@ class NewsFeed:
             "source": "news_feed" if action == "buy" else "exit",
             "strategy": "news_catalyst",
             "reason": f"NEWS [{reason_str}]: {headline}",
-            "article_url": article.get("article_url", ""),
-            "published": article.get("published_utc", ""),
+            "article_url": article.get("url", ""),
+            "published": article.get("published", ""),
             "catalyst_score": bull_score if action == "buy" else bear_score,
         }
 
@@ -319,7 +351,7 @@ class NewsFeed:
     def get_status(self):
         return {
             "running": self._running,
-            "api_configured": bool(self.api_key),
+            "api_configured": bool(self._client),
             "total_articles": len(self.recent_news),
             "total_signals": len(self.signals_generated),
             "watched_symbols": list(self.watched_symbols)[:20],

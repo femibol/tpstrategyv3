@@ -1312,6 +1312,13 @@ class TradingEngine:
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} below ${min_price} floor")
             return
 
+        # Price ceiling filter — only buy stocks in our target range
+        # Scanner discovers movers under $50; don't let strategies buy $200+ stocks
+        max_buy_price = self.config.settings.get("risk", {}).get("scanner_max_price", 50.0)
+        if action == "buy" and current_price > max_buy_price:
+            log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} above ${max_buy_price} ceiling — skipping")
+            return
+
         stop_loss_price = signal.get("stop_loss")
         if not stop_loss_price:
             # Use wider stops for crypto (more volatile)

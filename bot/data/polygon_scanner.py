@@ -1,21 +1,21 @@
 """
-Polygon.io Full-Market Data Provider
+Polygon.io Full-Market Data Provider (v3 Official Client)
 Primary data source for scanning, real-time prices, and historical bars.
 
-Snapshot API: /v2/snapshot/locale/us/markets/stocks/tickers
-  → Scans ALL ~10,000 US stocks in ONE call (prices, volume, change %)
-  → Used for scanning AND real-time price cache
-
-Aggregates API: /v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}
-  → Historical OHLCV bars for individual symbols
+Uses the official polygon-api-client library with v3 endpoints:
+  - get_snapshot_all("stocks") → Full-market snapshot of ALL US tickers
+  - list_aggs() → Historical OHLCV bars with auto-pagination
+  - Built-in retry, rate-limit handling, and typed response models
 
 Free tier: 5 calls/min — 1 snapshot + 4 bar fetches per cycle.
 """
 import time
 from datetime import datetime, timedelta
 
-import requests
 import pandas as pd
+from polygon import RESTClient
+from polygon.rest.models import TickerSnapshot, Agg
+from polygon.exceptions import BadResponse
 
 from bot.utils.logger import get_logger
 
@@ -24,12 +24,9 @@ log = get_logger("data.polygon")
 
 class PolygonScanner:
     """
-    Full-market data provider using Polygon.io.
+    Full-market data provider using the official Polygon.io Python client.
     Handles scanning, real-time prices, and historical bars.
     """
-
-    SNAPSHOT_URL = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers"
-    AGGS_URL = "https://api.polygon.io/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_date}/{to_date}"
 
     # Rate limit: free tier = 5/min, starter = 100/min
     MIN_INTERVAL = 15  # seconds between full scans (4/min, within free tier)
@@ -37,6 +34,7 @@ class PolygonScanner:
     def __init__(self, api_key):
         self.api_key = api_key
         self.enabled = bool(api_key)
+        self._client = None
         self._last_scan_time = 0
         self._cached_movers = []
         self._cached_runners = []
@@ -50,7 +48,12 @@ class PolygonScanner:
         self._bars_call_times = []
 
         if self.enabled:
-            log.info("Polygon.io ENABLED — primary data source for scanning + prices + bars")
+            self._client = RESTClient(
+                api_key=api_key,
+                retries=2,
+                trace=False,
+            )
+            log.info("Polygon.io ENABLED (v3 official client) — primary data source")
         else:
             log.info("Polygon.io disabled — set POLYGON_API_KEY to enable")
 
@@ -66,7 +69,7 @@ class PolygonScanner:
 
         Returns tuple: (movers, runners, gap_ups)
         """
-        if not self.enabled:
+        if not self.enabled or not self._client:
             return [], [], []
 
         # Rate limit
@@ -75,48 +78,51 @@ class PolygonScanner:
             return self._cached_movers, self._cached_runners, self._cached_gap_ups
 
         try:
-            resp = requests.get(
-                self.SNAPSHOT_URL,
-                params={"apiKey": self.api_key},
-                timeout=15,
-            )
-
-            if resp.status_code == 429:
-                log.warning("Polygon rate limited — using cached results")
-                return self._cached_movers, self._cached_runners, self._cached_gap_ups
-
-            if resp.status_code != 200:
-                log.warning(f"Polygon scan failed: HTTP {resp.status_code}")
-                return self._cached_movers, self._cached_runners, self._cached_gap_ups
-
-            data = resp.json()
-            tickers = data.get("tickers", [])
-            self._last_scan_time = now
+            tickers = self._client.get_snapshot_all("stocks")
+            self._last_scan_time = time.time()
 
             movers = []
             runners = []
             gap_ups = []
             price_cache = {}
+            ticker_count = 0
 
             for t in tickers:
-                sym = t.get("ticker", "")
+                if not isinstance(t, TickerSnapshot):
+                    continue
+
+                sym = t.ticker or ""
                 if not sym or "." in sym or len(sym) > 5:
                     continue
 
-                day = t.get("day", {})
-                prev_day = t.get("prevDay", {})
-                todaysChangePerc = t.get("todaysChangePerc", 0)
+                ticker_count += 1
 
-                price = day.get("c", 0) or t.get("lastTrade", {}).get("p", 0)
-                volume = day.get("v", 0) or 0
-                prev_close = prev_day.get("c", 0) or 0
-                prev_volume = prev_day.get("v", 1) or 1
-                open_price = day.get("o", 0) or 0
+                # Extract data from typed TickerSnapshot model
+                day = t.day
+                prev_day = t.prev_day
+                change_pct = t.todays_change_perc or 0
+
+                price = 0
+                volume = 0
+                prev_close = 0
+                prev_volume = 1
+                open_price = 0
+
+                if isinstance(day, Agg):
+                    price = day.close or 0
+                    volume = day.volume or 0
+                    open_price = day.open or 0
+
+                # Fallback to last trade if day close is missing
+                if price <= 0 and hasattr(t, 'last_trade') and t.last_trade:
+                    price = getattr(t.last_trade, 'price', 0) or 0
+
+                if isinstance(prev_day, Agg):
+                    prev_close = prev_day.close or 0
+                    prev_volume = prev_day.volume or 1
 
                 if price <= 0:
                     continue
-
-                change_pct = todaysChangePerc or 0
 
                 # Cache price for ALL valid tickers (used for real-time quotes)
                 price_cache[sym] = {
@@ -170,18 +176,21 @@ class PolygonScanner:
             self._cached_runners = runners
             self._cached_gap_ups = gap_ups
             self._price_cache = price_cache
-            self._price_cache_time = now
+            self._price_cache_time = time.time()
 
             log.info(
-                f"Polygon scan: {len(tickers)} tickers | "
+                f"Polygon scan: {ticker_count} tickers | "
                 f"{len(movers)} movers (2%+) | {len(runners)} runners (10%+) | "
                 f"{len(gap_ups)} gap-ups (5%+)"
             )
 
             return movers, runners, gap_ups
 
-        except requests.exceptions.Timeout:
-            log.warning("Polygon scan timeout")
+        except BadResponse as e:
+            if "429" in str(e):
+                log.warning("Polygon rate limited — using cached results")
+            else:
+                log.warning(f"Polygon scan failed: {e}")
             return self._cached_movers, self._cached_runners, self._cached_gap_ups
         except Exception as e:
             log.warning(f"Polygon scan error: {e}")
@@ -232,7 +241,7 @@ class PolygonScanner:
         return time.time() - self._price_cache_time
 
     # =========================================================================
-    # Historical Bars (Polygon Aggregates API)
+    # Historical Bars (Polygon Aggregates API via list_aggs)
     # =========================================================================
 
     def _can_make_bar_call(self):
@@ -247,10 +256,11 @@ class PolygonScanner:
         """
         Fetch historical OHLCV bars from Polygon aggregates API.
         Rate-limited to 4 calls/min (reserves 1/min for snapshot scan).
+        Uses list_aggs() with auto-pagination for complete data.
 
         Returns pandas DataFrame with columns: open, high, low, close, volume
         """
-        if not self.enabled:
+        if not self.enabled or not self._client:
             return None
 
         if not self._can_make_bar_call():
@@ -270,47 +280,47 @@ class PolygonScanner:
         to_date = datetime.utcnow().strftime("%Y-%m-%d")
         from_date = (datetime.utcnow() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
 
-        url = self.AGGS_URL.format(
-            ticker=symbol,
-            multiplier=multiplier,
-            timespan=timespan,
-            from_date=from_date,
-            to_date=to_date,
-        )
-
         try:
             self._bars_call_times.append(time.time())
-            resp = requests.get(
-                url,
-                params={"apiKey": self.api_key, "adjusted": "true", "sort": "asc", "limit": 5000},
-                timeout=10,
-            )
 
-            if resp.status_code == 429:
-                log.debug(f"Polygon bars rate limited for {symbol}")
+            aggs = []
+            for a in self._client.list_aggs(
+                ticker=symbol,
+                multiplier=multiplier,
+                timespan=timespan,
+                from_=from_date,
+                to=to_date,
+                adjusted=True,
+                sort="asc",
+                limit=5000,
+            ):
+                aggs.append(a)
+
+            if not aggs:
                 return None
 
-            if resp.status_code != 200:
-                log.debug(f"Polygon bars {symbol}: HTTP {resp.status_code}")
-                return None
+            rows = []
+            for a in aggs:
+                rows.append({
+                    "timestamp": a.timestamp,
+                    "open": a.open,
+                    "high": a.high,
+                    "low": a.low,
+                    "close": a.close,
+                    "volume": a.volume,
+                })
 
-            data = resp.json()
-            results = data.get("results", [])
-            if not results:
-                return None
-
-            df = pd.DataFrame(results)
-            df = df.rename(columns={
-                "t": "timestamp", "o": "open", "h": "high",
-                "l": "low", "c": "close", "v": "volume",
-            })
+            df = pd.DataFrame(rows)
             df.index = pd.to_datetime(df["timestamp"], unit="ms")
             df = df[["open", "high", "low", "close", "volume"]]
             df = df.dropna(subset=["close"])
             return df if not df.empty else None
 
-        except requests.exceptions.Timeout:
-            log.debug(f"Polygon bars timeout for {symbol}")
+        except BadResponse as e:
+            if "429" in str(e):
+                log.debug(f"Polygon bars rate limited for {symbol}")
+            else:
+                log.debug(f"Polygon bars {symbol}: {e}")
             return None
         except Exception as e:
             log.debug(f"Polygon bars error for {symbol}: {e}")
