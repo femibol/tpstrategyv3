@@ -228,13 +228,14 @@ class TradingEngine:
         )
         log.info("Politician trade tracker enabled")
 
-        # News feed (if API key configured)
-        if self.config.news_api_key:
+        # Polygon news-driven trading (uses same Polygon API key)
+        if self.config.polygon_api_key:
             self.news_feed = NewsFeed(
                 self.config,
-                callback=self._handle_news_signal
+                callback=self._handle_news_signal,
+                polygon_api_key=self.config.polygon_api_key,
             )
-            log.info("News feed enabled")
+            log.info("Polygon news catalyst scanner ENABLED")
 
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)
@@ -571,6 +572,13 @@ class TradingEngine:
 
                     # 0. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
+
+                    # 0b. Update news feed watchlist with held + active symbols
+                    if self.news_feed:
+                        news_watch = list(set(
+                            list(self.positions.keys()) + self.watchlist[:20]
+                        ))
+                        self.news_feed.update_watchlist(news_watch)
 
                     # 1. Update market data (standard 5-min + 1-min for scalps)
                     self._update_data()
