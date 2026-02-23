@@ -9,15 +9,15 @@
 # How capital is split across strategies
 # Total: 100% across active strategies
 allocation:
-  smc_forever: 0.00               # DISABLED - designed for large-cap liquid stocks, not $0.50-$50 runners
-  mean_reversion: 0.08            # 8% - dip-buying oversold small caps
-  momentum: 0.10                  # 10% - swing trades on trending runners (+2%)
-  rvol_momentum: 0.25             # 25% - Money Machine, THE core strategy (+5%)
-  rvol_scalp: 0.25                # 25% - Ultra-fast scalps on volume spikes (+3%)
-  vwap_scalp: 0.00                # DISABLED - needs liquid large caps, wrong universe
-  pairs_trading: 0.00             # DISABLED - requires short selling (long_only=true blocks it)
-  prebreakout: 0.15               # 15% - catching breakouts before they happen (+3%)
-  premarket_gap: 0.17             # 17% - pre-market gap plays are where runners start (+3%)
+  smc_forever: 0.00               # DISABLED
+  mean_reversion: 0.08            # 8% - dip-buying with reversal confirmation
+  momentum: 0.12                  # 12% - swing trades on trending runners (+2% from scalp cut)
+  rvol_momentum: 0.30             # 30% - Money Machine, THE core strategy (+5% from scalp cut)
+  rvol_scalp: 0.15                # 15% - tightened: fewer trades, wider targets (was 25%)
+  vwap_scalp: 0.00                # DISABLED
+  pairs_trading: 0.00             # DISABLED
+  prebreakout: 0.18               # 18% - catching breakouts before they happen (+3%)
+  premarket_gap: 0.17             # 17% - pre-market gap plays with time filter
 
 # --- Mean Reversion Strategy ---
 # Dip-buying oversold small/mid caps - buy the panic, sell the recovery
@@ -204,17 +204,17 @@ rvol_momentum:
 rvol_scalp:
   enabled: true
   timeframe: "1m"
-  min_rvol: 2.0                    # Higher RVOL = better quality signals (was 1.8)
-  min_score: 55                    # Higher score threshold (was 50)
-  min_price: 0.50                  # Match global $0.50 floor (was $2)
-  max_price: 50.00                 # Match scanner max - focus on runner territory (was $800)
-  min_volume: 80000                # 80K minimum
-  atr_stop_multiplier: 1.0        # Very tight stop: 1x ATR
-  atr_target_multiplier: 1.5      # Quick target: 1.5x ATR
-  quick_scalp_target_pct: 0.006   # Take profit at +0.6% (slightly wider - small caps have spreads)
-  runner_target_pct: 0.02         # Runners to +2% (let strong ones go further)
-  max_hold_minutes: 10             # Max 10 minutes
-  max_trades_per_day: 35           # 35 scalps/day (reduced from 50 - quality over quantity)
+  min_rvol: 2.5                    # Higher RVOL = fewer false signals (was 2.0)
+  min_score: 60                    # Higher score threshold (was 55)
+  min_price: 2.00                  # $2 floor — below this spreads kill scalps (was $0.50)
+  max_price: 50.00                 # Match scanner max
+  min_volume: 200000               # 200K min — need liquidity for tight spreads (was 80K)
+  atr_stop_multiplier: 1.0        # Tight stop: 1x ATR
+  atr_target_multiplier: 2.0      # Wider target: 2x ATR (was 1.5 — too tight)
+  quick_scalp_target_pct: 0.012   # Take profit at +1.2% (was 0.6% — inside the spread)
+  runner_target_pct: 0.025        # Runners to +2.5% (was 2%)
+  max_hold_minutes: 15             # Max 15 minutes (was 10)
+  max_trades_per_day: 15           # Quality over quantity (was 35)
   same_candle_exit: true
   price_poll_seconds: 3
   breakout_confirmation_bars: 2

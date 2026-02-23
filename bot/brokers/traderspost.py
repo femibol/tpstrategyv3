@@ -12,6 +12,7 @@ Bot Signal -> TradersPost Webhook -> Broker
 import json
 import time
 from datetime import datetime
+from pathlib import Path
 
 import requests
 
@@ -19,6 +20,10 @@ from bot.brokers.base import BaseBroker
 from bot.utils.logger import get_logger
 
 log = get_logger("broker.traderspost")
+
+# Persistent signal log — survives restarts, tracks every signal with strategy
+_SIGNAL_LOG_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+_SIGNAL_LOG_FILE = _SIGNAL_LOG_DIR / "signal_log.json"
 
 
 class TradersPostBroker(BaseBroker):
@@ -62,6 +67,45 @@ class TradersPostBroker(BaseBroker):
             log.info("TradersPost DUAL MODE: signals sent to both live and paper webhooks")
         if self.webhook_url_crypto:
             log.info("TradersPost CRYPTO webhook configured - crypto signals route separately")
+
+    def _persist_signal(self, signal, result, payload):
+        """Save every signal to disk for analysis (survives restarts)."""
+        try:
+            _SIGNAL_LOG_DIR.mkdir(exist_ok=True)
+            existing = []
+            if _SIGNAL_LOG_FILE.exists():
+                try:
+                    with open(_SIGNAL_LOG_FILE, "r") as f:
+                        existing = json.load(f)
+                except (json.JSONDecodeError, Exception):
+                    existing = []
+
+            entry = {
+                "time": datetime.now().isoformat(),
+                "symbol": signal.get("symbol", ""),
+                "action": signal.get("action", ""),
+                "strategy": signal.get("strategy", signal.get("source", "unknown")),
+                "price": signal.get("price", 0),
+                "quantity": signal.get("quantity", 0),
+                "stop_loss": signal.get("stop_loss", 0),
+                "take_profit": signal.get("take_profit", 0),
+                "confidence": signal.get("confidence", 0),
+                "reason": signal.get("reason", ""),
+                "success": result.get("success", False) if result else False,
+                "rejected": result.get("rejected", False) if result else False,
+                "status_code": result.get("status_code", 0) if result else 0,
+                "tp_action": payload.get("action", "") if payload else "",
+            }
+
+            existing.append(entry)
+            # Keep last 2000 entries
+            if len(existing) > 2000:
+                existing = existing[-2000:]
+
+            with open(_SIGNAL_LOG_FILE, "w") as f:
+                json.dump(existing, f, indent=2)
+        except Exception as e:
+            log.debug(f"Could not persist signal: {e}")
 
     def connect(self):
         """Validate webhook URL is configured."""
@@ -226,6 +270,9 @@ class TradersPostBroker(BaseBroker):
             }
 
             self.signal_history.append(result)
+
+            # Persist every signal to disk for post-session analysis
+            self._persist_signal(signal, result, payload)
 
             if success:
                 source_strategy = signal.get("strategy", signal.get("source", "unknown"))

@@ -128,16 +128,18 @@ class MeanReversionStrategy(BaseStrategy):
         at_lower_bb = current_price <= bb_lower
         near_lower_bb = current_price <= bb_lower * 1.005  # Within 0.5% of lower BB
 
-        # Flexible entry: z-score trigger, OR RSI + BB, OR strong z-score alone
+        # Strict entry: require reversal evidence to avoid catching falling knives
+        # Small caps trend hard — only buy when buying pressure is confirmed
         buy_signal = False
-        if zscore_trigger and rsi_trigger:
-            buy_signal = True  # Classic double confirmation
-        elif zscore_trigger and (at_lower_bb or near_lower_bb):
-            buy_signal = True  # Z-score + BB confirmation
-        elif rsi_trigger and at_lower_bb and vol_ratio > 1.2:
-            buy_signal = True  # RSI + BB + volume (no z-score needed)
-        elif zscore <= self.entry_zscore * 1.3 and rsi < self.rsi_oversold + 5:
-            buy_signal = True  # Slightly relaxed thresholds when both near trigger
+        reversal_candle = closes[-1] > bars["open"].values[-1]  # Green candle
+
+        if zscore_trigger and rsi_trigger and reversal_candle:
+            buy_signal = True  # Classic: Z-score + RSI oversold + reversal candle
+        elif zscore_trigger and at_lower_bb and reversal_candle and vol_ratio > 1.3:
+            buy_signal = True  # Z-score + BB + reversal + volume confirmation
+        elif rsi_trigger and at_lower_bb and vol_ratio > 1.5 and reversal_candle:
+            buy_signal = True  # RSI + BB + strong volume + reversal
+        # REMOVED: relaxed entry (zscore*1.3) — caught falling knives
 
         if buy_signal:
             confidence = min(1.0, abs(zscore) / 3.0 * 0.5 + (1 - rsi / 100) * 0.5)
