@@ -39,7 +39,6 @@ mean_reversion:
     # $0.50-$50 stocks that dip hard but recover (high beta, liquid enough)
     - SOFI
     - HOOD
-    - PLTR
     - IONQ
     - MARA
     - RIOT
@@ -76,23 +75,19 @@ momentum:
   breakout_lookback: 15
   symbols:
     # $0.50-$50 trending stocks with momentum potential
+    # COIN ($250+), SMCI ($40-900 volatile), MSTR ($300+) REMOVED - above price range
     - SOFI
     - HOOD
-    - PLTR
     - IONQ
     - MARA
     - RIOT
     - SOUN
     - AFRM
     - UPST
-    - COIN
-    - SMCI
     - RIVN
     - LCID
-    - MSTR
     - SNAP
-    - ROKU
-    - DKNG
+    - SKLZ
     - AI
     - BBAI
     - RKLB
@@ -102,6 +97,9 @@ momentum:
     - RGTI
     - GME
     - AMC
+    - GSAT
+    - DNA
+    - OPEN
 
 # --- VWAP Scalping ---
 # DISABLED - VWAP scalping requires highly liquid large caps ($100+) with tight spreads
@@ -173,18 +171,15 @@ rvol_momentum:
   max_trades_per_day: 20           # 20 trades/day - focused quality
   symbols:
     # $0.50-$50 high-beta runners (dynamic scanner adds more)
+    # COIN, SMCI, MSTR REMOVED - above $50 price range
     - SOFI
     - HOOD
-    - PLTR
     - IONQ
     - MARA
     - RIOT
     - SOUN
     - AFRM
     - UPST
-    - COIN
-    - SMCI
-    - MSTR
     - AI
     - BBAI
     - RKLB
@@ -197,9 +192,11 @@ rvol_momentum:
     - GME
     - AMC
     - SNAP
-    - ROKU
-    - DKNG
+    - SKLZ
     - RBLX
+    - GSAT
+    - DNA
+    - OPEN
 
 # --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
 # Ultra-fast scalping on 1-minute bars - the volume machine
@@ -224,18 +221,15 @@ rvol_scalp:
   momentum_acceleration: true
   symbols:
     # $0.50-$50 high-volume stocks for scalping
+    # COIN, SMCI, MSTR REMOVED - above $50 price range
     - SOFI
     - HOOD
-    - PLTR
     - IONQ
     - MARA
     - RIOT
     - SOUN
     - AFRM
     - UPST
-    - COIN
-    - SMCI
-    - MSTR
     - AI
     - BBAI
     - RKLB
@@ -248,9 +242,11 @@ rvol_scalp:
     - GME
     - AMC
     - SNAP
-    - ROKU
-    - DKNG
+    - SKLZ
     - RBLX
+    - GSAT
+    - DNA
+    - OPEN
 
 # --- Pre-Breakout Accumulation Strategy ---
 # Enters BEFORE the breakout by detecting accumulation:
@@ -277,18 +273,15 @@ prebreakout:
   trailing_stop_pct: 0.04          # 4% trailing stop (wider - survive small cap shakeouts)
   symbols:
     # $0.50-$50 high-beta stocks that make breakout moves
+    # COIN, SMCI, MSTR REMOVED - above $50 price range
     - SOFI
     - HOOD
-    - PLTR
     - IONQ
     - MARA
     - RIOT
     - SOUN
     - AFRM
     - UPST
-    - COIN
-    - SMCI
-    - MSTR
     - AI
     - BBAI
     - RKLB
@@ -301,12 +294,13 @@ prebreakout:
     - GME
     - AMC
     - SNAP
-    - ROKU
-    - DKNG
+    - SKLZ
     - DNA
     - OPEN
     - PLUG
     - JOBY
+    - GSAT
+    - WISH
 
 # --- Pre-Market Gap Scanner Strategy ---
 # Finds extreme pre-market gap-ups, waits for pullback, enters on structure break
@@ -332,18 +326,15 @@ premarket_gap:
   end_hour: 11                    # Extended to 11 AM (was 10 - catch late morning runners)
   symbols:
     # $0.50-$50 high-beta gap stocks
+    # COIN, SMCI, MSTR REMOVED - above $50 price range
     - SOFI
     - HOOD
-    - PLTR
     - IONQ
     - MARA
     - RIOT
     - SOUN
     - AFRM
     - UPST
-    - COIN
-    - SMCI
-    - MSTR
     - AI
     - BBAI
     - RKLB
@@ -356,8 +347,7 @@ premarket_gap:
     - GME
     - AMC
     - SNAP
-    - ROKU
-    - DKNG
+    - SKLZ
     - DNA
     - OPEN
     - PLUG
