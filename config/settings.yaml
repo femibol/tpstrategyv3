@@ -55,8 +55,9 @@ risk:
     trigger_pct: 0.01             # Move stop to BE after 1% profit (faster protection)
     buffer_pct: 0.001             # Small buffer above entry (0.1%) to cover commissions
   min_volume: 300000              # Lower volume threshold (was 500K - catch more movers)
-  min_price: 0.50                 # Floor: $0.50 — catch cheap runners before they explode
-  max_price: 50.00                # Cap at $50 — focus on high-% movers, not mega-caps
+  min_price: 0.50                 # Floor: $0.50 — no sub-penny junk
+  scanner_max_price: 50.00        # Scanner discovers movers under $50 (where moves START)
+  # No hard ceiling — bot rides runners past $50 if uptrend is confirmed
 
 # --- Trading Schedule ---
 schedule:

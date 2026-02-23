@@ -1306,11 +1306,10 @@ class TradingEngine:
             log.warning(f"No price for {symbol} - skipping signal")
             return
 
-        # Price range filter: only trade $0.50-$50 stocks (max % gains)
+        # Price floor filter — no sub-$0.50 junk
         min_price = self.config.settings.get("risk", {}).get("min_price", 0.50)
-        max_price = self.config.settings.get("risk", {}).get("max_price", 50.0)
-        if action == "buy" and (current_price < min_price or current_price > max_price):
-            log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} outside ${min_price}-${max_price} range")
+        if action == "buy" and current_price < min_price:
+            log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} below ${min_price} floor")
             return
 
         stop_loss_price = signal.get("stop_loss")
