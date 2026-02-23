@@ -213,9 +213,14 @@ class PreBreakoutStrategy(BaseStrategy):
         # Price breaking above the consolidation zone (upper BB or recent high)
         recent_high = float(np.max(highs[-10:-1])) if len(highs) > 10 else float(np.max(highs[:-1]))
         breaking_out = current_price > upper or current_price > recent_high
-        # Green candle with above-average volume on the break
+        # Strict breakout candle: strong green candle with 1.5x volume surge
+        # Body must be at least 60% of total range (not a doji/spinning top)
+        candle_body = abs(closes[-1] - opens[-1])
+        candle_range = highs[-1] - lows[-1]
+        body_ratio = candle_body / candle_range if candle_range > 0 else 0
         breakout_candle = (closes[-1] > opens[-1] and
-                           volumes[-1] > recent_vol_avg * 1.2)
+                           body_ratio >= 0.6 and
+                           volumes[-1] > recent_vol_avg * 1.5)
 
         # --- ADX (trend strength building) ---
         adx = self.indicators.adx(highs, lows, closes, period=14)

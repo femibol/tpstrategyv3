@@ -79,6 +79,11 @@ class PreMarketGapStrategy(BaseStrategy):
         if self.trades_today >= self.max_trades_per_day:
             return signals
 
+        # Time-of-day filter: only trade gap plays during the morning window
+        current_hour = datetime.now().hour
+        if current_hour < self.start_hour or current_hour >= self.end_hour:
+            return signals  # Outside gap trading window
+
         all_symbols = self.get_symbols()
 
         for symbol in all_symbols:
@@ -113,17 +118,33 @@ class PreMarketGapStrategy(BaseStrategy):
             return None
 
         # --- PHASE 1: GAP DETECTION ---
-        # Compare current price to previous day's close
-        # Use 20-bar lookback to approximate prior session close
-        prev_close = float(closes[-20]) if len(closes) >= 20 else float(closes[0])
+        # Use the open of the most recent session vs previous session close
+        # On 5-min bars: 78 bars/day (390 min / 5 min). The gap is today's open vs yesterday's close.
+        # Find the previous day boundary by looking for a significant time gap between bars
+        prev_close = float(closes[0])  # fallback: earliest bar we have
+        if len(closes) >= 78:
+            # Approximate: bars 78+ ago are from the previous session
+            prev_close = float(closes[-78])
+        elif len(closes) >= 40:
+            prev_close = float(closes[-40])  # Half-day fallback
+
+        # Also use the Polygon snapshot gap_pct if available (passed from scanner)
         gap_pct = (current_price - prev_close) / prev_close if prev_close > 0 else 0
 
         # --- RELATIVE VOLUME ---
-        # Compare recent volume to 90-bar average (approximates 90-day daily vol on 5m bars)
-        lookback = min(90, len(volumes) - 1)
-        avg_vol = float(np.mean(volumes[-lookback - 1:-1])) if lookback > 0 else 0
+        # Sum recent 5-min volume bars to approximate daily volume
+        # Compare today's total volume so far to the average day's volume
+        today_bars = min(78, len(volumes))
+        today_total_vol = float(np.sum(volumes[-today_bars:]))
+        # Use bars before today for the average
+        hist_bars = len(volumes) - today_bars
+        if hist_bars >= 78:
+            prev_day_vol = float(np.sum(volumes[-today_bars - 78:-today_bars]))
+            avg_vol = max(prev_day_vol, 1)
+        else:
+            avg_vol = float(np.mean(volumes[:-1])) * today_bars if len(volumes) > 1 else 1
         current_vol = float(volumes[-1])
-        rvol = round(current_vol / avg_vol, 1) if avg_vol > 0 else 0
+        rvol = round(today_total_vol / avg_vol, 1) if avg_vol > 0 else 0
 
         # --- PRICE ACTION ANALYSIS ---
         # Find the high of the move (leg 1 high)

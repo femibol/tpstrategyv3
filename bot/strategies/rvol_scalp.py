@@ -36,17 +36,17 @@ class RvolScalpStrategy(BaseStrategy):
 
     def __init__(self, config, indicators, capital):
         super().__init__(config, indicators, capital)
-        self.min_rvol = config.get("min_rvol", 1.8)
-        self.min_score = config.get("min_score", 50)
-        self.min_price = config.get("min_price", 2.00)
-        self.max_price = config.get("max_price", 800.00)
-        self.min_volume = config.get("min_volume", 100000)
+        self.min_rvol = config.get("min_rvol", 2.5)          # Higher RVOL = fewer false signals
+        self.min_score = config.get("min_score", 60)           # Higher score threshold
+        self.min_price = config.get("min_price", 2.00)         # $2 floor — below this spreads kill scalps
+        self.max_price = config.get("max_price", 50.00)
+        self.min_volume = config.get("min_volume", 200000)     # Higher volume = tighter spreads
         self.atr_stop_mult = config.get("atr_stop_multiplier", 1.0)
-        self.atr_target_mult = config.get("atr_target_multiplier", 1.5)
-        self.quick_scalp_pct = config.get("quick_scalp_target_pct", 0.008)
-        self.runner_pct = config.get("runner_target_pct", 0.02)
+        self.atr_target_mult = config.get("atr_target_multiplier", 2.0)  # Wider target: 2x ATR (was 1.5)
+        self.quick_scalp_pct = config.get("quick_scalp_target_pct", 0.012)  # 1.2% target (was 0.6% — too tight for spreads)
+        self.runner_pct = config.get("runner_target_pct", 0.025)  # 2.5% runner target
         self.max_hold_minutes = config.get("max_hold_minutes", 15)
-        self.max_trades_per_day = config.get("max_trades_per_day", 25)
+        self.max_trades_per_day = config.get("max_trades_per_day", 15)  # Quality over quantity (was 25)
         self.confirm_bars = config.get("breakout_confirmation_bars", 2)
         self.momentum_accel = config.get("momentum_acceleration", True)
         self.trades_today = 0
@@ -115,8 +115,13 @@ class RvolScalpStrategy(BaseStrategy):
         if current_price <= 0:
             return None
 
-        # Price filter
+        # Price filter — $2 minimum for scalps (below $2, spreads eat your profit)
         if current_price < self.min_price or current_price > self.max_price:
+            return None
+
+        # Spread-adjusted price filter: require higher price OR higher volume
+        # Stocks under $5 need 300K+ daily volume to have tradeable spreads
+        if current_price < 5.0 and float(np.mean(volumes[-20:])) < 300000 / 390:
             return None
 
         # --- RVOL on 1-min bars ---
@@ -286,8 +291,8 @@ class RvolScalpStrategy(BaseStrategy):
             reward = take_profit - current_price
             rr_ratio = round(reward / risk, 2) if risk > 0 else 0
 
-            # Lower R:R requirement for scalps (we win on volume of trades)
-            if rr_ratio >= 1.0:
+            # Require 1.5:1 minimum R:R — even scalps need an edge
+            if rr_ratio >= 1.5:
                 confidence = min(1.0, score / 100)
 
                 result["signal"] = {
