@@ -33,6 +33,7 @@ from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
+from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
@@ -235,6 +236,9 @@ class TradingEngine:
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)
         log.info("Trade learning system enabled")
+
+        # Polygon.io full-market scanner (replaces narrow Alpaca top-50)
+        self.polygon = PolygonScanner(self.config.polygon_api_key)
 
         # Google Sheets trade logging
         self.sheets_logger = GoogleSheetsLogger(self.config)
@@ -3217,6 +3221,51 @@ class TradingEngine:
             return
 
         try:
+            # --- Polygon.io full-market scan (if configured) ---
+            # One call returns ALL ~10,000 stocks — catches everything Alpaca misses
+            if self.polygon and self.polygon.enabled:
+                poly_movers, poly_runners, poly_gap_ups = self.polygon.scan_full_market()
+
+                if poly_movers:
+                    poly_mover_syms = []
+                    poly_scalp_syms = []
+                    for m in poly_movers:
+                        sym = m.get("symbol", "")
+                        if not sym:
+                            continue
+                        if self._is_crypto_symbol(sym) and not self._is_crypto_enabled():
+                            continue
+                        change_pct = m.get("change_pct", 0)
+                        if change_pct >= 2.0:
+                            poly_mover_syms.append(sym)
+                        if abs(change_pct) >= 1.0:
+                            poly_scalp_syms.append(sym)
+
+                    if poly_mover_syms and rvol_strat:
+                        rvol_strat.add_dynamic_symbols(poly_mover_syms)
+                    if poly_scalp_syms and scalp_strat:
+                        scalp_strat.add_dynamic_symbols(poly_scalp_syms)
+                    if poly_scalp_syms and pb_strat:
+                        pb_strat.add_dynamic_symbols(poly_scalp_syms)
+                    log.debug(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
+
+                if poly_gap_ups and gap_strat:
+                    gap_syms = [g["symbol"] for g in poly_gap_ups if g.get("symbol")]
+                    gap_strat.add_dynamic_symbols(gap_syms)
+                    log.debug(f"Polygon: injected {len(gap_syms)} gap-ups into pre-market gap")
+
+                if poly_runners:
+                    runner_syms = [r["symbol"] for r in poly_runners if r.get("symbol")]
+                    if runner_syms:
+                        if rvol_strat:
+                            rvol_strat.add_dynamic_symbols(runner_syms)
+                        if scalp_strat:
+                            scalp_strat.add_dynamic_symbols(runner_syms)
+                        if pb_strat:
+                            pb_strat.add_dynamic_symbols(runner_syms)
+                        if gap_strat:
+                            gap_strat.add_dynamic_symbols(runner_syms)
+                        log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
             # Get top movers from Yahoo Finance (big gainers, trending, most active)
             movers = self.get_top_movers()
             if movers:
