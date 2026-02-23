@@ -9,15 +9,18 @@ from bot.utils.logger import get_logger
 log = get_logger("risk.position_sizer")
 
 # Price tiers for auto-adjusting quantity limits
-# Expensive stocks get fewer shares, cheap stocks get more
+# Optimized for $0.50-$50 runner strategy
+# More shares on cheap stocks = bigger dollar profit on % moves
 PRICE_TIERS = [
     # (max_price, min_shares, max_shares_cap)
-    (10,     5,   500),   # Penny/low-price: 5-500 shares
-    (50,     3,   200),   # Mid-low: 3-200 shares
-    (150,    2,   100),   # Mid: 2-100 shares
+    (2,      10,  2000),  # Sub-$2 runners: 10-2000 shares (big lot sizes for % gains)
+    (5,      10,  1000),  # $2-$5 range: 10-1000 shares
+    (10,     5,   500),   # $5-$10 range: 5-500 shares
+    (25,     3,   300),   # $10-$25 range: 3-300 shares
+    (50,     2,   200),   # $25-$50 range: 2-200 shares
+    (150,    1,   100),   # $50-$150 (runners past scanner): 1-100 shares
     (500,    1,    50),   # High: 1-50 shares
-    (2000,   1,    20),   # Premium: 1-20 shares (NVDA, MSFT)
-    (99999,  1,    10),   # Ultra: 1-10 shares (BRK.A etc)
+    (99999,  1,    10),   # Ultra: 1-10 shares
 ]
 
 

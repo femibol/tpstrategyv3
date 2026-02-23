@@ -13,48 +13,48 @@ trading_profile: hybrid
 capital:
   starting_balance: 47000         # Synced to real Alpaca paper account (overridden on startup)
   max_portfolio_risk: 0.20        # Max 20% of capital at risk (was 10% - deploy more)
-  max_daily_loss: 0.06            # Stop trading if down 6% (~$2,820) - more room to recover
-  max_drawdown: 0.18              # Emergency stop at 18% from peak (~$8,460) - paper = learn aggro
-  reserve_cash_pct: 0.05          # Only 5% cash reserve (~$2,350) - put money to work
+  max_daily_loss: 0.04            # Stop trading if down 4% (~$1,880) - protect capital (was 6% too risky)
+  max_drawdown: 0.12              # Emergency stop at 12% from peak (~$5,640) - tighter protection (was 18%)
+  reserve_cash_pct: 0.10          # 10% cash reserve (~$4,700) - always have dry powder for runners
 
 # --- Risk Management ---
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
-  max_position_size_pct: 0.15     # Max 15% of capital per position (~$7K) - bigger bets
-  max_positions: 18               # Max 18 concurrent positions (was 12 - much more active)
-  max_equity_positions: 18        # Max 18 equity positions (crypto paused - all slots for stocks)
-  max_crypto_positions: 0         # Crypto paused - all capital redirected to equities
-  risk_per_trade_pct: 0.02        # Risk 2% per trade (~$940) - more aggressive sizing
-  max_correlated_positions: 4     # Max 4 in same sector (was 3 - let winners cluster)
-  stop_loss_pct: 0.025            # 2.5% stop loss (keep tight - fast out on losers)
-  trailing_stop_pct: 0.014        # 1.4% trailing stop (was 1.6% - lock in even faster)
-  take_profit_pct: 0.15           # 15% take profit (was 10% - let the big runners RUN)
-  max_slippage_pct: 0.005         # Max 0.5% slippage allowed
+  max_position_size_pct: 0.10     # Max 10% of capital per position (~$4.7K) - diversify more (was 15%)
+  max_positions: 12               # Max 12 concurrent positions - manageable, focused (was 18)
+  max_equity_positions: 12        # Max 12 equity positions
+  max_crypto_positions: 0         # Crypto paused
+  risk_per_trade_pct: 0.015       # Risk 1.5% per trade (~$705) - slightly tighter (was 2%)
+  max_correlated_positions: 3     # Max 3 in same sector - prevent sector blowup (was 4)
+  stop_loss_pct: 0.03             # 3% stop loss - small caps need slightly wider stops (was 2.5%)
+  trailing_stop_pct: 0.02         # 2% trailing stop - wider for volatile small caps (was 1.4%)
+  take_profit_pct: 0.20           # 20% take profit - let runners RUN even further (was 15%)
+  max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads (was 0.5%)
 
   # --- Profit Taking (Partial Exits) ---
+  # Optimized for $0.50-$50 runners that can move 10-50%+ on big days
   profit_taking:
     enabled: true
-    # Scale out at multiple targets - WIDER to let profits run
     targets:
-      - pct_from_entry: 0.02      # At +2% profit (was 1.5% - give more room)
-        close_pct: 0.20           # Close only 20% (was 25% - keep more in play)
-        move_stop: "breakeven"    # Move stop to break even
-      - pct_from_entry: 0.05      # At +5% profit (was 3% - let it cook)
-        close_pct: 0.25           # Close 25% of remaining (was 33%)
-        tighten_trail: 0.012      # Tighten to 1.2% trail (was 1%)
-      - pct_from_entry: 0.08      # At +8% profit (was 5%)
-        close_pct: 0.25           # Close 25% of remaining (was 33%)
-        tighten_trail: 0.01       # Tighten trailing stop to 1%
-      - pct_from_entry: 0.12      # At +12% profit (was 8% - REAL runner territory)
-        close_pct: 0.50           # Close 50% of remaining
-        tighten_trail: 0.008      # 0.8% trail on runner (protect the bag)
+      - pct_from_entry: 0.03      # At +3% profit - first partial (small caps move 3% easily)
+        close_pct: 0.25           # Close 25% - lock in some profit
+        move_stop: "breakeven"    # Move stop to break even (risk-free from here)
+      - pct_from_entry: 0.07      # At +7% profit
+        close_pct: 0.25           # Close 25% of remaining
+        tighten_trail: 0.02       # 2% trail (small caps need room)
+      - pct_from_entry: 0.12      # At +12% profit
+        close_pct: 0.25           # Close 25% of remaining
+        tighten_trail: 0.015      # Tighten to 1.5% trail
+      - pct_from_entry: 0.20      # At +20% profit - RUNNER territory
+        close_pct: 0.50           # Close 50% of remaining (let rest ride with trail)
+        tighten_trail: 0.01       # 1% trail on the remaining runner shares
 
   # --- Break Even Stop ---
   breakeven:
     enabled: true
-    trigger_pct: 0.01             # Move stop to BE after 1% profit (faster protection)
-    buffer_pct: 0.001             # Small buffer above entry (0.1%) to cover commissions
-  min_volume: 300000              # Lower volume threshold (was 500K - catch more movers)
+    trigger_pct: 0.015            # Move stop to BE after 1.5% profit (wider for volatile small caps)
+    buffer_pct: 0.002             # 0.2% buffer above entry (wider for small cap spreads)
+  min_volume: 100000              # 100K volume threshold - small caps have less volume
   min_price: 0.50                 # Floor: $0.50 — no sub-penny junk
   scanner_max_price: 50.00        # Scanner discovers movers under $50 (where moves START)
   # No hard ceiling — bot rides runners past $50 if uptrend is confirmed
@@ -65,8 +65,8 @@ schedule:
   market_close: "16:00"
   timezone: "US/Eastern"
   pre_market_scan: "09:15"       # Scan 15 min before open
-  avoid_first_minutes: 5          # Quick 5 min buffer, then catch opening momentum
-  avoid_last_minutes: 5           # Trade close momentum, exit 5 min before close
+  avoid_first_minutes: 2          # 2 min buffer - small caps move hard at open, don't miss it
+  avoid_last_minutes: 10          # 10 min before close - exit positions, avoid EOD dump
   trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
   # --- Pre-market / Extended Hours ---
@@ -86,10 +86,10 @@ schedule:
   overnight:
     enabled: true                  # Allow holding overnight
     require_profit: true           # Only hold if position is in profit
-    min_profit_pct: 0.005         # Minimum 0.5% profit to hold overnight (was 1% - hold more winners)
+    min_profit_pct: 0.02           # Min 2% profit to hold overnight (small caps gap down hard)
     require_uptrend: true          # Only hold if in uptrend (EMA fast > slow)
-    tighten_stop_pct: 0.018       # Tighten stop to 1.8% for overnight (was 2%)
-    max_overnight_positions: 6    # Max 6 positions held overnight (was 3 - carry more winners)
+    tighten_stop_pct: 0.025       # 2.5% tight stop for overnight (small caps gap)
+    max_overnight_positions: 3    # Max 3 overnight - small caps are risky overnight
     close_losers: true            # Always close losing positions at EOD
 
 # --- Scaling Plan ---
@@ -121,10 +121,10 @@ scaling:
 # --- Hedging ---
 # Automatic portfolio protection via inverse ETFs during bearish regimes
 hedging:
-  enabled: true
-  auto_hedge: true                  # Automatically hedge when regime is bearish/crisis
-  max_hedge_pct: 0.30               # Max 30% of portfolio in hedge positions
-  instruments: ["SH", "SDS", "PSQ", "SQQQ"]  # Available hedge ETFs
+  enabled: false                     # DISABLED - hedging with inverse ETFs conflicts with small cap runner strategy
+  auto_hedge: false                  # Small caps already drop hard in bear markets - just reduce position count
+  max_hedge_pct: 0.15
+  instruments: ["SH", "SDS", "PSQ", "SQQQ"]
 
 # --- Weekly Watchlist ---
 # Symbols actively monitored each week. Auto-includes politician picks.
@@ -182,7 +182,7 @@ data:
 # --- Execution ---
 execution:
   order_type: "limit"             # limit orders only (no market orders)
-  limit_offset_pct: 0.001         # Place limit 0.1% from current price
+  limit_offset_pct: 0.003         # Place limit 0.3% from current price (wider for small cap spreads)
   retry_attempts: 3
   retry_delay_seconds: 5
   use_vwap: true                  # Use VWAP for better entries
