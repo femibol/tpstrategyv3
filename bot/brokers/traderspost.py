@@ -229,10 +229,20 @@ class TradersPostBroker(BaseBroker):
 
             if success:
                 source_strategy = signal.get("strategy", signal.get("source", "unknown"))
+                price = signal.get("price", 0)
+                qty = signal.get("quantity", 0)
+                sl = signal.get("stop_loss", 0)
+                tp = signal.get("take_profit", 0)
+                total = price * qty if price and qty else 0
+                risk_amt = abs(price - sl) * qty if price and sl and qty else 0
+                reward_amt = abs(tp - price) * qty if price and tp and qty else 0
+                rr = round(reward_amt / risk_amt, 1) if risk_amt > 0 else 0
                 log.info(
                     f"TradersPost signal sent: {action.upper()} "
                     f"{payload['ticker']} | Strategy: {source_strategy} | "
-                    f"Response: {response.status_code}"
+                    f"Qty: {qty} @ ${price:.2f} = ${total:,.2f} | "
+                    f"Risk: ${risk_amt:,.2f} | Reward: ${reward_amt:,.2f} | "
+                    f"R:R {rr}:1 | Response: {response.status_code}"
                 )
             elif rejected:
                 log.warning(
