@@ -180,8 +180,11 @@ class TradingEngine:
                 f"max_position_pct={scaling_tier['max_position_pct']:.0%}"
             )
 
-        # Market data feed
-        self.market_data = MarketDataFeed(self.config, self.broker)
+        # Polygon.io — primary data source for scanning + prices + bars
+        self.polygon = PolygonScanner(self.config.polygon_api_key)
+
+        # Market data feed (Polygon primary, Yahoo fallback)
+        self.market_data = MarketDataFeed(self.config, self.broker, polygon=self.polygon)
 
         # Start IBKR real-time streaming if connected
         if self.broker and self.broker.is_connected():
@@ -225,20 +228,18 @@ class TradingEngine:
         )
         log.info("Politician trade tracker enabled")
 
-        # News feed (if API key configured)
-        if self.config.news_api_key:
+        # Polygon news-driven trading (uses same Polygon API key)
+        if self.config.polygon_api_key:
             self.news_feed = NewsFeed(
                 self.config,
-                callback=self._handle_news_signal
+                callback=self._handle_news_signal,
+                polygon_api_key=self.config.polygon_api_key,
             )
-            log.info("News feed enabled")
+            log.info("Polygon news catalyst scanner ENABLED")
 
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)
         log.info("Trade learning system enabled")
-
-        # Polygon.io full-market scanner (replaces narrow Alpaca top-50)
-        self.polygon = PolygonScanner(self.config.polygon_api_key)
 
         # Google Sheets trade logging
         self.sheets_logger = GoogleSheetsLogger(self.config)
@@ -571,6 +572,13 @@ class TradingEngine:
 
                     # 0. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
+
+                    # 0b. Update news feed watchlist with held + active symbols
+                    if self.news_feed:
+                        news_watch = list(set(
+                            list(self.positions.keys()) + self.watchlist[:20]
+                        ))
+                        self.news_feed.update_watchlist(news_watch)
 
                     # 1. Update market data (standard 5-min + 1-min for scalps)
                     self._update_data()
@@ -1296,6 +1304,12 @@ class TradingEngine:
             current_price = signal.get("price")
         if current_price is None:
             log.warning(f"No price for {symbol} - skipping signal")
+            return
+
+        # Price floor filter — no sub-$0.50 junk
+        min_price = self.config.settings.get("risk", {}).get("min_price", 0.50)
+        if action == "buy" and current_price < min_price:
+            log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} below ${min_price} floor")
             return
 
         stop_loss_price = signal.get("stop_loss")
@@ -3266,7 +3280,7 @@ class TradingEngine:
                         if gap_strat:
                             gap_strat.add_dynamic_symbols(runner_syms)
                         log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
-            # Get top movers from Yahoo Finance (big gainers, trending, most active)
+            # Get top movers from Polygon (filtered to $0.50-$50 range)
             movers = self.get_top_movers()
             if movers:
                 mover_symbols = []
@@ -3277,7 +3291,7 @@ class TradingEngine:
                     change_pct = m.get("change_pct", 0)
                     rvol = m.get("rvol", 0)
 
-                    if not sym or price < 1.0:
+                    if not sym or price < 0.50 or price > 50.0:
                         continue
 
                     # Skip crypto symbols when crypto is disabled
@@ -3323,7 +3337,7 @@ class TradingEngine:
                     gap_strat.add_dynamic_symbols(gap_symbols)
                     log.debug(f"Injected {len(gap_symbols)} gap-ups into pre-market gap")
 
-            # Also get losers from the movers data (already fetched via Alpaca in get_top_movers)
+            # Also get losers from the movers data (fetched via Polygon in get_top_movers)
             # Losers are mean reversion bounce candidates
             if movers:
                 loser_syms = []
@@ -3423,10 +3437,8 @@ class TradingEngine:
 
     def get_low_float_runners(self):
         """
-        Scan for explosive movers using REAL-TIME Alpaca data.
+        Scan for explosive movers using Polygon.io full-market data.
         Catches 100%+ runners, squeeze candidates, extreme volume stocks.
-
-        Uses Alpaca movers API (real-time) with Yahoo fallback for float data.
 
         Returns list of runner dicts sorted by change_pct descending.
         """
@@ -3435,54 +3447,34 @@ class TradingEngine:
         runners = []
         seen = set()
 
-        # --- 1. Alpaca Movers: real-time top gainers with extreme moves ---
-        alpaca_key = self.config.alpaca_api_key
-        alpaca_secret = self.config.alpaca_secret_key
-        if alpaca_key and alpaca_secret:
-            try:
-                data_base = "https://data.alpaca.markets"
-                headers_alpaca = {
-                    "APCA-API-KEY-ID": alpaca_key,
-                    "APCA-API-SECRET-KEY": alpaca_secret,
-                }
-                resp = _req.get(
-                    f"{data_base}/v1beta1/screener/stocks/movers",
-                    headers=headers_alpaca,
-                    params={"top": 50},
-                    timeout=10,
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for item in data.get("gainers", []):
-                        sym = item.get("symbol", "")
-                        if not sym or "." in sym:
-                            continue
-                        price = item.get("price", 0) or 0
-                        change_pct = item.get("change", 0) or 0
-                        volume = item.get("volume", 0) or 0
-
-                        # Runner = 10%+ move with decent volume
-                        if change_pct >= 10.0 and price >= 1.0 and price <= 100.0:
-                            runners.append({
-                                "symbol": sym,
-                                "name": sym,
-                                "price": round(price, 2),
-                                "change_pct": round(change_pct, 2),
-                                "volume": volume,
-                                "avg_volume": 0,
-                                "rvol": 0,
-                                "market_cap": 0,
-                                "float_shares": 0,
-                                "float_display": "N/A",
-                                "shares_outstanding": 0,
-                                "runner_type": "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER",
-                                "is_low_float": False,
-                                "is_post_split": False,
-                                "on_watchlist": sym in self.watchlist,
-                            })
-                            seen.add(sym)
-            except Exception as e:
-                log.debug(f"Alpaca runners error: {e}")
+        # --- 1. Polygon.io runners (10%+ movers from full-market scan) ---
+        if self.polygon and self.polygon.enabled:
+            poly_runners = self.polygon.get_runners(limit=50)
+            for r in poly_runners:
+                sym = r.get("symbol", "")
+                if not sym:
+                    continue
+                price = r.get("price", 0)
+                change_pct = r.get("change_pct", 0)
+                volume = r.get("volume", 0)
+                runners.append({
+                    "symbol": sym,
+                    "name": sym,
+                    "price": round(price, 2),
+                    "change_pct": round(change_pct, 2),
+                    "volume": volume,
+                    "avg_volume": r.get("avg_volume", 0),
+                    "rvol": r.get("rvol", 0),
+                    "market_cap": 0,
+                    "float_shares": 0,
+                    "float_display": "N/A",
+                    "shares_outstanding": 0,
+                    "runner_type": "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER",
+                    "is_low_float": False,
+                    "is_post_split": False,
+                    "on_watchlist": sym in self.watchlist,
+                })
+                seen.add(sym)
 
         # --- 2. Yahoo fallback for float data + small cap scan ---
         if len(runners) < 3:
@@ -3691,181 +3683,53 @@ class TradingEngine:
 
     def get_top_movers(self):
         """
-        Fetch top movers using REAL-TIME data.
-        Priority: Alpaca screener API (real-time) -> Yahoo Finance (delayed fallback).
+        Fetch top movers using Polygon.io full-market scan (real-time).
+        One API call returns ALL ~10,000 stocks — no narrow top-50 limits.
 
         Returns list of dicts: [{symbol, name, price, change_pct, volume, ...}]
         """
-        import requests as _req
-
         movers = []
         seen_symbols = set()
 
-        # --- 1. Alpaca Screener API (REAL-TIME) ---
-        alpaca_key = self.config.alpaca_api_key
-        alpaca_secret = self.config.alpaca_secret_key
-        if alpaca_key and alpaca_secret:
-            data_base = "https://data.alpaca.markets"
-            headers_alpaca = {
-                "APCA-API-KEY-ID": alpaca_key,
-                "APCA-API-SECRET-KEY": alpaca_secret,
-            }
+        # --- 1. Polygon.io full-market scan (PRIMARY — real-time) ---
+        if self.polygon and self.polygon.enabled:
+            # Gainers (2%+ movers)
+            poly_movers = self.polygon.get_top_movers(limit=200)
+            for m in poly_movers:
+                sym = m.get("symbol", "")
+                if not sym or sym in seen_symbols:
+                    continue
+                movers.append({
+                    "symbol": sym,
+                    "name": m.get("name", sym),
+                    "price": m.get("price", 0),
+                    "change_pct": m.get("change_pct", 0),
+                    "volume": m.get("volume", 0),
+                    "avg_volume": m.get("avg_volume", 0),
+                    "rvol": m.get("rvol", 0),
+                    "market_cap": 0,
+                    "on_watchlist": sym in self.watchlist,
+                })
+                seen_symbols.add(sym)
 
-            # 1a. Top movers (gainers + losers) - real-time
-            try:
-                resp = _req.get(
-                    f"{data_base}/v1beta1/screener/stocks/movers",
-                    headers=headers_alpaca,
-                    params={"top": 50},
-                    timeout=10,
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    # Gainers
-                    for item in data.get("gainers", []):
-                        sym = item.get("symbol", "")
-                        if not sym or "." in sym:
-                            continue
-                        price = item.get("price", 0)
-                        change_pct = item.get("change", 0)  # Already percentage
-                        volume = item.get("volume", 0) or 0
-                        if price >= 1.0:
-                            movers.append({
-                                "symbol": sym,
-                                "name": sym,
-                                "price": round(price, 2),
-                                "change_pct": round(change_pct, 2),
-                                "volume": volume,
-                                "avg_volume": 0,
-                                "rvol": 0,
-                                "market_cap": 0,
-                                "on_watchlist": sym in self.watchlist,
-                            })
-                            seen_symbols.add(sym)
-                    # Losers (for mean reversion)
-                    for item in data.get("losers", []):
-                        sym = item.get("symbol", "")
-                        if not sym or "." in sym:
-                            continue
-                        price = item.get("price", 0)
-                        change_pct = item.get("change", 0)
-                        volume = item.get("volume", 0) or 0
-                        if price >= 5.0 and sym not in seen_symbols:
-                            movers.append({
-                                "symbol": sym,
-                                "name": sym,
-                                "price": round(price, 2),
-                                "change_pct": round(change_pct, 2),
-                                "volume": volume,
-                                "avg_volume": 0,
-                                "rvol": 0,
-                                "market_cap": 0,
-                                "on_watchlist": sym in self.watchlist,
-                            })
-                            seen_symbols.add(sym)
-            except Exception as e:
-                log.debug(f"Alpaca movers error: {e}")
-
-            # 1b. Most active by volume - real-time
-            try:
-                resp_active = _req.get(
-                    f"{data_base}/v1beta1/screener/stocks/most-actives",
-                    headers=headers_alpaca,
-                    params={"top": 50, "by": "volume"},
-                    timeout=10,
-                )
-                if resp_active.status_code == 200:
-                    data_active = resp_active.json()
-                    for item in data_active.get("most_actives", []):
-                        sym = item.get("symbol", "")
-                        if not sym or "." in sym or sym in seen_symbols:
-                            continue
-                        price = item.get("price", 0) or 0
-                        volume = item.get("volume", 0) or 0
-                        change_pct = item.get("change", 0) or 0
-                        if price >= 1.0 and volume >= 100000:
-                            movers.append({
-                                "symbol": sym,
-                                "name": sym,
-                                "price": round(price, 2),
-                                "change_pct": round(change_pct, 2),
-                                "volume": volume,
-                                "avg_volume": 0,
-                                "rvol": 0,
-                                "market_cap": 0,
-                                "on_watchlist": sym in self.watchlist,
-                            })
-                            seen_symbols.add(sym)
-            except Exception as e:
-                log.debug(f"Alpaca most-active error: {e}")
-
-            # 1c. Most active by trades - catches hot retail stocks
-            try:
-                resp_trades = _req.get(
-                    f"{data_base}/v1beta1/screener/stocks/most-actives",
-                    headers=headers_alpaca,
-                    params={"top": 30, "by": "trades"},
-                    timeout=10,
-                )
-                if resp_trades.status_code == 200:
-                    data_trades = resp_trades.json()
-                    for item in data_trades.get("most_actives", []):
-                        sym = item.get("symbol", "")
-                        if not sym or "." in sym or sym in seen_symbols:
-                            continue
-                        price = item.get("price", 0) or 0
-                        change_pct = item.get("change", 0) or 0
-                        if price >= 1.0:
-                            movers.append({
-                                "symbol": sym,
-                                "name": sym,
-                                "price": round(price, 2),
-                                "change_pct": round(change_pct, 2),
-                                "volume": item.get("volume", 0) or 0,
-                                "avg_volume": 0,
-                                "rvol": 0,
-                                "market_cap": 0,
-                                "on_watchlist": sym in self.watchlist,
-                            })
-                            seen_symbols.add(sym)
-            except Exception as e:
-                log.debug(f"Alpaca most-active-by-trades error: {e}")
-
-        # --- 2. Yahoo day gainers (ALWAYS runs alongside Alpaca for broader coverage) ---
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        for screen_id in ("day_gainers", "small_cap_gainers"):
-            try:
-                url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-                params = {"scrIds": screen_id, "count": 50}
-                resp = _req.get(url, params=params, headers=headers, timeout=10)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    results = data.get("finance", {}).get("result", [])
-                    if results:
-                        for q in results[0].get("quotes", [])[:50]:
-                            sym = q.get("symbol", "")
-                            if not sym or "." in sym or sym in seen_symbols:
-                                continue
-                            price = q.get("regularMarketPrice", 0)
-                            change_pct = q.get("regularMarketChangePercent", 0)
-                            volume = q.get("regularMarketVolume", 0)
-                            avg_vol = q.get("averageDailyVolume3Month", 1)
-                            rvol = round(volume / avg_vol, 1) if avg_vol > 0 else 0
-                            if price >= 1.0:
-                                movers.append({
-                                    "symbol": sym,
-                                    "name": q.get("shortName", sym)[:30],
-                                    "price": round(price, 2),
-                                    "change_pct": round(change_pct, 2),
-                                    "volume": volume,
-                                    "avg_volume": avg_vol,
-                                    "rvol": rvol,
-                                    "market_cap": q.get("marketCap", 0),
-                                    "on_watchlist": sym in self.watchlist,
-                                })
-                                seen_symbols.add(sym)
-            except Exception as e:
-                log.debug(f"Yahoo {screen_id} error: {e}")
+            # Losers (for mean reversion)
+            poly_losers = self.polygon.get_losers(limit=100)
+            for m in poly_losers:
+                sym = m.get("symbol", "")
+                if not sym or sym in seen_symbols:
+                    continue
+                movers.append({
+                    "symbol": sym,
+                    "name": sym,
+                    "price": m.get("price", 0),
+                    "change_pct": m.get("change_pct", 0),
+                    "volume": m.get("volume", 0),
+                    "avg_volume": 0,
+                    "rvol": 0,
+                    "market_cap": 0,
+                    "on_watchlist": sym in self.watchlist,
+                })
+                seen_symbols.add(sym)
 
         # Sort by change % descending
         movers.sort(key=lambda x: x["change_pct"], reverse=True)

@@ -1,317 +1,294 @@
 # ============================================
-# STRATEGY CONFIGURATIONS
+# STRATEGY CONFIGURATIONS - OPTIMIZED
 # ============================================
+# Focus: $0.50-$50 high-beta runners for maximum % gains
+# Dead weight removed: pairs_trading, vwap_scalp, smc_forever disabled
+# Capital reallocated to proven runner-catching strategies
 
 # --- Strategy Allocation ---
 # How capital is split across strategies
+# Total: 100% across active strategies
 allocation:
-  smc_forever: 0.07               # 7% - highest conviction, equities only now
-  mean_reversion: 0.08            # 8% - reliable, equities only now
-  momentum: 0.08                  # 8% - swing trades, equities only (+1%)
-  rvol_momentum: 0.20             # 20% - Money Machine, ALL stocks now (+3%)
-  rvol_scalp: 0.22                # 22% - Best performer, ALL stocks now
-  vwap_scalp: 0.05                # 5% - market hours scalping (+1%)
-  pairs_trading: 0.04             # 4% - equity pairs only now (-3%)
-  prebreakout: 0.12               # 12% - equities only now (-4%)
-  premarket_gap: 0.14             # 14% - pre-market gap plays (+2%)
+  smc_forever: 0.00               # DISABLED - designed for large-cap liquid stocks, not $0.50-$50 runners
+  mean_reversion: 0.08            # 8% - dip-buying oversold small caps
+  momentum: 0.10                  # 10% - swing trades on trending runners (+2%)
+  rvol_momentum: 0.25             # 25% - Money Machine, THE core strategy (+5%)
+  rvol_scalp: 0.25                # 25% - Ultra-fast scalps on volume spikes (+3%)
+  vwap_scalp: 0.00                # DISABLED - needs liquid large caps, wrong universe
+  pairs_trading: 0.00             # DISABLED - requires short selling (long_only=true blocks it)
+  prebreakout: 0.15               # 15% - catching breakouts before they happen (+3%)
+  premarket_gap: 0.17             # 17% - pre-market gap plays are where runners start (+3%)
 
 # --- Mean Reversion Strategy ---
-# Buy oversold, sell overbought - bread & butter for small accounts
+# Dip-buying oversold small/mid caps - buy the panic, sell the recovery
 mean_reversion:
   enabled: true
   timeframe: "5m"
   lookback_period: 20             # 20-period lookback
-  entry_zscore: -1.8              # Lowered from -2.0 - catch more reversals
+  entry_zscore: -2.0              # Back to -2.0 - only real oversold dips (small caps are noisy)
   exit_zscore: 0.0                # Exit at mean
-  rsi_oversold: 32                # Lowered from 35 - crypto needs deeper oversold for real reversals
-  rsi_overbought: 72              # Slightly more room for crypto momentum
+  rsi_oversold: 28                # Deeper oversold for small caps (more noise = need stronger signals)
+  rsi_overbought: 72
   bollinger_period: 20
   bollinger_std: 2.0
-  min_atr_multiplier: 1.5         # Min volatility filter
-  max_holding_periods: 20         # Max hold 20 bars (100 min on 5m)
-  max_hold_days: 3                # Mean reversion: max 3 days to revert
-  max_trades_per_day: 15          # More mean reversion trades (was 10)
+  min_atr_multiplier: 1.5
+  max_holding_periods: 15         # Shorter hold - small caps revert faster or keep dropping
+  max_hold_days: 2                # 2 days max - if no revert by then, it's a trend not a dip
+  max_trades_per_day: 10          # Fewer trades - quality over quantity for mean reversion
   symbols:
-    - SPY
-    - QQQ
-    - IWM
-    - AAPL
-    - MSFT
-    - GOOGL
-    - AMZN
-    - META
-    - NVDA
-    - AMD
-    - TSLA
-    - PLTR
+    # $0.50-$50 stocks that dip hard but recover (high beta, liquid enough)
     - SOFI
-    - COIN
-    - AVGO
-    - MU
+    - HOOD
+    - PLTR
+    - IONQ
+    - MARA
+    - RIOT
+    - SOUN
+    - LCID
+    - RIVN
+    - AFRM
+    - UPST
+    - SNAP
+    - PLUG
+    - DNA
+    - OPEN
+    - WISH
+    - SKLZ
+    - CLSK
+    - JOBY
+    - GSAT
 
 # --- Momentum / Trend Following ---
-# Ride strong trends - let winners run
+# Ride strong trends on small/mid cap runners
 momentum:
   enabled: true
   timeframe: "15m"
   fast_ema: 8
   slow_ema: 21
   signal_ema: 5
-  adx_threshold: 20               # Even lower (was 22) - catch trends earliest
-  volume_surge_multiplier: 1.2    # Even lower (was 1.3) - more signals on crypto
+  adx_threshold: 22               # Slightly higher - small caps need confirmed trends (less noise)
+  volume_surge_multiplier: 1.5    # Higher volume requirement - confirm institutional flow
   atr_period: 14
-  atr_stop_multiplier: 1.5        # Tighter stop: 1.5x ATR (was 1.8 - faster cut)
-  atr_target_multiplier: 4.0      # Wider target: 4x ATR (was 3.5 - let winners ride)
-  max_holding_bars: 40            # Max hold 40 bars (10 hours on 15m)
-  max_hold_days: 7                # Swing: hold up to 7 trading days (was 5 - catch week-long moves)
-  breakout_lookback: 15           # Shorter lookback = more breakouts detected
+  atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR
+  atr_target_multiplier: 5.0      # Wider target: 5x ATR for runners (was 4x)
+  max_holding_bars: 40
+  max_hold_days: 5                # 5 days max - runners move fast
+  breakout_lookback: 15
   symbols:
-    - SPY
-    - QQQ
-    - IWM
-    - AAPL
-    - MSFT
-    - TSLA
-    - NVDA
-    - AMD
-    - AMZN
-    - META
-    - GOOGL
-    - NFLX
+    # $0.50-$50 trending stocks with momentum potential
+    - SOFI
+    - HOOD
     - PLTR
+    - IONQ
+    - MARA
+    - RIOT
+    - SOUN
+    - AFRM
+    - UPST
     - COIN
     - SMCI
-    - ARM
-    - AVGO
-    - CRWD
-    - UBER
+    - RIVN
+    - LCID
+    - MSTR
+    - SNAP
+    - ROKU
     - DKNG
+    - AI
+    - BBAI
+    - RKLB
+    - LUNR
+    - ASTS
+    - CLSK
+    - RGTI
+    - GME
+    - AMC
 
 # --- VWAP Scalping ---
-# Trade around VWAP like institutional desks
+# DISABLED - VWAP scalping requires highly liquid large caps ($100+) with tight spreads
+# Small caps have erratic VWAP and wide spreads that eat scalp profits
 vwap_scalp:
-  enabled: true
+  enabled: false
   timeframe: "1m"
-  vwap_bands: 2                   # Number of VWAP standard deviation bands
-  entry_band: 1                   # Enter at 1st band
-  exit_at_vwap: true              # Exit at VWAP
-  min_distance_from_vwap: 0.002   # Min 0.2% from VWAP (was 0.3% - catch tighter bounces)
-  max_distance_from_vwap: 0.02    # Max 2% from VWAP (was 1.5% - catch bigger deviations)
-  volume_confirmation: true        # Need volume spike to confirm
-  max_trades_per_day: 10          # More VWAP trades (was 6)
-  max_holding_minutes: 45         # Longer hold (was 30 min - let mean reversion work)
+  vwap_bands: 2
+  entry_band: 1
+  exit_at_vwap: true
+  min_distance_from_vwap: 0.002
+  max_distance_from_vwap: 0.02
+  volume_confirmation: true
+  max_trades_per_day: 10
+  max_holding_minutes: 45
   symbols:
     - SPY
     - QQQ
-    - AAPL
-    - MSFT
-    - NVDA
-    - AMD
 
 # --- Pairs Trading (Statistical Arbitrage) ---
-# Trade correlated pairs - market neutral
+# DISABLED - Requires short selling which is blocked by long_only=true
+# Also requires correlated large-cap pairs - wrong universe for $0.50-$50
 pairs_trading:
-  enabled: true
+  enabled: false
   timeframe: "15m"
-  lookback_period: 60             # 60-period correlation window
-  min_correlation: 0.70           # Lower correlation (was 0.80 - more pairs qualify)
-  entry_zscore: 1.8               # Enter earlier (was 2.0 - catch more divergences)
-  exit_zscore: 0.3                # Tighter exit (was 0.5 - squeeze more profit from convergence)
-  stop_zscore: 3.5                # Stop if spread widens to 3.5
-  max_holding_bars: 30            # Max hold 30 bars
-  max_hold_days: 5                # Pairs: max 5 days for convergence
+  lookback_period: 60
+  min_correlation: 0.70
+  entry_zscore: 1.8
+  exit_zscore: 0.3
+  stop_zscore: 3.5
+  max_holding_bars: 30
+  max_hold_days: 5
   pairs:
     - ["AAPL", "MSFT"]
-    - ["GOOGL", "META"]
-    - ["AMD", "NVDA"]
-    - ["XLF", "JPM"]
-    - ["SPY", "QQQ"]
-    - ["TSLA", "RIVN"]            # EV sector pair
-    - ["COIN", "HOOD"]            # Fintech/crypto exposure pair
-    - ["CRWD", "SNOW"]            # Cloud/cyber pair
 
 # --- SMC Forever Model (ICT / Smart Money Concepts) ---
-# Highest-conviction model: stacks liquidity + SMT + CISD + FVG + DOL
-# Trades 1-3x per week, A+ setups only
+# DISABLED - Requires liquid large caps for reliable liquidity sweeps and FVGs
+# Small caps don't have clean enough order flow for SMC patterns
 smc_forever:
-  enabled: true
+  enabled: false
   timeframe: "15m"
-  swing_lookback: 5                 # Bars each side for swing point detection
-  fvg_min_size_pct: 0.001           # Min FVG size as % of price (0.1%)
-  smt_lookback: 10                  # Bars to compare for SMT divergence
-  displacement_atr_mult: 1.5        # Displacement candle = 1.5x ATR body
-  risk_reward_min: 1.5              # Lower R:R (was 2.0 - take more setups)
-  max_trades_per_week: 6            # Double weekly trades (was 3 - don't leave money on table)
-  max_hold_days: 10                  # SMC setups: hold up to 10 days (was 7 - let big moves play out)
-  stop_buffer_pct: 0.002            # 0.2% buffer below FVG for stop
-  smt_pairs:                        # Correlated pairs for SMT divergence
+  swing_lookback: 5
+  fvg_min_size_pct: 0.001
+  smt_lookback: 10
+  displacement_atr_mult: 1.5
+  risk_reward_min: 1.5
+  max_trades_per_week: 6
+  max_hold_days: 10
+  stop_buffer_pct: 0.002
+  smt_pairs:
     - ["SPY", "QQQ"]
-    - ["AAPL", "MSFT"]
-    - ["NVDA", "AMD"]
   symbols:
     - SPY
-    - QQQ
-    - AAPL
-    - MSFT
-    - NVDA
-    - AMD
-    - AMZN
-    - META
-    - GOOGL
-    - TSLA
-    - PLTR
-    - COIN
-    - SMCI
-    - ARM
-    - AVGO
-    - NFLX
 
 # --- RVOL Momentum Strategy (Money Machine) ---
-# Auto-trades high relative volume stocks like Trade Ideas Money Machine
-# Dynamically discovers runners from top movers (not just static watchlist)
+# THE CORE STRATEGY - finds stocks with unusual volume and rides the momentum
+# Dynamically discovers runners from Polygon scanner (not just static watchlist)
 rvol_momentum:
   enabled: true
   timeframe: "5m"
-  min_rvol: 1.5                    # Lower threshold (crypto 0.7x = 1.05x effective - catch more)
-  min_score: 45                    # Lower score (crypto 0.8x = 36 effective - more aggressive)
-  min_price: 1.00                  # Allow $1+ stocks (was $2 - big % movers are cheap)
-  max_price: 1500.00               # Higher cap (was $800 - don't miss AVGO, GOOG)
-  min_volume: 100000               # Lower volume (was 150K - catch more mid-caps)
+  min_rvol: 2.0                    # Back to 2.0 - quality over quantity for entries
+  min_score: 55                    # Higher threshold - only take strong setups
+  min_price: 0.50                  # Match global $0.50 floor
+  max_price: 50.00                 # Match scanner max - focus on runner territory
+  min_volume: 100000               # 100K minimum - need liquidity to exit
   atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR (momentum = fast exit)
-  atr_target_multiplier: 4.0      # Wider target: 4x ATR (was 3x - let runners go)
-  max_hold_minutes: 180            # Max 3 hours (was 2 - give momentum time to play out)
-  max_trades_per_day: 25           # 25 trades/day (was 18 - this is the money machine)
-  symbols:                         # Base watchlist (dynamic symbols get added automatically)
-    - SPY
-    - QQQ
-    - AAPL
-    - MSFT
-    - NVDA
-    - AMD
-    - TSLA
-    - META
-    - AMZN
-    - PLTR
-    - COIN
-    - SMCI
-    - ARM
-    - CRWD
-    - SNOW
+  atr_target_multiplier: 4.0      # 4x ATR target
+  max_hold_minutes: 120            # Max 2 hours - momentum fades, take profit
+  max_trades_per_day: 20           # 20 trades/day - focused quality
+  symbols:
+    # $0.50-$50 high-beta runners (dynamic scanner adds more)
     - SOFI
     - HOOD
-    - MSTR
-    - GOOGL
-    - NFLX
-    - AVGO
-    - MU
-    - UBER
-    - DKNG
-    - RBLX
+    - PLTR
+    - IONQ
+    - MARA
+    - RIOT
+    - SOUN
     - AFRM
     - UPST
-    - IONQ
+    - COIN
+    - SMCI
+    - MSTR
+    - AI
+    - BBAI
+    - RKLB
+    - LUNR
+    - ASTS
+    - RIVN
+    - LCID
+    - CLSK
     - RGTI
-    - SOUN
+    - GME
+    - AMC
+    - SNAP
+    - ROKU
+    - DKNG
+    - RBLX
 
 # --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
-# Ultra-fast scalping on 1-minute bars with real-time profit taking
+# Ultra-fast scalping on 1-minute bars - the volume machine
 # Catches quick RVOL breakouts, takes profit on same candle if uptick continues
 rvol_scalp:
   enabled: true
   timeframe: "1m"
-  min_rvol: 1.8                    # Back to 1.8 (crypto 0.7x = 1.26x effective, was 1.05x = noise)
-  min_score: 50                    # Back to 50 (crypto 0.8x = 40 effective, was 36 = too loose)
-  min_price: 2.00                  # Skip penny stocks below $2
-  max_price: 800.00                # Higher cap for big names
-  min_volume: 80000                # Lowered from 100K - catch more setups
+  min_rvol: 2.0                    # Higher RVOL = better quality signals (was 1.8)
+  min_score: 55                    # Higher score threshold (was 50)
+  min_price: 0.50                  # Match global $0.50 floor (was $2)
+  max_price: 50.00                 # Match scanner max - focus on runner territory (was $800)
+  min_volume: 80000                # 80K minimum
   atr_stop_multiplier: 1.0        # Very tight stop: 1x ATR
-  atr_target_multiplier: 1.5      # Quick target: 1.5x ATR (take profit fast)
-  quick_scalp_target_pct: 0.004   # Take profit at +0.4% (even quicker - high frequency)
-  runner_target_pct: 0.015        # Runners to +1.5% (let strong ones go further)
-  max_hold_minutes: 8              # Max 8 minutes (even faster turnover)
-  max_trades_per_day: 50           # 50 scalps/day (was 35 - this is the volume machine)
-  same_candle_exit: true           # Exit on same candle if target hit
-  price_poll_seconds: 3            # Check price every 3 seconds for exits
-  breakout_confirmation_bars: 2    # 2 bars of confirmation before entry
-  momentum_acceleration: true      # Detect acceleration (bar-over-bar volume increase)
-  symbols:                         # Scans these + all dynamic movers
-    - SPY
-    - QQQ
-    - AAPL
-    - MSFT
-    - NVDA
-    - AMD
-    - TSLA
-    - META
-    - AMZN
-    - PLTR
-    - COIN
-    - SMCI
-    - ARM
-    - CRWD
-    - SNOW
+  atr_target_multiplier: 1.5      # Quick target: 1.5x ATR
+  quick_scalp_target_pct: 0.006   # Take profit at +0.6% (slightly wider - small caps have spreads)
+  runner_target_pct: 0.02         # Runners to +2% (let strong ones go further)
+  max_hold_minutes: 10             # Max 10 minutes
+  max_trades_per_day: 35           # 35 scalps/day (reduced from 50 - quality over quantity)
+  same_candle_exit: true
+  price_poll_seconds: 3
+  breakout_confirmation_bars: 2
+  momentum_acceleration: true
+  symbols:
+    # $0.50-$50 high-volume stocks for scalping
     - SOFI
     - HOOD
-    - MSTR
-    - GOOGL
-    - NFLX
-    - AVGO
-    - MU
-    - UBER
-    - DKNG
-    - RBLX
+    - PLTR
+    - IONQ
+    - MARA
+    - RIOT
+    - SOUN
     - AFRM
     - UPST
-    - IONQ
-    - RGTI
-    - SOUN
+    - COIN
+    - SMCI
+    - MSTR
     - AI
     - BBAI
     - RKLB
-    - MARA
-    - RIOT
+    - LUNR
+    - ASTS
+    - RIVN
+    - LCID
+    - CLSK
+    - RGTI
+    - GME
+    - AMC
+    - SNAP
+    - ROKU
+    - DKNG
+    - RBLX
 
 # --- Pre-Breakout Accumulation Strategy ---
 # Enters BEFORE the breakout by detecting accumulation:
 # BB squeeze + volume building + higher lows + MACD shift
-# Then enters on the first breakout candle for maximum runner potential
-# Catches plays like RXT (+227%), GERN (+7.8%) by entering early
+# These are the multi-bagger plays - enter during compression, ride the explosion
 prebreakout:
   enabled: true
   timeframe: "5m"
-  min_score: 45                    # Lower threshold (was 50 - catch more breakouts)
-  min_price: 0.50                  # Low price OK - these are where big % moves happen
-  max_price: 1500.00               # Higher cap (was $800 - don't miss expensive runners)
-  min_volume: 75000                # Lower volume (was 100K - catch early-stage runners)
-  bollinger_period: 20             # BB period
-  bollinger_std: 2.0               # BB standard deviations
-  squeeze_lookback: 50             # Bars to compare for squeeze detection
-  squeeze_percentile: 30           # Wider squeeze detection (was 25% - catch more setups)
-  vol_build_bars: 5                # Recent bars to measure volume buildup
-  vol_build_multiplier: 1.2        # Lower vol requirement (was 1.3x - earlier detection)
-  atr_stop_multiplier: 2.0         # Stop at 2x ATR below (room to breathe)
-  atr_target_multiplier: 6.0       # First target at 6x ATR (was 5x - bigger targets)
-  runner_atr_multiplier: 15.0      # Runner target at 15x ATR (was 10x - full send on runners)
-  max_hold_days: 7                 # Hold up to 7 days (was 5 - give breakouts time to develop)
-  max_trades_per_day: 12           # Max 12 breakout entries (was 8 - catch more setups)
-  trailing_stop_pct: 0.035         # 3.5% trailing stop (was 3% - wider to survive shakeouts)
+  min_score: 50                    # Slightly higher threshold - quality breakouts only
+  min_price: 0.50                  # Match global $0.50 floor
+  max_price: 50.00                 # Match scanner max (was $1500 - too wide)
+  min_volume: 75000
+  bollinger_period: 20
+  bollinger_std: 2.0
+  squeeze_lookback: 50
+  squeeze_percentile: 25           # Tighter squeeze detection - stronger setups
+  vol_build_bars: 5
+  vol_build_multiplier: 1.3        # Higher vol requirement - confirm accumulation
+  atr_stop_multiplier: 2.0
+  atr_target_multiplier: 6.0       # 6x ATR first target
+  runner_atr_multiplier: 15.0      # 15x ATR runner target (multi-bagger potential)
+  max_hold_days: 5                 # 5 days max
+  max_trades_per_day: 10
+  trailing_stop_pct: 0.04          # 4% trailing stop (wider - survive small cap shakeouts)
   symbols:
-    # High-beta stocks that make big breakout moves
-    - TSLA
-    - NVDA
-    - AMD
-    - PLTR
-    - COIN
-    - SMCI
-    - ARM
-    - MSTR
-    - HOOD
+    # $0.50-$50 high-beta stocks that make breakout moves
     - SOFI
+    - HOOD
+    - PLTR
+    - IONQ
+    - MARA
+    - RIOT
+    - SOUN
     - AFRM
     - UPST
-    - IONQ
-    - RGTI
-    - SOUN
+    - COIN
+    - SMCI
+    - MSTR
     - AI
     - BBAI
     - RKLB
@@ -319,63 +296,54 @@ prebreakout:
     - ASTS
     - RIVN
     - LCID
-    - MARA
-    - RIOT
     - CLSK
+    - RGTI
     - GME
     - AMC
     - SNAP
     - ROKU
     - DKNG
-    - UBER
-    - CRWD
-    - SNOW
-    - MU
-    - AVGO
-    - NFLX
-    - RBLX
-    - AI
-    - BBAI
+    - DNA
+    - OPEN
+    - PLUG
+    - JOBY
 
 # --- Pre-Market Gap Scanner Strategy ---
-# Finds extreme pre-market gap-ups, waits for pullback, enters on structure break.
-# Based on proven approach: top 3 gainers + 10x volume + pullback entry
+# Finds extreme pre-market gap-ups, waits for pullback, enters on structure break
+# This is where the biggest day 1 runners come from
 premarket_gap:
   enabled: true
   timeframe: "5m"
-  min_gap_pct: 0.05               # Minimum 5% gap up from prior close
-  min_rvol: 10.0                  # 10x relative volume (extreme = institutional interest)
-  min_price: 1.00                 # Allow cheap stocks ($1+) - big % movers live here
-  max_price: 50.00                # Focus under $50 (low float, high % potential)
+  min_gap_pct: 0.05               # Minimum 5% gap
+  min_rvol: 8.0                   # Lowered from 10x - catch more gaps early
+  min_price: 0.50                 # Match global $0.50 floor (was $1)
+  max_price: 50.00                # Focus under $50
   min_volume: 50000               # Min pre-market volume
-  pullback_min_pct: 0.02          # Min 2% pullback from leg 1 high
-  pullback_max_pct: 0.50          # Max 50% retracement (healthy = 30-50%)
-  atr_stop_multiplier: 1.2       # Tight stop: 1.2x ATR below pullback low
-  atr_target_multiplier: 3.0     # First target at 3x ATR
-  runner_atr_multiplier: 8.0     # Runner target at 8x ATR (let winners fly)
-  max_hold_minutes: 60            # Max 1 hour hold (pre-market moves are fast)
-  max_trades_per_day: 6           # Max 6 gap plays per day (only best setups)
-  max_candidates: 3               # Focus on top 3 gappers only
-  trailing_stop_pct: 0.025        # 2.5% trailing stop
-  start_hour: 6                   # Start scanning at 6 AM ET
-  end_hour: 10                    # Stop entries by 10 AM ET (morning fakeouts after)
+  pullback_min_pct: 0.02          # Min 2% pullback
+  pullback_max_pct: 0.50          # Max 50% retracement
+  atr_stop_multiplier: 1.2        # Tight stop: 1.2x ATR
+  atr_target_multiplier: 3.0      # First target at 3x ATR
+  runner_atr_multiplier: 10.0     # Runner target at 10x ATR (bigger for gap plays)
+  max_hold_minutes: 90             # 90 min hold (was 60 - let morning momentum play out)
+  max_trades_per_day: 6
+  max_candidates: 5                # Top 5 gappers (was 3 - more opportunities)
+  trailing_stop_pct: 0.03          # 3% trailing stop (wider for volatile gap plays)
+  start_hour: 6
+  end_hour: 11                    # Extended to 11 AM (was 10 - catch late morning runners)
   symbols:
-    # High-beta stocks that gap hard on catalysts
-    - TSLA
-    - NVDA
-    - AMD
-    - PLTR
-    - COIN
-    - SMCI
-    - ARM
-    - MSTR
-    - HOOD
+    # $0.50-$50 high-beta gap stocks
     - SOFI
+    - HOOD
+    - PLTR
+    - IONQ
+    - MARA
+    - RIOT
+    - SOUN
     - AFRM
     - UPST
-    - IONQ
-    - RGTI
-    - SOUN
+    - COIN
+    - SMCI
+    - MSTR
     - AI
     - BBAI
     - RKLB
@@ -383,25 +351,26 @@ premarket_gap:
     - ASTS
     - RIVN
     - LCID
-    - MARA
-    - RIOT
     - CLSK
+    - RGTI
     - GME
     - AMC
     - SNAP
     - ROKU
     - DKNG
-    - UBER
-    - CRWD
-    - SNOW
-    - MU
-    - AVGO
+    - DNA
+    - OPEN
+    - PLUG
+    - JOBY
+    - GSAT
+    - WISH
+    - SKLZ
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts
 tradingview_signals:
   enabled: true
-  validate_signals: true          # Validate signals against risk rules
+  validate_signals: true
   allowed_actions: ["buy", "sell", "close"]
-  require_confirmation: false     # No manual confirmation needed (fully auto)
-  max_signal_age_seconds: 30      # Ignore signals older than 30 sec
+  require_confirmation: false
+  max_signal_age_seconds: 30
