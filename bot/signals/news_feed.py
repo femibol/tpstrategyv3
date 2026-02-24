@@ -1,12 +1,11 @@
 """
-Polygon.io News-Driven Trading (v3 Official Client)
+Alpaca News-Driven Trading
 Scans real-time financial news for profitable catalysts.
 
-Uses the official polygon-api-client library:
-  - list_ticker_news() → Auto-paginated news with typed TickerNews models
+Uses Alpaca's data API:
+  - /v1beta1/news → Real-time news with ticker tagging
+  - Multiple sources (Benzinga, GlobeNewsWire, etc.)
   - Ticker-tagged articles (knows EXACTLY which stocks are mentioned)
-  - Real-time publishing (no 10-minute delay)
-  - Multiple news sources (Benzinga, GlobeNewsWire, etc.)
 
 Generates actionable BUY/SELL signals based on catalyst scoring:
 - FDA approvals, contract wins, earnings beats → BUY
@@ -17,13 +16,13 @@ import time
 import threading
 from datetime import datetime, timedelta
 
-from polygon import RESTClient
-from polygon.rest.models import TickerNews
-from polygon.exceptions import BadResponse
+import requests as _requests
 
 from bot.utils.logger import get_logger
 
 log = get_logger("signals.news")
+
+DATA_BASE_URL = "https://data.alpaca.markets"
 
 # High-conviction catalyst keywords with impact scores
 # Score 1-3: 1=minor, 2=moderate, 3=strong catalyst
@@ -85,20 +84,27 @@ BEARISH_CATALYSTS = {
 
 class NewsFeed:
     """
-    Polygon.io news-driven trading signal generator (v3 official client).
+    Alpaca news-driven trading signal generator.
 
     Scans real-time news every 2 minutes, scores catalysts,
     and generates BUY/SELL signals for the engine to execute.
     """
 
-    def __init__(self, config, callback=None, polygon_api_key=None):
+    def __init__(self, config, callback=None, api_key=None, secret_key=None):
         self.config = config
         self.callback = callback
-        self.api_key = polygon_api_key or config.polygon_api_key
+        self.api_key = api_key or config.alpaca_api_key
+        self.secret_key = secret_key or config.alpaca_secret_key
         self.poll_interval = 120  # 2 minutes
         self._running = False
         self._thread = None
-        self._client = None
+        self._headers = {
+            "APCA-API-KEY-ID": self.api_key or "",
+            "APCA-API-SECRET-KEY": self.secret_key or "",
+            "Accept": "application/json",
+        }
+
+        self.enabled = bool(self.api_key and self.secret_key)
 
         # Track seen articles to avoid duplicates
         self.seen_articles = set()
@@ -108,12 +114,22 @@ class NewsFeed:
         # Dynamic watchlist — updated from engine's active symbols
         self.watched_symbols = set()
 
-        if self.api_key:
-            self._client = RESTClient(
-                api_key=self.api_key,
-                retries=2,
-                trace=False,
-            )
+    def _api_get(self, path, params=None):
+        """Make authenticated GET request to Alpaca data API."""
+        url = f"{DATA_BASE_URL}{path}"
+        try:
+            resp = _requests.get(url, headers=self._headers, params=params, timeout=10)
+            if resp.status_code == 200:
+                return resp.json()
+            elif resp.status_code == 429:
+                log.debug("Alpaca news rate limited")
+                return None
+            else:
+                log.debug(f"Alpaca news API {path}: status {resp.status_code}")
+                return None
+        except Exception as e:
+            log.debug(f"Alpaca news API error: {e}")
+            return None
 
     def update_watchlist(self, symbols):
         """Update the symbols to monitor for news (called by engine each cycle)."""
@@ -121,13 +137,13 @@ class NewsFeed:
 
     def start(self):
         """Start the news feed in a background thread."""
-        if not self._client:
-            log.warning("Polygon API key not set — news trading disabled")
+        if not self.enabled:
+            log.warning("Alpaca API keys not set — news trading disabled")
             return
         self._running = True
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
-        log.info("Polygon news scanner started (v3 client) — scanning for catalysts every 2 min")
+        log.info("Alpaca news scanner started — scanning for catalysts every 2 min")
 
     def stop(self):
         self._running = False
@@ -140,8 +156,8 @@ class NewsFeed:
                 self._check_news()
 
     def _check_news(self):
-        """Fetch and analyze latest news from Polygon."""
-        if not self._client:
+        """Fetch and analyze latest news from Alpaca."""
+        if not self.enabled:
             return
 
         try:
@@ -153,7 +169,7 @@ class NewsFeed:
             signal_count = 0
 
             for article in articles:
-                article_id = article.get("id", "") or article.get("url", "")
+                article_id = str(article.get("id", "")) or article.get("url", "")
                 if article_id in self.seen_articles:
                     continue
 
@@ -168,7 +184,7 @@ class NewsFeed:
                     "published": article.get("published", ""),
                     "tickers": article.get("tickers", []),
                     "publisher": article.get("publisher", ""),
-                    "source": "polygon",
+                    "source": "alpaca",
                 })
 
                 # Analyze each ticker mentioned in the article
@@ -197,71 +213,46 @@ class NewsFeed:
             log.warning(f"News check error: {e}")
 
     def _fetch_news(self):
-        """Fetch latest news using the official Polygon client's list_ticker_news()."""
+        """Fetch latest news from Alpaca's news API."""
         all_articles = []
 
         # 1. General market news (catches broad catalysts)
-        try:
-            for n in self._client.list_ticker_news(
-                order="desc",
-                limit=50,
-                sort="published_utc",
-            ):
-                if isinstance(n, TickerNews):
-                    all_articles.append(self._normalize_article(n))
-                # Stop after 50 total for general news
-                if len(all_articles) >= 50:
-                    break
-        except BadResponse as e:
-            if "429" in str(e):
-                log.debug("Polygon news rate limited")
-            else:
-                log.debug(f"Polygon news error: {e}")
-        except Exception as e:
-            log.debug(f"Polygon news fetch error: {e}")
+        data = self._api_get("/v1beta1/news", {
+            "limit": 50,
+            "sort": "desc",
+            "include_content": "false",
+            "exclude_contentless": "true",
+        })
+        if data:
+            for n in data.get("news", []):
+                all_articles.append(self._normalize_article(n))
 
         # 2. Ticker-specific news for symbols we hold or are watching
         priority_symbols = list(self.watched_symbols)[:10]
-        for symbol in priority_symbols:
-            try:
-                count = 0
-                for n in self._client.list_ticker_news(
-                    ticker=symbol,
-                    order="desc",
-                    limit=10,
-                    sort="published_utc",
-                ):
-                    if isinstance(n, TickerNews):
-                        all_articles.append(self._normalize_article(n))
-                    count += 1
-                    if count >= 10:
-                        break
-            except BadResponse as e:
-                if "429" in str(e):
-                    break  # Stop if rate limited
-            except Exception:
-                continue
+        if priority_symbols:
+            symbols_str = ",".join(priority_symbols)
+            data = self._api_get("/v1beta1/news", {
+                "symbols": symbols_str,
+                "limit": 30,
+                "sort": "desc",
+                "include_content": "false",
+            })
+            if data:
+                for n in data.get("news", []):
+                    all_articles.append(self._normalize_article(n))
 
         return all_articles
 
     def _normalize_article(self, news_item):
-        """Convert a TickerNews model object to a plain dict for processing."""
-        tickers = []
-        if hasattr(news_item, 'tickers') and news_item.tickers:
-            tickers = list(news_item.tickers)
-
-        publisher_name = ""
-        if hasattr(news_item, 'publisher') and news_item.publisher:
-            publisher_name = getattr(news_item.publisher, 'name', str(news_item.publisher))
-
+        """Convert an Alpaca news API response item to a plain dict."""
         return {
-            "id": getattr(news_item, 'id', "") or "",
-            "title": getattr(news_item, 'title', "") or "",
-            "description": getattr(news_item, 'description', "") or "",
-            "url": getattr(news_item, 'article_url', "") or "",
-            "published": getattr(news_item, 'published_utc', "") or "",
-            "tickers": tickers,
-            "publisher": publisher_name,
+            "id": str(news_item.get("id", "")),
+            "title": news_item.get("headline", "") or "",
+            "description": news_item.get("summary", "") or "",
+            "url": news_item.get("url", "") or "",
+            "published": news_item.get("created_at", "") or "",
+            "tickers": news_item.get("symbols", []) or [],
+            "publisher": news_item.get("source", "") or "",
         }
 
     def _score_article(self, article, ticker):
@@ -351,9 +342,9 @@ class NewsFeed:
     def get_status(self):
         return {
             "running": self._running,
-            "api_configured": bool(self._client),
+            "api_configured": self.enabled,
             "total_articles": len(self.recent_news),
             "total_signals": len(self.signals_generated),
             "watched_symbols": list(self.watched_symbols)[:20],
-            "source": "polygon",
+            "source": "alpaca",
         }

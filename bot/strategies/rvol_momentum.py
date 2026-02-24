@@ -10,7 +10,7 @@ Key features:
 - Money Machine composite score: RVOL + trend + momentum + gap
 - Tight stops (momentum plays = fast in, fast out)
 - Avoids low-float traps with price/volume filters
-- SNAPSHOT FAST PATH: generates signals from Polygon snapshot data when bars
+- SNAPSHOT FAST PATH: generates signals from Alpaca snapshot data when bars
   aren't available (catches today's top gainers INSTANTLY like the real
   Trade Ideas Money Machine — no historical bars needed)
 - TIME-OF-DAY RVOL NORMALIZATION: adjusts RVOL for the time of day
@@ -31,7 +31,7 @@ class RvolMomentumStrategy(BaseStrategy):
 
     Two analysis paths:
     A. FULL PATH (bars available): RSI, EMA, MACD, ATR + bar-level RVOL
-    B. SNAPSHOT FAST PATH (no bars): Uses Polygon daily snapshot data
+    B. SNAPSHOT FAST PATH (no bars): Uses Alpaca daily snapshot data
        (price, change_pct, daily RVOL, volume, gap) to generate signals
        for newly-discovered top gainers immediately.
 
@@ -69,7 +69,7 @@ class RvolMomentumStrategy(BaseStrategy):
         # Dynamic symbol list - gets augmented by top movers
         self._dynamic_symbols = set()
 
-        # Snapshot data from Polygon (fed by engine)
+        # Snapshot data from Alpaca (fed by engine)
         # {symbol: {price, change_pct, volume, avg_volume, rvol, gap_pct, open}}
         self._snapshot_data = {}
 
@@ -83,14 +83,14 @@ class RvolMomentumStrategy(BaseStrategy):
                 self._dynamic_symbols.add(sym.upper())
 
     def feed_snapshot_data(self, snapshot_entries):
-        """Feed Polygon snapshot data for fast-path analysis.
+        """Feed Alpaca snapshot data for fast-path analysis.
 
-        Called by the engine with top movers/runners from Polygon's
+        Called by the engine with top movers/runners from Alpaca's
         full-market snapshot. This data includes daily RVOL, change%,
         volume — everything needed for instant signal generation without bars.
 
         Args:
-            snapshot_entries: list of dicts from Polygon scanner, each with:
+            snapshot_entries: list of dicts from Alpaca scanner, each with:
                 symbol, price, change_pct, volume, avg_volume, rvol, gap_pct, open
         """
         for entry in snapshot_entries:
@@ -144,7 +144,7 @@ class RvolMomentumStrategy(BaseStrategy):
 
         Uses two paths:
         1. Full analysis (bars available) — technical indicators + bar RVOL
-        2. Snapshot fast path (no bars) — daily RVOL + price action from Polygon
+        2. Snapshot fast path (no bars) — daily RVOL + price action from Alpaca
         """
         signals = []
 
@@ -186,7 +186,7 @@ class RvolMomentumStrategy(BaseStrategy):
         """
         bars = market_data.get_bars(symbol, 60) if market_data else None
         if bars is None or len(bars) < 25:
-            # FAST PATH: use Polygon snapshot data if available
+            # FAST PATH: use Alpaca snapshot data if available
             snap = self._snapshot_data.get(symbol)
             if snap:
                 return self._analyze_from_snapshot(symbol, snap)
@@ -415,7 +415,7 @@ class RvolMomentumStrategy(BaseStrategy):
     # =========================================================================
 
     def _analyze_from_snapshot(self, symbol, snap):
-        """Analyze a symbol using Polygon daily snapshot data (no bars needed).
+        """Analyze a symbol using Alpaca daily snapshot data (no bars needed).
 
         This is the Money Machine fast path — generates signals from the
         full-market snapshot when historical bars aren't cached yet.
@@ -549,7 +549,7 @@ class RvolMomentumStrategy(BaseStrategy):
 
         # Snapshot doesn't have RSI/EMA/MACD — award bonus points to compensate
         # for missing technical indicators (up to 35 pts missing vs full path).
-        # The fact that Polygon flagged it as a top mover IS strong confirmation.
+        # The fact that Alpaca flagged it as a top mover IS strong confirmation.
         if direction == "UP" and rvol >= 2.0:
             score += 20
             score_reasons.append("Snapshot momentum confirmed")

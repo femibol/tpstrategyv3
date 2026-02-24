@@ -3,7 +3,7 @@ Market Data Feed - provides REAL price data to strategies.
 
 Data sources (in priority order):
 1. IBKR real-time (if connected to TWS/IB Gateway)
-2. Polygon.io (primary — real-time prices from snapshot, bars from aggregates)
+2. Alpaca (primary — real-time prices from snapshots, bars from data API)
 3. Yahoo Finance direct API (free fallback, ~15 min delay)
 
 No fake data. No simulated prices.
@@ -32,23 +32,23 @@ class MarketDataFeed:
     """
     Real market data provider with multiple sources and caching.
 
-    Priority: IBKR -> Polygon.io -> Yahoo Finance -> yfinance lib
+    Priority: IBKR -> Alpaca -> Yahoo Finance -> yfinance lib
     """
 
-    def __init__(self, config, broker=None, polygon=None):
+    def __init__(self, config, broker=None, scanner=None):
         self.config = config
         self.broker = broker
-        self.polygon = polygon  # PolygonScanner instance
+        self.scanner = scanner  # AlpacaScanner instance
         self.bar_size = config.settings.get("data", {}).get("bar_size", "5 mins")
         self.lookback_days = config.settings.get("data", {}).get("lookback_days", 30)
 
         # Log data source status
-        if self.polygon and self.polygon.enabled:
-            log.info("Polygon.io data connected (primary source for prices + bars)")
+        if self.scanner and self.scanner.enabled:
+            log.info("Alpaca data connected (primary source for prices + bars)")
         else:
             log.warning(
-                "Polygon API key not set — falling back to Yahoo (15-min delay). "
-                "Set POLYGON_API_KEY env var for real-time data."
+                "Alpaca API keys not set — falling back to Yahoo (15-min delay). "
+                "Set ALPACA_API_KEY + ALPACA_SECRET_KEY for real-time data."
             )
 
         # Cache
@@ -98,9 +98,9 @@ class MarketDataFeed:
             if new_syms:
                 self.start_streaming(new_syms)
 
-        # Bulk-update prices from Polygon snapshot cache (free, no API calls)
-        if self.polygon and self.polygon.enabled and self.polygon.price_cache_age < 60:
-            poly_prices = self.polygon.get_snapshots_batch(symbols)
+        # Bulk-update prices from Alpaca snapshot cache (no extra API calls)
+        if self.scanner and self.scanner.enabled and self.scanner.price_cache_age < 60:
+            poly_prices = self.scanner.get_snapshots_batch(symbols)
             for sym, price in poly_prices.items():
                 if price > 0:
                     self._price_cache[sym] = price
@@ -149,14 +149,14 @@ class MarketDataFeed:
             except Exception as e:
                 log.debug(f"IBKR data failed for {symbol}: {e}")
 
-        # 2. Polygon.io aggregates (real-time with API key)
-        if bars is None and self.polygon and self.polygon.enabled:
+        # 2. Alpaca bars (real-time SIP with API key)
+        if bars is None and self.scanner and self.scanner.enabled:
             try:
-                bars = self.polygon.fetch_bars(symbol, self.bar_size, self.lookback_days)
+                bars = self.scanner.fetch_bars(symbol, self.bar_size, self.lookback_days)
                 if bars is not None and len(bars) > 0:
                     return bars
             except Exception as e:
-                log.debug(f"Polygon data failed for {symbol}: {e}")
+                log.debug(f"Alpaca data failed for {symbol}: {e}")
 
         # 3. Yahoo Finance direct API (no dependency issues)
         if bars is None:
@@ -319,10 +319,10 @@ class MarketDataFeed:
             except Exception:
                 pass
 
-        # 2. Polygon.io aggregates (1-min bars)
-        if self.polygon and self.polygon.enabled:
+        # 2. Alpaca bars (1-min bars)
+        if self.scanner and self.scanner.enabled:
             try:
-                bars = self.polygon.fetch_bars(symbol, bar_size="1 min", lookback_days=2)
+                bars = self.scanner.fetch_bars(symbol, bar_size="1 min", lookback_days=2)
                 if bars is not None and len(bars) > 0:
                     return bars
             except Exception:
@@ -374,8 +374,8 @@ class MarketDataFeed:
 
     def refresh_prices(self, symbols):
         """Rapid REAL-TIME price refresh for position monitoring.
-        Priority: IBKR streaming -> Polygon snapshot (real-time) -> Yahoo (delayed).
-        Polygon prices come from the cached full-market snapshot — no extra API calls."""
+        Priority: IBKR streaming -> Alpaca snapshot (real-time) -> Yahoo (delayed).
+        Alpaca prices come from the cached scanner snapshot — no extra API calls."""
         # 1. IBKR streaming (instant, batch)
         if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
             for symbol in symbols:
@@ -387,14 +387,14 @@ class MarketDataFeed:
                     pass
             return
 
-        # 2. Polygon snapshot prices (real-time, from cached scan — no API calls)
-        if self.polygon and self.polygon.enabled and self.polygon.price_cache_age < 60:
-            prices = self.polygon.get_snapshots_batch(symbols)
+        # 2. Alpaca snapshot prices (real-time, from cached scan — no API calls)
+        if self.scanner and self.scanner.enabled and self.scanner.price_cache_age < 60:
+            prices = self.scanner.get_snapshots_batch(symbols)
             if prices:
                 self._price_cache.update(prices)
-                return  # Polygon succeeded, skip Yahoo
+                return  # Alpaca succeeded, skip Yahoo
 
-        # 3. Yahoo fallback (15-min delayed — only if no Polygon)
+        # 3. Yahoo fallback (15-min delayed — only if no Alpaca)
         for symbol in symbols:
             try:
                 url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
@@ -434,7 +434,7 @@ class MarketDataFeed:
     def get_quote(self, symbol):
         """
         Get a real-time quote for a single symbol.
-        Priority: IBKR streaming -> Polygon snapshot (real-time) -> Yahoo (delayed).
+        Priority: IBKR streaming -> Alpaca snapshot (real-time) -> Yahoo (delayed).
         """
         # 1. Try IBKR live streaming (TRUE real-time, no delay)
         if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_quote'):
@@ -445,10 +445,10 @@ class MarketDataFeed:
             except Exception:
                 pass
 
-        # 2. Polygon snapshot (real-time from cached full-market scan)
-        if self.polygon and self.polygon.enabled:
+        # 2. Alpaca snapshot (real-time from cached scanner data)
+        if self.scanner and self.scanner.enabled:
             try:
-                snap = self.polygon.get_snapshot(symbol)
+                snap = self.scanner.get_snapshot(symbol)
                 if snap and snap.get("price"):
                     self._price_cache[symbol] = snap["price"]
                     if snap.get("volume"):
@@ -458,7 +458,7 @@ class MarketDataFeed:
                         "market_state": "OPEN",
                     }
             except Exception as e:
-                log.debug(f"Polygon quote failed for {symbol}: {e}")
+                log.debug(f"Alpaca quote failed for {symbol}: {e}")
 
         # 3. Yahoo fallback (~15 min delay)
         try:

@@ -33,7 +33,7 @@ from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
-from bot.data.polygon_scanner import PolygonScanner
+from bot.data.alpaca_scanner import AlpacaScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
@@ -180,11 +180,11 @@ class TradingEngine:
                 f"max_position_pct={scaling_tier['max_position_pct']:.0%}"
             )
 
-        # Polygon.io — primary data source for scanning + prices + bars
-        self.polygon = PolygonScanner(self.config.polygon_api_key)
+        # Alpaca — primary data source for scanning + prices + bars
+        self.scanner = AlpacaScanner(self.config.alpaca_api_key, self.config.alpaca_secret_key)
 
-        # Market data feed (Polygon primary, Yahoo fallback)
-        self.market_data = MarketDataFeed(self.config, self.broker, polygon=self.polygon)
+        # Market data feed (Alpaca primary, Yahoo fallback)
+        self.market_data = MarketDataFeed(self.config, self.broker, scanner=self.scanner)
 
         # Start IBKR real-time streaming if connected
         if self.broker and self.broker.is_connected():
@@ -228,14 +228,15 @@ class TradingEngine:
         )
         log.info("Politician trade tracker enabled")
 
-        # Polygon news-driven trading (uses same Polygon API key)
-        if self.config.polygon_api_key:
+        # Alpaca news-driven trading (uses same Alpaca API keys)
+        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
             self.news_feed = NewsFeed(
                 self.config,
                 callback=self._handle_news_signal,
-                polygon_api_key=self.config.polygon_api_key,
+                api_key=self.config.alpaca_api_key,
+                secret_key=self.config.alpaca_secret_key,
             )
-            log.info("Polygon news catalyst scanner ENABLED")
+            log.info("Alpaca news catalyst scanner ENABLED")
 
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)
@@ -836,7 +837,7 @@ class TradingEngine:
 
         Prioritizes bar fetching for:
         1. Open positions (need real-time monitoring)
-        2. Top movers from Polygon (highest change% first — Money Machine priority)
+        2. Top movers from scanner (highest change% first — Money Machine priority)
         3. Everything else
         """
         all_symbols = set()
@@ -857,9 +858,9 @@ class TradingEngine:
             if sym in all_symbols:
                 priority_symbols.append(sym)
 
-        # 2. Top movers from Polygon (sorted by change% desc — Money Machine priority)
-        if self.polygon and self.polygon.enabled:
-            top_movers = self.polygon.get_top_movers(limit=50)
+        # 2. Top movers from Alpaca scanner (sorted by change% desc — Money Machine priority)
+        if self.scanner and self.scanner.enabled:
+            top_movers = self.scanner.get_top_movers(limit=50)
             for m in top_movers:
                 sym = m.get("symbol", "")
                 if sym and sym in all_symbols and sym not in priority_symbols:
@@ -3743,16 +3744,16 @@ class TradingEngine:
             return
 
         try:
-            # --- Polygon.io full-market scan (if configured) ---
-            # One call returns ALL ~10,000 stocks — catches everything Alpaca misses
-            if self.polygon and self.polygon.enabled:
-                poly_movers, poly_runners, poly_gap_ups = self.polygon.scan_full_market()
+            # --- Alpaca full-market scan (screener + snapshots) ---
+            # Discovers top movers + most active stocks from Alpaca screener
+            if self.scanner and self.scanner.enabled:
+                scan_movers, scan_runners, scan_gap_ups = self.scanner.scan_full_market()
 
-                if poly_movers:
-                    poly_mover_syms = []
-                    poly_scalp_syms = []
+                if scan_movers:
+                    mover_syms = []
+                    scalp_syms = []
                     snapshot_entries = []
-                    for m in poly_movers:
+                    for m in scan_movers:
                         sym = m.get("symbol", "")
                         if not sym:
                             continue
@@ -3760,49 +3761,49 @@ class TradingEngine:
                             continue
                         change_pct = m.get("change_pct", 0)
                         if change_pct >= 2.0:
-                            poly_mover_syms.append(sym)
+                            mover_syms.append(sym)
                             # Collect full snapshot data for RVOL fast path
                             snapshot_entries.append(m)
                         if abs(change_pct) >= 1.0:
-                            poly_scalp_syms.append(sym)
+                            scalp_syms.append(sym)
 
-                    if poly_mover_syms and rvol_strat:
-                        rvol_strat.add_dynamic_symbols(poly_mover_syms)
-                    if poly_scalp_syms and scalp_strat:
-                        scalp_strat.add_dynamic_symbols(poly_scalp_syms)
-                    if poly_scalp_syms and pb_strat:
-                        pb_strat.add_dynamic_symbols(poly_scalp_syms)
+                    if mover_syms and rvol_strat:
+                        rvol_strat.add_dynamic_symbols(mover_syms)
+                    if scalp_syms and scalp_strat:
+                        scalp_strat.add_dynamic_symbols(scalp_syms)
+                    if scalp_syms and pb_strat:
+                        pb_strat.add_dynamic_symbols(scalp_syms)
 
                     # Feed snapshot data to RVOL strategy for fast-path signals
                     # This lets the Money Machine generate signals INSTANTLY for
                     # top gainers without waiting for historical bars
                     if snapshot_entries and rvol_strat and hasattr(rvol_strat, "feed_snapshot_data"):
                         rvol_strat.feed_snapshot_data(snapshot_entries)
-                        log.debug(f"Polygon: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
+                        log.debug(f"Scanner: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
 
-                    log.debug(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
+                    log.debug(f"Scanner: injected {len(mover_syms)} movers, {len(scalp_syms)} scalp candidates")
 
-                if poly_gap_ups and gap_strat:
-                    gap_syms = [g["symbol"] for g in poly_gap_ups if g.get("symbol")]
+                if scan_gap_ups and gap_strat:
+                    gap_syms = [g["symbol"] for g in scan_gap_ups if g.get("symbol")]
                     gap_strat.add_dynamic_symbols(gap_syms)
-                    log.debug(f"Polygon: injected {len(gap_syms)} gap-ups into pre-market gap")
+                    log.debug(f"Scanner: injected {len(gap_syms)} gap-ups into pre-market gap")
 
-                if poly_runners:
-                    runner_syms = [r["symbol"] for r in poly_runners if r.get("symbol")]
+                if scan_runners:
+                    runner_syms = [r["symbol"] for r in scan_runners if r.get("symbol")]
                     if runner_syms:
                         if rvol_strat:
                             rvol_strat.add_dynamic_symbols(runner_syms)
                             # Also feed runner snapshot data for fast path
                             if hasattr(rvol_strat, "feed_snapshot_data"):
-                                rvol_strat.feed_snapshot_data(poly_runners)
+                                rvol_strat.feed_snapshot_data(scan_runners)
                         if scalp_strat:
                             scalp_strat.add_dynamic_symbols(runner_syms)
                         if pb_strat:
                             pb_strat.add_dynamic_symbols(runner_syms)
                         if gap_strat:
                             gap_strat.add_dynamic_symbols(runner_syms)
-                        log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
-            # Get top movers from Polygon (filtered to $0.50-$50 range)
+                        log.debug(f"Scanner: injected {len(runner_syms)} runners into all strategies")
+            # Get top movers from Alpaca scanner (filtered to $0.50-$50 range)
             movers = self.get_top_movers()
             if movers:
                 mover_symbols = []
@@ -3859,7 +3860,7 @@ class TradingEngine:
                     gap_strat.add_dynamic_symbols(gap_symbols)
                     log.debug(f"Injected {len(gap_symbols)} gap-ups into pre-market gap")
 
-            # Also get losers from the movers data (fetched via Polygon in get_top_movers)
+            # Also get losers from the movers data (fetched via Alpaca scanner)
             # Losers are mean reversion bounce candidates
             if movers:
                 loser_syms = []
@@ -3959,7 +3960,7 @@ class TradingEngine:
 
     def get_low_float_runners(self):
         """
-        Scan for explosive movers using Polygon.io full-market data.
+        Scan for explosive movers using Alpaca full-market data.
         Catches 100%+ runners, squeeze candidates, extreme volume stocks.
 
         Returns list of runner dicts sorted by change_pct descending.
@@ -3969,10 +3970,10 @@ class TradingEngine:
         runners = []
         seen = set()
 
-        # --- 1. Polygon.io runners (10%+ movers from full-market scan) ---
-        if self.polygon and self.polygon.enabled:
-            poly_runners = self.polygon.get_runners(limit=50)
-            for r in poly_runners:
+        # --- 1. Alpaca runners (10%+ movers from full-market scan) ---
+        if self.scanner and self.scanner.enabled:
+            scan_runners = self.scanner.get_runners(limit=50)
+            for r in scan_runners:
                 sym = r.get("symbol", "")
                 if not sym:
                     continue
@@ -4205,7 +4206,7 @@ class TradingEngine:
 
     def get_top_movers(self):
         """
-        Fetch top movers using Polygon.io full-market scan (real-time).
+        Fetch top movers using Alpaca full-market scan (real-time).
         One API call returns ALL ~10,000 stocks — no narrow top-50 limits.
 
         Returns list of dicts: [{symbol, name, price, change_pct, volume, ...}]
@@ -4213,11 +4214,11 @@ class TradingEngine:
         movers = []
         seen_symbols = set()
 
-        # --- 1. Polygon.io full-market scan (PRIMARY — real-time) ---
-        if self.polygon and self.polygon.enabled:
+        # --- 1. Alpaca full-market scan (PRIMARY — real-time) ---
+        if self.scanner and self.scanner.enabled:
             # Gainers (2%+ movers)
-            poly_movers = self.polygon.get_top_movers(limit=200)
-            for m in poly_movers:
+            scan_movers = self.scanner.get_top_movers(limit=200)
+            for m in scan_movers:
                 sym = m.get("symbol", "")
                 if not sym or sym in seen_symbols:
                     continue
@@ -4235,8 +4236,8 @@ class TradingEngine:
                 seen_symbols.add(sym)
 
             # Losers (for mean reversion)
-            poly_losers = self.polygon.get_losers(limit=100)
-            for m in poly_losers:
+            scan_losers = self.scanner.get_losers(limit=100)
+            for m in scan_losers:
                 sym = m.get("symbol", "")
                 if not sym or sym in seen_symbols:
                     continue

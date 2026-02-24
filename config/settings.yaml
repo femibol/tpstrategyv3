@@ -133,7 +133,7 @@ hedging:
 watchlist:
   # Focus: $2-$50 high-beta names that move 10-100%+ on catalysts
   # Mega-caps (GOOGL, AAPL, SPY) removed — too slow for small accounts
-  # Polygon scanner dynamically adds ALL movers anyway
+  # Alpaca scanner dynamically adds ALL movers anyway
   symbols:
     - SOFI        # Fintech, volatile, $5-15 range
     - HOOD        # Retail favorite, big swings
@@ -173,7 +173,7 @@ crypto:
 
 # --- Data Sources ---
 data:
-  primary: "polygon"              # Primary: Polygon.io (real-time scanning + prices + bars)
+  primary: "alpaca"               # Primary: Alpaca (real-time SIP scanning + prices + bars)
   fallback: "yfinance"            # Fallback to yfinance
   bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
   scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy

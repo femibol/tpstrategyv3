@@ -139,7 +139,7 @@ class PreMarketGapStrategy(BaseStrategy):
         elif len(closes) >= 40:
             prev_close = float(closes[-40])  # Half-day fallback
 
-        # Also use the Polygon snapshot gap_pct if available (passed from scanner)
+        # Also use the Alpaca snapshot gap_pct if available (passed from scanner)
         gap_pct = (current_price - prev_close) / prev_close if prev_close > 0 else 0
 
         # --- RELATIVE VOLUME ---
