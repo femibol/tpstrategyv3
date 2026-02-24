@@ -1,5 +1,5 @@
 """
-Interactive Brokers integration via ib_insync.
+Interactive Brokers integration via ib_async (successor to ib_insync).
 Supports both paper and live trading.
 
 Setup:
@@ -20,11 +20,16 @@ from bot.utils.logger import get_logger
 log = get_logger("broker.ibkr")
 
 try:
-    from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util
+    from ib_async import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util
     HAS_IB = True
 except ImportError:
-    HAS_IB = False
-    log.warning("ib_insync not installed - IBKR broker unavailable")
+    try:
+        from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util
+        HAS_IB = True
+        log.info("Using ib_insync (legacy) - consider upgrading to ib_async")
+    except ImportError:
+        HAS_IB = False
+        log.warning("ib_async not installed - IBKR broker unavailable. Run: pip install ib_async")
 
 
 class IBKRBroker(BaseBroker):
@@ -54,7 +59,7 @@ class IBKRBroker(BaseBroker):
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
         if not HAS_IB:
-            log.error("ib_insync not installed. Run: pip install ib_insync")
+            log.error("ib_async not installed. Run: pip install ib_async")
             return False
 
         try:

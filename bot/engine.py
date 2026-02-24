@@ -34,6 +34,7 @@ from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
 from bot.data.alpaca_scanner import AlpacaScanner
+from bot.data.ibkr_scanner import IBKRScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
@@ -180,10 +181,23 @@ class TradingEngine:
                 f"max_position_pct={scaling_tier['max_position_pct']:.0%}"
             )
 
-        # Alpaca — primary data source for scanning + prices + bars
-        self.scanner = AlpacaScanner(self.config.alpaca_api_key, self.config.alpaca_secret_key)
+        # Data source selection: IBKR primary (free), Alpaca fallback (cloud/no IBKR)
+        self.alpaca_scanner = AlpacaScanner(self.config.alpaca_api_key, self.config.alpaca_secret_key)
 
-        # Market data feed (Alpaca primary, Yahoo fallback)
+        if self.broker and self.broker.is_connected():
+            self.scanner = IBKRScanner(self.broker)
+            if self.scanner.enabled:
+                log.info("Using IBKR as PRIMARY data source (zero cost)")
+                # Keep Alpaca as fallback reference
+                self._alpaca_fallback = self.alpaca_scanner
+            else:
+                self.scanner = self.alpaca_scanner
+                log.info("IBKR scanner init failed — using Alpaca as data source")
+        else:
+            self.scanner = self.alpaca_scanner
+            log.info("No IBKR connection — using Alpaca as data source")
+
+        # Market data feed (IBKR/Alpaca primary, Yahoo fallback)
         self.market_data = MarketDataFeed(self.config, self.broker, scanner=self.scanner)
 
         # Start IBKR real-time streaming if connected
@@ -420,14 +434,22 @@ class TradingEngine:
             id="auto_tune_eod"
         )
 
-        # Alpaca position sync every 2 minutes (prevents phantom positions)
-        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
+        # Position sync every 2 minutes (prevents phantom positions)
+        # Uses IBKR direct when connected, Alpaca as fallback
+        if self.broker and self.broker.is_connected():
+            self.scheduler.add_job(
+                self._sync_positions_with_ibkr,
+                "interval", minutes=2,
+                id="ibkr_position_sync"
+            )
+            log.info("IBKR position sync scheduled (every 2 min, direct)")
+        elif self.config.alpaca_api_key and self.config.alpaca_secret_key:
             self.scheduler.add_job(
                 self._sync_positions_with_broker,
                 "interval", minutes=2,
                 id="alpaca_position_sync"
             )
-            log.info("Alpaca position sync scheduled (every 2 min)")
+            log.info("Alpaca position sync scheduled (every 2 min, fallback)")
 
     def start(self):
         """Start the trading engine main loop."""
@@ -2365,6 +2387,79 @@ class TradingEngine:
             log.error(f"ALPACA DIRECT CLOSE exception for {symbol}: {e}")
             return None
 
+    def _sync_positions_with_ibkr(self):
+        """Reconcile internal positions with actual IBKR broker positions.
+        Direct IBKR sync — faster and more accurate than Alpaca HTTP polling.
+        Thread-safe: uses _positions_lock for all position dict mutations."""
+        if not self.broker or not self.broker.is_connected():
+            # Fallback to Alpaca sync if IBKR disconnects
+            if self.config.alpaca_api_key and self.config.alpaca_secret_key:
+                self._sync_positions_with_broker()
+            return
+
+        try:
+            broker_positions = self.broker.get_positions()
+        except Exception as e:
+            log.warning(f"IBKR position sync failed: {e}")
+            return
+
+        if broker_positions is None:
+            log.warning("IBKR position sync: get_positions returned None — skipping")
+            return
+
+        broker_symbols = set(broker_positions.keys())
+
+        # Clean up expired entries from _recently_closed
+        now = datetime.now(self.tz)
+        expired = [s for s, t in self._recently_closed.items()
+                   if (now - t).total_seconds() > self._exit_cooldown_secs]
+        for s in expired:
+            del self._recently_closed[s]
+
+        with self._positions_lock:
+            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
+
+            # Sync positions that exist at broker but NOT in bot tracking
+            for sym, pos_data in broker_positions.items():
+                if sym not in self.positions:
+                    if len(self.positions) >= max_pos:
+                        log.debug(f"IBKR SYNC: Skipping {sym} — at position cap ({len(self.positions)}/{max_pos})")
+                        continue
+                    if sym in self._recently_closed:
+                        log.debug(f"IBKR SYNC: Skipping {sym} — recently closed (cooldown)")
+                        continue
+
+                    entry = pos_data.get("entry_price", pos_data.get("avg_cost", 0))
+                    qty = pos_data.get("quantity", 0)
+                    direction = pos_data.get("direction", "long")
+
+                    self.positions[sym] = {
+                        "symbol": sym,
+                        "direction": direction,
+                        "quantity": int(qty) if qty == int(qty) else qty,
+                        "entry_price": entry,
+                        "entry_time": now,
+                        "stop_loss": entry * 0.97 if direction == "long" else entry * 1.03,
+                        "take_profit": entry * 1.06 if direction == "long" else entry * 0.94,
+                        "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                        "strategy": "synced_from_ibkr",
+                        "executed_via": "IBKR",
+                        "max_hold_bars": 40,
+                        "bar_seconds": 300,
+                        "max_hold_days": 5,
+                    }
+                    log.info(f"IBKR SYNC: Added {sym} ({qty} shares @ ${entry:.2f})")
+
+            # Remove phantom positions (exist in bot but not at broker)
+            phantoms = [s for s in self.positions if s not in broker_symbols
+                        and s not in self._recently_closed]
+            for sym in phantoms:
+                pos = self.positions.pop(sym, None)
+                if pos:
+                    log.info(f"IBKR SYNC: Removed phantom position {sym}")
+
+        log.debug(f"IBKR position sync complete: {len(self.positions)} positions tracked")
+
     def _alpaca_position_exists(self, symbol):
         """Check if a position exists on the Alpaca broker side via raw HTTP.
         Returns True/False, or None if unable to check."""
@@ -3744,8 +3839,8 @@ class TradingEngine:
             return
 
         try:
-            # --- Alpaca full-market scan (screener + snapshots) ---
-            # Discovers top movers + most active stocks from Alpaca screener
+            # --- Full-market scan (IBKR primary / Alpaca fallback) ---
+            # Discovers top movers + most active stocks via scanner
             if self.scanner and self.scanner.enabled:
                 scan_movers, scan_runners, scan_gap_ups = self.scanner.scan_full_market()
 
