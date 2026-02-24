@@ -10,6 +10,9 @@ Key features:
 - Money Machine composite score: RVOL + trend + momentum + gap
 - Tight stops (momentum plays = fast in, fast out)
 - Avoids low-float traps with price/volume filters
+- SNAPSHOT FAST PATH: generates signals from Polygon snapshot data when bars
+  aren't available (catches today's top gainers INSTANTLY like the real
+  Trade Ideas Money Machine — no historical bars needed)
 - Long-only
 """
 import numpy as np
@@ -24,12 +27,15 @@ class RvolMomentumStrategy(BaseStrategy):
     """
     Money Machine-style RVOL trading.
 
-    Logic:
-    1. Scan all symbols (static + dynamically discovered) for RVOL >= 2x
-    2. Score using composite: RVOL weight + price direction + trend + MACD + RSI + gap
-    3. Generate BUY signals for top scorers (score >= 60)
-    4. Use ATR-based stops (tight: 1.5x ATR) and targets (3x ATR)
-    5. Max holding period: 2 hours (momentum plays don't hold forever)
+    Two analysis paths:
+    A. FULL PATH (bars available): RSI, EMA, MACD, ATR + bar-level RVOL
+    B. SNAPSHOT FAST PATH (no bars): Uses Polygon daily snapshot data
+       (price, change_pct, daily RVOL, volume, gap) to generate signals
+       for newly-discovered top gainers immediately.
+
+    The fast path is what the real Trade Ideas Money Machine does — it scans
+    ALL 8,000+ stocks via real-time snapshot and instantly trades the top
+    momentum plays without waiting for historical bar data.
     """
 
     def __init__(self, config, indicators, capital):
@@ -49,18 +55,46 @@ class RvolMomentumStrategy(BaseStrategy):
         # Dynamic symbol list - gets augmented by top movers
         self._dynamic_symbols = set()
 
+        # Snapshot data from Polygon (fed by engine)
+        # {symbol: {price, change_pct, volume, avg_volume, rvol, gap_pct, open}}
+        self._snapshot_data = {}
+
+        # Track which symbols got fast-path signals (for logging/dashboard)
+        self._fast_path_signals = set()
+
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols (from top movers, screeners)."""
         for sym in symbols:
             if sym and isinstance(sym, str):
                 self._dynamic_symbols.add(sym.upper())
 
+    def feed_snapshot_data(self, snapshot_entries):
+        """Feed Polygon snapshot data for fast-path analysis.
+
+        Called by the engine with top movers/runners from Polygon's
+        full-market snapshot. This data includes daily RVOL, change%,
+        volume — everything needed for instant signal generation without bars.
+
+        Args:
+            snapshot_entries: list of dicts from Polygon scanner, each with:
+                symbol, price, change_pct, volume, avg_volume, rvol, gap_pct, open
+        """
+        for entry in snapshot_entries:
+            sym = entry.get("symbol", "")
+            if sym:
+                self._snapshot_data[sym.upper()] = entry
+
     def get_symbols(self):
         """Return combined static + dynamic symbol list."""
         return list(set(self.symbols) | self._dynamic_symbols)
 
     def generate_signals(self, market_data):
-        """Scan all symbols for RVOL setups and generate trading signals."""
+        """Scan all symbols for RVOL setups and generate trading signals.
+
+        Uses two paths:
+        1. Full analysis (bars available) — technical indicators + bar RVOL
+        2. Snapshot fast path (no bars) — daily RVOL + price action from Polygon
+        """
         signals = []
 
         # Reset daily counter
@@ -68,11 +102,16 @@ class RvolMomentumStrategy(BaseStrategy):
         if self.last_trade_date != today:
             self.trades_today = 0
             self.last_trade_date = today
+            self._fast_path_signals.clear()
 
         if self.trades_today >= self.max_trades_per_day:
             return signals
 
         all_symbols = self.get_symbols()
+
+        # Also include any snapshot symbols not yet in the scan list
+        snapshot_only = set(self._snapshot_data.keys()) - set(all_symbols)
+        all_symbols.extend(list(snapshot_only))
 
         for symbol in all_symbols:
             try:
@@ -90,9 +129,16 @@ class RvolMomentumStrategy(BaseStrategy):
         return signals
 
     def _analyze_symbol(self, symbol, market_data):
-        """Analyze a single symbol for RVOL momentum setup."""
+        """Analyze a single symbol for RVOL momentum setup.
+
+        Falls back to snapshot fast path when bars aren't available.
+        """
         bars = market_data.get_bars(symbol, 60) if market_data else None
         if bars is None or len(bars) < 25:
+            # FAST PATH: use Polygon snapshot data if available
+            snap = self._snapshot_data.get(symbol)
+            if snap:
+                return self._analyze_from_snapshot(symbol, snap)
             return None
 
         closes = bars["close"].values
@@ -304,6 +350,207 @@ class RvolMomentumStrategy(BaseStrategy):
                 log.info(
                     f"RVOL SIGNAL: {symbol} | Score: {score} | RVOL: {rvol:.1f}x | "
                     f"Change: {change_pct:+.1f}% | R:R {rr_ratio:.1f}"
+                )
+
+        return result
+
+    # =========================================================================
+    # SNAPSHOT FAST PATH — Trade Ideas Money Machine style
+    # =========================================================================
+
+    def _analyze_from_snapshot(self, symbol, snap):
+        """Analyze a symbol using Polygon daily snapshot data (no bars needed).
+
+        This is the Money Machine fast path — generates signals from the
+        full-market snapshot when historical bars aren't cached yet.
+
+        Uses daily RVOL (today's volume / avg volume), price change %,
+        gap %, and volume to score and generate instant signals for
+        today's top gainers.
+
+        Args:
+            symbol: Ticker symbol
+            snap: Dict with keys: price, change_pct, volume, avg_volume, rvol,
+                  gap_pct, open, prev_close
+        """
+        price = snap.get("price", 0)
+        if price <= 0:
+            return None
+
+        # Price filter
+        if price < self.min_price or price > self.max_price:
+            return None
+
+        change_pct = snap.get("change_pct", 0)
+        volume = snap.get("volume", 0)
+        avg_volume = snap.get("avg_volume", 1)
+        rvol = snap.get("rvol", 0)
+        gap_pct = snap.get("gap_pct", 0)
+
+        # Volume filter (daily volume)
+        if volume < self.min_volume:
+            return None
+
+        # Recalculate RVOL from daily data if not provided
+        if rvol <= 0 and avg_volume > 0:
+            rvol = round(volume / avg_volume, 1)
+
+        # Direction from daily change
+        if change_pct > 0.3:
+            direction = "UP"
+        elif change_pct < -0.3:
+            direction = "DOWN"
+        else:
+            direction = "FLAT"
+
+        # --- Money Machine Composite Score (snapshot version) ---
+        score = 0
+        score_reasons = []
+
+        # RVOL component (max 35 pts) — using daily RVOL
+        if rvol >= 5.0:
+            score += 35
+            score_reasons.append(f"Extreme RVOL {rvol:.1f}x")
+        elif rvol >= 3.0:
+            score += 30
+            score_reasons.append(f"Very high RVOL {rvol:.1f}x")
+        elif rvol >= 2.0:
+            score += 20
+            score_reasons.append(f"High RVOL {rvol:.1f}x")
+        elif rvol >= 1.5:
+            score += 10
+            score_reasons.append(f"Elevated RVOL {rvol:.1f}x")
+
+        # Price direction (max 20 pts)
+        if direction == "UP" and change_pct > 3.0:
+            score += 20
+            score_reasons.append(f"Strong move +{change_pct:.1f}%")
+        elif direction == "UP" and change_pct > 1.0:
+            score += 15
+            score_reasons.append(f"Moving up +{change_pct:.1f}%")
+        elif direction == "UP":
+            score += 10
+            score_reasons.append(f"Trending up +{change_pct:.1f}%")
+
+        # Gap (max 10 pts)
+        if gap_pct > 3.0:
+            score += 10
+            score_reasons.append(f"Gap up +{gap_pct:.1f}%")
+        elif gap_pct > 1.0:
+            score += 5
+            score_reasons.append(f"Small gap +{gap_pct:.1f}%")
+
+        # Breakout bonus: big intraday move
+        if change_pct >= 5.0:
+            score += 15
+            score_reasons.append(f"Breakout +{change_pct:.1f}%")
+        elif change_pct >= 3.0:
+            score += 10
+            score_reasons.append(f"Strong breakout +{change_pct:.1f}%")
+
+        # Volume surge bonus (high absolute volume = institutional flow)
+        if volume >= 1_000_000:
+            score += 10
+            score_reasons.append(f"High volume {volume/1e6:.1f}M")
+        elif volume >= 500_000:
+            score += 5
+            score_reasons.append(f"Good volume {volume/1e3:.0f}K")
+
+        # Snapshot doesn't have RSI/EMA/MACD — award moderate points for
+        # being a top gainer (the fact that Polygon flagged it as a mover
+        # is already strong momentum confirmation)
+        if direction == "UP" and rvol >= 2.0:
+            score += 10
+            score_reasons.append("Snapshot momentum confirmed")
+
+        # Crypto adjustment
+        is_crypto = any(symbol.upper().endswith(s) for s in ("-USD", "-USDT"))
+        effective_min_rvol = self.min_rvol * 0.7 if is_crypto else self.min_rvol
+        effective_min_score = int(self.min_score * 0.8) if is_crypto else self.min_score
+
+        # Verdict
+        if rvol >= effective_min_rvol and score >= effective_min_score:
+            verdict = "RVOL BUY SIGNAL"
+        elif rvol >= effective_min_rvol and score >= 40:
+            verdict = "RVOL ACTIVE"
+        elif rvol >= 1.5:
+            verdict = "WARMING"
+        else:
+            verdict = "QUIET"
+
+        scan_result = {
+            "price": round(price, 2),
+            "rvol": rvol,
+            "current_vol": int(volume),
+            "avg_vol": int(avg_volume),
+            "change_pct": round(change_pct, 2),
+            "gap_pct": round(gap_pct, 2),
+            "range_pct": 0,
+            "direction": direction,
+            "trend": "BULL" if direction == "UP" else "BEAR",
+            "rsi": 50,  # Unknown from snapshot — neutral
+            "atr_pct": 0,
+            "macd_bullish": direction == "UP",
+            "score": score,
+            "verdict": verdict,
+            "reasons": score_reasons,
+            "fast_path": True,  # Flag for dashboard to show this is snapshot-based
+        }
+
+        result = {"scan": scan_result, "signal": None}
+
+        # Generate signal if score qualifies
+        if verdict == "RVOL BUY SIGNAL" and direction == "UP":
+            # Estimate ATR from change_pct (no bars available)
+            # For a stock up X%, ATR is roughly price * X/100 * 0.7
+            est_atr = price * abs(change_pct) / 100 * 0.7
+            if est_atr <= 0:
+                est_atr = price * 0.03  # Fallback: 3% of price
+
+            stop_loss = price - (self.atr_stop_mult * est_atr)
+
+            is_breakout = change_pct >= 3.0
+            target_mult = self.atr_target_mult * 1.5 if is_breakout else self.atr_target_mult
+            take_profit = price + (target_mult * est_atr)
+
+            targets = [
+                price + (1.5 * est_atr),
+                price + (3.0 * est_atr),
+                price + (6.0 * est_atr),
+            ]
+
+            risk = price - stop_loss
+            reward = take_profit - price
+            rr_ratio = round(reward / risk, 2) if risk > 0 else 0
+
+            if rr_ratio >= 1.5:
+                confidence = min(1.0, score / 100)
+                hold_days = 2 if is_breakout else 0
+
+                result["signal"] = {
+                    "symbol": symbol,
+                    "action": "buy",
+                    "price": price,
+                    "stop_loss": round(stop_loss, 2),
+                    "take_profit": round(take_profit, 2),
+                    "targets": [round(t, 2) for t in targets],
+                    "confidence": round(confidence, 2),
+                    "reason": "[FAST] " + " | ".join(score_reasons[:4]),
+                    "max_hold_bars": int(self.max_hold_minutes / 5),
+                    "max_hold_days": hold_days,
+                    "bar_seconds": 300,
+                    "rvol": rvol,
+                    "rr_ratio": rr_ratio,
+                    "source": "rvol_momentum",
+                    "fast_path": True,
+                }
+
+                self._fast_path_signals.add(symbol)
+                self.signals_generated += 1
+                log.info(
+                    f"RVOL FAST SIGNAL: {symbol} | Score: {score} | RVOL: {rvol:.1f}x | "
+                    f"Change: {change_pct:+.1f}% | R:R {rr_ratio:.1f} | "
+                    f"Vol: {volume/1e3:.0f}K [SNAPSHOT - no bars needed]"
                 )
 
         return result

@@ -626,18 +626,41 @@ class TradingEngine:
                             if sig.get("quantity"):
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
 
-                    # 7b. Apply regime-based filtering
+                    # 7b. POWER HOUR (3:00-4:00 PM ET)
+                    # Last hour: aggressive momentum plays, evaluate positions for EOD
+                    now_time = datetime.now(self.tz)
+                    if (now_time.hour == 15 and now_time.minute >= 0 and
+                            getattr(self, '_equity_market_open', False)):
+                        self._in_power_hour = True
+                        # During power hour, boost RVOL momentum confidence
+                        # Late-day runners with volume are the strongest signals
+                        for sig in approved:
+                            if sig.get("strategy") == "rvol_momentum" and sig.get("action") == "buy":
+                                snap_rvol = sig.get("rvol", 0)
+                                change = sig.get("change_pct", 0) if "change_pct" in sig else 0
+                                if snap_rvol >= 3.0 or change >= 5.0:
+                                    # Power hour runner — boost confidence
+                                    sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.15)
+                                    sig["reason"] = sig.get("reason", "") + " | POWER HOUR RUNNER"
+                                    log.info(
+                                        f"POWER HOUR BOOST: {sig['symbol']} RVOL={snap_rvol:.1f}x "
+                                        f"— confidence boosted to {sig['confidence']:.2f}"
+                                    )
+                    else:
+                        self._in_power_hour = False
+
+                    # 7c. Apply regime-based filtering
                     if regime_result and regime_result.get("regime") == "crisis":
                         # In crisis, only allow hedge signals and exits
                         approved = [s for s in approved if
                                     s.get("source") == "hedging" or
                                     s.get("action") in ("sell", "cover", "close")]
 
-                    # 7c. Off-hours filter: Only allow crypto signals when equity market closed
+                    # 7d. Off-hours filter: Only allow crypto signals when equity market closed
                     if not getattr(self, '_equity_market_open', True):
                         approved = [s for s in approved if self._is_crypto_symbol(s.get("symbol", ""))]
 
-                    # 7d. Scanner summary notification
+                    # 7e. Scanner summary notification
                     symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
                     regime_str = regime_result.get("regime") if regime_result else None
                     spy_change = None
@@ -768,7 +791,13 @@ class TradingEngine:
         return equity_open or has_crypto
 
     def _update_data(self):
-        """Fetch latest market data for all strategy symbols + watchlist."""
+        """Fetch latest market data for all strategy symbols + watchlist.
+
+        Prioritizes bar fetching for:
+        1. Open positions (need real-time monitoring)
+        2. Top movers from Polygon (highest change% first — Money Machine priority)
+        3. Everything else
+        """
         all_symbols = set()
         for strategy in self.strategies.values():
             all_symbols.update(strategy.get_symbols())
@@ -779,7 +808,27 @@ class TradingEngine:
         # Include watchlist symbols for live prices
         all_symbols.update(self.watchlist)
 
-        self.market_data.update(list(all_symbols))
+        # Prioritize: positions first, then top movers by change%, then rest
+        priority_symbols = []
+
+        # 1. Open positions (always first — need accurate prices for stops)
+        for sym in self.positions.keys():
+            if sym in all_symbols:
+                priority_symbols.append(sym)
+
+        # 2. Top movers from Polygon (sorted by change% desc — Money Machine priority)
+        if self.polygon and self.polygon.enabled:
+            top_movers = self.polygon.get_top_movers(limit=50)
+            for m in top_movers:
+                sym = m.get("symbol", "")
+                if sym and sym in all_symbols and sym not in priority_symbols:
+                    priority_symbols.append(sym)
+
+        # 3. Everything else
+        remaining = [s for s in all_symbols if s not in priority_symbols]
+        ordered_symbols = priority_symbols + remaining
+
+        self.market_data.update(ordered_symbols)
 
         # Diagnostic: log data coverage every ~5 cycles (avoid log spam)
         if not hasattr(self, '_data_log_counter'):
@@ -2854,11 +2903,34 @@ class TradingEngine:
                     positions_to_close.append(symbol)
                     continue
 
-                # NEVER hold RVOL scalp or RVOL momentum plays overnight (intraday only)
-                if pos.get("strategy") in ("rvol_momentum", "rvol_scalp"):
-                    log.info(f"RVOL EXIT: Closing {symbol} - {pos.get('strategy')} is intraday only")
+                # ALWAYS close RVOL scalp (ultra short-term, never hold)
+                if pos.get("strategy") == "rvol_scalp":
+                    log.info(f"RVOL SCALP EXIT: Closing {symbol} - scalp positions are intraday only")
                     positions_to_close.append(symbol)
                     continue
+
+                # RVOL momentum: hold strong runners into after-hours if bullish
+                if pos.get("strategy") == "rvol_momentum":
+                    # Keep if: 3%+ profit, strong uptrend, high RVOL (still running)
+                    if pnl_pct >= 0.03 and len(overnight_holds) < max_overnight:
+                        log.info(
+                            f"RVOL RUNNER HOLD: Keeping {symbol} into after-hours | "
+                            f"P&L: {pnl_pct:.1%} | Still bullish runner"
+                        )
+                        # Tighten stop for after-hours volatility
+                        current_price = pos.get("current_price", pos["entry_price"])
+                        new_stop = current_price * 0.97  # 3% stop for AH
+                        if new_stop > pos.get("stop_loss", 0):
+                            pos["stop_loss"] = new_stop
+                        overnight_holds.append(symbol)
+                        continue
+                    else:
+                        log.info(
+                            f"RVOL EXIT: Closing {symbol} - {pnl_pct:.1%} profit, "
+                            f"not strong enough for after-hours hold"
+                        )
+                        positions_to_close.append(symbol)
+                        continue
 
                 # Crypto positions trade 24/7 - skip EOD close entirely
                 if self._is_crypto_symbol(symbol):
@@ -3250,6 +3322,7 @@ class TradingEngine:
                 if poly_movers:
                     poly_mover_syms = []
                     poly_scalp_syms = []
+                    snapshot_entries = []
                     for m in poly_movers:
                         sym = m.get("symbol", "")
                         if not sym:
@@ -3259,6 +3332,8 @@ class TradingEngine:
                         change_pct = m.get("change_pct", 0)
                         if change_pct >= 2.0:
                             poly_mover_syms.append(sym)
+                            # Collect full snapshot data for RVOL fast path
+                            snapshot_entries.append(m)
                         if abs(change_pct) >= 1.0:
                             poly_scalp_syms.append(sym)
 
@@ -3268,6 +3343,14 @@ class TradingEngine:
                         scalp_strat.add_dynamic_symbols(poly_scalp_syms)
                     if poly_scalp_syms and pb_strat:
                         pb_strat.add_dynamic_symbols(poly_scalp_syms)
+
+                    # Feed snapshot data to RVOL strategy for fast-path signals
+                    # This lets the Money Machine generate signals INSTANTLY for
+                    # top gainers without waiting for historical bars
+                    if snapshot_entries and rvol_strat and hasattr(rvol_strat, "feed_snapshot_data"):
+                        rvol_strat.feed_snapshot_data(snapshot_entries)
+                        log.debug(f"Polygon: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
+
                     log.debug(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
 
                 if poly_gap_ups and gap_strat:
@@ -3280,6 +3363,9 @@ class TradingEngine:
                     if runner_syms:
                         if rvol_strat:
                             rvol_strat.add_dynamic_symbols(runner_syms)
+                            # Also feed runner snapshot data for fast path
+                            if hasattr(rvol_strat, "feed_snapshot_data"):
+                                rvol_strat.feed_snapshot_data(poly_runners)
                         if scalp_strat:
                             scalp_strat.add_dynamic_symbols(runner_syms)
                         if pb_strat:
