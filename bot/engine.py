@@ -570,7 +570,22 @@ class TradingEngine:
                 if scalp_tick >= 3:
                     scalp_tick = 0
 
-                    # 0. Dynamic discovery: feed top movers into RVOL strategies
+                    # 0. Process startup trim queue (close excess positions from Alpaca sync)
+                    if hasattr(self, '_startup_trim_queue') and self._startup_trim_queue:
+                        trim_batch = self._startup_trim_queue[:3]  # Close 3 at a time
+                        self._startup_trim_queue = self._startup_trim_queue[3:]
+                        for sym in trim_batch:
+                            if sym in self.positions:
+                                pnl_pct = self.positions[sym].get("unrealized_pnl_pct", 0)
+                                log.warning(
+                                    f"STARTUP TRIM: Closing {sym} (P&L: {pnl_pct:.1%}) "
+                                    f"— over position limit. "
+                                    f"{len(self._startup_trim_queue)} remaining in queue."
+                                )
+                                self._close_position(sym, "position_cap",
+                                                     f"Over position limit — closing weakest")
+
+                    # 0a. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
 
                     # 0b. Update news feed watchlist with held + active symbols
@@ -627,27 +642,48 @@ class TradingEngine:
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
 
                     # 7b. POWER HOUR (3:00-4:00 PM ET)
-                    # Last hour: aggressive momentum plays, evaluate positions for EOD
                     now_time = datetime.now(self.tz)
-                    if (now_time.hour == 15 and now_time.minute >= 0 and
+                    if (now_time.hour == 15 and
                             getattr(self, '_equity_market_open', False)):
                         self._in_power_hour = True
-                        # During power hour, boost RVOL momentum confidence
-                        # Late-day runners with volume are the strongest signals
-                        for sig in approved:
-                            if sig.get("strategy") == "rvol_momentum" and sig.get("action") == "buy":
-                                snap_rvol = sig.get("rvol", 0)
-                                change = sig.get("change_pct", 0) if "change_pct" in sig else 0
-                                if snap_rvol >= 3.0 or change >= 5.0:
-                                    # Power hour runner — boost confidence
-                                    sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.15)
-                                    sig["reason"] = sig.get("reason", "") + " | POWER HOUR RUNNER"
-                                    log.info(
-                                        f"POWER HOUR BOOST: {sig['symbol']} RVOL={snap_rvol:.1f}x "
-                                        f"— confidence boosted to {sig['confidence']:.2f}"
-                                    )
+
+                        # --- POWER HOUR PHASE 1: Trim weak positions (3:00-3:30) ---
+                        # Close positions with weak bullish scores to free capital
+                        # and reduce position count before EOD
+                        if now_time.minute < 30 and not getattr(self, '_ph_trimmed', False):
+                            self._power_hour_trim()
+                            self._ph_trimmed = True
+
+                        # --- POWER HOUR PHASE 2: Moon hour (3:30-3:50) ---
+                        # Aggressive entries on late-day runners with surging volume
+                        # These are the "moon" plays — stocks ripping into the close
+                        if 30 <= now_time.minute <= 50:
+                            for sig in approved:
+                                if sig.get("action") == "buy":
+                                    snap_rvol = sig.get("rvol", 0)
+                                    reason = sig.get("reason", "")
+                                    # Moon hour: high RVOL late-day runners get boosted
+                                    if snap_rvol >= 3.0:
+                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.20)
+                                        sig["reason"] = reason + " | MOON HOUR RUNNER"
+                                        log.info(
+                                            f"MOON HOUR BOOST: {sig['symbol']} RVOL={snap_rvol:.1f}x "
+                                            f"— confidence boosted to {sig['confidence']:.2f}"
+                                        )
+                                    elif snap_rvol >= 2.0:
+                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.10)
+                                        sig["reason"] = reason + " | POWER HOUR"
+
+                        # --- POWER HOUR PHASE 3: Tighten all stops (3:50+) ---
+                        # Protect profits before EOD volatility
+                        if now_time.minute >= 50 and not getattr(self, '_ph_tightened', False):
+                            self._power_hour_tighten_stops()
+                            self._ph_tightened = True
+
                     else:
                         self._in_power_hour = False
+                        self._ph_trimmed = False
+                        self._ph_tightened = False
 
                     # 7c. Apply regime-based filtering
                     if regime_result and regime_result.get("regime") == "crisis":
@@ -2391,11 +2427,26 @@ class TradingEngine:
             if not isinstance(broker_positions, list):
                 log.warning(f"Alpaca startup sync: unexpected response type {type(broker_positions)} — skipping")
                 return
+
+            # Sort by unrealized P&L descending — best performers get tracked first
+            # so if we hit the position cap, we keep winners and flag losers
+            try:
+                broker_positions.sort(
+                    key=lambda p: float(p.get("unrealized_plpc", 0) or 0),
+                    reverse=True,
+                )
+            except (ValueError, TypeError):
+                pass  # If sort fails, use original order
+
+            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
+            over_limit_positions = []
+
             for p in broker_positions:
                 symbol = p.get("symbol", "").upper()
                 qty = abs(float(p.get("qty", 0)))
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
+                unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
                 # Use current market price for smarter stop/target
                 current_mkt = None
                 if self.market_data:
@@ -2421,11 +2472,38 @@ class TradingEngine:
                     "max_hold_bars": 40,
                     "bar_seconds": 300,
                     "max_hold_days": 5,  # Synced positions: 5-day default hold limit
+                    "unrealized_pnl_pct": unrealized_pnl_pct,
                 }
+
+                # Track positions over the limit for auto-trim
+                if len(self.positions) > max_pos:
+                    over_limit_positions.append((symbol, unrealized_pnl_pct))
+
             if broker_positions:
                 log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
             else:
                 log.info("Alpaca reports 0 open positions")
+
+            # --- POSITION CAP ENFORCEMENT ---
+            # If broker has more positions than max_positions, flag the weakest
+            # for immediate closure. This prevents the 50+ position problem.
+            if over_limit_positions:
+                over_count = len(self.positions) - max_pos
+                log.warning(
+                    f"OVER POSITION LIMIT: {len(self.positions)} positions synced "
+                    f"(max: {max_pos}). Will close {over_count} weakest on first cycle."
+                )
+                # Sort over-limit by P&L ascending (worst first)
+                over_limit_positions.sort(key=lambda x: x[1])
+                symbols_to_close = [s for s, _ in over_limit_positions[:over_count]]
+                # Mark for immediate closure on first main loop cycle
+                self._startup_trim_queue = symbols_to_close
+                self.notifier.risk_alert(
+                    f"Position cap exceeded: {len(self.positions)} synced from Alpaca "
+                    f"(max: {max_pos}). Queuing {over_count} weakest for closure: "
+                    f"{', '.join(symbols_to_close[:10])}"
+                    f"{'...' if len(symbols_to_close) > 10 else ''}"
+                )
         except Exception as e:
             log.warning(f"Alpaca startup sync failed: {e}")
 
@@ -2462,10 +2540,20 @@ class TradingEngine:
             del self._recently_closed[s]
 
         with self._positions_lock:
+            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
+
             # Also sync positions that exist at broker but NOT in bot tracking
             for p in broker_positions:
                 sym = p.get("symbol", "").upper()
                 if sym and sym not in self.positions:
+                    # Don't re-add positions if we're already at or over the cap
+                    if len(self.positions) >= max_pos:
+                        log.debug(
+                            f"POSITION SYNC: Skipping {sym} — at position cap "
+                            f"({len(self.positions)}/{max_pos})"
+                        )
+                        continue
+
                     # Skip symbols that were recently closed (settlement delay
                     # can cause Alpaca to still show positions we already exited,
                     # re-adding them causes duplicate exit signals to TradersPost)
@@ -2869,6 +2957,107 @@ class TradingEngine:
             f"Regime: {regime_str}",
             level="info"
         )
+
+    def _power_hour_trim(self):
+        """Power hour position trimming (3:00-3:30 PM ET).
+
+        Closes weak positions to:
+        1. Free up capital for late-day moon runners
+        2. Reduce position count toward max_positions limit
+        3. Lock in small profits on positions that aren't going anywhere
+
+        Evaluates each position using _evaluate_bullish_for_afterhours and
+        closes those scoring below 30 (clearly bearish / going nowhere).
+        """
+        if not self.positions:
+            return
+
+        max_pos = self.risk_manager.max_positions
+        current_count = len(self.positions)
+        trim_target = max(max_pos, current_count - 5)  # Close at most 5 weak ones per cycle
+
+        # Score all positions
+        scored = []
+        for symbol, pos in list(self.positions.items()):
+            if self._is_crypto_symbol(symbol):
+                continue  # Don't trim crypto
+            _, reason, score = self._evaluate_bullish_for_afterhours(symbol, pos)
+            scored.append((symbol, pos, score, reason))
+
+        # Sort by bullish score ascending — weakest first
+        scored.sort(key=lambda x: x[2])
+
+        trimmed = 0
+        for symbol, pos, score, reason in scored:
+            if current_count - trimmed <= trim_target and score >= 30:
+                break  # Already at target and remaining positions aren't terrible
+
+            pnl_pct = pos.get("unrealized_pnl_pct", 0)
+
+            # Close if: bearish (score < 30) or if we need to reduce count and score < 40
+            should_trim = False
+            if score < 30:
+                should_trim = True  # Clearly weak — close regardless
+            elif score < 40 and (current_count - trimmed) > max_pos:
+                should_trim = True  # Mediocre and we're over position limit
+
+            if should_trim:
+                log.info(
+                    f"POWER HOUR TRIM: Closing {symbol} | Score: {score}/100 | "
+                    f"P&L: {pnl_pct:.1%} | {reason}"
+                )
+                self._close_position(symbol, "power_hour_trim",
+                                     f"Power hour trim: bullish score {score}/100 too low")
+                trimmed += 1
+
+        if trimmed > 0:
+            remaining = len(self.positions)
+            self.notifier.system_alert(
+                f"Power hour: trimmed {trimmed} weak positions | "
+                f"{remaining} positions remaining (max: {max_pos})",
+                level="info"
+            )
+
+    def _power_hour_tighten_stops(self):
+        """Tighten stops on all positions at 3:50 PM ET.
+
+        Protects profits before EOD volatility and the close auction.
+        Moves stops to at least breakeven for profitable positions.
+        """
+        if not self.positions:
+            return
+
+        tightened = 0
+        for symbol, pos in list(self.positions.items()):
+            if self._is_crypto_symbol(symbol):
+                continue
+
+            current_price = pos.get("current_price", pos["entry_price"])
+            entry_price = pos["entry_price"]
+            pnl_pct = pos.get("unrealized_pnl_pct", 0)
+            old_stop = pos.get("stop_loss", 0)
+
+            if pos["direction"] == "long":
+                if pnl_pct >= 0.02:
+                    # 2%+ profit: tighten to 1.5% trail from current price
+                    new_stop = current_price * 0.985
+                elif pnl_pct > 0:
+                    # In profit: move stop to breakeven + small buffer
+                    new_stop = entry_price * 1.002
+                else:
+                    # Losing: tighten stop to limit further downside
+                    new_stop = current_price * 0.97
+
+                if new_stop > old_stop:
+                    pos["stop_loss"] = round(new_stop, 2)
+                    tightened += 1
+                    log.debug(
+                        f"PH TIGHTEN: {symbol} stop ${old_stop:.2f} → ${new_stop:.2f} "
+                        f"(P&L: {pnl_pct:.1%})"
+                    )
+
+        if tightened > 0:
+            log.info(f"Power hour 3:50 PM: tightened stops on {tightened} positions")
 
     def _evaluate_bullish_for_afterhours(self, symbol, pos):
         """Evaluate if a position is bullish enough for after-hours / overnight hold.
