@@ -20,34 +20,35 @@ capital:
 # --- Risk Management ---
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
-  max_position_size_pct: 0.10     # Max 10% of capital per position (~$4.7K) - diversify more (was 15%)
-  max_positions: 12               # Max 12 concurrent positions - manageable, focused (was 18)
-  max_equity_positions: 12        # Max 12 equity positions
+  max_position_size_pct: 0.15     # Max 15% of capital per position (~$7K) - bigger bets on quality (was 10%)
+  max_positions: 8                # Max 8 concurrent positions - FOCUS capital (was 12, spreading too thin)
+  max_equity_positions: 8         # Max 8 equity positions
   max_crypto_positions: 0         # Crypto paused
-  risk_per_trade_pct: 0.015       # Risk 1.5% per trade (~$705) - slightly tighter (was 2%)
-  max_correlated_positions: 3     # Max 3 in same sector - prevent sector blowup (was 4)
+  risk_per_trade_pct: 0.02        # Risk 2% per trade (~$940) - bigger size with fewer positions (was 1.5%)
+  max_correlated_positions: 2     # Max 2 in same sector - tighter sector limit (was 3)
   stop_loss_pct: 0.03             # 3% stop loss - small caps need slightly wider stops (was 2.5%)
   trailing_stop_pct: 0.02         # 2% trailing stop - wider for volatile small caps (was 1.4%)
   take_profit_pct: 0.20           # 20% take profit - let runners RUN even further (was 15%)
   max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads (was 0.5%)
 
   # --- Profit Taking (Partial Exits) ---
-  # Optimized for $0.50-$50 runners that can move 10-50%+ on big days
+  # Optimized: let winners run LONGER, take smaller partials, wider trails
+  # Problem before: closing 25% at +3% leaves money on the table for 20%+ runners
   profit_taking:
     enabled: true
     targets:
-      - pct_from_entry: 0.03      # At +3% profit - first partial (small caps move 3% easily)
-        close_pct: 0.25           # Close 25% - lock in some profit
+      - pct_from_entry: 0.05      # At +5% profit - first partial (was 3% - too early, runners need room)
+        close_pct: 0.15           # Close only 15% - keep 85% riding (was 25%)
         move_stop: "breakeven"    # Move stop to break even (risk-free from here)
-      - pct_from_entry: 0.07      # At +7% profit
-        close_pct: 0.25           # Close 25% of remaining
-        tighten_trail: 0.02       # 2% trail (small caps need room)
-      - pct_from_entry: 0.12      # At +12% profit
-        close_pct: 0.25           # Close 25% of remaining
-        tighten_trail: 0.015      # Tighten to 1.5% trail
-      - pct_from_entry: 0.20      # At +20% profit - RUNNER territory
-        close_pct: 0.50           # Close 50% of remaining (let rest ride with trail)
-        tighten_trail: 0.01       # 1% trail on the remaining runner shares
+      - pct_from_entry: 0.10      # At +10% profit (was 7%)
+        close_pct: 0.20           # Close 20% of remaining (was 25%)
+        tighten_trail: 0.03       # 3% trail - wider to survive shakeouts (was 2%)
+      - pct_from_entry: 0.20      # At +20% profit (was 12%)
+        close_pct: 0.20           # Close 20% of remaining (was 25%)
+        tighten_trail: 0.025      # 2.5% trail (was 1.5% - too tight)
+      - pct_from_entry: 0.35      # At +35% profit - RUNNER territory (was 20%)
+        close_pct: 0.30           # Close 30% of remaining (was 50%)
+        tighten_trail: 0.02       # 2% trail on remaining runner shares (was 1%)
 
   # --- Break Even Stop ---
   breakeven:
@@ -65,7 +66,7 @@ schedule:
   market_close: "16:00"
   timezone: "US/Eastern"
   pre_market_scan: "09:15"       # Scan 15 min before open
-  avoid_first_minutes: 2          # 2 min buffer - small caps move hard at open, don't miss it
+  avoid_first_minutes: 5          # 5 min buffer - let opening volatility settle, avoid fakeouts (was 2)
   avoid_last_minutes: 10          # 10 min before close - exit positions, avoid EOD dump
   trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
@@ -96,27 +97,28 @@ schedule:
 # Bot auto-adjusts as account grows
 scaling:
   enabled: true
+  # Fewer positions, larger sizes — concentrated bets on best setups
   tiers:
     - min_balance: 5000
-      max_positions: 8
-      risk_per_trade: 0.025
-      max_position_pct: 0.25
+      max_positions: 5
+      risk_per_trade: 0.03
+      max_position_pct: 0.30       # $1,500 max per position
     - min_balance: 10000
-      max_positions: 12
+      max_positions: 6
       risk_per_trade: 0.025
-      max_position_pct: 0.18
+      max_position_pct: 0.25       # $2,500 max per position
     - min_balance: 25000
-      max_positions: 18
+      max_positions: 8
       risk_per_trade: 0.02
-      max_position_pct: 0.12
+      max_position_pct: 0.18       # $4,500 max per position
     - min_balance: 50000
-      max_positions: 25
-      risk_per_trade: 0.025
-      max_position_pct: 0.10
+      max_positions: 10
+      risk_per_trade: 0.02
+      max_position_pct: 0.15       # $7,500 max per position
     - min_balance: 100000
-      max_positions: 35
-      risk_per_trade: 0.025
-      max_position_pct: 0.08
+      max_positions: 15
+      risk_per_trade: 0.02
+      max_position_pct: 0.10       # $10,000 max per position
 
 # --- Hedging ---
 # Automatic portfolio protection via inverse ETFs during bearish regimes

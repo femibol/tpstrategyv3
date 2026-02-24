@@ -620,6 +620,11 @@ class TradingEngine:
                         signals, self.positions, self.current_balance
                     )
 
+                    # 6a. Capture rejected signals for momentum rotation
+                    rejected_for_rotation = [s for s in signals if s not in approved and s.get("action") == "buy"]
+                    if rejected_for_rotation and len(self.positions) >= self.risk_manager.max_positions - 1:
+                        self._momentum_rotation_check(rejected_for_rotation)
+
                     # 7a. Pre-market / Post-market filtering: limit strategies and reduce size
                     if getattr(self, "_in_premarket", False):
                         pm_config = self.config.schedule_config.get("premarket", {})
@@ -2957,6 +2962,100 @@ class TradingEngine:
             f"Regime: {regime_str}",
             level="info"
         )
+
+    def _momentum_rotation_check(self, rejected_signals):
+        """Money Machine position rotation: replace weakest position with stronger signal.
+
+        If a new signal scores significantly higher than our weakest held position,
+        close the weak one to make room. The new signal gets picked up next cycle.
+        """
+        if not self.positions or not rejected_signals:
+            return
+
+        # Only rotate if we're at or near capacity
+        max_pos = self.risk_manager.max_positions
+        if len(self.positions) < max_pos - 1:
+            return
+
+        # Score all current positions by momentum
+        scored_positions = []
+        for symbol, pos in self.positions.items():
+            score = 0
+            pnl_pct = pos.get("unrealized_pnl_pct", 0)
+
+            # P&L component (max 40 pts)
+            if pnl_pct >= 0.05:
+                score += 40
+            elif pnl_pct >= 0.02:
+                score += 30
+            elif pnl_pct >= 0:
+                score += 15
+            elif pnl_pct >= -0.02:
+                score += 5
+            # else: 0 pts (big loser)
+
+            # RVOL component from snapshot (max 30 pts)
+            rvol_strat = self.strategies.get("rvol_momentum")
+            if rvol_strat and hasattr(rvol_strat, "_snapshot_data"):
+                snap = rvol_strat._snapshot_data.get(symbol)
+                if snap:
+                    rvol = snap.get("rvol", 0)
+                    if rvol >= 3.0:
+                        score += 30
+                    elif rvol >= 2.0:
+                        score += 20
+                    elif rvol >= 1.5:
+                        score += 10
+
+            # Hold time penalty: longer holds = lower score (momentum fading)
+            if "entry_time" in pos:
+                hold_mins = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
+                if hold_mins > 120:
+                    score -= 10  # 2+ hours: momentum likely gone
+                elif hold_mins > 60:
+                    score -= 5
+
+            scored_positions.append((symbol, score, pnl_pct))
+
+        if not scored_positions:
+            return
+
+        # Find weakest position
+        scored_positions.sort(key=lambda x: x[1])
+        weakest_sym, weakest_score, weakest_pnl = scored_positions[0]
+
+        # Find strongest rejected signal (rejected due to max positions)
+        best_rejected = None
+        best_rejected_score = 0
+        for sig in rejected_signals:
+            sig_score = sig.get("confidence", 0) * 100
+            sig_rvol = sig.get("rvol", 0)
+            if sig_rvol >= 3.0:
+                sig_score += 30
+            elif sig_rvol >= 2.0:
+                sig_score += 20
+            if sig_score > best_rejected_score:
+                best_rejected_score = sig_score
+                best_rejected = sig
+
+        if not best_rejected:
+            return
+
+        # Rotate if the new signal is significantly stronger (20+ point gap)
+        score_gap = best_rejected_score - weakest_score
+        if score_gap >= 20 and weakest_pnl < 0.03:  # Don't rotate out big winners
+            log.info(
+                f"MOMENTUM ROTATION: Closing {weakest_sym} (score={weakest_score}, "
+                f"P&L={weakest_pnl:.1%}) to make room for {best_rejected['symbol']} "
+                f"(score={best_rejected_score:.0f}) | Gap: +{score_gap:.0f} pts"
+            )
+            self._close_position(weakest_sym, "rotation",
+                                f"Momentum rotation: replaced by stronger signal {best_rejected['symbol']}")
+            self.notifier.system_alert(
+                f"Rotation: closed {weakest_sym} ({weakest_pnl:.1%}) → "
+                f"making room for {best_rejected['symbol']} (RVOL {best_rejected.get('rvol', 0):.1f}x)",
+                level="info"
+            )
 
     def _power_hour_trim(self):
         """Power hour position trimming (3:00-3:30 PM ET).

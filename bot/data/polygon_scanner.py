@@ -47,6 +47,39 @@ class PolygonScanner:
         # Bars rate limiting
         self._bars_call_times = []
 
+        # Float data cache — {symbol: {"float": int, "shares_outstanding": int, "fetched": timestamp}}
+        self._float_cache = {}
+        self._float_fetch_times = []  # Rate limit tracking
+
+        # Sector cache — {symbol: "Technology"} — from Polygon ticker details
+        self._sector_cache = {}
+        # Known sector mappings for common watchlist symbols (avoids API calls)
+        self._known_sectors = {
+            # Tech / Growth
+            "SOFI": "Financials", "HOOD": "Financials", "AFRM": "Financials",
+            "UPST": "Financials", "COIN": "Financials", "PYPL": "Financials",
+            "SQ": "Financials",
+            # Quantum / AI
+            "IONQ": "Technology", "RGTI": "Technology", "AI": "Technology",
+            "BBAI": "Technology", "SOUN": "Technology", "PLTR": "Technology",
+            # Crypto miners
+            "MARA": "Crypto", "RIOT": "Crypto", "CLSK": "Crypto",
+            "CIFR": "Crypto", "MSTR": "Crypto",
+            # EV / Clean energy
+            "RIVN": "EV/Clean", "LCID": "EV/Clean", "NIO": "EV/Clean",
+            "PLUG": "EV/Clean", "CHPT": "EV/Clean", "ENPH": "EV/Clean",
+            "FSLR": "EV/Clean", "QS": "EV/Clean",
+            # Biotech
+            "DNA": "Healthcare", "MRNA": "Healthcare", "HIMS": "Healthcare",
+            # Space / Defense
+            "RKLB": "Aerospace", "LUNR": "Aerospace", "ASTS": "Aerospace",
+            "JOBY": "Aerospace", "SPCE": "Aerospace",
+            # Meme / High vol
+            "GME": "Consumer", "AMC": "Consumer", "WISH": "Consumer",
+            "OPEN": "Real Estate", "SNAP": "Technology", "RBLX": "Technology",
+            "SKLZ": "Technology", "GSAT": "Technology",
+        }
+
         if self.enabled:
             self._client = RESTClient(
                 api_key=api_key,
@@ -158,6 +191,8 @@ class PolygonScanner:
                     "prev_close": round(prev_close, 2),
                     "open": round(open_price, 2),
                     "market_cap": 0,
+                    "float_shares": self._float_cache.get(sym, {}).get("float", 0),
+                    "sector": self.get_sector(sym),
                     "source": "polygon",
                 }
 
@@ -344,6 +379,102 @@ class PolygonScanner:
         """Get pre-market gap-up stocks (5%+ gap from prev close)."""
         _, _, gap_ups = self.scan_full_market()
         return gap_ups[:limit]
+
+    def get_float(self, symbol):
+        """Get float estimate for a symbol. Uses cached data if available.
+        Float data is fetched from Polygon ticker details API.
+        Rate limited: max 1 float fetch per cycle to conserve API calls."""
+        if symbol in self._float_cache:
+            return self._float_cache[symbol].get("float", 0)
+        return 0
+
+    def _fetch_float_batch(self, symbols, max_fetches=2):
+        """Fetch float data for a batch of symbols. Max 2 fetches per call
+        to conserve Polygon rate limits (free tier: 5 calls/min)."""
+        if not self.enabled or not self._client:
+            return
+
+        fetched = 0
+        for sym in symbols:
+            if sym in self._float_cache:
+                continue
+            if fetched >= max_fetches:
+                break
+            if not self._can_make_bar_call():
+                break
+
+            try:
+                self._bars_call_times.append(time.time())
+                details = self._client.get_ticker_details(sym)
+                if details:
+                    shares_out = getattr(details, 'share_class_shares_outstanding', 0) or 0
+                    weighted = getattr(details, 'weighted_shares_outstanding', 0) or 0
+                    # Float estimate: use weighted outstanding, fallback to share class
+                    float_est = weighted or shares_out
+                    # Also grab sector/industry from ticker details (free data)
+                    sic_desc = getattr(details, 'sic_description', '') or ''
+                    sector = self._classify_sector(sic_desc)
+                    self._float_cache[sym] = {
+                        "float": int(float_est),
+                        "shares_outstanding": int(shares_out),
+                        "sector": sector,
+                        "fetched": time.time(),
+                    }
+                    if sector != "Unknown":
+                        self._sector_cache[sym] = sector
+                    fetched += 1
+                    if float_est > 0:
+                        log.debug(f"Float data for {sym}: {float_est/1e6:.1f}M shares")
+            except Exception as e:
+                log.debug(f"Float fetch failed for {sym}: {e}")
+                self._float_cache[sym] = {"float": 0, "shares_outstanding": 0, "sector": "Unknown", "fetched": time.time()}
+                fetched += 1
+
+    def _classify_sector(self, sic_description):
+        """Classify SIC description into a broad sector category."""
+        if not sic_description:
+            return "Unknown"
+        desc = sic_description.lower()
+        if any(k in desc for k in ["software", "computer", "electronic", "semiconductor", "telecom"]):
+            return "Technology"
+        if any(k in desc for k in ["bank", "financ", "insurance", "credit", "securi"]):
+            return "Financials"
+        if any(k in desc for k in ["pharma", "biolog", "medic", "health", "hospital"]):
+            return "Healthcare"
+        if any(k in desc for k in ["oil", "gas", "petrol", "energy", "mining", "coal"]):
+            return "Energy"
+        if any(k in desc for k in ["retail", "food", "restaurant", "apparel", "consumer"]):
+            return "Consumer"
+        if any(k in desc for k in ["motor", "vehicle", "auto", "aircraft", "aerospace"]):
+            return "Industrials"
+        if any(k in desc for k in ["real estate", "reit", "property"]):
+            return "Real Estate"
+        return "Other"
+
+    def get_sector(self, symbol):
+        """Get sector for a symbol. Checks local cache first, then known mappings.
+        For unknown symbols discovered by scanner, fetches from Polygon ticker details
+        (piggybacks on float fetch to avoid extra API calls)."""
+        sym = symbol.upper()
+        # Check caches
+        if sym in self._sector_cache:
+            return self._sector_cache[sym]
+        if sym in self._known_sectors:
+            return self._known_sectors[sym]
+        # Check if we got sector from a previous float fetch
+        float_entry = self._float_cache.get(sym, {})
+        if "sector" in float_entry:
+            self._sector_cache[sym] = float_entry["sector"]
+            return float_entry["sector"]
+        return "Unknown"
+
+    def get_sector_counts(self, symbols):
+        """Get count of symbols per sector. Used by risk manager for correlation limits."""
+        counts = {}
+        for sym in symbols:
+            sector = self.get_sector(sym)
+            counts[sector] = counts.get(sector, 0) + 1
+        return counts
 
     def get_losers(self, limit=100):
         """Get top losers from cached scan data ($0.50-$50 range)."""

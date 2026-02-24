@@ -13,6 +13,8 @@ Key features:
 - SNAPSHOT FAST PATH: generates signals from Polygon snapshot data when bars
   aren't available (catches today's top gainers INSTANTLY like the real
   Trade Ideas Money Machine — no historical bars needed)
+- TIME-OF-DAY RVOL NORMALIZATION: adjusts RVOL for the time of day
+  (early morning volume is naturally lower, so raw RVOL is inflated)
 - Long-only
 """
 import numpy as np
@@ -49,8 +51,20 @@ class RvolMomentumStrategy(BaseStrategy):
         self.atr_target_mult = config.get("atr_target_multiplier", 3.0)
         self.max_hold_minutes = config.get("max_hold_minutes", 120)
         self.max_trades_per_day = config.get("max_trades_per_day", 12)
+        self.max_float = config.get("max_float", 20_000_000)  # 20M max float (low float = explosive)
+        self.prefer_low_float = config.get("prefer_low_float", True)
         self.trades_today = 0
         self.last_trade_date = None
+
+        # Time-of-day volume curve: % of daily volume typically traded by each 30-min interval
+        # Based on U.S. equity intraday volume distribution (U-shaped curve)
+        # Key: hour*100 + minute_bucket → cumulative % of daily volume by that time
+        self._tod_volume_curve = {
+            930: 0.06, 1000: 0.15, 1030: 0.22, 1100: 0.28,
+            1130: 0.33, 1200: 0.38, 1230: 0.43, 1300: 0.48,
+            1330: 0.53, 1400: 0.58, 1430: 0.64, 1500: 0.72,
+            1530: 0.85, 1600: 1.00,
+        }
 
         # Dynamic symbol list - gets augmented by top movers
         self._dynamic_symbols = set()
@@ -87,6 +101,43 @@ class RvolMomentumStrategy(BaseStrategy):
     def get_symbols(self):
         """Return combined static + dynamic symbol list."""
         return list(set(self.symbols) | self._dynamic_symbols)
+
+    def _normalize_rvol_for_time(self, raw_rvol, volume, avg_volume):
+        """Normalize RVOL for time of day.
+
+        Problem: At 10 AM, a stock may have traded 200K shares vs a 1M daily avg.
+        Raw RVOL = 200K/1M = 0.2x — looks dead. But by 10 AM, only ~15% of
+        daily volume has typically traded. So normalized RVOL = 0.2/0.15 = 1.33x.
+
+        Conversely, at 9:35 AM, a stock with 100K volume vs 500K avg looks like
+        0.2x raw, but only 6% of volume should have traded → 0.2/0.06 = 3.3x.
+        That's the stock that's really running.
+
+        Returns normalized RVOL that accounts for how much of the day has passed.
+        """
+        now = datetime.now()
+        current_time = now.hour * 100 + now.minute
+
+        # Pre-market: no normalization (different volume profile)
+        if current_time < 930:
+            return raw_rvol
+
+        # Find the expected cumulative volume fraction for current time
+        expected_fraction = 1.0  # default: end of day
+        for time_key in sorted(self._tod_volume_curve.keys()):
+            if current_time <= time_key:
+                expected_fraction = self._tod_volume_curve[time_key]
+                break
+
+        if expected_fraction <= 0:
+            return raw_rvol
+
+        # Normalized RVOL = (current_volume / avg_daily_volume) / expected_fraction
+        if avg_volume > 0:
+            normalized = (volume / avg_volume) / expected_fraction
+            return round(normalized, 2)
+
+        return raw_rvol
 
     def generate_signals(self, market_data):
         """Scan all symbols for RVOL setups and generate trading signals.
@@ -155,10 +206,15 @@ class RvolMomentumStrategy(BaseStrategy):
         if current_price < self.min_price or current_price > self.max_price:
             return None
 
-        # --- RVOL ---
+        # --- RVOL (time-of-day normalized) ---
         avg_vol_20 = float(np.mean(volumes[-21:-1])) if len(volumes) > 21 else float(np.mean(volumes[:-1]))
         current_vol = float(volumes[-1])
-        rvol = round(current_vol / avg_vol_20, 2) if avg_vol_20 > 0 else 0
+        raw_rvol = round(current_vol / avg_vol_20, 2) if avg_vol_20 > 0 else 0
+        # Normalize bar-level RVOL: at 10 AM, volume is naturally lower so raw RVOL is inflated
+        # Use cumulative volume for better normalization
+        total_today_vol = float(np.sum(volumes[-min(78, len(volumes)):]))  # Approx today's bars
+        total_avg_daily = avg_vol_20 * 78  # Approx full day average
+        rvol = self._normalize_rvol_for_time(raw_rvol, total_today_vol, total_avg_daily)
 
         # Volume filter
         if avg_vol_20 < self.min_volume / 20:  # Per-bar avg volume
@@ -391,9 +447,21 @@ class RvolMomentumStrategy(BaseStrategy):
         if volume < self.min_volume:
             return None
 
+        # Float filter — low float stocks move harder
+        float_shares = snap.get("float_shares", 0)
+        vol_to_float = 0
+        if float_shares > 0:
+            vol_to_float = round(volume / float_shares, 2)
+            # Filter out high float stocks (too sluggish for momentum)
+            if self.prefer_low_float and float_shares > self.max_float * 5:
+                return None  # 100M+ float = too heavy, skip
+
         # Recalculate RVOL from daily data if not provided
         if rvol <= 0 and avg_volume > 0:
             rvol = round(volume / avg_volume, 1)
+
+        # Normalize RVOL for time of day (snapshot uses daily volume totals)
+        rvol = self._normalize_rvol_for_time(rvol, volume, avg_volume)
 
         # Direction from daily change
         if change_pct > 0.3:
@@ -456,6 +524,29 @@ class RvolMomentumStrategy(BaseStrategy):
             score += 5
             score_reasons.append(f"Good volume {volume/1e3:.0f}K")
 
+        # Float scoring (max 15 pts) — low float = explosive moves
+        if float_shares > 0:
+            if float_shares <= 5_000_000:
+                score += 15
+                score_reasons.append(f"Ultra low float {float_shares/1e6:.1f}M")
+            elif float_shares <= 10_000_000:
+                score += 12
+                score_reasons.append(f"Low float {float_shares/1e6:.1f}M")
+            elif float_shares <= 20_000_000:
+                score += 8
+                score_reasons.append(f"Small float {float_shares/1e6:.1f}M")
+
+            # Volume-to-float ratio bonus (max 10 pts)
+            if vol_to_float >= 2.0:
+                score += 10
+                score_reasons.append(f"Float traded {vol_to_float:.1f}x")
+            elif vol_to_float >= 1.0:
+                score += 7
+                score_reasons.append(f"Float turning over {vol_to_float:.1f}x")
+            elif vol_to_float >= 0.5:
+                score += 3
+                score_reasons.append(f"Active float rotation {vol_to_float:.1f}x")
+
         # Snapshot doesn't have RSI/EMA/MACD — award moderate points for
         # being a top gainer (the fact that Polygon flagged it as a mover
         # is already strong momentum confirmation)
@@ -494,6 +585,8 @@ class RvolMomentumStrategy(BaseStrategy):
             "score": score,
             "verdict": verdict,
             "reasons": score_reasons,
+            "float_shares": float_shares,
+            "vol_to_float": vol_to_float,
             "fast_path": True,  # Flag for dashboard to show this is snapshot-based
         }
 
