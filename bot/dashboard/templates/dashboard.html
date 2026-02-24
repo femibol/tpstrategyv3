@@ -618,6 +618,7 @@
     <div class="tab" data-tab="positions">Positions</div>
     <div class="tab" data-tab="performance">W/L Stats</div>
     <div class="tab" data-tab="trades">Trades</div>
+    <div class="tab" data-tab="history">History</div>
     <div class="tab" data-tab="analysis">Analysis</div>
     <div class="tab" data-tab="daily">Daily Stats</div>
     <div class="tab" data-tab="tips">Tips</div>
@@ -756,6 +757,55 @@
     <div class="section">
         <h2>Recent Trades <span class="count" id="tradeCount">0</span></h2>
         <div id="tradesList">
+            <div class="empty">No trades yet</div>
+        </div>
+    </div>
+</div>
+
+<!-- TRADE HISTORY TAB -->
+<div class="tab-content" id="tab-history">
+    <div class="section">
+        <h2>Trade History & Learning</h2>
+
+        <!-- Filters -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <select id="histFilterStrategy" onchange="loadHistory()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.85em;">
+                <option value="">All Strategies</option>
+            </select>
+            <select id="histFilterSymbol" onchange="loadHistory()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.85em;">
+                <option value="">All Symbols</option>
+            </select>
+            <select id="histFilterResult" onchange="renderHistoryTable()" style="background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:0.85em;">
+                <option value="">All Results</option>
+                <option value="win">Winners Only</option>
+                <option value="loss">Losers Only</option>
+            </select>
+            <button onclick="exportTrades()" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:6px 14px;font-size:0.85em;cursor:pointer;">Export CSV</button>
+        </div>
+
+        <!-- Summary Stats Cards -->
+        <div id="histSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:16px;">
+        </div>
+
+        <!-- Strategy Breakdown -->
+        <h3 style="margin:16px 0 8px;font-size:0.95em;color:var(--muted);">Strategy Performance</h3>
+        <div id="histByStrategy" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
+        </div>
+
+        <!-- Time-of-Day Heatmap -->
+        <h3 style="margin:16px 0 8px;font-size:0.95em;color:var(--muted);">Best / Worst Hours</h3>
+        <div id="histByHour" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;">
+        </div>
+
+        <!-- Learning Insights -->
+        <h3 style="margin:16px 0 8px;font-size:0.95em;color:var(--muted);">Engine Learning Insights</h3>
+        <div id="histLearning" style="margin-bottom:16px;">
+            <div class="empty">No learning data yet - need more trades</div>
+        </div>
+
+        <!-- Full Trade Table -->
+        <h3 style="margin:16px 0 8px;font-size:0.95em;color:var(--muted);">All Trades <span class="count" id="histCount">0</span></h3>
+        <div id="histTable" style="overflow-x:auto;">
             <div class="empty">No trades yet</div>
         </div>
     </div>
@@ -1024,10 +1074,7 @@ const API = window.location.origin;
 // === TABS ===
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        switchTab(tab.dataset.tab);
     });
 });
 
@@ -1676,12 +1723,18 @@ async function executeSuggestion(symbol, stop, target, conf, strategy, whyEncode
 }
 
 // === TAB SWITCHING (for bottom buttons) ===
+var _histLoaded = false;
 function switchTab(tabName) {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
     document.querySelectorAll('.tab-content').forEach(function(tc) { tc.classList.remove('active'); });
     document.querySelector('.tab[data-tab="' + tabName + '"]').classList.add('active');
     document.getElementById('tab-' + tabName).classList.add('active');
     window.scrollTo(0, 0);
+    // Lazy-load trade history on first visit
+    if (tabName === 'history' && !_histLoaded) {
+        _histLoaded = true;
+        loadHistory();
+    }
 }
 
 // === SETTINGS MANAGEMENT ===
@@ -2084,6 +2137,248 @@ document.addEventListener('touchend', function(e) {
         });
     }
 });
+
+// === TRADE HISTORY TAB ===
+var _histSummaryData = null;
+var _histTradesData = null;
+var _histFiltersPopulated = false;
+
+async function loadHistory() {
+    var strat = document.getElementById('histFilterStrategy').value;
+    var sym = document.getElementById('histFilterSymbol').value;
+    var params = '?limit=500';
+    if (strat) params += '&strategy=' + encodeURIComponent(strat);
+    if (sym) params += '&symbol=' + encodeURIComponent(sym);
+
+    var results = await Promise.all([
+        api('trades/summary' + params.replace('limit=500', '')),
+        api('trades' + params)
+    ]);
+    _histSummaryData = results[0];
+    _histTradesData = results[1];
+
+    // Populate filter dropdowns on first load
+    if (!_histFiltersPopulated && _histSummaryData) {
+        var stratSel = document.getElementById('histFilterStrategy');
+        var symSel = document.getElementById('histFilterSymbol');
+        if (_histSummaryData.by_strategy) {
+            Object.keys(_histSummaryData.by_strategy).sort().forEach(function(s) {
+                if (!stratSel.querySelector('option[value="' + s + '"]')) {
+                    var o = document.createElement('option');
+                    o.value = s; o.textContent = s;
+                    stratSel.appendChild(o);
+                }
+            });
+        }
+        if (_histSummaryData.by_symbol) {
+            Object.keys(_histSummaryData.by_symbol).sort().forEach(function(s) {
+                if (!symSel.querySelector('option[value="' + s + '"]')) {
+                    var o = document.createElement('option');
+                    o.value = s; o.textContent = s;
+                    symSel.appendChild(o);
+                }
+            });
+        }
+        _histFiltersPopulated = true;
+    }
+
+    renderHistorySummary();
+    renderHistoryTable();
+    renderHistoryStrategy();
+    renderHistoryHours();
+    renderHistoryLearning();
+}
+
+function renderHistorySummary() {
+    var d = _histSummaryData;
+    var el = document.getElementById('histSummary');
+    if (!d || !d.total) { el.innerHTML = ''; return; }
+
+    function card(label, val, cls) {
+        return '<div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;">' +
+            '<div style="font-size:0.7em;color:var(--muted);text-transform:uppercase;">' + label + '</div>' +
+            '<div style="font-size:1.3em;font-weight:700;" class="' + (cls || '') + '">' + val + '</div></div>';
+    }
+
+    el.innerHTML =
+        card('Total Trades', d.total) +
+        card('Win Rate', d.win_rate + '%', d.win_rate >= 50 ? 'positive' : 'negative') +
+        card('Net P&L', '$' + fmtMoney(d.total_pnl), pnlCls(d.total_pnl)) +
+        card('Profit Factor', d.profit_factor || '--') +
+        card('Avg Win', '$' + fmt(d.avg_win), 'positive') +
+        card('Avg Loss', '-$' + fmt(d.avg_loss), 'negative') +
+        card('Best Trade', '$' + fmt(d.largest_win), 'positive') +
+        card('Worst Trade', '$' + fmt(d.largest_loss), 'negative');
+}
+
+function renderHistoryStrategy() {
+    var d = _histSummaryData;
+    var el = document.getElementById('histByStrategy');
+    if (!d || !d.by_strategy) { el.innerHTML = ''; return; }
+
+    el.innerHTML = Object.keys(d.by_strategy).sort(function(a, b) {
+        return d.by_strategy[b].pnl - d.by_strategy[a].pnl;
+    }).map(function(s) {
+        var st = d.by_strategy[s];
+        var pnl = st.pnl;
+        return '<div style="background:var(--card);border-radius:8px;padding:10px;border-left:3px solid ' + (pnl >= 0 ? 'var(--green)' : 'var(--red)') + ';">' +
+            '<div style="font-weight:600;margin-bottom:4px;">' + s + '</div>' +
+            '<div style="font-size:0.8em;color:var(--muted);">' +
+                st.trades + ' trades | ' + st.win_rate + '% WR | ' +
+                '<span class="' + pnlCls(pnl) + '">$' + fmtMoney(pnl) + '</span>' +
+            '</div></div>';
+    }).join('');
+}
+
+function renderHistoryHours() {
+    var d = _histSummaryData;
+    var el = document.getElementById('histByHour');
+    if (!d || !d.by_hour) { el.innerHTML = '<div class="empty">No hourly data</div>'; return; }
+
+    el.innerHTML = Object.keys(d.by_hour).sort(function(a, b) { return +a - +b; }).map(function(h) {
+        var hd = d.by_hour[h];
+        var pnl = hd.pnl;
+        var bg = pnl > 0 ? 'rgba(0,200,83,0.2)' : pnl < 0 ? 'rgba(255,23,68,0.15)' : 'var(--card)';
+        var label = (+h > 12 ? (+h - 12) + 'pm' : +h + 'am');
+        return '<div style="background:' + bg + ';border-radius:6px;padding:6px 10px;text-align:center;min-width:60px;">' +
+            '<div style="font-weight:600;font-size:0.85em;">' + label + '</div>' +
+            '<div style="font-size:0.75em;color:var(--muted);">' + hd.trades + ' trades</div>' +
+            '<div style="font-size:0.85em;" class="' + pnlCls(pnl) + '">$' + fmt(pnl) + '</div>' +
+            '<div style="font-size:0.7em;color:var(--muted);">' + hd.win_rate + '% WR</div>' +
+        '</div>';
+    }).join('');
+}
+
+function renderHistoryLearning() {
+    var d = _histSummaryData;
+    var el = document.getElementById('histLearning');
+    if (!d || !d.learning) { return; }
+    var learn = d.learning;
+
+    var html = '';
+
+    // Strategy scores
+    if (learn.strategy_scores && Object.keys(learn.strategy_scores).length > 0) {
+        html += '<div style="margin-bottom:10px;"><strong style="font-size:0.85em;">Strategy Scores (engine weighting):</strong></div>';
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">';
+        var sorted = Object.entries(learn.strategy_scores).sort(function(a, b) { return b[1] - a[1]; });
+        sorted.forEach(function(pair) {
+            var color = pair[1] > 50 ? 'var(--green)' : pair[1] > 25 ? 'var(--accent)' : 'var(--red)';
+            html += '<div style="background:var(--card);border-radius:6px;padding:6px 10px;border-left:3px solid ' + color + ';">' +
+                '<span style="font-weight:600;font-size:0.85em;">' + pair[0] + '</span> ' +
+                '<span style="font-size:0.85em;color:' + color + ';">' + pair[1] + '</span></div>';
+        });
+        html += '</div>';
+    }
+
+    // Symbol scores (top 5 best and worst)
+    if (learn.symbol_scores && Object.keys(learn.symbol_scores).length > 0) {
+        var syms = Object.entries(learn.symbol_scores).sort(function(a, b) { return b[1] - a[1]; });
+        var best = syms.slice(0, 5).filter(function(s) { return s[1] > 0; });
+        var worst = syms.slice(-5).reverse().filter(function(s) { return s[1] < 0; });
+
+        if (best.length > 0) {
+            html += '<div style="margin-bottom:6px;"><strong style="font-size:0.85em;">Best Symbols:</strong> ';
+            html += best.map(function(s) {
+                return '<span style="color:var(--green);font-size:0.85em;">' + s[0] + ' (' + s[1].toFixed(1) + ')</span>';
+            }).join(', ');
+            html += '</div>';
+        }
+        if (worst.length > 0) {
+            html += '<div style="margin-bottom:6px;"><strong style="font-size:0.85em;">Avoid Symbols:</strong> ';
+            html += worst.map(function(s) {
+                return '<span style="color:var(--red);font-size:0.85em;">' + s[0] + ' (' + s[1].toFixed(1) + ')</span>';
+            }).join(', ');
+            html += '</div>';
+        }
+    }
+
+    // Exit effectiveness
+    if (learn.exit_effectiveness && Object.keys(learn.exit_effectiveness).length > 0) {
+        html += '<div style="margin-top:8px;"><strong style="font-size:0.85em;">Exit Type Effectiveness:</strong></div>';
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">';
+        Object.entries(learn.exit_effectiveness).forEach(function(pair) {
+            var avgPnl = pair[1].total_pnl / (pair[1].trades || 1);
+            var color = avgPnl > 0 ? 'var(--green)' : 'var(--red)';
+            var wr = pair[1].wins / (pair[1].trades || 1) * 100;
+            html += '<div style="background:var(--card);border-radius:6px;padding:6px 10px;font-size:0.8em;">' +
+                '<strong>' + pair[0] + '</strong> ' + pair[1].trades + ' trades | ' +
+                '<span style="color:' + color + ';">$' + avgPnl.toFixed(2) + '/trade</span> | ' + wr.toFixed(0) + '% WR</div>';
+        });
+        html += '</div>';
+    }
+
+    if (!html) {
+        html = '<div class="empty">Engine needs more trades to generate learning insights. Minimum 5 trades required.</div>';
+    }
+
+    el.innerHTML = html;
+}
+
+function renderHistoryTable() {
+    var trades = _histTradesData;
+    var el = document.getElementById('histTable');
+    var countEl = document.getElementById('histCount');
+    var resultFilter = document.getElementById('histFilterResult').value;
+
+    if (!trades || trades.length === 0) {
+        el.innerHTML = '<div class="empty">No trades found</div>';
+        countEl.textContent = '0';
+        return;
+    }
+
+    // Apply result filter
+    var filtered = trades;
+    if (resultFilter === 'win') filtered = trades.filter(function(t) { return t.pnl > 0; });
+    else if (resultFilter === 'loss') filtered = trades.filter(function(t) { return t.pnl < 0; });
+
+    countEl.textContent = filtered.length;
+
+    // Build table
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">' +
+        '<thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left;">' +
+        '<th style="padding:6px 4px;">Symbol</th>' +
+        '<th style="padding:6px 4px;">Dir</th>' +
+        '<th style="padding:6px 4px;">Strategy</th>' +
+        '<th style="padding:6px 4px;">Entry</th>' +
+        '<th style="padding:6px 4px;">Exit</th>' +
+        '<th style="padding:6px 4px;">Qty</th>' +
+        '<th style="padding:6px 4px;">P&L</th>' +
+        '<th style="padding:6px 4px;">%</th>' +
+        '<th style="padding:6px 4px;">Reason</th>' +
+        '<th style="padding:6px 4px;">Time</th>' +
+        '</tr></thead><tbody>';
+
+    filtered.slice().reverse().forEach(function(t) {
+        var pnl = t.pnl || 0;
+        var pnlPct = t.pnl_pct ? (t.pnl_pct * 100).toFixed(1) + '%' : '--';
+        var exitTime = '';
+        try {
+            var d = new Date(t.exit_time);
+            exitTime = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        } catch(e) { exitTime = t.exit_time || ''; }
+
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">' +
+            '<td style="padding:5px 4px;font-weight:600;">' + tvLink(t.symbol || '') + '</td>' +
+            '<td style="padding:5px 4px;">' + (t.direction || '') + '</td>' +
+            '<td style="padding:5px 4px;font-size:0.9em;color:var(--muted);">' + (t.strategy || '') + '</td>' +
+            '<td style="padding:5px 4px;">$' + fmt(t.entry_price) + '</td>' +
+            '<td style="padding:5px 4px;">$' + fmt(t.exit_price) + '</td>' +
+            '<td style="padding:5px 4px;">' + (t.quantity || '') + '</td>' +
+            '<td style="padding:5px 4px;font-weight:600;" class="' + pnlCls(pnl) + '">$' + fmt(pnl) + '</td>' +
+            '<td style="padding:5px 4px;" class="' + pnlCls(pnl) + '">' + pnlPct + '</td>' +
+            '<td style="padding:5px 4px;font-size:0.85em;color:var(--muted);">' + (t.reason || '') + '</td>' +
+            '<td style="padding:5px 4px;font-size:0.8em;color:var(--muted);white-space:nowrap;">' + exitTime + '</td>' +
+            '</tr>';
+    });
+
+    html += '</tbody></table>';
+    el.innerHTML = html;
+}
+
+function exportTrades() {
+    window.open(API + '/api/trades/export', '_blank');
+}
 
 // === INIT ===
 update();

@@ -147,6 +147,118 @@ class Dashboard:
             return Response(output.getvalue(), mimetype="text/csv",
                             headers={"Content-Disposition": "attachment;filename=trades.csv"})
 
+        @self.app.route("/api/trades/summary")
+        def trades_summary():
+            """Aggregated trade analytics for the history dashboard."""
+            from flask import request as req
+            from collections import defaultdict
+            from datetime import datetime as _dt
+
+            trades_list = list(self.engine.trade_history)
+
+            # Optional filters
+            start = req.args.get("start")
+            end = req.args.get("end")
+            if start:
+                trades_list = [t for t in trades_list
+                               if str(t.get("exit_time", t.get("entry_time", ""))) >= start]
+            if end:
+                trades_list = [t for t in trades_list
+                               if str(t.get("exit_time", t.get("entry_time", ""))) <= end + "T23:59:59"]
+
+            if not trades_list:
+                return jsonify({"total": 0})
+
+            # Overall stats
+            wins = [t for t in trades_list if t.get("pnl", 0) > 0]
+            losses = [t for t in trades_list if t.get("pnl", 0) < 0]
+            total_pnl = sum(t.get("pnl", 0) for t in trades_list)
+            total_profit = sum(t.get("pnl", 0) for t in wins)
+            total_loss = sum(abs(t.get("pnl", 0)) for t in losses)
+
+            # By strategy
+            by_strategy = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0, "symbols": set()})
+            for t in trades_list:
+                s = by_strategy[t.get("strategy", "unknown")]
+                s["trades"] += 1
+                s["pnl"] += t.get("pnl", 0)
+                s["symbols"].add(t.get("symbol", ""))
+                if t.get("pnl", 0) > 0:
+                    s["wins"] += 1
+            for k in by_strategy:
+                s = by_strategy[k]
+                s["win_rate"] = round(s["wins"] / s["trades"] * 100, 1) if s["trades"] else 0
+                s["pnl"] = round(s["pnl"], 2)
+                s["symbols"] = list(s["symbols"])
+
+            # By symbol
+            by_symbol = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0})
+            for t in trades_list:
+                s = by_symbol[t.get("symbol", "")]
+                s["trades"] += 1
+                s["pnl"] += t.get("pnl", 0)
+                if t.get("pnl", 0) > 0:
+                    s["wins"] += 1
+            for k in by_symbol:
+                s = by_symbol[k]
+                s["win_rate"] = round(s["wins"] / s["trades"] * 100, 1) if s["trades"] else 0
+                s["pnl"] = round(s["pnl"], 2)
+
+            # By exit reason
+            by_reason = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0})
+            for t in trades_list:
+                r = by_reason[t.get("reason", "unknown")]
+                r["trades"] += 1
+                r["pnl"] += t.get("pnl", 0)
+                if t.get("pnl", 0) > 0:
+                    r["wins"] += 1
+            for k in by_reason:
+                r = by_reason[k]
+                r["win_rate"] = round(r["wins"] / r["trades"] * 100, 1) if r["trades"] else 0
+                r["pnl"] = round(r["pnl"], 2)
+
+            # By hour
+            by_hour = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0})
+            for t in trades_list:
+                try:
+                    h = _dt.fromisoformat(t.get("entry_time", "")).hour
+                    bh = by_hour[h]
+                    bh["trades"] += 1
+                    bh["pnl"] += t.get("pnl", 0)
+                    if t.get("pnl", 0) > 0:
+                        bh["wins"] += 1
+                except (ValueError, TypeError):
+                    pass
+            for k in by_hour:
+                bh = by_hour[k]
+                bh["win_rate"] = round(bh["wins"] / bh["trades"] * 100, 1) if bh["trades"] else 0
+                bh["pnl"] = round(bh["pnl"], 2)
+
+            # Learning data
+            learning = {}
+            if self.engine.trade_analyzer:
+                learning = self.engine.trade_analyzer.get_status()
+
+            return jsonify({
+                "total": len(trades_list),
+                "wins": len(wins),
+                "losses": len(losses),
+                "win_rate": round(len(wins) / len(trades_list) * 100, 1),
+                "total_pnl": round(total_pnl, 2),
+                "total_profit": round(total_profit, 2),
+                "total_loss": round(total_loss, 2),
+                "profit_factor": round(total_profit / total_loss, 2) if total_loss > 0 else 0,
+                "avg_win": round(total_profit / len(wins), 2) if wins else 0,
+                "avg_loss": round(total_loss / len(losses), 2) if losses else 0,
+                "largest_win": round(max((t.get("pnl", 0) for t in trades_list), default=0), 2),
+                "largest_loss": round(min((t.get("pnl", 0) for t in trades_list), default=0), 2),
+                "by_strategy": dict(by_strategy),
+                "by_symbol": dict(by_symbol),
+                "by_reason": dict(by_reason),
+                "by_hour": {str(k): v for k, v in sorted(by_hour.items())},
+                "learning": learning,
+            })
+
         @self.app.route("/api/equity")
         def equity():
             return jsonify(self.engine.equity_curve[-500:])
