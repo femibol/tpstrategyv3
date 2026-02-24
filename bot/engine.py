@@ -1403,8 +1403,8 @@ class TradingEngine:
             return
 
         # Price ceiling filter — only buy stocks in our target range
-        # Scanner discovers movers under $50; don't let strategies buy $200+ stocks
-        max_buy_price = self.config.settings.get("risk", {}).get("scanner_max_price", 50.0)
+        # Scanner discovers movers under $100; don't let strategies buy $200+ stocks
+        max_buy_price = self.config.settings.get("risk", {}).get("scanner_max_price", 100.0)
         if action == "buy" and current_price > max_buy_price:
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} above ${max_buy_price} ceiling — skipping")
             return
@@ -3041,9 +3041,9 @@ class TradingEngine:
         if not best_rejected:
             return
 
-        # Rotate if the new signal is significantly stronger (20+ point gap)
+        # Rotate if the new signal is stronger (15+ point gap) — more aggressive rotation
         score_gap = best_rejected_score - weakest_score
-        if score_gap >= 20 and weakest_pnl < 0.03:  # Don't rotate out big winners
+        if score_gap >= 15 and weakest_pnl < 0.05:  # Don't rotate out 5%+ winners (was 3%)
             log.info(
                 f"MOMENTUM ROTATION: Closing {weakest_sym} (score={weakest_score}, "
                 f"P&L={weakest_pnl:.1%}) to make room for {best_rejected['symbol']} "
@@ -3813,7 +3813,7 @@ class TradingEngine:
                     change_pct = m.get("change_pct", 0)
                     rvol = m.get("rvol", 0)
 
-                    if not sym or price < 0.50 or price > 50.0:
+                    if not sym or price < 0.50 or price > 100.0:
                         continue
 
                     # Skip crypto symbols when crypto is disabled

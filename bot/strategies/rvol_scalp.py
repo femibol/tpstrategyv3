@@ -120,8 +120,8 @@ class RvolScalpStrategy(BaseStrategy):
             return None
 
         # Spread-adjusted price filter: require higher price OR higher volume
-        # Stocks under $5 need 300K+ daily volume to have tradeable spreads
-        if current_price < 5.0 and float(np.mean(volumes[-20:])) < 300000 / 390:
+        # Stocks under $3 need 200K+ daily volume to have tradeable spreads
+        if current_price < 3.0 and float(np.mean(volumes[-20:])) < 200000 / 390:
             return None
 
         # --- RVOL on 1-min bars ---

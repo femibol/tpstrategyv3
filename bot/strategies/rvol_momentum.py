@@ -547,12 +547,24 @@ class RvolMomentumStrategy(BaseStrategy):
                 score += 3
                 score_reasons.append(f"Active float rotation {vol_to_float:.1f}x")
 
-        # Snapshot doesn't have RSI/EMA/MACD — award moderate points for
-        # being a top gainer (the fact that Polygon flagged it as a mover
-        # is already strong momentum confirmation)
+        # Snapshot doesn't have RSI/EMA/MACD — award bonus points to compensate
+        # for missing technical indicators (up to 35 pts missing vs full path).
+        # The fact that Polygon flagged it as a top mover IS strong confirmation.
         if direction == "UP" and rvol >= 2.0:
-            score += 10
+            score += 20
             score_reasons.append("Snapshot momentum confirmed")
+        elif direction == "UP" and rvol >= 1.5:
+            score += 15
+            score_reasons.append("Snapshot elevated momentum")
+
+        # Catalyst bonus: extreme movers (10%+) are almost always catalyst-driven
+        # (FDA, M&A, earnings) — these deserve fast entry
+        if change_pct >= 10.0:
+            score += 15
+            score_reasons.append(f"Catalyst runner +{change_pct:.0f}%")
+        elif change_pct >= 5.0:
+            score += 10
+            score_reasons.append(f"Strong catalyst +{change_pct:.0f}%")
 
         # Crypto adjustment
         is_crypto = any(symbol.upper().endswith(s) for s in ("-USD", "-USDT"))
