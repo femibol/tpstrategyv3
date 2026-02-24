@@ -657,9 +657,20 @@ class TradingEngine:
                             rejected=rejected_count if rejected_count > 0 else None,
                         )
 
-                    # 8. Execute approved signals
+                    # 8. Execute approved signals (limit NEW entries per cycle to prevent batch entries)
+                    MAX_ENTRIES_PER_CYCLE = self.config.risk_config.get("max_entries_per_cycle", 3)
+                    entries_this_cycle = 0
                     for sig in approved:
+                        is_entry = sig.get("action", "").lower() in ("buy", "long")
+                        if is_entry and entries_this_cycle >= MAX_ENTRIES_PER_CYCLE:
+                            log.info(
+                                f"CYCLE LIMIT: Skipping {sig.get('action')} {sig.get('symbol')} — "
+                                f"already {entries_this_cycle} entries this cycle (max {MAX_ENTRIES_PER_CYCLE})"
+                            )
+                            continue
                         self._execute_signal(sig)
+                        if is_entry:
+                            entries_this_cycle += 1
                         # Record regime context for learning
                         if self.trade_analyzer and regime_result:
                             self.trade_analyzer.record_regime_trade(
@@ -1618,7 +1629,15 @@ class TradingEngine:
 
         current_price = self.market_data.get_price(symbol)
         if current_price is None:
-            current_price = pos.get("current_price", pos["entry_price"])
+            # Fallback: use last polled price from position tracking
+            current_price = pos.get("current_price")
+        if current_price is None:
+            # Last resort: entry_price (means P&L in webhook will be wrong)
+            current_price = pos["entry_price"]
+            log.warning(
+                f"EXIT PRICE FALLBACK: {symbol} using entry_price ${current_price:.2f} — "
+                f"market data unavailable. Webhook P&L will be inaccurate."
+            )
 
         action = "SELL" if pos["direction"] == "long" else "BUY"
         original_broker = pos.get("executed_via", "Simulated")
@@ -1802,7 +1821,13 @@ class TradingEngine:
 
         current_price = self.market_data.get_price(symbol)
         if current_price is None:
-            current_price = pos.get("current_price", pos["entry_price"])
+            current_price = pos.get("current_price")
+        if current_price is None:
+            current_price = pos["entry_price"]
+            log.warning(
+                f"PARTIAL EXIT PRICE FALLBACK: {symbol} using entry_price "
+                f"${current_price:.2f} — market data unavailable."
+            )
 
         action = "SELL" if pos["direction"] == "long" else "BUY"
         close_broker = None  # Track which broker ACTUALLY closed it

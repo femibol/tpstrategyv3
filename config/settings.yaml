@@ -22,6 +22,7 @@ risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
   max_position_size_pct: 0.10     # Max 10% of capital per position (~$4.7K) - diversify more (was 15%)
   max_positions: 12               # Max 12 concurrent positions - manageable, focused (was 18)
+  max_entries_per_cycle: 3        # Max 3 new entries per 10-second cycle (prevents batch entry pattern)
   max_equity_positions: 12        # Max 12 equity positions
   max_crypto_positions: 0         # Crypto paused
   risk_per_trade_pct: 0.015       # Risk 1.5% per trade (~$705) - slightly tighter (was 2%)
@@ -56,8 +57,8 @@ risk:
     buffer_pct: 0.002             # 0.2% buffer above entry (wider for small cap spreads)
   min_volume: 100000              # 100K volume threshold - small caps have less volume
   min_price: 0.50                 # Floor: $0.50 — no sub-penny junk
+  max_price: 50.00                # Hard ceiling: block ALL buys above $50 (risk manager + scanner)
   scanner_max_price: 50.00        # Scanner discovers movers under $50 (where moves START)
-  # No hard ceiling — bot rides runners past $50 if uptrend is confirmed
 
 # --- Trading Schedule ---
 schedule:

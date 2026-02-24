@@ -37,7 +37,7 @@ class RiskManager:
         self.risk_per_trade = self.risk.get("risk_per_trade_pct", 0.01)
         self.min_volume = self.risk.get("min_volume", 100000)
         self.min_price = self.risk.get("min_price", 0.50)
-        self.max_price = self.risk.get("max_price", 99999.0)  # No hard ceiling - runners can go past scanner range
+        self.max_price = self.risk.get("scanner_max_price", self.risk.get("max_price", 50.0))
         self.max_correlated = self.risk.get("max_correlated_positions", 2)
         self.min_confidence = 0.40  # Slightly higher - only quality signals for volatile small caps
         self.long_only = self.risk.get("long_only", False)
