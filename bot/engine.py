@@ -2870,8 +2870,116 @@ class TradingEngine:
             level="info"
         )
 
+    def _evaluate_bullish_for_afterhours(self, symbol, pos):
+        """Evaluate if a position is bullish enough for after-hours / overnight hold.
+
+        Returns (should_hold: bool, reason: str, bullish_score: int)
+
+        Checks multiple technical factors:
+        - P&L momentum (position profitability)
+        - EMA trend (price above 9 & 20 EMA)
+        - RSI (not overbought, healthy range)
+        - RVOL (still high = still in play)
+        - Price action (making higher highs)
+        """
+        pnl_pct = pos.get("unrealized_pnl_pct", 0)
+        current_price = pos.get("current_price", pos["entry_price"])
+        entry_price = pos["entry_price"]
+        bullish_score = 0
+        reasons = []
+
+        # 1. Profitability check (max 30 pts)
+        if pnl_pct >= 0.05:
+            bullish_score += 30
+            reasons.append(f"Strong profit +{pnl_pct:.1%}")
+        elif pnl_pct >= 0.03:
+            bullish_score += 25
+            reasons.append(f"Good profit +{pnl_pct:.1%}")
+        elif pnl_pct >= 0.01:
+            bullish_score += 15
+            reasons.append(f"Modest profit +{pnl_pct:.1%}")
+        elif pnl_pct > 0:
+            bullish_score += 5
+            reasons.append(f"Barely green +{pnl_pct:.1%}")
+        else:
+            reasons.append(f"In the red {pnl_pct:.1%}")
+
+        # 2. Technical trend check (max 30 pts)
+        if self.market_data:
+            data = self.market_data.get_data(symbol)
+            if data is not None and len(data) >= 20:
+                closes = data["close"].values
+                ema9 = self.indicators.ema(closes, 9)
+                ema20 = self.indicators.ema(closes, 20)
+
+                if ema9 is not None and ema20 is not None:
+                    price_above_9 = closes[-1] > ema9[-1]
+                    price_above_20 = closes[-1] > ema20[-1]
+                    ema9_above_20 = ema9[-1] > ema20[-1]
+
+                    if price_above_9 and price_above_20 and ema9_above_20:
+                        bullish_score += 30
+                        reasons.append("Strong uptrend (above 9/20 EMA)")
+                    elif price_above_20:
+                        bullish_score += 15
+                        reasons.append("Above 20 EMA")
+                    else:
+                        reasons.append("Below key EMAs — bearish")
+
+                # RSI check (max 15 pts)
+                rsi = self.indicators.rsi(closes, 14)
+                if rsi:
+                    if 40 <= rsi <= 70:
+                        bullish_score += 15
+                        reasons.append(f"RSI healthy ({rsi:.0f})")
+                    elif rsi > 70:
+                        bullish_score += 5
+                        reasons.append(f"RSI overbought ({rsi:.0f}) — risky overnight")
+                    else:
+                        reasons.append(f"RSI weak ({rsi:.0f})")
+
+        # 3. RVOL check from snapshot data (max 15 pts)
+        rvol_strat = self.strategies.get("rvol_momentum")
+        if rvol_strat and hasattr(rvol_strat, "_snapshot_data"):
+            snap = rvol_strat._snapshot_data.get(symbol)
+            if snap:
+                rvol = snap.get("rvol", 0)
+                if rvol >= 3.0:
+                    bullish_score += 15
+                    reasons.append(f"RVOL still elevated {rvol:.1f}x")
+                elif rvol >= 2.0:
+                    bullish_score += 10
+                    reasons.append(f"RVOL active {rvol:.1f}x")
+
+        # 4. Price action momentum (max 10 pts)
+        if current_price > entry_price * 1.03:
+            bullish_score += 10
+            reasons.append("Price 3%+ above entry — momentum intact")
+        elif current_price > entry_price:
+            bullish_score += 5
+            reasons.append("Price above entry")
+
+        # Verdict: 50+ = bullish enough for after-hours
+        should_hold = bullish_score >= 50
+        reason_str = " | ".join(reasons[:5])
+
+        log.info(
+            f"BULLISH EVAL: {symbol} | Score: {bullish_score}/100 | "
+            f"{'HOLD' if should_hold else 'CLOSE'} | {reason_str}"
+        )
+
+        return should_hold, reason_str, bullish_score
+
     def _end_of_day(self):
-        """End of day routine with overnight hold decisions and learning."""
+        """End of day routine with smart position evaluation.
+
+        For each position, evaluates bullish/bearish technical factors to decide:
+        - Close at EOD (bearish, scalps, losers)
+        - Hold into after-hours with tightened stops (bullish runners)
+        - Hold overnight (strong multi-day plays)
+
+        After-hours selling uses Alpaca extended_hours=True with limit orders.
+        """
         log.info("=== END OF DAY ===")
 
         # --- Check for stock split candidates (NEVER hold these overnight) ---
@@ -2891,9 +2999,18 @@ class TradingEngine:
 
         if self.positions:
             overnight_holds = []
+            afterhours_holds = []
             positions_to_close = []
 
-            for symbol, pos in list(self.positions.items()):
+            # Sort positions by P&L descending — evaluate best positions first
+            # for overnight/AH hold slots
+            sorted_positions = sorted(
+                list(self.positions.items()),
+                key=lambda x: x[1].get("unrealized_pnl_pct", 0),
+                reverse=True,
+            )
+
+            for symbol, pos in sorted_positions:
                 pnl_pct = pos.get("unrealized_pnl_pct", 0)
                 in_profit = pnl_pct > 0
 
@@ -2909,82 +3026,106 @@ class TradingEngine:
                     positions_to_close.append(symbol)
                     continue
 
-                # RVOL momentum: hold strong runners into after-hours if bullish
-                if pos.get("strategy") == "rvol_momentum":
-                    # Keep if: 3%+ profit, strong uptrend, high RVOL (still running)
-                    if pnl_pct >= 0.03 and len(overnight_holds) < max_overnight:
-                        log.info(
-                            f"RVOL RUNNER HOLD: Keeping {symbol} into after-hours | "
-                            f"P&L: {pnl_pct:.1%} | Still bullish runner"
-                        )
-                        # Tighten stop for after-hours volatility
-                        current_price = pos.get("current_price", pos["entry_price"])
-                        new_stop = current_price * 0.97  # 3% stop for AH
-                        if new_stop > pos.get("stop_loss", 0):
-                            pos["stop_loss"] = new_stop
-                        overnight_holds.append(symbol)
-                        continue
-                    else:
-                        log.info(
-                            f"RVOL EXIT: Closing {symbol} - {pnl_pct:.1%} profit, "
-                            f"not strong enough for after-hours hold"
-                        )
-                        positions_to_close.append(symbol)
-                        continue
-
                 # Crypto positions trade 24/7 - skip EOD close entirely
                 if self._is_crypto_symbol(symbol):
                     log.info(f"CRYPTO HOLD: {symbol} trades 24/7 - skipping EOD close | P&L: {pnl_pct:.1%}")
                     overnight_holds.append(symbol)
                     continue
 
-                should_hold = False
-                if overnight_enabled and in_profit and len(overnight_holds) < max_overnight:
-                    min_profit = overnight_cfg.get("min_profit_pct", 0.01)
-                    # Breakout plays: lower threshold to hold overnight (these are multi-day plays)
-                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
-                    # SMC Forever: A+ setups are designed for multi-day holds
-                    is_smc = pos.get("strategy") == "smc_forever"
-                    if is_breakout or is_smc:
-                        min_profit = min(min_profit, 0.005)  # Only need 0.5% profit to hold overnight
-                    if pnl_pct >= min_profit:
-                        # Check if in uptrend (price above entry, which we already know if profitable)
-                        should_hold = True
+                # --- SMART BULLISH EVALUATION ---
+                # Evaluate each position technically to decide hold vs close
+                total_holds = len(overnight_holds) + len(afterhours_holds)
+                if total_holds >= max_overnight:
+                    # Already at capacity — close the rest
+                    positions_to_close.append(symbol)
+                    log.info(
+                        f"EOD CLOSE (at capacity): {symbol} | P&L: {pnl_pct:.1%} | "
+                        f"Already holding {total_holds} positions"
+                    )
+                    continue
 
-                        if overnight_cfg.get("require_uptrend", False) and self.market_data:
-                            # Quick trend check: is price above 20-EMA?
-                            data = self.market_data.get_data(symbol)
-                            if data is not None and len(data) >= 20:
-                                closes = data["close"].values
-                                ema20 = self.indicators.ema(closes, 20)
-                                if ema20 is not None and closes[-1] < ema20[-1]:
-                                    should_hold = False  # Not in uptrend
+                should_hold, eval_reason, bullish_score = self._evaluate_bullish_for_afterhours(symbol, pos)
 
-                if should_hold:
-                    # Tighten stop for overnight
-                    tighten = overnight_cfg.get("tighten_stop_pct", 0.02)
+                if should_hold and in_profit:
                     current_price = pos.get("current_price", pos["entry_price"])
-                    if pos["direction"] == "long":
-                        new_stop = current_price * (1 - tighten)
+
+                    # Determine: after-hours only vs overnight hold
+                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                    is_momentum = pos.get("strategy") == "rvol_momentum"
+                    is_multi_day = pos.get("strategy") in ("momentum", "prebreakout", "smc_forever")
+
+                    if is_multi_day and bullish_score >= 60:
+                        # Strong multi-day play — hold overnight
+                        tighten = overnight_cfg.get("tighten_stop_pct", 0.025)
+                        if pos["direction"] == "long":
+                            new_stop = current_price * (1 - tighten)
+                            if new_stop > pos.get("stop_loss", 0):
+                                pos["stop_loss"] = new_stop
+                        pos["overnight_hold"] = True
+                        overnight_holds.append(symbol)
+                        log.info(
+                            f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Bullish: {bullish_score}/100 | Stop: ${pos['stop_loss']:.2f} | "
+                            f"{eval_reason}"
+                        )
+                    elif is_momentum and bullish_score >= 50:
+                        # RVOL momentum runner — hold into after-hours with tight stop
+                        new_stop = current_price * 0.97  # 3% stop for AH
                         if new_stop > pos.get("stop_loss", 0):
                             pos["stop_loss"] = new_stop
-                    pos["overnight_hold"] = True
-                    overnight_holds.append(symbol)
-                    log.info(
-                        f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
-                        f"Stop tightened to ${pos['stop_loss']:.2f}"
-                    )
+                        pos["afterhours_hold"] = True
+                        afterhours_holds.append(symbol)
+                        log.info(
+                            f"AFTER-HOURS HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Bullish: {bullish_score}/100 | AH Stop: ${pos['stop_loss']:.2f} | "
+                            f"{eval_reason}"
+                        )
+                    elif bullish_score >= 50:
+                        # Other strategy with decent bullish score
+                        tighten = overnight_cfg.get("tighten_stop_pct", 0.025)
+                        if pos["direction"] == "long":
+                            new_stop = current_price * (1 - tighten)
+                            if new_stop > pos.get("stop_loss", 0):
+                                pos["stop_loss"] = new_stop
+                        pos["overnight_hold"] = True
+                        overnight_holds.append(symbol)
+                        log.info(
+                            f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Bullish: {bullish_score}/100 | Stop: ${pos['stop_loss']:.2f} | "
+                            f"{eval_reason}"
+                        )
+                    else:
+                        positions_to_close.append(symbol)
+                        log.info(
+                            f"EOD CLOSE (not bullish enough): {symbol} | "
+                            f"P&L: {pnl_pct:.1%} | Bullish: {bullish_score}/100 | "
+                            f"{eval_reason}"
+                        )
                 elif overnight_cfg.get("close_losers", True) or not overnight_enabled:
                     positions_to_close.append(symbol)
+                    log.info(
+                        f"EOD CLOSE: {symbol} | P&L: {pnl_pct:.1%} | "
+                        f"Bullish: {bullish_score}/100 | {eval_reason}"
+                    )
+                else:
+                    positions_to_close.append(symbol)
 
-            # Close positions not held overnight
+            # Close positions not held (uses GTC + limit for after-hours fills)
             for symbol in positions_to_close:
                 self._close_position(symbol, "eod_close", "End of day close")
 
+            # Notifications
             if overnight_holds:
                 self.notifier.system_alert(
                     f"Holding {len(overnight_holds)} positions overnight: "
                     f"{', '.join(overnight_holds)}",
+                    level="info"
+                )
+            if afterhours_holds:
+                self.notifier.system_alert(
+                    f"Holding {len(afterhours_holds)} positions into after-hours: "
+                    f"{', '.join(afterhours_holds)} "
+                    f"(will be re-evaluated for overnight hold at 6 PM)",
                     level="info"
                 )
 
