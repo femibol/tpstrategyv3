@@ -570,7 +570,22 @@ class TradingEngine:
                 if scalp_tick >= 3:
                     scalp_tick = 0
 
-                    # 0. Dynamic discovery: feed top movers into RVOL strategies
+                    # 0. Process startup trim queue (close excess positions from Alpaca sync)
+                    if hasattr(self, '_startup_trim_queue') and self._startup_trim_queue:
+                        trim_batch = self._startup_trim_queue[:3]  # Close 3 at a time
+                        self._startup_trim_queue = self._startup_trim_queue[3:]
+                        for sym in trim_batch:
+                            if sym in self.positions:
+                                pnl_pct = self.positions[sym].get("unrealized_pnl_pct", 0)
+                                log.warning(
+                                    f"STARTUP TRIM: Closing {sym} (P&L: {pnl_pct:.1%}) "
+                                    f"— over position limit. "
+                                    f"{len(self._startup_trim_queue)} remaining in queue."
+                                )
+                                self._close_position(sym, "position_cap",
+                                                     f"Over position limit — closing weakest")
+
+                    # 0a. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
 
                     # 0b. Update news feed watchlist with held + active symbols
@@ -605,6 +620,11 @@ class TradingEngine:
                         signals, self.positions, self.current_balance
                     )
 
+                    # 6a. Capture rejected signals for momentum rotation
+                    rejected_for_rotation = [s for s in signals if s not in approved and s.get("action") == "buy"]
+                    if rejected_for_rotation and len(self.positions) >= self.risk_manager.max_positions - 1:
+                        self._momentum_rotation_check(rejected_for_rotation)
+
                     # 7a. Pre-market / Post-market filtering: limit strategies and reduce size
                     if getattr(self, "_in_premarket", False):
                         pm_config = self.config.schedule_config.get("premarket", {})
@@ -626,18 +646,62 @@ class TradingEngine:
                             if sig.get("quantity"):
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
 
-                    # 7b. Apply regime-based filtering
+                    # 7b. POWER HOUR (3:00-4:00 PM ET)
+                    now_time = datetime.now(self.tz)
+                    if (now_time.hour == 15 and
+                            getattr(self, '_equity_market_open', False)):
+                        self._in_power_hour = True
+
+                        # --- POWER HOUR PHASE 1: Trim weak positions (3:00-3:30) ---
+                        # Close positions with weak bullish scores to free capital
+                        # and reduce position count before EOD
+                        if now_time.minute < 30 and not getattr(self, '_ph_trimmed', False):
+                            self._power_hour_trim()
+                            self._ph_trimmed = True
+
+                        # --- POWER HOUR PHASE 2: Moon hour (3:30-3:50) ---
+                        # Aggressive entries on late-day runners with surging volume
+                        # These are the "moon" plays — stocks ripping into the close
+                        if 30 <= now_time.minute <= 50:
+                            for sig in approved:
+                                if sig.get("action") == "buy":
+                                    snap_rvol = sig.get("rvol", 0)
+                                    reason = sig.get("reason", "")
+                                    # Moon hour: high RVOL late-day runners get boosted
+                                    if snap_rvol >= 3.0:
+                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.20)
+                                        sig["reason"] = reason + " | MOON HOUR RUNNER"
+                                        log.info(
+                                            f"MOON HOUR BOOST: {sig['symbol']} RVOL={snap_rvol:.1f}x "
+                                            f"— confidence boosted to {sig['confidence']:.2f}"
+                                        )
+                                    elif snap_rvol >= 2.0:
+                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.10)
+                                        sig["reason"] = reason + " | POWER HOUR"
+
+                        # --- POWER HOUR PHASE 3: Tighten all stops (3:50+) ---
+                        # Protect profits before EOD volatility
+                        if now_time.minute >= 50 and not getattr(self, '_ph_tightened', False):
+                            self._power_hour_tighten_stops()
+                            self._ph_tightened = True
+
+                    else:
+                        self._in_power_hour = False
+                        self._ph_trimmed = False
+                        self._ph_tightened = False
+
+                    # 7c. Apply regime-based filtering
                     if regime_result and regime_result.get("regime") == "crisis":
                         # In crisis, only allow hedge signals and exits
                         approved = [s for s in approved if
                                     s.get("source") == "hedging" or
                                     s.get("action") in ("sell", "cover", "close")]
 
-                    # 7c. Off-hours filter: Only allow crypto signals when equity market closed
+                    # 7d. Off-hours filter: Only allow crypto signals when equity market closed
                     if not getattr(self, '_equity_market_open', True):
                         approved = [s for s in approved if self._is_crypto_symbol(s.get("symbol", ""))]
 
-                    # 7d. Scanner summary notification
+                    # 7e. Scanner summary notification
                     symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
                     regime_str = regime_result.get("regime") if regime_result else None
                     spy_change = None
@@ -768,7 +832,13 @@ class TradingEngine:
         return equity_open or has_crypto
 
     def _update_data(self):
-        """Fetch latest market data for all strategy symbols + watchlist."""
+        """Fetch latest market data for all strategy symbols + watchlist.
+
+        Prioritizes bar fetching for:
+        1. Open positions (need real-time monitoring)
+        2. Top movers from Polygon (highest change% first — Money Machine priority)
+        3. Everything else
+        """
         all_symbols = set()
         for strategy in self.strategies.values():
             all_symbols.update(strategy.get_symbols())
@@ -779,7 +849,27 @@ class TradingEngine:
         # Include watchlist symbols for live prices
         all_symbols.update(self.watchlist)
 
-        self.market_data.update(list(all_symbols))
+        # Prioritize: positions first, then top movers by change%, then rest
+        priority_symbols = []
+
+        # 1. Open positions (always first — need accurate prices for stops)
+        for sym in self.positions.keys():
+            if sym in all_symbols:
+                priority_symbols.append(sym)
+
+        # 2. Top movers from Polygon (sorted by change% desc — Money Machine priority)
+        if self.polygon and self.polygon.enabled:
+            top_movers = self.polygon.get_top_movers(limit=50)
+            for m in top_movers:
+                sym = m.get("symbol", "")
+                if sym and sym in all_symbols and sym not in priority_symbols:
+                    priority_symbols.append(sym)
+
+        # 3. Everything else
+        remaining = [s for s in all_symbols if s not in priority_symbols]
+        ordered_symbols = priority_symbols + remaining
+
+        self.market_data.update(ordered_symbols)
 
         # Diagnostic: log data coverage every ~5 cycles (avoid log spam)
         if not hasattr(self, '_data_log_counter'):
@@ -2342,11 +2432,26 @@ class TradingEngine:
             if not isinstance(broker_positions, list):
                 log.warning(f"Alpaca startup sync: unexpected response type {type(broker_positions)} — skipping")
                 return
+
+            # Sort by unrealized P&L descending — best performers get tracked first
+            # so if we hit the position cap, we keep winners and flag losers
+            try:
+                broker_positions.sort(
+                    key=lambda p: float(p.get("unrealized_plpc", 0) or 0),
+                    reverse=True,
+                )
+            except (ValueError, TypeError):
+                pass  # If sort fails, use original order
+
+            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
+            over_limit_positions = []
+
             for p in broker_positions:
                 symbol = p.get("symbol", "").upper()
                 qty = abs(float(p.get("qty", 0)))
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
+                unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
                 # Use current market price for smarter stop/target
                 current_mkt = None
                 if self.market_data:
@@ -2372,11 +2477,38 @@ class TradingEngine:
                     "max_hold_bars": 40,
                     "bar_seconds": 300,
                     "max_hold_days": 5,  # Synced positions: 5-day default hold limit
+                    "unrealized_pnl_pct": unrealized_pnl_pct,
                 }
+
+                # Track positions over the limit for auto-trim
+                if len(self.positions) > max_pos:
+                    over_limit_positions.append((symbol, unrealized_pnl_pct))
+
             if broker_positions:
                 log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
             else:
                 log.info("Alpaca reports 0 open positions")
+
+            # --- POSITION CAP ENFORCEMENT ---
+            # If broker has more positions than max_positions, flag the weakest
+            # for immediate closure. This prevents the 50+ position problem.
+            if over_limit_positions:
+                over_count = len(self.positions) - max_pos
+                log.warning(
+                    f"OVER POSITION LIMIT: {len(self.positions)} positions synced "
+                    f"(max: {max_pos}). Will close {over_count} weakest on first cycle."
+                )
+                # Sort over-limit by P&L ascending (worst first)
+                over_limit_positions.sort(key=lambda x: x[1])
+                symbols_to_close = [s for s, _ in over_limit_positions[:over_count]]
+                # Mark for immediate closure on first main loop cycle
+                self._startup_trim_queue = symbols_to_close
+                self.notifier.risk_alert(
+                    f"Position cap exceeded: {len(self.positions)} synced from Alpaca "
+                    f"(max: {max_pos}). Queuing {over_count} weakest for closure: "
+                    f"{', '.join(symbols_to_close[:10])}"
+                    f"{'...' if len(symbols_to_close) > 10 else ''}"
+                )
         except Exception as e:
             log.warning(f"Alpaca startup sync failed: {e}")
 
@@ -2413,10 +2545,20 @@ class TradingEngine:
             del self._recently_closed[s]
 
         with self._positions_lock:
+            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
+
             # Also sync positions that exist at broker but NOT in bot tracking
             for p in broker_positions:
                 sym = p.get("symbol", "").upper()
                 if sym and sym not in self.positions:
+                    # Don't re-add positions if we're already at or over the cap
+                    if len(self.positions) >= max_pos:
+                        log.debug(
+                            f"POSITION SYNC: Skipping {sym} — at position cap "
+                            f"({len(self.positions)}/{max_pos})"
+                        )
+                        continue
+
                     # Skip symbols that were recently closed (settlement delay
                     # can cause Alpaca to still show positions we already exited,
                     # re-adding them causes duplicate exit signals to TradersPost)
@@ -2821,8 +2963,311 @@ class TradingEngine:
             level="info"
         )
 
+    def _momentum_rotation_check(self, rejected_signals):
+        """Money Machine position rotation: replace weakest position with stronger signal.
+
+        If a new signal scores significantly higher than our weakest held position,
+        close the weak one to make room. The new signal gets picked up next cycle.
+        """
+        if not self.positions or not rejected_signals:
+            return
+
+        # Only rotate if we're at or near capacity
+        max_pos = self.risk_manager.max_positions
+        if len(self.positions) < max_pos - 1:
+            return
+
+        # Score all current positions by momentum
+        scored_positions = []
+        for symbol, pos in self.positions.items():
+            score = 0
+            pnl_pct = pos.get("unrealized_pnl_pct", 0)
+
+            # P&L component (max 40 pts)
+            if pnl_pct >= 0.05:
+                score += 40
+            elif pnl_pct >= 0.02:
+                score += 30
+            elif pnl_pct >= 0:
+                score += 15
+            elif pnl_pct >= -0.02:
+                score += 5
+            # else: 0 pts (big loser)
+
+            # RVOL component from snapshot (max 30 pts)
+            rvol_strat = self.strategies.get("rvol_momentum")
+            if rvol_strat and hasattr(rvol_strat, "_snapshot_data"):
+                snap = rvol_strat._snapshot_data.get(symbol)
+                if snap:
+                    rvol = snap.get("rvol", 0)
+                    if rvol >= 3.0:
+                        score += 30
+                    elif rvol >= 2.0:
+                        score += 20
+                    elif rvol >= 1.5:
+                        score += 10
+
+            # Hold time penalty: longer holds = lower score (momentum fading)
+            if "entry_time" in pos:
+                hold_mins = (datetime.now(self.tz) - pos["entry_time"]).total_seconds() / 60
+                if hold_mins > 120:
+                    score -= 10  # 2+ hours: momentum likely gone
+                elif hold_mins > 60:
+                    score -= 5
+
+            scored_positions.append((symbol, score, pnl_pct))
+
+        if not scored_positions:
+            return
+
+        # Find weakest position
+        scored_positions.sort(key=lambda x: x[1])
+        weakest_sym, weakest_score, weakest_pnl = scored_positions[0]
+
+        # Find strongest rejected signal (rejected due to max positions)
+        best_rejected = None
+        best_rejected_score = 0
+        for sig in rejected_signals:
+            sig_score = sig.get("confidence", 0) * 100
+            sig_rvol = sig.get("rvol", 0)
+            if sig_rvol >= 3.0:
+                sig_score += 30
+            elif sig_rvol >= 2.0:
+                sig_score += 20
+            if sig_score > best_rejected_score:
+                best_rejected_score = sig_score
+                best_rejected = sig
+
+        if not best_rejected:
+            return
+
+        # Rotate if the new signal is significantly stronger (20+ point gap)
+        score_gap = best_rejected_score - weakest_score
+        if score_gap >= 20 and weakest_pnl < 0.03:  # Don't rotate out big winners
+            log.info(
+                f"MOMENTUM ROTATION: Closing {weakest_sym} (score={weakest_score}, "
+                f"P&L={weakest_pnl:.1%}) to make room for {best_rejected['symbol']} "
+                f"(score={best_rejected_score:.0f}) | Gap: +{score_gap:.0f} pts"
+            )
+            self._close_position(weakest_sym, "rotation",
+                                f"Momentum rotation: replaced by stronger signal {best_rejected['symbol']}")
+            self.notifier.system_alert(
+                f"Rotation: closed {weakest_sym} ({weakest_pnl:.1%}) → "
+                f"making room for {best_rejected['symbol']} (RVOL {best_rejected.get('rvol', 0):.1f}x)",
+                level="info"
+            )
+
+    def _power_hour_trim(self):
+        """Power hour position trimming (3:00-3:30 PM ET).
+
+        Closes weak positions to:
+        1. Free up capital for late-day moon runners
+        2. Reduce position count toward max_positions limit
+        3. Lock in small profits on positions that aren't going anywhere
+
+        Evaluates each position using _evaluate_bullish_for_afterhours and
+        closes those scoring below 30 (clearly bearish / going nowhere).
+        """
+        if not self.positions:
+            return
+
+        max_pos = self.risk_manager.max_positions
+        current_count = len(self.positions)
+        trim_target = max(max_pos, current_count - 5)  # Close at most 5 weak ones per cycle
+
+        # Score all positions
+        scored = []
+        for symbol, pos in list(self.positions.items()):
+            if self._is_crypto_symbol(symbol):
+                continue  # Don't trim crypto
+            _, reason, score = self._evaluate_bullish_for_afterhours(symbol, pos)
+            scored.append((symbol, pos, score, reason))
+
+        # Sort by bullish score ascending — weakest first
+        scored.sort(key=lambda x: x[2])
+
+        trimmed = 0
+        for symbol, pos, score, reason in scored:
+            if current_count - trimmed <= trim_target and score >= 30:
+                break  # Already at target and remaining positions aren't terrible
+
+            pnl_pct = pos.get("unrealized_pnl_pct", 0)
+
+            # Close if: bearish (score < 30) or if we need to reduce count and score < 40
+            should_trim = False
+            if score < 30:
+                should_trim = True  # Clearly weak — close regardless
+            elif score < 40 and (current_count - trimmed) > max_pos:
+                should_trim = True  # Mediocre and we're over position limit
+
+            if should_trim:
+                log.info(
+                    f"POWER HOUR TRIM: Closing {symbol} | Score: {score}/100 | "
+                    f"P&L: {pnl_pct:.1%} | {reason}"
+                )
+                self._close_position(symbol, "power_hour_trim",
+                                     f"Power hour trim: bullish score {score}/100 too low")
+                trimmed += 1
+
+        if trimmed > 0:
+            remaining = len(self.positions)
+            self.notifier.system_alert(
+                f"Power hour: trimmed {trimmed} weak positions | "
+                f"{remaining} positions remaining (max: {max_pos})",
+                level="info"
+            )
+
+    def _power_hour_tighten_stops(self):
+        """Tighten stops on all positions at 3:50 PM ET.
+
+        Protects profits before EOD volatility and the close auction.
+        Moves stops to at least breakeven for profitable positions.
+        """
+        if not self.positions:
+            return
+
+        tightened = 0
+        for symbol, pos in list(self.positions.items()):
+            if self._is_crypto_symbol(symbol):
+                continue
+
+            current_price = pos.get("current_price", pos["entry_price"])
+            entry_price = pos["entry_price"]
+            pnl_pct = pos.get("unrealized_pnl_pct", 0)
+            old_stop = pos.get("stop_loss", 0)
+
+            if pos["direction"] == "long":
+                if pnl_pct >= 0.02:
+                    # 2%+ profit: tighten to 1.5% trail from current price
+                    new_stop = current_price * 0.985
+                elif pnl_pct > 0:
+                    # In profit: move stop to breakeven + small buffer
+                    new_stop = entry_price * 1.002
+                else:
+                    # Losing: tighten stop to limit further downside
+                    new_stop = current_price * 0.97
+
+                if new_stop > old_stop:
+                    pos["stop_loss"] = round(new_stop, 2)
+                    tightened += 1
+                    log.debug(
+                        f"PH TIGHTEN: {symbol} stop ${old_stop:.2f} → ${new_stop:.2f} "
+                        f"(P&L: {pnl_pct:.1%})"
+                    )
+
+        if tightened > 0:
+            log.info(f"Power hour 3:50 PM: tightened stops on {tightened} positions")
+
+    def _evaluate_bullish_for_afterhours(self, symbol, pos):
+        """Evaluate if a position is bullish enough for after-hours / overnight hold.
+
+        Returns (should_hold: bool, reason: str, bullish_score: int)
+
+        Checks multiple technical factors:
+        - P&L momentum (position profitability)
+        - EMA trend (price above 9 & 20 EMA)
+        - RSI (not overbought, healthy range)
+        - RVOL (still high = still in play)
+        - Price action (making higher highs)
+        """
+        pnl_pct = pos.get("unrealized_pnl_pct", 0)
+        current_price = pos.get("current_price", pos["entry_price"])
+        entry_price = pos["entry_price"]
+        bullish_score = 0
+        reasons = []
+
+        # 1. Profitability check (max 30 pts)
+        if pnl_pct >= 0.05:
+            bullish_score += 30
+            reasons.append(f"Strong profit +{pnl_pct:.1%}")
+        elif pnl_pct >= 0.03:
+            bullish_score += 25
+            reasons.append(f"Good profit +{pnl_pct:.1%}")
+        elif pnl_pct >= 0.01:
+            bullish_score += 15
+            reasons.append(f"Modest profit +{pnl_pct:.1%}")
+        elif pnl_pct > 0:
+            bullish_score += 5
+            reasons.append(f"Barely green +{pnl_pct:.1%}")
+        else:
+            reasons.append(f"In the red {pnl_pct:.1%}")
+
+        # 2. Technical trend check (max 30 pts)
+        if self.market_data:
+            data = self.market_data.get_data(symbol)
+            if data is not None and len(data) >= 20:
+                closes = data["close"].values
+                ema9 = self.indicators.ema(closes, 9)
+                ema20 = self.indicators.ema(closes, 20)
+
+                if ema9 is not None and ema20 is not None:
+                    price_above_9 = closes[-1] > ema9[-1]
+                    price_above_20 = closes[-1] > ema20[-1]
+                    ema9_above_20 = ema9[-1] > ema20[-1]
+
+                    if price_above_9 and price_above_20 and ema9_above_20:
+                        bullish_score += 30
+                        reasons.append("Strong uptrend (above 9/20 EMA)")
+                    elif price_above_20:
+                        bullish_score += 15
+                        reasons.append("Above 20 EMA")
+                    else:
+                        reasons.append("Below key EMAs — bearish")
+
+                # RSI check (max 15 pts)
+                rsi = self.indicators.rsi(closes, 14)
+                if rsi:
+                    if 40 <= rsi <= 70:
+                        bullish_score += 15
+                        reasons.append(f"RSI healthy ({rsi:.0f})")
+                    elif rsi > 70:
+                        bullish_score += 5
+                        reasons.append(f"RSI overbought ({rsi:.0f}) — risky overnight")
+                    else:
+                        reasons.append(f"RSI weak ({rsi:.0f})")
+
+        # 3. RVOL check from snapshot data (max 15 pts)
+        rvol_strat = self.strategies.get("rvol_momentum")
+        if rvol_strat and hasattr(rvol_strat, "_snapshot_data"):
+            snap = rvol_strat._snapshot_data.get(symbol)
+            if snap:
+                rvol = snap.get("rvol", 0)
+                if rvol >= 3.0:
+                    bullish_score += 15
+                    reasons.append(f"RVOL still elevated {rvol:.1f}x")
+                elif rvol >= 2.0:
+                    bullish_score += 10
+                    reasons.append(f"RVOL active {rvol:.1f}x")
+
+        # 4. Price action momentum (max 10 pts)
+        if current_price > entry_price * 1.03:
+            bullish_score += 10
+            reasons.append("Price 3%+ above entry — momentum intact")
+        elif current_price > entry_price:
+            bullish_score += 5
+            reasons.append("Price above entry")
+
+        # Verdict: 50+ = bullish enough for after-hours
+        should_hold = bullish_score >= 50
+        reason_str = " | ".join(reasons[:5])
+
+        log.info(
+            f"BULLISH EVAL: {symbol} | Score: {bullish_score}/100 | "
+            f"{'HOLD' if should_hold else 'CLOSE'} | {reason_str}"
+        )
+
+        return should_hold, reason_str, bullish_score
+
     def _end_of_day(self):
-        """End of day routine with overnight hold decisions and learning."""
+        """End of day routine with smart position evaluation.
+
+        For each position, evaluates bullish/bearish technical factors to decide:
+        - Close at EOD (bearish, scalps, losers)
+        - Hold into after-hours with tightened stops (bullish runners)
+        - Hold overnight (strong multi-day plays)
+
+        After-hours selling uses Alpaca extended_hours=True with limit orders.
+        """
         log.info("=== END OF DAY ===")
 
         # --- Check for stock split candidates (NEVER hold these overnight) ---
@@ -2842,9 +3287,18 @@ class TradingEngine:
 
         if self.positions:
             overnight_holds = []
+            afterhours_holds = []
             positions_to_close = []
 
-            for symbol, pos in list(self.positions.items()):
+            # Sort positions by P&L descending — evaluate best positions first
+            # for overnight/AH hold slots
+            sorted_positions = sorted(
+                list(self.positions.items()),
+                key=lambda x: x[1].get("unrealized_pnl_pct", 0),
+                reverse=True,
+            )
+
+            for symbol, pos in sorted_positions:
                 pnl_pct = pos.get("unrealized_pnl_pct", 0)
                 in_profit = pnl_pct > 0
 
@@ -2854,9 +3308,9 @@ class TradingEngine:
                     positions_to_close.append(symbol)
                     continue
 
-                # NEVER hold RVOL scalp or RVOL momentum plays overnight (intraday only)
-                if pos.get("strategy") in ("rvol_momentum", "rvol_scalp"):
-                    log.info(f"RVOL EXIT: Closing {symbol} - {pos.get('strategy')} is intraday only")
+                # ALWAYS close RVOL scalp (ultra short-term, never hold)
+                if pos.get("strategy") == "rvol_scalp":
+                    log.info(f"RVOL SCALP EXIT: Closing {symbol} - scalp positions are intraday only")
                     positions_to_close.append(symbol)
                     continue
 
@@ -2866,53 +3320,100 @@ class TradingEngine:
                     overnight_holds.append(symbol)
                     continue
 
-                should_hold = False
-                if overnight_enabled and in_profit and len(overnight_holds) < max_overnight:
-                    min_profit = overnight_cfg.get("min_profit_pct", 0.01)
-                    # Breakout plays: lower threshold to hold overnight (these are multi-day plays)
-                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
-                    # SMC Forever: A+ setups are designed for multi-day holds
-                    is_smc = pos.get("strategy") == "smc_forever"
-                    if is_breakout or is_smc:
-                        min_profit = min(min_profit, 0.005)  # Only need 0.5% profit to hold overnight
-                    if pnl_pct >= min_profit:
-                        # Check if in uptrend (price above entry, which we already know if profitable)
-                        should_hold = True
+                # --- SMART BULLISH EVALUATION ---
+                # Evaluate each position technically to decide hold vs close
+                total_holds = len(overnight_holds) + len(afterhours_holds)
+                if total_holds >= max_overnight:
+                    # Already at capacity — close the rest
+                    positions_to_close.append(symbol)
+                    log.info(
+                        f"EOD CLOSE (at capacity): {symbol} | P&L: {pnl_pct:.1%} | "
+                        f"Already holding {total_holds} positions"
+                    )
+                    continue
 
-                        if overnight_cfg.get("require_uptrend", False) and self.market_data:
-                            # Quick trend check: is price above 20-EMA?
-                            data = self.market_data.get_data(symbol)
-                            if data is not None and len(data) >= 20:
-                                closes = data["close"].values
-                                ema20 = self.indicators.ema(closes, 20)
-                                if ema20 is not None and closes[-1] < ema20[-1]:
-                                    should_hold = False  # Not in uptrend
+                should_hold, eval_reason, bullish_score = self._evaluate_bullish_for_afterhours(symbol, pos)
 
-                if should_hold:
-                    # Tighten stop for overnight
-                    tighten = overnight_cfg.get("tighten_stop_pct", 0.02)
+                if should_hold and in_profit:
                     current_price = pos.get("current_price", pos["entry_price"])
-                    if pos["direction"] == "long":
-                        new_stop = current_price * (1 - tighten)
+
+                    # Determine: after-hours only vs overnight hold
+                    is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+                    is_momentum = pos.get("strategy") == "rvol_momentum"
+                    is_multi_day = pos.get("strategy") in ("momentum", "prebreakout", "smc_forever")
+
+                    if is_multi_day and bullish_score >= 60:
+                        # Strong multi-day play — hold overnight
+                        tighten = overnight_cfg.get("tighten_stop_pct", 0.025)
+                        if pos["direction"] == "long":
+                            new_stop = current_price * (1 - tighten)
+                            if new_stop > pos.get("stop_loss", 0):
+                                pos["stop_loss"] = new_stop
+                        pos["overnight_hold"] = True
+                        overnight_holds.append(symbol)
+                        log.info(
+                            f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Bullish: {bullish_score}/100 | Stop: ${pos['stop_loss']:.2f} | "
+                            f"{eval_reason}"
+                        )
+                    elif is_momentum and bullish_score >= 50:
+                        # RVOL momentum runner — hold into after-hours with tight stop
+                        new_stop = current_price * 0.97  # 3% stop for AH
                         if new_stop > pos.get("stop_loss", 0):
                             pos["stop_loss"] = new_stop
-                    pos["overnight_hold"] = True
-                    overnight_holds.append(symbol)
-                    log.info(
-                        f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
-                        f"Stop tightened to ${pos['stop_loss']:.2f}"
-                    )
+                        pos["afterhours_hold"] = True
+                        afterhours_holds.append(symbol)
+                        log.info(
+                            f"AFTER-HOURS HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Bullish: {bullish_score}/100 | AH Stop: ${pos['stop_loss']:.2f} | "
+                            f"{eval_reason}"
+                        )
+                    elif bullish_score >= 50:
+                        # Other strategy with decent bullish score
+                        tighten = overnight_cfg.get("tighten_stop_pct", 0.025)
+                        if pos["direction"] == "long":
+                            new_stop = current_price * (1 - tighten)
+                            if new_stop > pos.get("stop_loss", 0):
+                                pos["stop_loss"] = new_stop
+                        pos["overnight_hold"] = True
+                        overnight_holds.append(symbol)
+                        log.info(
+                            f"OVERNIGHT HOLD: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Bullish: {bullish_score}/100 | Stop: ${pos['stop_loss']:.2f} | "
+                            f"{eval_reason}"
+                        )
+                    else:
+                        positions_to_close.append(symbol)
+                        log.info(
+                            f"EOD CLOSE (not bullish enough): {symbol} | "
+                            f"P&L: {pnl_pct:.1%} | Bullish: {bullish_score}/100 | "
+                            f"{eval_reason}"
+                        )
                 elif overnight_cfg.get("close_losers", True) or not overnight_enabled:
                     positions_to_close.append(symbol)
+                    log.info(
+                        f"EOD CLOSE: {symbol} | P&L: {pnl_pct:.1%} | "
+                        f"Bullish: {bullish_score}/100 | {eval_reason}"
+                    )
+                else:
+                    positions_to_close.append(symbol)
 
-            # Close positions not held overnight
+            # Close positions not held (uses GTC + limit for after-hours fills)
             for symbol in positions_to_close:
                 self._close_position(symbol, "eod_close", "End of day close")
 
+            # Notifications
             if overnight_holds:
                 self.notifier.system_alert(
                     f"Holding {len(overnight_holds)} positions overnight: "
                     f"{', '.join(overnight_holds)}",
+                    level="info"
+                )
+            if afterhours_holds:
+                self.notifier.system_alert(
+                    f"Holding {len(afterhours_holds)} positions into after-hours: "
+                    f"{', '.join(afterhours_holds)} "
+                    f"(will be re-evaluated for overnight hold at 6 PM)",
                     level="info"
                 )
 
@@ -3250,6 +3751,7 @@ class TradingEngine:
                 if poly_movers:
                     poly_mover_syms = []
                     poly_scalp_syms = []
+                    snapshot_entries = []
                     for m in poly_movers:
                         sym = m.get("symbol", "")
                         if not sym:
@@ -3259,6 +3761,8 @@ class TradingEngine:
                         change_pct = m.get("change_pct", 0)
                         if change_pct >= 2.0:
                             poly_mover_syms.append(sym)
+                            # Collect full snapshot data for RVOL fast path
+                            snapshot_entries.append(m)
                         if abs(change_pct) >= 1.0:
                             poly_scalp_syms.append(sym)
 
@@ -3268,6 +3772,14 @@ class TradingEngine:
                         scalp_strat.add_dynamic_symbols(poly_scalp_syms)
                     if poly_scalp_syms and pb_strat:
                         pb_strat.add_dynamic_symbols(poly_scalp_syms)
+
+                    # Feed snapshot data to RVOL strategy for fast-path signals
+                    # This lets the Money Machine generate signals INSTANTLY for
+                    # top gainers without waiting for historical bars
+                    if snapshot_entries and rvol_strat and hasattr(rvol_strat, "feed_snapshot_data"):
+                        rvol_strat.feed_snapshot_data(snapshot_entries)
+                        log.debug(f"Polygon: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
+
                     log.debug(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
 
                 if poly_gap_ups and gap_strat:
@@ -3280,6 +3792,9 @@ class TradingEngine:
                     if runner_syms:
                         if rvol_strat:
                             rvol_strat.add_dynamic_symbols(runner_syms)
+                            # Also feed runner snapshot data for fast path
+                            if hasattr(rvol_strat, "feed_snapshot_data"):
+                                rvol_strat.feed_snapshot_data(poly_runners)
                         if scalp_strat:
                             scalp_strat.add_dynamic_symbols(runner_syms)
                         if pb_strat:

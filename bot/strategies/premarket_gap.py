@@ -45,6 +45,9 @@ class PreMarketGapStrategy(BaseStrategy):
         self.start_hour = config.get("start_hour", 6)               # 6 AM ET
         self.end_hour = config.get("end_hour", 10)                  # 10 AM ET (catch open push)
         self.trailing_stop_pct = config.get("trailing_stop_pct", 0.025)  # 2.5% trail
+        # Post-open dead zone: avoid the first N minutes after market open (9:30)
+        # Gap stocks whipsaw violently in the first few minutes — wait for direction
+        self.open_dead_zone_minutes = config.get("open_dead_zone_minutes", 5)
 
         self.trades_today = 0
         self.last_trade_date = None
@@ -80,9 +83,17 @@ class PreMarketGapStrategy(BaseStrategy):
             return signals
 
         # Time-of-day filter: only trade gap plays during the morning window
-        current_hour = datetime.now().hour
+        now = datetime.now()
+        current_hour = now.hour
+        current_minute = now.minute
         if current_hour < self.start_hour or current_hour >= self.end_hour:
             return signals  # Outside gap trading window
+
+        # Post-open dead zone: 9:30-9:35 (configurable) — gap stocks whipsaw hard
+        # Wait for the initial volatility to settle before entering
+        if current_hour == 9 and 30 <= current_minute < 30 + self.open_dead_zone_minutes:
+            log.debug(f"Pre-market gap: in open dead zone (first {self.open_dead_zone_minutes} min), waiting...")
+            return signals
 
         all_symbols = self.get_symbols()
 
@@ -234,7 +245,13 @@ class PreMarketGapStrategy(BaseStrategy):
         has_pullback = self.pullback_min_pct <= pullback_depth <= self.pullback_max_pct
         has_structure_break = above_pullback_high and reclaiming
 
-        if is_qualified_gap and has_pullback and has_structure_break and score >= 60:
+        # Higher score requirement in the first 15 min after open (fakeout zone)
+        now_h = datetime.now().hour
+        now_m = datetime.now().minute
+        in_fakeout_zone = (now_h == 9 and 30 + self.open_dead_zone_minutes <= now_m <= 45)
+        min_score_for_signal = 70 if in_fakeout_zone else 60
+
+        if is_qualified_gap and has_pullback and has_structure_break and score >= min_score_for_signal:
             verdict = "BUY SIGNAL"
         elif is_qualified_gap and has_pullback and score >= 45:
             verdict = "SETTING UP"
