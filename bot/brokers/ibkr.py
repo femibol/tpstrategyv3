@@ -51,6 +51,10 @@ class IBKRBroker(BaseBroker):
         self._live_bars = {}             # symbol -> list of 5-sec bars
         self._stream_lock = threading.Lock()
 
+        # Track symbols that fail contract qualification (e.g. delisted)
+        # Prevents repeated error 200 "No security definition" requests
+        self._invalid_symbols = set()
+
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
         if not HAS_IB:
@@ -101,6 +105,10 @@ class IBKRBroker(BaseBroker):
                 return False
         return False
 
+    def is_symbol_invalid(self, symbol):
+        """Check if a symbol is known to be invalid/delisted."""
+        return symbol in self._invalid_symbols
+
     def reconnect(self):
         """Reconnect with retry."""
         log.info("Attempting IBKR reconnect...")
@@ -136,6 +144,10 @@ class IBKRBroker(BaseBroker):
         """
         if not self.is_connected():
             log.error("Not connected to IBKR - cannot place order")
+            return None
+
+        if symbol in self._invalid_symbols:
+            log.warning(f"Cannot place order for '{symbol}' - known invalid/delisted symbol")
             return None
 
         try:
@@ -224,6 +236,8 @@ class IBKRBroker(BaseBroker):
         Returns list of available expirations and strikes.
         """
         if not self.is_connected():
+            return None
+        if symbol in self._invalid_symbols:
             return None
 
         try:
@@ -346,10 +360,17 @@ class IBKRBroker(BaseBroker):
         """Get historical bars from IBKR."""
         if not self.is_connected():
             return None
+        if symbol in self._invalid_symbols:
+            return None
 
         try:
             contract = Stock(symbol, "SMART", "USD")
             self.ib.qualifyContracts(contract)
+
+            if contract.conId == 0:
+                self._invalid_symbols.add(symbol)
+                log.warning(f"Unknown contract: {contract} - skipping historical bars")
+                return None
 
             bars = self.ib.reqHistoricalData(
                 contract,
@@ -388,10 +409,19 @@ class IBKRBroker(BaseBroker):
         for symbol in symbols:
             if symbol in self._streaming_contracts:
                 continue  # Already subscribed
+            if symbol in self._invalid_symbols:
+                continue  # Known invalid/delisted symbol
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
                 self.ib.qualifyContracts(contract)
+
+                # conId == 0 means IBKR couldn't resolve the contract
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    log.warning(f"Unknown contract: {contract} - skipping")
+                    continue
+
                 self._streaming_contracts[symbol] = contract
 
                 # Request streaming market data
@@ -451,10 +481,17 @@ class IBKRBroker(BaseBroker):
         for symbol in symbols:
             if symbol in self._live_bars:
                 continue
+            if symbol in self._invalid_symbols:
+                continue  # Known invalid/delisted symbol
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
                 self.ib.qualifyContracts(contract)
+
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    log.warning(f"Unknown contract: {contract} - skipping real-time bars")
+                    continue
 
                 bars = self.ib.reqRealTimeBars(
                     contract,
@@ -566,6 +603,18 @@ class IBKRBroker(BaseBroker):
         # Filter out common non-critical messages
         if errorCode in (2104, 2106, 2158):  # Data farm connections
             return
+
+        # Error 200 = "No security definition" (delisted or invalid symbol)
+        if errorCode == 200 and contract:
+            symbol = getattr(contract, 'symbol', None)
+            if symbol and symbol not in self._invalid_symbols:
+                self._invalid_symbols.add(symbol)
+                log.warning(
+                    f"IBKR Error {errorCode}: {errorString} | "
+                    f"Blacklisting '{symbol}' - likely delisted or invalid"
+                )
+                return
+
         log.warning(f"IBKR Error {errorCode}: {errorString}")
 
     def _on_disconnect(self):
