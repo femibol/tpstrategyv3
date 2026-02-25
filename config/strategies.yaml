@@ -10,20 +10,21 @@
 # Total: 100% across active strategies
 allocation:
   smc_forever: 0.00               # DISABLED
-  mean_reversion: 0.07            # 7% - dip-buying with reversal confirmation
-  momentum: 0.11                  # 11% - swing trades on trending runners
-  rvol_momentum: 0.27             # 27% - Money Machine, THE core strategy
-  rvol_scalp: 0.13                # 13% - tightened: fewer trades, wider targets
+  mean_reversion: 0.00            # DISABLED — fights momentum thesis, wastes capital on fades
+  momentum: 0.00                  # DISABLED — 15m swing trades too slow, RVOL catches same setups faster
+  rvol_momentum: 0.35             # 35% - Money Machine, THE core strategy (was 27%)
+  rvol_scalp: 0.15                # 15% - quick breakout scalps (was 13%)
   vwap_scalp: 0.00                # DISABLED
   pairs_trading: 0.00             # DISABLED
-  prebreakout: 0.16               # 16% - catching breakouts before they happen
-  premarket_gap: 0.16             # 16% - pre-market gap plays with time filter
-  options_momentum: 0.10          # 10% - leveraged momentum via IBKR options
+  prebreakout: 0.18               # 18% - catching breakouts before explosion (was 16%)
+  premarket_gap: 0.20             # 20% - pre-market gaps = biggest day-1 runners (was 16%)
+  options_momentum: 0.12          # 12% - leveraged momentum via IBKR options (was 10%)
 
 # --- Mean Reversion Strategy ---
-# Dip-buying oversold small/mid caps - buy the panic, sell the recovery
+# DISABLED — counter-momentum strategy fights the core thesis
+# Dip-buying loses money when your other strategies are riding momentum up
 mean_reversion:
-  enabled: true
+  enabled: false
   timeframe: "5m"
   lookback_period: 20             # 20-period lookback
   entry_zscore: -2.0              # Back to -2.0 - only real oversold dips (small caps are noisy)
@@ -58,9 +59,10 @@ mean_reversion:
     - GSAT
 
 # --- Momentum / Trend Following ---
-# Ride strong trends on small/mid cap runners
+# DISABLED — 15m timeframe is too slow, RVOL momentum catches the same setups faster on 5m bars
+# Capital reallocated to rvol_momentum and premarket_gap
 momentum:
-  enabled: true
+  enabled: false
   timeframe: "15m"
   fast_ema: 8
   slow_ema: 21
