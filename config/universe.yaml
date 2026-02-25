@@ -1,119 +1,120 @@
 # ============================================
-# TRADING UNIVERSE - Trimmed for IBKR paper (100 stream limit)
+# TRADING UNIVERSE - Momentum runners for IBKR paper (100 stream limit)
 # ============================================
-# ~75 liquid US stocks for RVOL scanning
-# Combined with watchlist (~20 symbols, mostly overlap) stays under 95
-# Leaves headroom for dynamic position additions
-# Polygon scanner catches movers outside this list anyway
+# ~88 symbols focused on high-beta names that actually RUN
+# Mega caps trimmed to minimum — Polygon scanner has them anyway
+# Combined with watchlist stays under 95, headroom for positions
 
-# --- Mega Cap Tech (market leaders, liquid) ---
+# --- Mega Cap (minimal — for index correlation only) ---
 mega_tech:
   - AAPL
-  - MSFT
-  - GOOGL
-  - AMZN
-  - META
   - NVDA
   - TSLA
-  - AVGO
-  - CRM
-  - ORCL
+  - META
+  - AMZN
+  - MSFT
 
-# --- High-Beta Growth / Momentum Runners ---
-growth_tech:
+# --- Momentum Runners / High-Beta Growth ---
+# These are the names that do 10-100%+ on catalysts
+growth_runners:
   - AMD
   - ARM
   - SMCI
   - PLTR
-  - CRWD
-  - NET
-  - SNOW
   - SHOP
   - XYZ        # was SQ (Block Inc renamed 2025)
-  - PINS
   - SNAP
   - ROKU
   - HOOD
   - SOFI
   - AFRM
   - UPST
+  - RBLX
+  - MELI
+  - SE
+  - TWLO
+
+# --- AI / Quantum (explosive runners) ---
+ai_quantum:
   - IONQ
   - RGTI
   - SOUN
   - AI
   - BBAI
+
+# --- Crypto Miners (run with BTC, huge % swings) ---
+crypto_miners:
   - MARA
   - RIOT
   - COIN
   - MSTR
   - CLSK
+  - CIFR
 
-# --- Semiconductors ---
+# --- China ADRs (10-30% moves on news/policy) ---
+china_adr:
+  - BABA
+  - PDD
+  - NIO
+  - XPEV
+  - LI
+  - FUTU
+  - BIDU
+
+# --- EV / Clean Energy (volatile on catalysts) ---
+ev_clean:
+  - RIVN
+  - LCID
+  - PLUG
+  - QS
+  - BLNK
+  - CHPT
+  - ENPH
+  - FSLR
+
+# --- Space / Speculative Tech ---
+speculative:
+  - RKLB
+  - LUNR
+  - JOBY
+  - ASTS
+  - DNA
+
+# --- Meme / Short Squeeze ---
+meme:
+  - GME
+  - AMC
+  - OPEN
+
+# --- Biotech (FDA catalysts = massive runners) ---
+biotech:
+  - MRNA
+  - BNTX
+  - HIMS
+
+# --- High-Beta Consumer / Gambling ---
+consumer:
+  - DKNG
+  - DASH
+  - ABNB
+  - NFLX
+
+# --- Key Semis (move with AI hype) ---
 semis:
   - MU
   - MRVL
   - ON
-  - ASML
-  - TSM
 
-# --- Consumer / Retail ---
-consumer:
-  - NFLX
-  - DIS
-  - ABNB
-  - DASH
-  - UBER
-  - DKNG
-
-# --- Financials ---
-financials:
-  - JPM
-  - GS
-  - V
-  - MA
+# --- Financials (volatile fintech only) ---
+fintech:
   - PYPL
   - COF
 
-# --- Healthcare / Biotech ---
-healthcare:
-  - LLY
-  - MRNA
-  - HIMS
-
-# --- Energy ---
-energy:
-  - XOM
-  - OXY
-  - FANG
-
-# --- Industrials / Defense ---
-industrials:
-  - BA
-  - GE
-  - LMT
-
-# --- ETFs (benchmarks + leveraged for momentum) ---
+# --- ETFs (benchmarks + leveraged for momentum plays) ---
 etfs:
   - SPY
   - QQQ
   - IWM
-  - ARKK
   - SOXL
   - TQQQ
-
-# --- EV / Speculative ---
-ev_speculative:
-  - RIVN
-  - LCID
-  - PLUG
-  - RKLB
-  - LUNR
-  - JOBY
-
-# --- Meme / High-Volatility ---
-high_vol:
-  - GME
-  - AMC
-  - DNA
-  - OPEN
-  - ASTS
+  - ARKK
