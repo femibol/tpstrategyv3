@@ -10,11 +10,19 @@ Usage:
 """
 import sys
 import os
+import asyncio
 import warnings
 
 # Silence noisy deprecation warnings from third-party libs (yfinance, pandas)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="yfinance")
 warnings.filterwarnings("ignore", message=".*utcnow.*")
+
+# Python 3.10+ no longer auto-creates an event loop in the main thread.
+# ib_insync/eventkit requires one to exist at import time.
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
