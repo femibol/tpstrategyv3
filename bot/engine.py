@@ -104,6 +104,7 @@ class TradingEngine:
         # Signal deduplication - prevent duplicate entries
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
         self._signal_cooldown_secs = 60  # Min seconds between signals for same symbol (was 120)
+        self._pending_orders = set()  # Symbols with orders currently in-flight
 
         # Exit cooldown - prevent re-closing recently closed positions
         # Tracks {symbol: close_datetime} to block re-entry via Alpaca sync
@@ -812,8 +813,24 @@ class TradingEngine:
                                 except Exception:
                                     pass
 
-                    # 8. Execute approved signals
+                    # 8. Deduplicate approved signals per-symbol (keep highest score)
+                    #    Prevents multiple strategies from placing separate orders
+                    #    for the same symbol in a single cycle (e.g. LUNR 200+300+290).
+                    best_per_symbol = {}
                     for sig in approved:
+                        sym = sig.get("symbol", "")
+                        action = sig.get("action", "")
+                        key = (sym, action)
+                        existing = best_per_symbol.get(key)
+                        if existing is None or sig.get("score", 0) > existing.get("score", 0):
+                            best_per_symbol[key] = sig
+                    deduped = list(best_per_symbol.values())
+                    if len(deduped) < len(approved):
+                        log.info(
+                            f"DEDUP: {len(approved)} signals -> {len(deduped)} "
+                            f"(merged duplicate symbols)"
+                        )
+                    for sig in deduped:
                         self._execute_signal(sig)
                         # Record regime context for learning
                         if self.trade_analyzer and regime_result:
@@ -970,9 +987,13 @@ class TradingEngine:
             self._data_log_counter = 0
             with_data = sum(1 for s in all_symbols if self.market_data.get_data(s) is not None)
             with_price = sum(1 for s in all_symbols if self.market_data._price_cache.get(s))
+            blacklisted = len(self.broker._invalid_symbols) if self.broker and hasattr(self.broker, '_invalid_symbols') else 0
+            fail_cached = len(self.market_data._bars_fail_cache) if hasattr(self.market_data, '_bars_fail_cache') else 0
             log.info(
                 f"DATA COVERAGE: {with_data}/{len(all_symbols)} symbols have bars, "
                 f"{with_price}/{len(all_symbols)} have prices"
+                f"{f' | IBKR blacklisted: {blacklisted}' if blacklisted else ''}"
+                f"{f' | bar-fetch backoff: {fail_cached}' if fail_cached else ''}"
             )
             if with_data == 0:
                 log.warning("ZERO DATA: No market data received — strategies cannot generate signals!")
@@ -1538,11 +1559,16 @@ class TradingEngine:
                 log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
                 return
 
+            # Pending order guard: block if an order for this symbol is already in-flight
+            if symbol in self._pending_orders:
+                log.info(f"PENDING ORDER BLOCKED: {symbol} order already in-flight")
+                return
+
             last_signal = self._signal_cooldowns.get(symbol)
             score = signal.get("score", 0)
             if last_signal and (now - last_signal).total_seconds() < self._signal_cooldown_secs:
-                # High-conviction signals (score >= 65) bypass cooldown
-                if score >= 65:
+                # High-conviction signals (score >= 85) bypass cooldown
+                if score >= 85:
                     elapsed = int((now - last_signal).total_seconds())
                     log.info(
                         f"COOLDOWN BYPASSED: {symbol} score {score} overrides "
@@ -1634,6 +1660,10 @@ class TradingEngine:
         order = None
         executed_via = None
 
+        # Mark symbol as pending to block concurrent orders from webhooks/other threads
+        if action in ("buy", "short"):
+            self._pending_orders.add(symbol)
+
         # Outside-RTH flag: allow pre/post market orders
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
@@ -1690,12 +1720,14 @@ class TradingEngine:
                             f"HARD LIMIT: Alpaca has {actual_count} positions "
                             f"(max {self.risk_manager.max_positions}). BLOCKING {symbol}."
                         )
+                        self._pending_orders.discard(symbol)
                         return
                     broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
                     if symbol.upper() in broker_symbols:
                         log.warning(f"DUPLICATE BLOCKED: {symbol} already open at Alpaca.")
                         if symbol not in self.positions:
                             self._sync_positions_from_alpaca()
+                        self._pending_orders.discard(symbol)
                         return
                     account = self._alpaca_api_call("/v2/account")
                     if isinstance(account, dict):
@@ -1703,6 +1735,7 @@ class TradingEngine:
                         order_cost = current_price * qty
                         if order_cost > buying_power:
                             log.error(f"INSUFFICIENT BUYING POWER: {symbol} ${order_cost:,.2f} > ${buying_power:,.2f}. BLOCKING.")
+                            self._pending_orders.discard(symbol)
                             return
             except Exception as e:
                 log.warning(f"Alpaca pre-check error: {e} — proceeding (risk manager approved)")
@@ -1776,6 +1809,7 @@ class TradingEngine:
                 f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}, "
                 f"Alpaca={'configured' if self.config.alpaca_api_key else 'NOT configured'}"
             )
+            self._pending_orders.discard(symbol)
             return
 
         risk_amount = abs(current_price - stop_loss_price) * qty
@@ -1860,6 +1894,9 @@ class TradingEngine:
             "strategy": strategy,
             "executed_via": executed_via,
         })
+
+        # Clear pending flag now that position is recorded
+        self._pending_orders.discard(symbol)
 
     def _close_position(self, symbol, reason_type, reason_msg):
         """Close a position through broker chain. Thread-safe with double-close guard."""

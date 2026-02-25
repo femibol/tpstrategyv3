@@ -53,7 +53,10 @@ class IBKRBroker(BaseBroker):
 
         # Track symbols that fail contract qualification (e.g. delisted)
         # Prevents repeated error 200 "No security definition" requests
+        # Reset every 30 minutes to retry transiently-failed symbols
         self._invalid_symbols = set()
+        self._invalid_symbols_reset_time = time.time()
+        self._invalid_symbols_ttl = 1800  # 30 minutes
 
         # News callback (set by subscribe_news)
         self._news_callback = None
@@ -465,6 +468,15 @@ class IBKRBroker(BaseBroker):
         """Get historical bars from IBKR."""
         if not self.is_connected():
             return None
+
+        # Periodically reset invalid symbols to retry transiently-failed contracts
+        now = time.time()
+        if now - self._invalid_symbols_reset_time > self._invalid_symbols_ttl:
+            if self._invalid_symbols:
+                log.info(f"Resetting {len(self._invalid_symbols)} blacklisted symbols for retry")
+            self._invalid_symbols.clear()
+            self._invalid_symbols_reset_time = now
+
         if symbol in self._invalid_symbols:
             return None
 
