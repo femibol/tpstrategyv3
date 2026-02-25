@@ -18,12 +18,11 @@ from bot.utils.logger import get_logger
 
 log = get_logger("integrations.google_sheets")
 
-try:
-    import gspread
-    from google.oauth2.service_account import Credentials
-    HAS_GSPREAD = True
-except ImportError:
-    HAS_GSPREAD = False
+# Lazy imports — gspread and google-auth pull in cryptography which can
+# crash with a Rust/pyo3 panic on some systems.  Defer to _connect() so a
+# broken cryptography library doesn't prevent the entire bot from starting.
+gspread = None
+Credentials = None
 
 
 # Column headers for the trade log sheet
@@ -46,10 +45,6 @@ class GoogleSheetsLogger:
         self._credentials_path = os.getenv("GOOGLE_SHEETS_CREDENTIALS", "")
         self._spreadsheet_id = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
 
-        if not HAS_GSPREAD:
-            log.info("Google Sheets disabled: install gspread and google-auth (pip install gspread google-auth)")
-            return
-
         if not self._credentials_path or not self._spreadsheet_id:
             log.info(
                 "Google Sheets disabled: set GOOGLE_SHEETS_CREDENTIALS and "
@@ -61,7 +56,14 @@ class GoogleSheetsLogger:
 
     def _connect(self):
         """Connect to Google Sheets API."""
+        global gspread, Credentials
         try:
+            if gspread is None:
+                import gspread as _gspread
+                from google.oauth2.service_account import Credentials as _Credentials
+                gspread = _gspread
+                Credentials = _Credentials
+
             scopes = [
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive",
