@@ -73,7 +73,7 @@ class Config:
 
     @property
     def take_profit_pct(self):
-        return self.risk_config.get("take_profit_pct", 0.06)
+        return self.risk_config.get("take_profit_pct", 0.20)
 
     # --- Schedule ---
     @property

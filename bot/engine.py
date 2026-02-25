@@ -332,8 +332,8 @@ class TradingEngine:
                     entry = pos.get("entry_price", pos.get("avg_cost", 0))
                     side = pos.get("direction", "long")
                     qty = pos.get("quantity", 0)
-                    stop_pct = 0.03
-                    tp_pct = 0.06
+                    stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
+                    tp_pct = self.config.risk_config.get("take_profit_pct", 0.20)
                     self.positions[sym] = {
                         **pos,
                         "entry_time": now,
@@ -1267,21 +1267,21 @@ class TradingEngine:
             # Breakout plays get wider trails to ride the full move
             is_breakout_play = pos.get("breakout_play") or pos.get("source") == "prebreakout"
             if is_breakout_play:
-                # Breakout plays: wider trail to let runners breathe
-                if pnl_pct >= 0.10:
-                    trailing_pct = base_trail * 0.5   # Tighten at 10%+ (protect the bag)
+                # Breakout plays: WIDE trail to let runners breathe
+                if pnl_pct >= 0.20:
+                    trailing_pct = base_trail * 0.5   # Tighten at 20%+ (protect the bag)
+                elif pnl_pct >= 0.10:
+                    trailing_pct = base_trail * 0.65  # Moderate at 10%+
                 elif pnl_pct >= 0.05:
-                    trailing_pct = base_trail * 0.7   # Moderate at 5%+
-                elif pnl_pct >= 0.02:
-                    trailing_pct = base_trail * 0.85  # Gentle tighten at 2%+
+                    trailing_pct = base_trail * 0.8   # Gentle at 5%+
                 else:
                     trailing_pct = base_trail          # Full width while building
+            elif pnl_pct >= 0.10:
+                trailing_pct = base_trail * 0.5  # Tighten at 10%+ (big profit, protect it)
             elif pnl_pct >= 0.05:
-                trailing_pct = base_trail * 0.4  # Very tight at 5%+ profit
+                trailing_pct = base_trail * 0.65 # Moderate at 5%+ (let it run)
             elif pnl_pct >= 0.03:
-                trailing_pct = base_trail * 0.5  # Tight at 3%+ profit
-            elif pnl_pct >= 0.015:
-                trailing_pct = base_trail * 0.7  # Moderately tight at 1.5%+
+                trailing_pct = base_trail * 0.8  # Gentle at 3%+ (building momentum)
             else:
                 trailing_pct = base_trail
 
@@ -1377,14 +1377,14 @@ class TradingEngine:
                 max_hold_days = pos.get("max_hold_days", 0)
                 is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                 if is_breakout:
-                    stale_threshold_min = 360  # 6 hours for breakout plays (they consolidate)
-                    stale_move_pct = 0.008     # 0.8% threshold (tight ranges expected)
+                    stale_threshold_min = 480  # 8 hours for breakout plays (consolidation is normal)
+                    stale_move_pct = 0.01      # 1% threshold (tight ranges expected)
                 elif max_hold_days > 0:
-                    stale_threshold_min = 120  # 2 hours for swing
-                    stale_move_pct = 0.005     # 0.5% for swing
+                    stale_threshold_min = 180  # 3 hours for swing (was 2h — too aggressive)
+                    stale_move_pct = 0.008     # 0.8% for swing (was 0.5% — shaking out winners)
                 else:
-                    stale_threshold_min = 30   # 30min for scalp
-                    stale_move_pct = 0.003     # 0.3% for scalp
+                    stale_threshold_min = 60   # 1 hour for momentum (was 30min — too tight)
+                    stale_move_pct = 0.005     # 0.5% for momentum (was 0.3% — normal consolidation)
                 if elapsed_min >= stale_threshold_min and abs(pnl_pct) < stale_move_pct:
                     positions_to_close.append(
                         (symbol, "stale_exit",
@@ -2630,8 +2630,8 @@ class TradingEngine:
                         pass
                 ref_price = current_mkt or entry
                 is_crypto = any(symbol.upper().endswith(s) for s in ["-USD", "-USDT"])
-                stop_pct = 0.05 if is_crypto else 0.03
-                tp_pct = 0.08 if is_crypto else 0.06
+                stop_pct = 0.05 if is_crypto else self.config.risk_config.get("stop_loss_pct", 0.03)
+                tp_pct = 0.08 if is_crypto else self.config.risk_config.get("take_profit_pct", 0.20)
                 self.positions[symbol] = {
                     "symbol": symbol,
                     "direction": side,
@@ -2748,8 +2748,8 @@ class TradingEngine:
                         "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
                         "entry_price": entry,
                         "entry_time": datetime.now(self.tz),
-                        "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
-                        "take_profit": entry * 1.06 if side == "long" else entry * 0.94,
+                        "stop_loss": entry * (1 - self.config.risk_config.get("stop_loss_pct", 0.03)) if side == "long" else entry * (1 + self.config.risk_config.get("stop_loss_pct", 0.03)),
+                        "take_profit": entry * (1 + self.config.risk_config.get("take_profit_pct", 0.20)) if side == "long" else entry * (1 - self.config.risk_config.get("take_profit_pct", 0.20)),
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                         "strategy": "synced_from_alpaca",
                         "executed_via": "Alpaca",
@@ -3897,14 +3897,14 @@ class TradingEngine:
             "risk": {
                 "stop_loss_pct": risk.get("stop_loss_pct", 0.03),
                 "trailing_stop_pct": risk.get("trailing_stop_pct", 0.02),
-                "take_profit_pct": risk.get("take_profit_pct", 0.06),
+                "take_profit_pct": risk.get("take_profit_pct", 0.20),
                 "max_positions": risk.get("max_positions", 5),
                 "risk_per_trade_pct": risk.get("risk_per_trade_pct", 0.01),
                 "max_position_size_pct": risk.get("max_position_size_pct", 0.15),
             },
             "schedule": {
-                "avoid_first_minutes": schedule.get("avoid_first_minutes", 30),
-                "avoid_last_minutes": schedule.get("avoid_last_minutes", 30),
+                "avoid_first_minutes": schedule.get("avoid_first_minutes", 5),
+                "avoid_last_minutes": schedule.get("avoid_last_minutes", 10),
             },
             "overnight": {
                 "enabled": overnight.get("enabled", False),
