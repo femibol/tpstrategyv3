@@ -1056,3 +1056,46 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.error(f"Global cancel failed: {e}")
             return False
+
+    def close_all_positions(self):
+        """Close all open positions with market orders. Use for emergency flatten."""
+        if not self.is_connected():
+            log.error("Not connected to IBKR - cannot close positions")
+            return False
+
+        positions = self.get_positions()
+        if not positions:
+            log.info("No open positions to close")
+            return True
+
+        # Cancel all pending orders first
+        self.cancel_all_orders()
+        self.ib.sleep(1)
+
+        closed = 0
+        for symbol, pos in positions.items():
+            try:
+                # Buy to close shorts, Sell to close longs
+                action = "BUY" if pos["direction"] == "short" else "SELL"
+                qty = pos["quantity"]
+                contract = Stock(symbol, "SMART", "USD")
+                self.ib.qualifyContracts(contract)
+
+                if contract.conId == 0:
+                    log.warning(f"Cannot qualify {symbol} for closing - try manually")
+                    continue
+
+                order = MarketOrder(action, qty)
+                order.outsideRth = True
+                trade = self.ib.placeOrder(contract, order)
+                self.ib.sleep(1)
+                log.info(
+                    f"FLATTEN: {action} {qty} {symbol} | "
+                    f"Status: {trade.orderStatus.status}"
+                )
+                closed += 1
+            except Exception as e:
+                log.error(f"Failed to close {symbol}: {e}")
+
+        log.info(f"Flatten complete: {closed}/{len(positions)} positions closed")
+        return closed == len(positions)
