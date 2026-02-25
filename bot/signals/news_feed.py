@@ -17,13 +17,21 @@ import time
 import threading
 from datetime import datetime, timedelta
 
-from polygon import RESTClient
-from polygon.rest.models import TickerNews
-from polygon.exceptions import BadResponse
-
 from bot.utils.logger import get_logger
 
 log = get_logger("signals.news")
+
+try:
+    from polygon import RESTClient
+    from polygon.rest.models import TickerNews
+    from polygon.exceptions import BadResponse
+    HAS_POLYGON = True
+except (ImportError, KeyError, Exception) as e:
+    HAS_POLYGON = False
+    RESTClient = None
+    TickerNews = None
+    BadResponse = Exception
+    log.warning(f"polygon-api-client unavailable ({type(e).__name__}): news polling disabled, IBKR news still works")
 
 # High-conviction catalyst keywords with impact scores
 # Score 1-3: 1=minor, 2=moderate, 3=strong catalyst
@@ -112,7 +120,7 @@ class NewsFeed:
         # Dynamic watchlist — updated from engine's active symbols
         self.watched_symbols = set()
 
-        if self.api_key:
+        if self.api_key and HAS_POLYGON:
             self._client = RESTClient(
                 api_key=self.api_key,
                 retries=2,
@@ -223,7 +231,7 @@ class NewsFeed:
                 limit=50,
                 sort="published_utc",
             ):
-                if isinstance(n, TickerNews):
+                if TickerNews and isinstance(n, TickerNews):
                     all_articles.append(self._normalize_article(n))
                 # Stop after 50 total for general news
                 if len(all_articles) >= 50:
@@ -247,7 +255,7 @@ class NewsFeed:
                     limit=10,
                     sort="published_utc",
                 ):
-                    if isinstance(n, TickerNews):
+                    if TickerNews and isinstance(n, TickerNews):
                         all_articles.append(self._normalize_article(n))
                     count += 1
                     if count >= 10:

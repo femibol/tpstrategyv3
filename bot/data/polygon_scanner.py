@@ -13,13 +13,23 @@ import time
 from datetime import datetime, timedelta
 
 import pandas as pd
-from polygon import RESTClient
-from polygon.rest.models import TickerSnapshot, Agg
-from polygon.exceptions import BadResponse
 
 from bot.utils.logger import get_logger
 
 log = get_logger("data.polygon")
+
+try:
+    from polygon import RESTClient
+    from polygon.rest.models import TickerSnapshot, Agg
+    from polygon.exceptions import BadResponse
+    HAS_POLYGON = True
+except (ImportError, KeyError, Exception) as e:
+    HAS_POLYGON = False
+    RESTClient = None
+    TickerSnapshot = None
+    Agg = None
+    BadResponse = Exception
+    log.warning(f"polygon-api-client unavailable ({type(e).__name__}): Polygon data source disabled")
 
 
 class PolygonScanner:
@@ -80,13 +90,16 @@ class PolygonScanner:
             "SKLZ": "Technology", "GSAT": "Technology",
         }
 
-        if self.enabled:
+        if self.enabled and HAS_POLYGON:
             self._client = RESTClient(
                 api_key=api_key,
                 retries=2,
                 trace=False,
             )
             log.info("Polygon.io ENABLED (v3 official client) — primary data source")
+        elif self.enabled and not HAS_POLYGON:
+            self.enabled = False
+            log.warning("Polygon.io API key set but polygon library unavailable — disabled")
         else:
             log.info("Polygon.io disabled — set POLYGON_API_KEY to enable")
 
