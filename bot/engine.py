@@ -325,9 +325,28 @@ class TradingEngine:
                 self.peak_balance = max(self.peak_balance, self.current_balance)
                 log.info(f"Account balance: ${self.current_balance:,.2f}")
             # Sync existing positions
-            self.positions = self.broker.get_positions()
-            if self.positions:
-                log.info(f"Synced {len(self.positions)} existing positions")
+            raw_positions = self.broker.get_positions()
+            if raw_positions:
+                now = datetime.now(self.tz)
+                for sym, pos in raw_positions.items():
+                    entry = pos.get("entry_price", pos.get("avg_cost", 0))
+                    side = pos.get("direction", "long")
+                    qty = pos.get("quantity", 0)
+                    stop_pct = 0.03
+                    tp_pct = 0.06
+                    self.positions[sym] = {
+                        **pos,
+                        "entry_time": now,
+                        "stop_loss": pos.get("stop_loss", entry * (1 - stop_pct) if side == "long" else entry * (1 + stop_pct)),
+                        "take_profit": pos.get("take_profit", entry * (1 + tp_pct) if side == "long" else entry * (1 - tp_pct)),
+                        "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                        "strategy": pos.get("strategy", "synced_from_ibkr"),
+                        "executed_via": pos.get("executed_via", "IBKR"),
+                        "max_hold_bars": 40,
+                        "bar_seconds": 300,
+                        "max_hold_days": 5,
+                    }
+                log.info(f"Synced {len(self.positions)} existing positions from IBKR")
         else:
             log.warning(
                 "IBKR connection failed after %d attempts - falling back to Polygon/Yahoo for data. "
@@ -1969,7 +1988,7 @@ class TradingEngine:
             "strategy": pos.get("strategy", "unknown"),
             "reason": reason_type,
             "executed_via": executed_via,
-            "entry_time": pos["entry_time"].isoformat(),
+            "entry_time": pos["entry_time"].isoformat() if "entry_time" in pos else datetime.now(self.tz).isoformat(),
             "exit_time": datetime.now(self.tz).isoformat(),
         })
 
@@ -2103,7 +2122,7 @@ class TradingEngine:
             "strategy": pos.get("strategy", "unknown"),
             "reason": f"partial_target_{target_idx + 1}",
             "executed_via": executed_via,
-            "entry_time": pos["entry_time"].isoformat(),
+            "entry_time": pos["entry_time"].isoformat() if "entry_time" in pos else datetime.now(self.tz).isoformat(),
             "exit_time": datetime.now(self.tz).isoformat(),
             "partial": True,
         })
