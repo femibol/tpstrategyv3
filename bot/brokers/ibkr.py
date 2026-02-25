@@ -405,29 +405,29 @@ class IBKRBroker(BaseBroker):
             return {}
 
     def get_account_summary(self):
-        """Get account summary from IBKR."""
+        """Get account summary from IBKR using accountValues (no subscription needed)."""
         if not self.is_connected():
             return None
 
         try:
-            self.ib.reqAccountSummary()
-            self.ib.sleep(1)
+            # Use accountValues() which reads from the already-subscribed account updates
+            # This avoids reqAccountSummary subscription stacking (Error 322)
+            values = self.ib.accountValues()
 
             summary = {}
-            for item in self.ib.accountSummary():
-                if item.tag == "NetLiquidation":
-                    summary["net_liquidation"] = float(item.value)
-                elif item.tag == "TotalCashValue":
-                    summary["cash"] = float(item.value)
-                elif item.tag == "UnrealizedPnL":
-                    summary["unrealized_pnl"] = float(item.value)
-                elif item.tag == "RealizedPnL":
-                    summary["realized_pnl"] = float(item.value)
-                elif item.tag == "BuyingPower":
-                    summary["buying_power"] = float(item.value)
+            tag_map = {
+                "NetLiquidation": "net_liquidation",
+                "TotalCashValue": "cash",
+                "UnrealizedPnL": "unrealized_pnl",
+                "RealizedPnL": "realized_pnl",
+                "BuyingPower": "buying_power",
+            }
 
-            self.ib.cancelAccountSummary()
-            return summary
+            for item in values:
+                if item.tag in tag_map and item.currency == "USD":
+                    summary[tag_map[item.tag]] = float(item.value)
+
+            return summary if summary else None
 
         except Exception as e:
             log.error(f"Failed to get account summary: {e}")
