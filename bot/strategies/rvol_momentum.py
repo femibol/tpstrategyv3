@@ -342,8 +342,8 @@ class RvolMomentumStrategy(BaseStrategy):
         scan_result = {
             "price": round(current_price, 2),
             "rvol": rvol,
-            "current_vol": int(current_vol),
-            "avg_vol": int(avg_vol_20),
+            "current_vol": int(current_vol) if current_vol == current_vol else 0,
+            "avg_vol": int(avg_vol_20) if avg_vol_20 == avg_vol_20 else 0,
             "change_pct": change_pct,
             "gap_pct": gap_pct,
             "range_pct": range_pct,
@@ -584,8 +584,8 @@ class RvolMomentumStrategy(BaseStrategy):
         scan_result = {
             "price": round(price, 2),
             "rvol": rvol,
-            "current_vol": int(volume),
-            "avg_vol": int(avg_volume),
+            "current_vol": int(volume) if volume == volume else 0,
+            "avg_vol": int(avg_volume) if avg_volume == avg_volume else 0,
             "change_pct": round(change_pct, 2),
             "gap_pct": round(gap_pct, 2),
             "range_pct": 0,

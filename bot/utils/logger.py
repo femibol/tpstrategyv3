@@ -1,9 +1,21 @@
 """
 Logging setup for the trading bot.
 """
+import sys
 import logging
 import logging.handlers
 from pathlib import Path
+
+
+class SafeStreamHandler(logging.StreamHandler):
+    """StreamHandler that never raises UnicodeEncodeError on Windows cp1252."""
+
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except UnicodeEncodeError:
+            record.msg = record.msg.encode("ascii", "replace").decode()
+            super().emit(record)
 
 
 def setup_logger(name="trading_bot", log_file="logs/trading.log", level="INFO"):
@@ -24,17 +36,18 @@ def setup_logger(name="trading_bot", log_file="logs/trading.log", level="INFO"):
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # Console handler
-    console = logging.StreamHandler()
+    # Console handler — safe against Windows cp1252 encoding errors
+    console = SafeStreamHandler(sys.stderr)
     console.setLevel(logging.INFO)
     console.setFormatter(fmt)
     logger.addHandler(console)
 
-    # File handler with rotation
+    # File handler with rotation (UTF-8 to handle emoji/unicode in notifications)
     file_handler = logging.handlers.RotatingFileHandler(
         log_file,
         maxBytes=50 * 1024 * 1024,  # 50MB
-        backupCount=10
+        backupCount=10,
+        encoding='utf-8'
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(fmt)
@@ -45,7 +58,8 @@ def setup_logger(name="trading_bot", log_file="logs/trading.log", level="INFO"):
     trade_handler = logging.handlers.RotatingFileHandler(
         str(trade_log),
         maxBytes=10 * 1024 * 1024,
-        backupCount=20
+        backupCount=20,
+        encoding='utf-8'
     )
     trade_handler.setLevel(logging.INFO)
     trade_handler.setFormatter(fmt)

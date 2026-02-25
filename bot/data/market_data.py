@@ -77,6 +77,11 @@ class MarketDataFeed:
             return False
 
         new_symbols = [s for s in symbols if s not in self._subscribed_symbols]
+
+        # Filter out symbols IBKR has blacklisted (delisted/invalid)
+        if hasattr(self.broker, 'is_symbol_invalid'):
+            new_symbols = [s for s in new_symbols if not self.broker.is_symbol_invalid(s)]
+
         if not new_symbols:
             return self._streaming_active
 
@@ -98,7 +103,12 @@ class MarketDataFeed:
         try:
             result = self.broker.subscribe_market_data(new_symbols)
             if result:
-                self._subscribed_symbols.update(new_symbols)
+                # Only track symbols that weren't blacklisted during subscription
+                if hasattr(self.broker, 'is_symbol_invalid'):
+                    valid = [s for s in new_symbols if not self.broker.is_symbol_invalid(s)]
+                else:
+                    valid = new_symbols
+                self._subscribed_symbols.update(valid)
                 self._streaming_active = True
                 log.info(f"IBKR streaming active for {len(self._subscribed_symbols)} symbols")
                 return True

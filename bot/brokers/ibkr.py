@@ -51,6 +51,13 @@ class IBKRBroker(BaseBroker):
         self._live_bars = {}             # symbol -> list of 5-sec bars
         self._stream_lock = threading.Lock()
 
+        # Track symbols that fail contract qualification (e.g. delisted)
+        # Prevents repeated error 200 "No security definition" requests
+        self._invalid_symbols = set()
+
+        # News callback (set by subscribe_news)
+        self._news_callback = None
+
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
         if not HAS_IB:
@@ -67,6 +74,11 @@ class IBKRBroker(BaseBroker):
                 readonly=False
             )
             self._connected = True
+
+            # Quiet ib_insync's own noisy logger (Error 200, Unknown contract, etc.)
+            import logging as _logging
+            _logging.getLogger('ib_insync.wrapper').setLevel(_logging.CRITICAL)
+            _logging.getLogger('ib_insync.ib').setLevel(_logging.CRITICAL)
 
             # Register callbacks
             self.ib.orderStatusEvent += self._on_order_status
@@ -100,6 +112,10 @@ class IBKRBroker(BaseBroker):
             except Exception:
                 return False
         return False
+
+    def is_symbol_invalid(self, symbol):
+        """Check if a symbol is known to be invalid/delisted."""
+        return symbol in self._invalid_symbols
 
     def reconnect(self):
         """Reconnect with retry."""
@@ -136,6 +152,10 @@ class IBKRBroker(BaseBroker):
         """
         if not self.is_connected():
             log.error("Not connected to IBKR - cannot place order")
+            return None
+
+        if symbol in self._invalid_symbols:
+            log.warning(f"Cannot place order for '{symbol}' - known invalid/delisted symbol")
             return None
 
         try:
@@ -224,6 +244,8 @@ class IBKRBroker(BaseBroker):
         Returns list of available expirations and strikes.
         """
         if not self.is_connected():
+            return None
+        if symbol in self._invalid_symbols:
             return None
 
         try:
@@ -346,10 +368,17 @@ class IBKRBroker(BaseBroker):
         """Get historical bars from IBKR."""
         if not self.is_connected():
             return None
+        if symbol in self._invalid_symbols:
+            return None
 
         try:
             contract = Stock(symbol, "SMART", "USD")
             self.ib.qualifyContracts(contract)
+
+            if contract.conId == 0:
+                self._invalid_symbols.add(symbol)
+                log.warning(f"Unknown contract: {contract} - skipping historical bars")
+                return None
 
             bars = self.ib.reqHistoricalData(
                 contract,
@@ -388,10 +417,19 @@ class IBKRBroker(BaseBroker):
         for symbol in symbols:
             if symbol in self._streaming_contracts:
                 continue  # Already subscribed
+            if symbol in self._invalid_symbols:
+                continue  # Known invalid/delisted symbol
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
                 self.ib.qualifyContracts(contract)
+
+                # conId == 0 means IBKR couldn't resolve the contract
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    log.warning(f"Unknown contract: {contract} - skipping")
+                    continue
+
                 self._streaming_contracts[symbol] = contract
 
                 # Request streaming market data
@@ -451,10 +489,17 @@ class IBKRBroker(BaseBroker):
         for symbol in symbols:
             if symbol in self._live_bars:
                 continue
+            if symbol in self._invalid_symbols:
+                continue  # Known invalid/delisted symbol
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
                 self.ib.qualifyContracts(contract)
+
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    log.warning(f"Unknown contract: {contract} - skipping real-time bars")
+                    continue
 
                 bars = self.ib.reqRealTimeBars(
                     contract,
@@ -488,7 +533,7 @@ class IBKRBroker(BaseBroker):
                     "bid": ticker.bid if ticker.bid > 0 else None,
                     "ask": ticker.ask if ticker.ask > 0 else None,
                     "last": ticker.last if ticker.last > 0 else None,
-                    "volume": int(ticker.volume) if ticker.volume else 0,
+                    "volume": int(ticker.volume) if ticker.volume and ticker.volume == ticker.volume else 0,
                     "high": ticker.high if ticker.high > 0 else None,
                     "low": ticker.low if ticker.low > 0 else None,
                     "close": ticker.close if ticker.close > 0 else None,
@@ -564,9 +609,110 @@ class IBKRBroker(BaseBroker):
     def _on_error(self, reqId, errorCode, errorString, contract):
         """Handle errors from IBKR."""
         # Filter out common non-critical messages
-        if errorCode in (2104, 2106, 2158):  # Data farm connections
+        if errorCode in (162, 2104, 2106, 2158):
             return
+
+        # Error 200 = "No security definition" (delisted or invalid symbol)
+        # Suppress entirely — calling code (qualifyContracts + conId==0 check)
+        # already handles blacklisting in _invalid_symbols
+        if errorCode == 200:
+            symbol = None
+            if contract and hasattr(contract, 'symbol'):
+                symbol = contract.symbol
+            if symbol and symbol not in self._invalid_symbols:
+                self._invalid_symbols.add(symbol)
+                log.warning(f"Blacklisting '{symbol}' - no security definition (likely delisted)")
+            return
+
+        # Error 300 = "Can't find EId" (stale ticker reference, non-critical)
+        if errorCode == 300:
+            return
+
         log.warning(f"IBKR Error {errorCode}: {errorString}")
+
+    # --- IBKR News Integration ---
+
+    def subscribe_news(self, callback=None):
+        """
+        Subscribe to IBKR real-time news ticks.
+        News ticks fire for all subscribed contracts automatically.
+
+        Args:
+            callback: Function(news_tick_dict) called for each news headline.
+        """
+        if not self.is_connected():
+            return False
+
+        self._news_callback = callback
+        self.ib.tickNewsEvent += self._on_news_tick
+
+        # Also subscribe to IB bulletins (system-wide news)
+        try:
+            self.ib.reqNewsBulletins(allMessages=False)
+        except Exception as e:
+            log.debug(f"Failed to subscribe to IB bulletins: {e}")
+
+        log.info("IBKR real-time news subscription active")
+        return True
+
+    def _on_news_tick(self, news):
+        """Handle incoming IBKR news tick."""
+        try:
+            headline = getattr(news, 'headline', '') or ''
+            provider = getattr(news, 'providerCode', '') or ''
+            article_id = getattr(news, 'articleId', '') or ''
+            extra_data = getattr(news, 'extraData', '') or ''
+
+            # extraData format: "K:symbol" (e.g. "K:AAPL")
+            symbol = ''
+            if extra_data:
+                for part in extra_data.split(':'):
+                    part = part.strip()
+                    if part and part.isalpha() and 1 <= len(part) <= 5:
+                        symbol = part.upper()
+
+            if not headline:
+                return
+
+            tick_dict = {
+                'headline': headline,
+                'provider': provider,
+                'article_id': article_id,
+                'symbol': symbol,
+                'source': 'ibkr',
+            }
+
+            if self._news_callback:
+                self._news_callback(tick_dict)
+
+        except Exception as e:
+            log.debug(f"News tick error: {e}")
+
+    def get_news_providers(self):
+        """Get available IBKR news providers (e.g. BZ=Benzinga, FLY=Flyonthewall)."""
+        if not self.is_connected():
+            return []
+        try:
+            providers = self.ib.reqNewsProviders()
+            return [{'code': p.code, 'name': p.name} for p in providers]
+        except Exception as e:
+            log.debug(f"Failed to get news providers: {e}")
+            return []
+
+    def get_news_article(self, provider_code, article_id):
+        """Fetch full article body from IBKR."""
+        if not self.is_connected():
+            return None
+        try:
+            article = self.ib.reqNewsArticle(provider_code, article_id)
+            if article:
+                return {
+                    'type': article.articleType,
+                    'text': article.articleText,
+                }
+        except Exception as e:
+            log.debug(f"Failed to fetch article {article_id}: {e}")
+        return None
 
     def _on_disconnect(self):
         """Handle disconnection."""
