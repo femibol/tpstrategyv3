@@ -1490,13 +1490,22 @@ class TradingEngine:
                 return
 
             last_signal = self._signal_cooldowns.get(symbol)
+            score = signal.get("score", 0)
             if last_signal and (now - last_signal).total_seconds() < self._signal_cooldown_secs:
-                elapsed = int((now - last_signal).total_seconds())
-                log.warning(
-                    f"COOLDOWN BLOCKED: {symbol} signal rejected - "
-                    f"last signal {elapsed}s ago (min {self._signal_cooldown_secs}s)"
-                )
-                return
+                # High-conviction signals (score >= 65) bypass cooldown
+                if score >= 65:
+                    elapsed = int((now - last_signal).total_seconds())
+                    log.info(
+                        f"COOLDOWN BYPASSED: {symbol} score {score} overrides "
+                        f"cooldown ({elapsed}s ago) — strong signal"
+                    )
+                else:
+                    elapsed = int((now - last_signal).total_seconds())
+                    log.warning(
+                        f"COOLDOWN BLOCKED: {symbol} signal rejected - "
+                        f"last signal {elapsed}s ago (min {self._signal_cooldown_secs}s)"
+                    )
+                    return
 
             # Record this signal time BEFORE execution (prevents race condition)
             self._signal_cooldowns[symbol] = now
