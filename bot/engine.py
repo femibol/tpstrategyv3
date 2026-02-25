@@ -34,6 +34,8 @@ from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
 from bot.strategies.options_momentum import OptionsMomentumStrategy
+from bot.strategies.short_squeeze import ShortSqueezeStrategy
+from bot.strategies.pead import PEADStrategy
 from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
@@ -370,6 +372,8 @@ class TradingEngine:
             "prebreakout": PreBreakoutStrategy,
             "premarket_gap": PreMarketGapStrategy,
             "options_momentum": OptionsMomentumStrategy,
+            "short_squeeze": ShortSqueezeStrategy,
+            "pead": PEADStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -774,6 +778,28 @@ class TradingEngine:
                             approved=approved,
                             rejected=rejected_count if rejected_count > 0 else None,
                         )
+
+                    # 7f. UOA confirmation boost — check unusual options activity
+                    # for high-score buy signals to detect smart money alignment
+                    if approved and hasattr(self, 'polygon_scanner') and self.polygon_scanner:
+                        for sig in approved:
+                            if (sig.get("action") == "buy" and
+                                    sig.get("score", 0) >= 50 and
+                                    not sig.get("uoa_checked")):
+                                try:
+                                    uoa = self.polygon_scanner.check_unusual_options(sig["symbol"])
+                                    if uoa and uoa.get("bullish") and uoa.get("uoa_score", 0) >= 15:
+                                        boost = min(15, uoa["uoa_score"])
+                                        sig["score"] = sig.get("score", 0) + boost
+                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.10)
+                                        sig["reason"] = sig.get("reason", "") + f" | UOA BULLISH (sweeps: {uoa.get('large_sweeps', 0)})"
+                                        log.info(
+                                            f"UOA BOOST: {sig['symbol']} score +{boost} "
+                                            f"(calls: {uoa['call_vol']:,}, sweeps: {uoa['large_sweeps']})"
+                                        )
+                                    sig["uoa_checked"] = True
+                                except Exception:
+                                    pass
 
                     # 8. Execute approved signals
                     for sig in approved:
@@ -1604,13 +1630,15 @@ class TradingEngine:
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
 
-            # Use bracket orders for entries (stop-loss + take-profit managed by IBKR)
+            # Use MIDPRICE for entries during RTH (free price improvement)
+            # Falls back to LIMIT during extended hours (MIDPRICE not supported)
             if action in ("buy", "short"):
+                entry_order_type = "MIDPRICE" if not outside_rth else "LIMIT"
                 order = self.broker.place_order(
                     symbol=symbol,
                     action=action.upper(),
                     quantity=qty,
-                    order_type="LIMIT",
+                    order_type=entry_order_type,
                     limit_price=current_price,
                     outside_rth=outside_rth,
                     stop_loss=stop_loss_price,

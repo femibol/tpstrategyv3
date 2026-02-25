@@ -193,6 +193,14 @@ class IBKRBroker(BaseBroker):
             # --- Single Order ---
             if order_type.upper() == "MARKET":
                 order = MarketOrder(action.upper(), quantity)
+            elif order_type.upper() == "MIDPRICE":
+                # MIDPRICE: fills at the midpoint between bid/ask or better
+                # Free price improvement on every trade vs chasing the ask
+                order = LimitOrder(action.upper(), quantity, limit_price or 0)
+                order.orderType = "MIDPRICE"
+                if limit_price:
+                    order.lmtPrice = limit_price  # Cap: won't pay more than this
+                log.info(f"MIDPRICE order: {action} {quantity} {symbol} (cap ${limit_price or 'none'})")
             elif order_type.upper() == "LIMIT":
                 if limit_price is None:
                     log.error(f"Limit price required for limit order: {symbol}")

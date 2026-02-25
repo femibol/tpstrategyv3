@@ -535,6 +535,103 @@ class PolygonScanner:
         self._float_cache[cache_key] = {"has_earnings": False, "fetched": time.time()}
         return False
 
+    def check_unusual_options(self, symbol):
+        """Check for unusual options activity (UOA) on a symbol.
+
+        Detects when options volume vastly exceeds open interest,
+        suggesting smart money is making new directional bets.
+
+        Returns:
+            dict with {bullish, bearish, call_vol, put_vol, uoa_score} or None
+        """
+        if not self.enabled or not self._client:
+            return None
+
+        if not self._can_make_bar_call():
+            return None
+
+        try:
+            self._bars_call_times.append(time.time())
+
+            # Get options chain snapshot for the ticker
+            from polygon.rest.models import SnapshotOption
+            options = self._client.list_snapshot_options_chain(symbol)
+
+            total_call_vol = 0
+            total_put_vol = 0
+            total_call_oi = 0
+            total_put_oi = 0
+            large_sweeps = 0
+
+            for opt in options:
+                if not hasattr(opt, 'details') or not hasattr(opt, 'day'):
+                    continue
+
+                contract_type = getattr(opt.details, 'contract_type', '') or ''
+                vol = getattr(opt.day, 'volume', 0) or 0
+                oi = getattr(opt.day, 'open_interest', 0) or 0
+
+                if contract_type.lower() == 'call':
+                    total_call_vol += vol
+                    total_call_oi += oi
+                elif contract_type.lower() == 'put':
+                    total_put_vol += vol
+                    total_put_oi += oi
+
+                # Flag large unusual contracts (vol > 5x OI)
+                if oi > 0 and vol > 5 * oi:
+                    large_sweeps += 1
+
+            # Calculate UOA score
+            uoa_score = 0
+            bullish = False
+            bearish = False
+
+            # Call/put ratio
+            total_vol = total_call_vol + total_put_vol
+            if total_vol > 0:
+                call_ratio = total_call_vol / total_vol
+                if call_ratio > 0.7:
+                    bullish = True
+                    uoa_score += 15
+                elif call_ratio < 0.3:
+                    bearish = True
+
+            # Volume vs OI (new positions being opened)
+            if total_call_oi > 0 and total_call_vol > 3 * total_call_oi:
+                uoa_score += 20  # Massive call buying
+                bullish = True
+            elif total_call_oi > 0 and total_call_vol > 2 * total_call_oi:
+                uoa_score += 10
+
+            # Large sweeps
+            if large_sweeps >= 5:
+                uoa_score += 15
+            elif large_sweeps >= 2:
+                uoa_score += 8
+
+            if uoa_score > 0:
+                log.info(
+                    f"UOA: {symbol} — Call vol: {total_call_vol:,} Put vol: {total_put_vol:,} "
+                    f"| Sweeps: {large_sweeps} | Score: {uoa_score} "
+                    f"| {'BULLISH' if bullish else 'BEARISH' if bearish else 'NEUTRAL'}"
+                )
+
+            return {
+                "bullish": bullish,
+                "bearish": bearish,
+                "call_vol": total_call_vol,
+                "put_vol": total_put_vol,
+                "call_oi": total_call_oi,
+                "put_oi": total_put_oi,
+                "large_sweeps": large_sweeps,
+                "uoa_score": uoa_score,
+            }
+
+        except Exception as e:
+            log.debug(f"UOA check failed for {symbol}: {e}")
+            return None
+
     def get_losers(self, limit=100):
         """Get top losers from cached scan data ($0.50-$100 range)."""
         losers = []
