@@ -24,7 +24,7 @@ log = get_logger("strategy.options_momentum")
 # Highly liquid optionable stocks (tight spreads, high OI)
 DEFAULT_OPTIONS_UNIVERSE = [
     "AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA",
-    "AMD", "NFLX", "SPY", "QQQ", "IWM", "COIN", "SQ", "SHOP",
+    "AMD", "NFLX", "SPY", "QQQ", "IWM", "COIN", "XYZ", "SHOP",
     "PLTR", "SOFI", "ROKU", "SNAP", "UBER", "ABNB", "DKNG",
     "MARA", "RIOT", "ARM", "SMCI", "MU", "INTC", "BA", "DIS",
 ]
