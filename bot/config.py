@@ -44,15 +44,15 @@ class Config:
 
     @property
     def max_daily_loss(self):
-        return self.settings.get("capital", {}).get("max_daily_loss", 0.02)
+        return self.settings.get("capital", {}).get("max_daily_loss", 0.04)
 
     @property
     def max_drawdown(self):
-        return self.settings.get("capital", {}).get("max_drawdown", 0.10)
+        return self.settings.get("capital", {}).get("max_drawdown", 0.12)
 
     @property
     def reserve_cash_pct(self):
-        return self.settings.get("capital", {}).get("reserve_cash_pct", 0.20)
+        return self.settings.get("capital", {}).get("reserve_cash_pct", 0.10)
 
     # --- Risk ---
     @property
@@ -61,7 +61,7 @@ class Config:
 
     @property
     def max_positions(self):
-        return self.risk_config.get("max_positions", 5)
+        return self.risk_config.get("max_positions", 12)
 
     @property
     def risk_per_trade(self):

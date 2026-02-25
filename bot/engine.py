@@ -3898,8 +3898,8 @@ class TradingEngine:
                 "stop_loss_pct": risk.get("stop_loss_pct", 0.03),
                 "trailing_stop_pct": risk.get("trailing_stop_pct", 0.02),
                 "take_profit_pct": risk.get("take_profit_pct", 0.20),
-                "max_positions": risk.get("max_positions", 5),
-                "risk_per_trade_pct": risk.get("risk_per_trade_pct", 0.01),
+                "max_positions": risk.get("max_positions", 12),
+                "risk_per_trade_pct": risk.get("risk_per_trade_pct", 0.02),
                 "max_position_size_pct": risk.get("max_position_size_pct", 0.15),
             },
             "schedule": {
