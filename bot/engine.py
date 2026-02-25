@@ -2709,6 +2709,12 @@ class TradingEngine:
                 qty = abs(float(p.get("qty", 0)))
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
+
+                # LONG-ONLY: Skip short positions from broker sync
+                if side == "short":
+                    log.info(f"LONG-ONLY SYNC: Skipping SHORT position {symbol} ({int(qty)} shares) from Alpaca")
+                    continue
+
                 unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
                 # Use current market price for smarter stop/target
                 current_mkt = None
@@ -2831,14 +2837,20 @@ class TradingEngine:
                     qty = abs(float(p.get("qty", 0)))
                     entry = float(p.get("avg_entry_price", 0))
                     side = "long" if float(p.get("qty", 0)) > 0 else "short"
+
+                    # LONG-ONLY: Skip short positions from broker sync
+                    if side == "short":
+                        log.debug(f"LONG-ONLY SYNC: Skipping SHORT {sym} from continuous sync")
+                        continue
+
                     self.positions[sym] = {
                         "symbol": sym,
                         "direction": side,
                         "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
                         "entry_price": entry,
                         "entry_time": datetime.now(self.tz),
-                        "stop_loss": entry * (1 - self.config.risk_config.get("stop_loss_pct", 0.03)) if side == "long" else entry * (1 + self.config.risk_config.get("stop_loss_pct", 0.03)),
-                        "take_profit": entry * (1 + self.config.risk_config.get("take_profit_pct", 0.20)) if side == "long" else entry * (1 - self.config.risk_config.get("take_profit_pct", 0.20)),
+                        "stop_loss": entry * (1 - self.config.risk_config.get("stop_loss_pct", 0.03)),
+                        "take_profit": entry * (1 + self.config.risk_config.get("take_profit_pct", 0.20)),
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                         "strategy": "synced_from_alpaca",
                         "executed_via": "Alpaca",

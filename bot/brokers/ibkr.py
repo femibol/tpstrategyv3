@@ -10,6 +10,7 @@ Setup:
 5. Set .env IBKR_PORT accordingly
 """
 import time
+import asyncio
 import threading
 from datetime import datetime
 from collections import defaultdict
@@ -66,6 +67,16 @@ class IBKRBroker(BaseBroker):
         if not HAS_IB:
             log.error("ib_insync not installed. Run: pip install ib_insync")
             return False
+
+        # Ensure an asyncio event loop exists in this thread
+        # (ib_insync requires one; background threads like APScheduler don't have one)
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                raise RuntimeError("closed")
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
         try:
             self.ib = IB()
