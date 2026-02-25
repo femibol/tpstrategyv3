@@ -10,6 +10,11 @@ Usage:
 """
 import sys
 import os
+import warnings
+
+# Silence noisy deprecation warnings from third-party libs (yfinance, pandas)
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="yfinance")
+warnings.filterwarnings("ignore", message=".*utcnow.*")
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
