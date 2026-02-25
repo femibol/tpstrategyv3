@@ -11,8 +11,16 @@ Usage:
 import sys
 import os
 import time
+import asyncio
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Python 3.10+ no longer auto-creates an event loop.
+# ib_insync / eventkit needs one at import time.
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 from ib_insync import IB, Stock, MarketOrder
 import logging
