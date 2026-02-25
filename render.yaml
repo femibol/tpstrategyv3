@@ -20,10 +20,12 @@ services:
         value: "3.11.6"
       - key: TRADING_MODE
         value: paper
+      # === IBKR (Primary data + execution) ===
+      # Set IBKR_HOST to your IB Gateway IP (e.g. VPS running IB Gateway)
       - key: IBKR_HOST
-        sync: false
+        sync: false  # Set in Render dashboard (e.g. your-vps-ip)
       - key: IBKR_PORT
-        value: "7497"
+        value: "4002"  # 4002=Gateway Paper, 4001=Gateway Live
       - key: IBKR_CLIENT_ID
         value: "1"
       # === Alpaca Markets (real-time data + paper trading) ===

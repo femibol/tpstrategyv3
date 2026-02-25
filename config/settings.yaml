@@ -145,16 +145,13 @@ watchlist:
     - GSAT        # Low float satellite play
     - DNA         # Biotech, big catalyst moves
     - OPEN        # Real estate tech, volatile
-    - WISH        # Low float, short squeeze candidate
     - PLUG        # Clean energy, volatile
     - LCID        # EV, big % moves
     - RIVN        # EV, volatile
     - JOBY        # Air taxi, speculative
-    - SKLZ        # Gaming, low float
     - CLSK        # Crypto miner, volatile
     - AFRM        # BNPL fintech
     - UPST        # AI lending, big earnings moves
-    - SWN         # Energy, moves on gas prices
   auto_add_politician_picks: true   # Auto-add symbols from politician tracker
   track_weekly_performance: true    # Track weekly P&L per symbol
 
@@ -173,8 +170,9 @@ crypto:
 
 # --- Data Sources ---
 data:
-  primary: "polygon"              # Primary: Polygon.io (real-time scanning + prices + bars)
-  fallback: "yfinance"            # Fallback to yfinance
+  primary: "ibkr"                 # Primary: IBKR (real-time streaming + historical bars)
+  fallback: "polygon"             # Fallback: Polygon.io (scanning + prices + bars)
+  fallback2: "yfinance"           # Last resort: yfinance
   bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
   scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback

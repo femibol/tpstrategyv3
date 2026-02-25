@@ -2,9 +2,9 @@
 Market Data Feed - provides REAL price data to strategies.
 
 Data sources (in priority order):
-1. IBKR real-time (if connected to TWS/IB Gateway)
-2. Polygon.io (primary — real-time prices from snapshot, bars from aggregates)
-3. Yahoo Finance direct API (free fallback, ~15 min delay)
+1. IBKR real-time (PRIMARY — streaming + historical via TWS/IB Gateway)
+2. Polygon.io (fallback — real-time prices from snapshot, bars from aggregates)
+3. Yahoo Finance direct API (last resort, ~15 min delay)
 
 No fake data. No simulated prices.
 """
@@ -43,12 +43,14 @@ class MarketDataFeed:
         self.lookback_days = config.settings.get("data", {}).get("lookback_days", 30)
 
         # Log data source status
-        if self.polygon and self.polygon.enabled:
-            log.info("Polygon.io data connected (primary source for prices + bars)")
+        if self.broker and self.broker.is_connected():
+            log.info("IBKR connected — primary data source (real-time streaming + bars)")
+        elif self.polygon and self.polygon.enabled:
+            log.info("IBKR not connected — using Polygon.io as data source (real-time)")
         else:
             log.warning(
-                "Polygon API key not set — falling back to Yahoo (15-min delay). "
-                "Set POLYGON_API_KEY env var for real-time data."
+                "IBKR not connected, Polygon API key not set — falling back to Yahoo (15-min delay). "
+                "Connect to IBKR or set POLYGON_API_KEY for real-time data."
             )
 
         # Cache
@@ -64,9 +66,11 @@ class MarketDataFeed:
         # Streaming state (IBKR only)
         self._streaming_active = False
         self._subscribed_symbols = set()
+        # IBKR paper accounts allow max 100 simultaneous streams
+        self._max_ibkr_streams = config.settings.get("data", {}).get("max_ibkr_streams", 95)
 
     def start_streaming(self, symbols):
-        """Start IBKR real-time streaming for symbols."""
+        """Start IBKR real-time streaming for symbols (capped at _max_ibkr_streams)."""
         if not self.broker or not self.broker.is_connected():
             return False
         if not hasattr(self.broker, 'subscribe_market_data'):
@@ -75,6 +79,21 @@ class MarketDataFeed:
         new_symbols = [s for s in symbols if s not in self._subscribed_symbols]
         if not new_symbols:
             return self._streaming_active
+
+        # Cap subscriptions to stay under IBKR limit
+        remaining_capacity = self._max_ibkr_streams - len(self._subscribed_symbols)
+        if remaining_capacity <= 0:
+            log.warning(
+                f"IBKR stream limit reached ({len(self._subscribed_symbols)}/{self._max_ibkr_streams}). "
+                f"Skipping {len(new_symbols)} new symbols."
+            )
+            return self._streaming_active
+        if len(new_symbols) > remaining_capacity:
+            log.warning(
+                f"Trimming IBKR subscriptions: requested {len(new_symbols)}, "
+                f"capacity {remaining_capacity}/{self._max_ibkr_streams}"
+            )
+            new_symbols = new_symbols[:remaining_capacity]
 
         try:
             result = self.broker.subscribe_market_data(new_symbols)

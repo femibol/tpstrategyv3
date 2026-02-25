@@ -1,297 +1,120 @@
 # ============================================
-# TRADING UNIVERSE - Full stock scan list
+# TRADING UNIVERSE - Momentum runners for IBKR paper (100 stream limit)
 # ============================================
-# 200+ liquid US stocks + crypto for RVOL scanning
-# All strategies pull from this list automatically
-# Organized by sector for easy maintenance
+# ~88 symbols focused on high-beta names that actually RUN
+# Mega caps trimmed to minimum — Polygon scanner has them anyway
+# Combined with watchlist stays under 95, headroom for positions
 
-# --- Mega Cap Tech ---
+# --- Mega Cap (minimal — for index correlation only) ---
 mega_tech:
   - AAPL
-  - MSFT
-  - GOOGL
-  - GOOG
-  - AMZN
-  - META
   - NVDA
   - TSLA
-  - AVGO
-  - ORCL
-  - CRM
-  - ADBE
-  - ACN
-  - CSCO
-  - IBM
-  - INTC
-  - TXN
-  - QCOM
-  - AMAT
-  - ADI
+  - META
+  - AMZN
+  - MSFT
 
-# --- High-Beta Tech / Growth ---
-growth_tech:
+# --- Momentum Runners / High-Beta Growth ---
+# These are the names that do 10-100%+ on catalysts
+growth_runners:
   - AMD
   - ARM
   - SMCI
   - PLTR
-  - SNOW
-  - CRWD
-  - NET
-  - DDOG
-  - ZS
-  - MDB
-  - PANW
-  - FTNT
-  - NOW
   - SHOP
-  - SQ
-  - MELI
-  - SE
-  - PINS
+  - XYZ        # was SQ (Block Inc renamed 2025)
   - SNAP
   - ROKU
-  - TWLO
-  - U
-  - RBLX
   - HOOD
   - SOFI
   - AFRM
   - UPST
+  - RBLX
+  - MELI
+  - SE
+  - TWLO
+
+# --- AI / Quantum (explosive runners) ---
+ai_quantum:
   - IONQ
   - RGTI
+  - SOUN
   - AI
   - BBAI
-  - SOUN
+
+# --- Crypto Miners (run with BTC, huge % swings) ---
+crypto_miners:
   - MARA
   - RIOT
   - COIN
   - MSTR
-  - CIFR
   - CLSK
+  - CIFR
 
-# --- Semiconductors ---
-semis:
-  - MU
-  - LRCX
-  - KLAC
-  - MRVL
-  - ON
-  - NXPI
-  - SWKS
-  - MPWR
-  - WOLF
-  - GFS
-  - ASML
-  - TSM
+# --- China ADRs (10-30% moves on news/policy) ---
+china_adr:
+  - BABA
+  - PDD
+  - NIO
+  - XPEV
+  - LI
+  - FUTU
+  - BIDU
 
-# --- Consumer / Retail / E-commerce ---
-consumer:
-  - NFLX
-  - DIS
-  - CMCSA
-  - WMT
-  - COST
-  - TGT
-  - HD
-  - LOW
-  - NKE
-  - SBUX
-  - MCD
-  - ABNB
-  - BKNG
-  - DASH
-  - UBER
-  - LYFT
-  - DKNG
-  - PENN
-  - MGM
-  - WYNN
-  - LVS
-  - CHWY
-  - ETSY
+# --- EV / Clean Energy (volatile on catalysts) ---
+ev_clean:
+  - RIVN
+  - LCID
+  - PLUG
+  - QS
+  - BLNK
+  - CHPT
+  - ENPH
+  - FSLR
 
-# --- Financials ---
-financials:
-  - JPM
-  - BAC
-  - GS
-  - MS
-  - WFC
-  - C
-  - SCHW
-  - BLK
-  - AXP
-  - V
-  - MA
-  - PYPL
-  - COF
-  - SYF
-  - ALLY
-  - XLF
+# --- Space / Speculative Tech ---
+speculative:
+  - RKLB
+  - LUNR
+  - JOBY
+  - ASTS
+  - DNA
 
-# --- Healthcare / Biotech ---
-healthcare:
-  - UNH
-  - JNJ
-  - PFE
-  - ABBV
-  - MRK
-  - LLY
-  - BMY
-  - AMGN
-  - GILD
+# --- Meme / Short Squeeze ---
+meme:
+  - GME
+  - AMC
+  - OPEN
+
+# --- Biotech (FDA catalysts = massive runners) ---
+biotech:
   - MRNA
   - BNTX
-  - ISRG
-  - DXCM
   - HIMS
-  - TMDX
 
-# --- Energy ---
-energy:
-  - XOM
-  - CVX
-  - COP
-  - SLB
-  - OXY
-  - DVN
-  - MPC
-  - VLO
-  - PSX
-  - HAL
-  - FANG
-  - XLE
+# --- High-Beta Consumer / Gambling ---
+consumer:
+  - DKNG
+  - DASH
+  - ABNB
+  - NFLX
 
-# --- Industrials / Defense ---
-industrials:
-  - BA
-  - CAT
-  - DE
-  - GE
-  - HON
-  - LMT
-  - RTX
-  - NOC
-  - GD
-  - UPS
-  - FDX
+# --- Key Semis (move with AI hype) ---
+semis:
+  - MU
+  - MRVL
+  - ON
 
-# --- Materials / Mining ---
-materials:
-  - FCX
-  - NEM
-  - GOLD
-  - X
-  - CLF
-  - AA
-  - MP
+# --- Financials (volatile fintech only) ---
+fintech:
+  - PYPL
+  - COF
 
-# --- REITs / Real Estate ---
-reits:
-  - O
-  - SPG
-  - AMT
-  - EQIX
-
-# --- ETFs (major) ---
+# --- ETFs (benchmarks + leveraged for momentum plays) ---
 etfs:
   - SPY
   - QQQ
   - IWM
-  - DIA
-  - XLK
-  - XLF
-  - XLE
-  - XLV
-  - XLI
-  - ARKK
   - SOXL
   - TQQQ
-  - TNA
-  - KWEB
-  - EEM
-  - GLD
-  - SLV
-  - USO
-  - VXX
-
-# --- EV / Clean Energy ---
-ev_clean:
-  - RIVN
-  - LCID
-  - NIO
-  - LI
-  - XPEV
-  - ENPH
-  - FSLR
-  - RUN
-  - PLUG
-  - CHPT
-  - QS
-  - BLNK
-
-# --- SPACs / Meme / High-Volatility ---
-high_vol:
-  - GME
-  - AMC
-  - BBBY
-  - CLOV
-  - WISH
-  - OPEN
-  - SPCE
-  - JOBY
-  - DNA
-  - MVST
-  - LUNR
-  - RDW
-  - ASTS
-  - RKLB
-
-# --- Cannabis ---
-cannabis:
-  - TLRY
-  - CGC
-  - ACB
-  - SNDL
-
-# --- Chinese ADRs (volatile, high volume) ---
-china_adr:
-  - BABA
-  - JD
-  - PDD
-  - BIDU
-  - NIO
-  - LI
-  - XPEV
-  - BILI
-  - TME
-  - FUTU
-
-# --- Crypto (24/7 trading via Alpaca) ---
-crypto:
-  - BTC-USD
-  - ETH-USD
-  - SOL-USD
-  - DOGE-USD
-  - ADA-USD
-  - AVAX-USD
-  - LINK-USD
-  - DOT-USD
-  - MATIC-USD
-  - XRP-USD
-  - SHIB-USD
-  - UNI-USD
-  - LTC-USD
-  - NEAR-USD
-  - AAVE-USD
-  - PEPE-USD
-  - SUI-USD
-  - APT-USD
-  - FIL-USD
-  - ATOM-USD
-  - ARB-USD
-  - OP-USD
-  - INJ-USD
-  - RENDER-USD
-  - FET-USD
-  - GRT-USD
+  - ARKK
