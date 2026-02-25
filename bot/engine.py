@@ -2766,7 +2766,7 @@ class TradingEngine:
         "growth_tech": {
             "label": "Growth Tech",
             "symbols": ["NVDA", "AMD", "PLTR", "SNOW", "CRWD", "NET", "DDOG",
-                        "SHOP", "SQ", "COIN", "MSTR", "SMCI", "ARM", "IONQ",
+                        "SHOP", "XYZ", "COIN", "MSTR", "SMCI", "ARM", "IONQ",
                         "RKLB", "SOFI", "HOOD", "AFRM", "U", "SE"],
         },
         "sp500_etfs": {
@@ -2781,7 +2781,7 @@ class TradingEngine:
         },
         "meme_popular": {
             "label": "Meme / Popular",
-            "symbols": ["GME", "AMC", "BBBY", "DOGE-USD", "SHIB-USD",
+            "symbols": ["GME", "AMC", "DOGE-USD", "SHIB-USD",
                         "RIVN", "LCID", "NIO", "PLTR", "SOFI"],
         },
     }

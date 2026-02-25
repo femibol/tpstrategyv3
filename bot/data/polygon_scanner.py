@@ -58,7 +58,7 @@ class PolygonScanner:
             # Tech / Growth
             "SOFI": "Financials", "HOOD": "Financials", "AFRM": "Financials",
             "UPST": "Financials", "COIN": "Financials", "PYPL": "Financials",
-            "SQ": "Financials",
+            "XYZ": "Financials",    # was SQ (Block Inc renamed 2025)
             # Quantum / AI
             "IONQ": "Technology", "RGTI": "Technology", "AI": "Technology",
             "BBAI": "Technology", "SOUN": "Technology", "PLTR": "Technology",
@@ -75,7 +75,7 @@ class PolygonScanner:
             "RKLB": "Aerospace", "LUNR": "Aerospace", "ASTS": "Aerospace",
             "JOBY": "Aerospace", "SPCE": "Aerospace",
             # Meme / High vol
-            "GME": "Consumer", "AMC": "Consumer", "WISH": "Consumer",
+            "GME": "Consumer", "AMC": "Consumer",
             "OPEN": "Real Estate", "SNAP": "Technology", "RBLX": "Technology",
             "SKLZ": "Technology", "GSAT": "Technology",
         }
