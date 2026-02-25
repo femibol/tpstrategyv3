@@ -2486,7 +2486,7 @@ class TradingEngine:
                 self.positions[symbol] = {
                     "symbol": symbol,
                     "direction": side,
-                    "quantity": int(qty) if qty == int(qty) else qty,
+                    "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
                     "entry_price": entry,
                     "entry_time": datetime.now(self.tz),
                     "stop_loss": ref_price * (1 - stop_pct) if side == "long" else ref_price * (1 + stop_pct),
@@ -2596,7 +2596,7 @@ class TradingEngine:
                     self.positions[sym] = {
                         "symbol": sym,
                         "direction": side,
-                        "quantity": int(qty) if qty == int(qty) else qty,
+                        "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
                         "entry_price": entry,
                         "entry_time": datetime.now(self.tz),
                         "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
@@ -4201,8 +4201,8 @@ class TradingEngine:
                     "symbol": symbol,
                     "price": round(current_price, 2),
                     "rvol": rvol,
-                    "current_vol": int(current_vol),
-                    "avg_vol": int(avg_vol_20),
+                    "current_vol": int(current_vol) if current_vol == current_vol else 0,
+                    "avg_vol": int(avg_vol_20) if avg_vol_20 == avg_vol_20 else 0,
                     "change_pct": change_pct,
                     "gap_pct": gap_pct,
                     "range_pct": range_pct,

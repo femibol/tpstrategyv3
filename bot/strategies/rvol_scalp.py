@@ -253,8 +253,8 @@ class RvolScalpStrategy(BaseStrategy):
         scan_result = {
             "price": round(current_price, 2),
             "rvol": rvol,
-            "current_vol": int(current_vol),
-            "avg_vol": int(avg_vol),
+            "current_vol": int(current_vol) if current_vol == current_vol else 0,
+            "avg_vol": int(avg_vol) if avg_vol == avg_vol else 0,
             "change_pct": change_pct,
             "direction": direction,
             "trend": trend,

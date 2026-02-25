@@ -161,7 +161,7 @@ class PolygonScanner:
                 price_cache[sym] = {
                     "price": round(price, 2),
                     "prev_close": round(prev_close, 2),
-                    "volume": int(volume),
+                    "volume": int(volume) if volume == volume else 0,
                     "change_pct": round(change_pct, 2),
                     "open": round(open_price, 2),
                 }
@@ -184,8 +184,8 @@ class PolygonScanner:
                     "name": sym,
                     "price": round(price, 2),
                     "change_pct": round(change_pct, 2),
-                    "volume": int(volume),
-                    "avg_volume": int(prev_volume),
+                    "volume": int(volume) if volume == volume else 0,
+                    "avg_volume": int(prev_volume) if prev_volume == prev_volume else 0,
                     "rvol": rvol,
                     "gap_pct": round(gap_pct, 2),
                     "prev_close": round(prev_close, 2),
@@ -415,8 +415,8 @@ class PolygonScanner:
                     sic_desc = getattr(details, 'sic_description', '') or ''
                     sector = self._classify_sector(sic_desc)
                     self._float_cache[sym] = {
-                        "float": int(float_est),
-                        "shares_outstanding": int(shares_out),
+                        "float": int(float_est) if float_est == float_est else 0,
+                        "shares_outstanding": int(shares_out) if shares_out == shares_out else 0,
                         "sector": sector,
                         "fetched": time.time(),
                     }

@@ -533,7 +533,7 @@ class IBKRBroker(BaseBroker):
                     "bid": ticker.bid if ticker.bid > 0 else None,
                     "ask": ticker.ask if ticker.ask > 0 else None,
                     "last": ticker.last if ticker.last > 0 else None,
-                    "volume": int(ticker.volume) if ticker.volume else 0,
+                    "volume": int(ticker.volume) if ticker.volume and ticker.volume == ticker.volume else 0,
                     "high": ticker.high if ticker.high > 0 else None,
                     "low": ticker.low if ticker.low > 0 else None,
                     "close": ticker.close if ticker.close > 0 else None,
