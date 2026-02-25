@@ -58,13 +58,27 @@ else
     echo "  .env already exists - skipping."
 fi
 
-# ---- 4. Data directory ----
-echo "[4/6] Creating data directory..."
+# ---- 4. Data directory + swap ----
+echo "[4/7] Creating data directory and swap..."
 mkdir -p "$REPO_DIR/data"
+mkdir -p "$REPO_DIR/logs"
+
+# Add 1GB swap if not already present (e2-micro only has 1GB RAM)
+if [ ! -f /swapfile ]; then
+    echo "  Creating 1GB swap file (e2-micro has only 1GB RAM)..."
+    sudo fallocate -l 1G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile > /dev/null
+    sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab > /dev/null
+    echo "  Swap enabled."
+else
+    echo "  Swap already exists - skipping."
+fi
 echo "  Done."
 
 # ---- 5. Install systemd services ----
-echo "[5/6] Installing systemd services..."
+echo "[5/7] Installing systemd services..."
 
 # Generate algobot.service with correct paths
 sudo tee "$SERVICE_DIR/algobot.service" > /dev/null << EOF
@@ -83,6 +97,10 @@ RestartSec=30
 StartLimitIntervalSec=300
 StartLimitBurst=5
 EnvironmentFile=$REPO_DIR/.env
+
+# Give engine time to close positions gracefully on stop/restart
+TimeoutStopSec=60
+KillSignal=SIGTERM
 
 # Logging
 StandardOutput=journal
@@ -127,9 +145,27 @@ sudo systemctl daemon-reload
 sudo systemctl enable algobot
 echo "  Installed: algobot.service, ibgateway.service"
 
-# ---- 6. Done ----
+# ---- 6. Shell aliases ----
+echo "[6/7] Adding convenience aliases..."
+if ! grep -q "bot-status" "$HOME/.bashrc" 2>/dev/null; then
+    cat >> "$HOME/.bashrc" << 'ALIASES'
+
+# --- AlgoBot shortcuts ---
+alias bot-start='sudo systemctl start algobot'
+alias bot-stop='sudo systemctl stop algobot'
+alias bot-restart='sudo systemctl restart algobot'
+alias bot-status='sudo systemctl status algobot'
+alias bot-logs='journalctl -u algobot -f --no-pager -n 100'
+alias bot-update='cd ~/tpstrategyv3 && git pull && source venv/bin/activate && pip install -r requirements.txt -q && sudo systemctl restart algobot'
+ALIASES
+    echo "  Added aliases: bot-start, bot-stop, bot-restart, bot-status, bot-logs, bot-update"
+else
+    echo "  Aliases already exist - skipping."
+fi
+
+# ---- 7. Done ----
 echo ""
-echo "[6/6] Setup complete!"
+echo "[7/7] Setup complete!"
 echo ""
 echo "============================================"
 echo "  NEXT STEPS"
