@@ -274,7 +274,7 @@ class Notifier:
 
     def _send(self, message, title="", category=""):
         """Route notification to all configured channels."""
-        log.info(f"[ALERT] {title}: {message[:200]}")
+        log.info("[ALERT] %s: %s", title, message[:200].encode("ascii", "replace").decode())
         self.history.append({
             "time": datetime.now().isoformat(),
             "title": title,
