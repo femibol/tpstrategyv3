@@ -33,6 +33,7 @@ from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
+from bot.strategies.options_momentum import OptionsMomentumStrategy
 from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
@@ -192,6 +193,19 @@ class TradingEngine:
             self.market_data.start_streaming(all_symbols)
             log.info("IBKR real-time streaming initialized for watchlist")
 
+            # Subscribe to real-time account PnL (native IBKR — more accurate than manual calc)
+            if hasattr(self.broker, 'subscribe_account_pnl'):
+                self.broker.subscribe_account_pnl()
+
+            # Subscribe to 5-second real-time bars for scalp positions
+            # (fastest data IBKR provides — fires callback every 5 sec)
+            if hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
+                scalp_symbols = list(self.positions.keys())[:10]  # Start with open positions
+                if scalp_symbols:
+                    self.broker.subscribe_realtime_bars_with_callback(
+                        scalp_symbols, self._on_5sec_bar
+                    )
+
         # Load trading universe (200+ symbols for RVOL scanning)
         self.universe = self.config.get_universe()
         log.info(f"Trading universe loaded: {len(self.universe)} symbols")
@@ -336,6 +350,7 @@ class TradingEngine:
             "rvol_scalp": RvolScalpStrategy,
             "prebreakout": PreBreakoutStrategy,
             "premarket_gap": PreMarketGapStrategy,
+            "options_momentum": OptionsMomentumStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -1040,6 +1055,55 @@ class TradingEngine:
         for symbol, reason_type, reason_msg in positions_to_close:
             self._close_position(symbol, reason_type, reason_msg)
 
+    def _on_5sec_bar(self, symbol, bar):
+        """
+        Callback fired every 5 seconds with real-time bar data from IBKR.
+        Used for ultra-fast RVOL detection and scalp position management.
+        Updates the live price cache immediately (no polling delay).
+        """
+        try:
+            price = bar.get("close", 0)
+            volume = bar.get("volume", 0)
+
+            if price <= 0:
+                return
+
+            # Update price cache instantly (faster than polling cycle)
+            if self.market_data:
+                self.market_data._price_cache[symbol] = price
+
+            # If we hold this position, update unrealized P&L in real-time
+            pos = self.positions.get(symbol)
+            if pos:
+                pos["current_price"] = price
+                entry = pos["entry_price"]
+                if pos["direction"] == "long":
+                    pos["unrealized_pnl_pct"] = (price - entry) / entry
+                else:
+                    pos["unrealized_pnl_pct"] = (entry - price) / entry
+
+            # Detect sudden volume surge on 5-sec bars (RVOL micro-spike)
+            # This fires much faster than the 1-min bar scanner
+            if volume > 0 and hasattr(self, '_5sec_vol_avg'):
+                avg = self._5sec_vol_avg.get(symbol, 0)
+                if avg > 0 and volume > avg * 5:
+                    log.info(
+                        f"5-SEC VOLUME SURGE: {symbol} vol={volume:,} "
+                        f"({volume/avg:.1f}x avg) @ ${price:.2f}"
+                    )
+                # Update rolling average (exponential)
+                if avg > 0:
+                    self._5sec_vol_avg[symbol] = avg * 0.95 + volume * 0.05
+                else:
+                    self._5sec_vol_avg[symbol] = volume
+            else:
+                if not hasattr(self, '_5sec_vol_avg'):
+                    self._5sec_vol_avg = {}
+                self._5sec_vol_avg[symbol] = volume
+
+        except Exception as e:
+            log.debug(f"5-sec bar callback error for {symbol}: {e}")
+
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
         positions_to_close = []
@@ -1464,18 +1528,43 @@ class TradingEngine:
         order = None
         executed_via = None
 
+        # Outside-RTH flag: allow pre/post market orders
+        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
+
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
-            log.info(f"Executing {symbol} via IBKR...")
-            order = self.broker.place_order(
-                symbol=symbol,
-                action=action.upper(),
-                quantity=qty,
-                order_type="LIMIT",
-                limit_price=current_price,
-            )
+            log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
+
+            # Use bracket orders for entries (stop-loss + take-profit managed by IBKR)
+            if action in ("buy", "short"):
+                order = self.broker.place_order(
+                    symbol=symbol,
+                    action=action.upper(),
+                    quantity=qty,
+                    order_type="LIMIT",
+                    limit_price=current_price,
+                    outside_rth=outside_rth,
+                    stop_loss=stop_loss_price,
+                    take_profit=take_profit_price,
+                )
+            else:
+                # Exits use simple market orders
+                order = self.broker.place_order(
+                    symbol=symbol,
+                    action=action.upper(),
+                    quantity=qty,
+                    order_type="MARKET",
+                    outside_rth=outside_rth,
+                )
+
             if order:
                 executed_via = "IBKR"
+                if order.get("bracket"):
+                    log.info(
+                        f"BRACKET ORDER active: {symbol} | "
+                        f"SL: ${stop_loss_price:.2f} | TP: ${take_profit_price:.2f} "
+                        f"(managed by IBKR server-side)"
+                    )
             else:
                 log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
         else:
@@ -1647,6 +1736,12 @@ class TradingEngine:
         # NOTE: Do NOT forward IBKR orders to TradersPost — that causes
         # duplicate execution. TradersPost is a FALLBACK, not a mirror.
 
+        # Subscribe to 5-sec real-time bars for new scalp positions (fastest exit monitoring)
+        if (signal.get("scalp_mode") or signal.get("strategy") == "rvol_scalp") and \
+                self.broker and self.broker.is_connected() and \
+                hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
+            self.broker.subscribe_realtime_bars_with_callback([symbol], self._on_5sec_bar)
+
         # Track trade
         self.daily_trades.append({
             "time": datetime.now(self.tz).isoformat(),
@@ -1701,12 +1796,14 @@ class TradingEngine:
 
         # Try to close via broker chain
         order = None
+        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
         if self.broker and self.broker.is_connected():
             order = self.broker.place_order(
                 symbol=symbol,
                 action=action,
                 quantity=pos["quantity"],
                 order_type="MARKET",
+                outside_rth=outside_rth,
             )
             if order:
                 close_broker = "IBKR"
@@ -1884,10 +1981,12 @@ class TradingEngine:
 
         # Execute via broker chain
         order = None
+        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
         if self.broker and self.broker.is_connected():
             order = self.broker.place_order(
                 symbol=symbol, action=action,
                 quantity=qty_to_close, order_type="MARKET",
+                outside_rth=outside_rth,
             )
             if order:
                 close_broker = "IBKR"
@@ -2011,6 +2110,11 @@ class TradingEngine:
     def _close_all_positions(self, reason):
         """Emergency close all positions."""
         log.warning(f"Closing all positions: {reason}")
+
+        # Cancel all pending IBKR orders first (bracket stop/target orders)
+        if self.broker and self.broker.is_connected() and hasattr(self.broker, 'cancel_all_orders'):
+            self.broker.cancel_all_orders()
+
         with self._positions_lock:
             symbols = list(self.positions.keys())
         for symbol in symbols:
@@ -2034,6 +2138,14 @@ class TradingEngine:
                 self.current_balance = account.get(
                     "net_liquidation", self.current_balance
                 )
+
+            # Use IBKR native real-time PnL if available (more accurate than manual calc)
+            if hasattr(self.broker, 'get_realtime_pnl'):
+                pnl_data = self.broker.get_realtime_pnl()
+                if pnl_data:
+                    self.daily_pnl = pnl_data.get("daily", self.daily_pnl)
+                    self._ibkr_unrealized_pnl = pnl_data.get("unrealized", 0)
+                    self._ibkr_realized_pnl = pnl_data.get("realized", 0)
 
         self.peak_balance = max(self.peak_balance, self.current_balance)
 
@@ -3610,8 +3722,29 @@ class TradingEngine:
             "learning": self.trade_analyzer.get_status() if self.trade_analyzer else None,
             "trading_profile": self.config.trading_profile,
             "data_source": self._get_data_source_info(),
+            # IBKR enhanced features status
+            "ibkr_features": self._get_ibkr_features_status(),
         }
         return status
+
+    def _get_ibkr_features_status(self):
+        """Get status of active IBKR features for dashboard."""
+        if not self.broker or not self.broker.is_connected():
+            return {"active": False}
+
+        pnl = self.broker.get_realtime_pnl() if hasattr(self.broker, 'get_realtime_pnl') else None
+        live_bars_count = len(self.broker._live_bars) if hasattr(self.broker, '_live_bars') else 0
+        open_orders = len(self.broker.get_open_orders()) if hasattr(self.broker, 'get_open_orders') else 0
+
+        return {
+            "active": True,
+            "bracket_orders": True,
+            "outside_rth": True,
+            "realtime_pnl": pnl,
+            "five_sec_bars_symbols": live_bars_count,
+            "open_orders": open_orders,
+            "news_subscription": hasattr(self.broker, '_news_callback') and self.broker._news_callback is not None,
+        }
 
     def _get_data_source_info(self):
         """Get current data source status for dashboard."""

@@ -20,7 +20,7 @@ from bot.utils.logger import get_logger
 log = get_logger("broker.ibkr")
 
 try:
-    from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util
+    from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
     HAS_IB = True
 except ImportError:
     HAS_IB = False
@@ -145,7 +145,12 @@ class IBKRBroker(BaseBroker):
             order_type: "MARKET", "LIMIT", or "STOP"
             limit_price: Price for limit orders
             stop_price: Price for stop orders
-            **kwargs: Option params (expiry, strike, right) for options orders
+            **kwargs:
+                outside_rth: Allow trading outside regular hours (default False)
+                take_profit: Take-profit price for bracket orders
+                stop_loss: Stop-loss price for bracket orders
+                asset_type: "option" for options orders
+                expiry, strike, right: Option contract params
 
         Returns:
             dict with order details or None if failed
@@ -172,7 +177,20 @@ class IBKRBroker(BaseBroker):
 
             self.ib.qualifyContracts(contract)
 
-            # Create order
+            # Outside regular trading hours support
+            outside_rth = kwargs.get("outside_rth", False)
+
+            # --- Bracket Order (entry + stop-loss + take-profit as linked orders) ---
+            bracket_tp = kwargs.get("take_profit")
+            bracket_sl = kwargs.get("stop_loss")
+
+            if bracket_tp and bracket_sl and order_type.upper() == "LIMIT" and limit_price:
+                return self._place_bracket_order(
+                    contract, symbol, action, quantity,
+                    limit_price, bracket_sl, bracket_tp, outside_rth
+                )
+
+            # --- Single Order ---
             if order_type.upper() == "MARKET":
                 order = MarketOrder(action.upper(), quantity)
             elif order_type.upper() == "LIMIT":
@@ -189,8 +207,10 @@ class IBKRBroker(BaseBroker):
                 log.error(f"Unknown order type: {order_type}")
                 return None
 
-            # Set time in force
+            # Set time in force and outside-RTH flag
             order.tif = "DAY"
+            if outside_rth:
+                order.outsideRth = True
 
             # Place the order
             trade = self.ib.placeOrder(contract, order)
@@ -203,6 +223,7 @@ class IBKRBroker(BaseBroker):
             log.info(
                 f"Order placed: {action} {quantity} {asset_label} "
                 f"@ {order_type} {limit_price or stop_price or 'MKT'} "
+                f"{'[OUTSIDE RTH] ' if outside_rth else ''}"
                 f"| Order ID: {order_id}"
             )
 
@@ -221,6 +242,74 @@ class IBKRBroker(BaseBroker):
 
         except Exception as e:
             log.error(f"Order placement failed for {symbol}: {e}")
+            return None
+
+    def _place_bracket_order(self, contract, symbol, action, quantity,
+                             entry_price, stop_loss_price, take_profit_price,
+                             outside_rth=False):
+        """
+        Place a bracket order: entry + stop-loss + take-profit as linked OCA orders.
+        IBKR manages the stop and target server-side — no need for the bot to
+        monitor prices for these exits (faster, survives bot restarts).
+
+        Returns:
+            dict with order details including child order IDs, or None if failed.
+        """
+        try:
+            bracket = self.ib.bracketOrder(
+                action=action.upper(),
+                quantity=quantity,
+                limitPrice=entry_price,
+                takeProfitPrice=take_profit_price,
+                stopLossPrice=stop_loss_price,
+            )
+
+            # bracket is a list of 3 orders: [parent, takeProfit, stopLoss]
+            parent_order, tp_order, sl_order = bracket
+
+            # Apply outside-RTH to all legs
+            if outside_rth:
+                parent_order.outsideRth = True
+                tp_order.outsideRth = True
+                sl_order.outsideRth = True
+
+            parent_order.tif = "DAY"
+            tp_order.tif = "GTC"  # Stop & target stay active until cancelled
+            sl_order.tif = "GTC"
+
+            # Place all three orders
+            parent_trade = self.ib.placeOrder(contract, parent_order)
+            self.ib.placeOrder(contract, tp_order)
+            self.ib.placeOrder(contract, sl_order)
+            self.ib.sleep(1)
+
+            parent_id = parent_trade.order.orderId
+            log.info(
+                f"BRACKET ORDER placed: {action} {quantity} {symbol} "
+                f"@ LIMIT ${entry_price:.2f} | "
+                f"TP: ${take_profit_price:.2f} | SL: ${stop_loss_price:.2f} | "
+                f"Parent ID: {parent_id}"
+            )
+
+            return {
+                "order_id": parent_id,
+                "symbol": symbol,
+                "action": action,
+                "quantity": quantity,
+                "order_type": "BRACKET",
+                "asset_type": "stock",
+                "limit_price": entry_price,
+                "stop_price": stop_loss_price,
+                "take_profit_price": take_profit_price,
+                "bracket": True,
+                "tp_order_id": tp_order.orderId,
+                "sl_order_id": sl_order.orderId,
+                "status": parent_trade.orderStatus.status,
+                "time": datetime.now().isoformat(),
+            }
+
+        except Exception as e:
+            log.error(f"Bracket order failed for {symbol}: {e}")
             return None
 
     def _create_option_contract(self, symbol, expiry, strike, right="C"):
@@ -718,3 +807,179 @@ class IBKRBroker(BaseBroker):
         """Handle disconnection."""
         self._connected = False
         log.warning("IBKR disconnected")
+
+    # =========================================================================
+    # Real-Time Account PnL (IBKR native — no manual calculation needed)
+    # =========================================================================
+
+    def subscribe_account_pnl(self):
+        """
+        Subscribe to real-time account PnL updates from IBKR.
+        Fires continuously with unrealized/realized/daily PnL.
+        Much more accurate than manual price * qty calculations.
+        """
+        if not self.is_connected():
+            return False
+
+        try:
+            self._pnl_data = {"daily": 0, "unrealized": 0, "realized": 0}
+            self.ib.reqPnL(account=self.ib.managedAccounts()[0])
+            self.ib.pnlEvent += self._on_pnl_update
+            log.info("Subscribed to real-time account PnL")
+            return True
+        except Exception as e:
+            log.debug(f"Failed to subscribe to PnL: {e}")
+            return False
+
+    def _on_pnl_update(self, pnl):
+        """Handle real-time PnL updates from IBKR."""
+        try:
+            self._pnl_data = {
+                "daily": float(pnl.dailyPnL) if pnl.dailyPnL == pnl.dailyPnL else 0,
+                "unrealized": float(pnl.unrealizedPnL) if pnl.unrealizedPnL == pnl.unrealizedPnL else 0,
+                "realized": float(pnl.realizedPnL) if pnl.realizedPnL == pnl.realizedPnL else 0,
+            }
+        except Exception:
+            pass
+
+    def get_realtime_pnl(self):
+        """Get the latest real-time PnL from streaming subscription."""
+        return getattr(self, '_pnl_data', None)
+
+    # =========================================================================
+    # Enhanced 5-Second Bar Callback for Ultra-Fast Scalping
+    # =========================================================================
+
+    def subscribe_realtime_bars_with_callback(self, symbols, callback):
+        """
+        Subscribe to 5-second real-time bars with a callback for instant processing.
+        Each bar fires callback(symbol, bar) with OHLCV data every 5 seconds.
+        This is the fastest data IBKR provides — perfect for RVOL scalp.
+
+        Args:
+            symbols: List of symbols to subscribe
+            callback: Function(symbol, bar_dict) called every 5 seconds per symbol
+        """
+        if not self.is_connected() or not HAS_IB:
+            return False
+
+        subscribed = 0
+        for symbol in symbols:
+            if symbol in self._live_bars:
+                continue
+            if symbol in self._invalid_symbols:
+                continue
+
+            try:
+                contract = Stock(symbol, "SMART", "USD")
+                self.ib.qualifyContracts(contract)
+
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    continue
+
+                bars = self.ib.reqRealTimeBars(
+                    contract,
+                    barSize=5,
+                    whatToShow="TRADES",
+                    useRTH=False,
+                )
+
+                self._live_bars[symbol] = {
+                    "bars": bars,
+                    "recent": [],
+                    "callback": callback,
+                }
+
+                # Attach per-symbol bar update handler
+                bars.updateEvent += lambda bars_list, sym=symbol: self._on_realtime_bar(sym, bars_list)
+
+                subscribed += 1
+                log.debug(f"Subscribed to 5-sec bars with callback: {symbol}")
+
+            except Exception as e:
+                log.debug(f"Failed to subscribe 5-sec bars for {symbol}: {e}")
+
+        if subscribed > 0:
+            log.info(f"5-sec real-time bars active for {subscribed} symbols")
+        return subscribed > 0
+
+    def _on_realtime_bar(self, symbol, bars_list):
+        """Handle incoming 5-second real-time bar."""
+        try:
+            if not bars_list:
+                return
+            bar = bars_list[-1]
+            bar_dict = {
+                "time": bar.time,
+                "open": float(bar.open_),
+                "high": float(bar.high),
+                "low": float(bar.low),
+                "close": float(bar.close),
+                "volume": int(bar.volume),
+                "count": int(bar.count),
+                "wap": float(bar.wap),
+            }
+
+            # Store in recent buffer (last 720 bars = 1 hour of 5-sec data)
+            entry = self._live_bars.get(symbol)
+            if entry:
+                entry["recent"].append(bar_dict)
+                if len(entry["recent"]) > 720:
+                    entry["recent"] = entry["recent"][-720:]
+
+                # Fire callback
+                cb = entry.get("callback")
+                if cb:
+                    cb(symbol, bar_dict)
+
+        except Exception as e:
+            log.debug(f"5-sec bar error for {symbol}: {e}")
+
+    def get_recent_5sec_bars(self, symbol, count=60):
+        """Get recent 5-second bars for a symbol (default: last 5 minutes)."""
+        entry = self._live_bars.get(symbol)
+        if entry and entry.get("recent"):
+            return entry["recent"][-count:]
+        return []
+
+    # =========================================================================
+    # Open Orders Management
+    # =========================================================================
+
+    def get_open_orders(self):
+        """Get all open/pending orders from IBKR."""
+        if not self.is_connected():
+            return []
+
+        try:
+            trades = self.ib.openTrades()
+            orders = []
+            for trade in trades:
+                orders.append({
+                    "order_id": trade.order.orderId,
+                    "symbol": trade.contract.symbol,
+                    "action": trade.order.action,
+                    "quantity": trade.order.totalQuantity,
+                    "order_type": trade.order.orderType,
+                    "limit_price": trade.order.lmtPrice,
+                    "status": trade.orderStatus.status,
+                    "filled": trade.orderStatus.filled,
+                    "remaining": trade.orderStatus.remaining,
+                })
+            return orders
+        except Exception as e:
+            log.error(f"Failed to get open orders: {e}")
+            return []
+
+    def cancel_all_orders(self):
+        """Cancel all open orders. Use for emergency stop."""
+        if not self.is_connected():
+            return False
+        try:
+            self.ib.reqGlobalCancel()
+            log.info("Global cancel sent for all open orders")
+            return True
+        except Exception as e:
+            log.error(f"Global cancel failed: {e}")
+            return False

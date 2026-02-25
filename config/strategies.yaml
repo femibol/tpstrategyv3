@@ -10,14 +10,15 @@
 # Total: 100% across active strategies
 allocation:
   smc_forever: 0.00               # DISABLED
-  mean_reversion: 0.08            # 8% - dip-buying with reversal confirmation
-  momentum: 0.12                  # 12% - swing trades on trending runners (+2% from scalp cut)
-  rvol_momentum: 0.30             # 30% - Money Machine, THE core strategy (+5% from scalp cut)
-  rvol_scalp: 0.15                # 15% - tightened: fewer trades, wider targets (was 25%)
+  mean_reversion: 0.07            # 7% - dip-buying with reversal confirmation
+  momentum: 0.11                  # 11% - swing trades on trending runners
+  rvol_momentum: 0.27             # 27% - Money Machine, THE core strategy
+  rvol_scalp: 0.13                # 13% - tightened: fewer trades, wider targets
   vwap_scalp: 0.00                # DISABLED
   pairs_trading: 0.00             # DISABLED
-  prebreakout: 0.18               # 18% - catching breakouts before they happen (+3%)
-  premarket_gap: 0.17             # 17% - pre-market gap plays with time filter
+  prebreakout: 0.16               # 16% - catching breakouts before they happen
+  premarket_gap: 0.16             # 16% - pre-market gap plays with time filter
+  options_momentum: 0.10          # 10% - leveraged momentum via IBKR options
 
 # --- Mean Reversion Strategy ---
 # Dip-buying oversold small/mid caps - buy the panic, sell the recovery
@@ -364,6 +365,61 @@ premarket_gap:
     - PLUG
     - JOBY
     - GSAT
+
+# --- Options Momentum Strategy ---
+# Buy calls on strong breakouts, puts on breakdowns via IBKR options
+# Uses near-ATM options with 2-3 week expiry for leveraged momentum plays
+# Only fires on highest-conviction setups (RVOL 3x+, score 70+)
+options_momentum:
+  enabled: true
+  timeframe: "5m"
+  min_rvol: 3.0                    # High bar: only extreme volume events
+  min_score: 70                    # High conviction required for options
+  max_premium_pct: 0.02            # Max 2% of account per options trade
+  target_dte_min: 10               # Minimum 10 days to expiry
+  target_dte_max: 21               # Maximum 21 days to expiry
+  stop_loss_pct: 0.50              # Stop at -50% of premium paid
+  take_profit_pct: 1.00            # Target +100% gain on premium
+  max_options_positions: 3         # Max 3 options positions at once
+  max_trades_per_day: 3            # Max 3 options trades per day
+  options_universe:                # Liquid optionable stocks (tight spreads)
+    - AAPL
+    - MSFT
+    - NVDA
+    - AMZN
+    - META
+    - GOOGL
+    - TSLA
+    - AMD
+    - NFLX
+    - SPY
+    - QQQ
+    - IWM
+    - COIN
+    - SQ
+    - SHOP
+    - PLTR
+    - SOFI
+    - ROKU
+    - SNAP
+    - UBER
+    - ABNB
+    - DKNG
+    - MARA
+    - RIOT
+    - ARM
+    - SMCI
+    - MU
+    - INTC
+    - BA
+    - DIS
+  symbols:
+    - SPY
+    - QQQ
+    - NVDA
+    - TSLA
+    - AMD
+    - AAPL
 
 # --- TradingView Signal Strategy ---
 # Execute signals received from TradingView alerts
