@@ -1954,7 +1954,7 @@ class TradingEngine:
             pnl_pct=pnl_pct * 100,
             reason_type=reason_type,
             reason_msg=reason_msg,
-            strategy=pos["strategy"],
+            strategy=pos.get("strategy", "unknown"),
             executed_via=executed_via,
             hold_time=hold_time,
         )
@@ -1966,7 +1966,7 @@ class TradingEngine:
             "quantity": pos["quantity"],
             "pnl": pnl,
             "pnl_pct": pnl_pct,
-            "strategy": pos["strategy"],
+            "strategy": pos.get("strategy", "unknown"),
             "reason": reason_type,
             "executed_via": executed_via,
             "entry_time": pos["entry_time"].isoformat(),
@@ -2088,7 +2088,7 @@ class TradingEngine:
             pnl=pnl,
             target_idx=target_idx,
             target_pct=target_pct,
-            strategy=pos["strategy"],
+            strategy=pos.get("strategy", "unknown"),
         )
 
         # Record partial trade in history
@@ -2100,7 +2100,7 @@ class TradingEngine:
             "quantity": qty_to_close,
             "pnl": pnl,
             "pnl_pct": pnl / (pos["entry_price"] * qty_to_close) if pos["entry_price"] > 0 else 0,
-            "strategy": pos["strategy"],
+            "strategy": pos.get("strategy", "unknown"),
             "reason": f"partial_target_{target_idx + 1}",
             "executed_via": executed_via,
             "entry_time": pos["entry_time"].isoformat(),
