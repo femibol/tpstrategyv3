@@ -420,6 +420,16 @@ class PoliticianTradeTracker:
         elif "$500,001" in amount or "$250,001" in amount:
             confidence = min(1.0, confidence + 0.05)
 
+        # Cluster boost: if multiple politicians are buying the same stock
+        clusters = self.detect_clusters(window_days=14)
+        for cluster in clusters:
+            if cluster["symbol"] == symbol and action == "buy":
+                confidence = min(1.0, confidence + cluster["confidence_boost"])
+                log.info(
+                    f"CLUSTER BOOST: {symbol} confidence +{cluster['confidence_boost']:.0%} "
+                    f"({cluster['count']} politicians buying)"
+                )
+
         signal = {
             "symbol": symbol,
             "action": action,
@@ -455,6 +465,66 @@ class PoliticianTradeTracker:
     def _trade_id(self, trade):
         """Generate unique ID for a trade to avoid duplicates."""
         return f"{trade.get('politician_id', '')}-{trade.get('symbol', '')}-{trade.get('action', '')}-{trade.get('tx_date', '')}"
+
+    def detect_clusters(self, window_days=14):
+        """Detect when multiple politicians buy the same stock within a window.
+
+        When 2+ politicians from different parties or committees buy
+        the same ticker within 14 days, the signal is much stronger.
+
+        Returns:
+            List of cluster dicts: [{symbol, politicians, count, confidence_boost}]
+        """
+        from collections import defaultdict
+
+        # Group recent buy trades by symbol within the window
+        cutoff = datetime.now() - timedelta(days=window_days)
+        symbol_trades = defaultdict(list)
+
+        for trade in self.recent_disclosures:
+            action = trade.get("action", "")
+            if "purchase" not in action:
+                continue
+
+            tx_date_str = trade.get("tx_date", "")
+            try:
+                tx_date = datetime.strptime(tx_date_str, "%Y-%m-%d")
+            except (ValueError, TypeError):
+                continue
+
+            if tx_date < cutoff:
+                continue
+
+            sym = trade.get("symbol", "").upper().strip()
+            if sym:
+                symbol_trades[sym].append({
+                    "politician": trade.get("politician", "Unknown"),
+                    "politician_id": trade.get("politician_id", ""),
+                    "date": tx_date_str,
+                    "amount": trade.get("amount_range", ""),
+                })
+
+        # Find clusters (2+ unique politicians on same symbol)
+        clusters = []
+        for sym, trades in symbol_trades.items():
+            unique_politicians = set(t["politician_id"] for t in trades)
+            if len(unique_politicians) >= 2:
+                confidence_boost = min(0.25, len(unique_politicians) * 0.10)
+                cluster = {
+                    "symbol": sym,
+                    "politicians": [t["politician"] for t in trades],
+                    "count": len(unique_politicians),
+                    "trades": trades,
+                    "confidence_boost": confidence_boost,
+                }
+                clusters.append(cluster)
+                log.info(
+                    f"CLUSTER DETECTED: {sym} — {len(unique_politicians)} politicians "
+                    f"buying within {window_days} days: "
+                    f"{', '.join(set(t['politician'] for t in trades))}"
+                )
+
+        return clusters
 
     def get_recent_disclosures(self, limit=50):
         """Get recent disclosures for dashboard."""

@@ -124,7 +124,7 @@ class AutoTuner:
 
         import os
         self.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = "claude-sonnet-4-5-20250514"
         self.api_url = "https://api.anthropic.com/v1/messages"
 
         # Tuning state

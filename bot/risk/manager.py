@@ -32,10 +32,10 @@ class RiskManager:
         self.risk = config.risk_config
 
         # Current tier settings (updated via scaling)
-        self.max_positions = self.risk.get("max_positions", 5)
+        self.max_positions = self.risk.get("max_positions", 12)
         self.max_position_pct = self.risk.get("max_position_size_pct", 0.15)
         self.risk_per_trade = self.risk.get("risk_per_trade_pct", 0.01)
-        self.min_volume = self.risk.get("min_volume", 100000)
+        self.min_volume = self.risk.get("min_volume", 50000)
         self.min_price = self.risk.get("min_price", 0.50)
         self.max_price = self.risk.get("max_price", 99999.0)  # No hard ceiling - runners can go past scanner range
         self.max_correlated = self.risk.get("max_correlated_positions", 2)

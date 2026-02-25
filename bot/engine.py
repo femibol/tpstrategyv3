@@ -33,6 +33,9 @@ from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
+from bot.strategies.options_momentum import OptionsMomentumStrategy
+from bot.strategies.short_squeeze import ShortSqueezeStrategy
+from bot.strategies.pead import PEADStrategy
 from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
@@ -101,6 +104,7 @@ class TradingEngine:
         # Signal deduplication - prevent duplicate entries
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
         self._signal_cooldown_secs = 60  # Min seconds between signals for same symbol (was 120)
+        self._pending_orders = set()  # Symbols with orders currently in-flight
 
         # Exit cooldown - prevent re-closing recently closed positions
         # Tracks {symbol: close_datetime} to block re-entry via Alpaca sync
@@ -173,6 +177,7 @@ class TradingEngine:
         scaling_tier = self.config.get_scaling_tier(self.current_balance)
         if scaling_tier:
             self.risk_manager.update_tier(scaling_tier)
+            self.position_sizer.update_tier(scaling_tier)
             log.info(
                 f"Scaling tier active: balance >= ${scaling_tier['min_balance']:,} | "
                 f"max_positions={scaling_tier['max_positions']} | "
@@ -191,6 +196,19 @@ class TradingEngine:
             all_symbols = list(set(self.watchlist))
             self.market_data.start_streaming(all_symbols)
             log.info("IBKR real-time streaming initialized for watchlist")
+
+            # Subscribe to real-time account PnL (native IBKR — more accurate than manual calc)
+            if hasattr(self.broker, 'subscribe_account_pnl'):
+                self.broker.subscribe_account_pnl()
+
+            # Subscribe to 5-second real-time bars for scalp positions
+            # (fastest data IBKR provides — fires callback every 5 sec)
+            if hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
+                scalp_symbols = list(self.positions.keys())[:10]  # Start with open positions
+                if scalp_symbols:
+                    self.broker.subscribe_realtime_bars_with_callback(
+                        scalp_symbols, self._on_5sec_bar
+                    )
 
         # Load trading universe (200+ symbols for RVOL scanning)
         self.universe = self.config.get_universe()
@@ -311,9 +329,28 @@ class TradingEngine:
                 self.peak_balance = max(self.peak_balance, self.current_balance)
                 log.info(f"Account balance: ${self.current_balance:,.2f}")
             # Sync existing positions
-            self.positions = self.broker.get_positions()
-            if self.positions:
-                log.info(f"Synced {len(self.positions)} existing positions")
+            raw_positions = self.broker.get_positions()
+            if raw_positions:
+                now = datetime.now(self.tz)
+                for sym, pos in raw_positions.items():
+                    entry = pos.get("entry_price", pos.get("avg_cost", 0))
+                    side = pos.get("direction", "long")
+                    qty = pos.get("quantity", 0)
+                    stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
+                    tp_pct = self.config.risk_config.get("take_profit_pct", 0.20)
+                    self.positions[sym] = {
+                        **pos,
+                        "entry_time": now,
+                        "stop_loss": pos.get("stop_loss", entry * (1 - stop_pct) if side == "long" else entry * (1 + stop_pct)),
+                        "take_profit": pos.get("take_profit", entry * (1 + tp_pct) if side == "long" else entry * (1 - tp_pct)),
+                        "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                        "strategy": pos.get("strategy", "synced_from_ibkr"),
+                        "executed_via": pos.get("executed_via", "IBKR"),
+                        "max_hold_bars": 40,
+                        "bar_seconds": 300,
+                        "max_hold_days": 5,
+                    }
+                log.info(f"Synced {len(self.positions)} existing positions from IBKR")
         else:
             log.warning(
                 "IBKR connection failed after %d attempts - falling back to Polygon/Yahoo for data. "
@@ -336,6 +373,9 @@ class TradingEngine:
             "rvol_scalp": RvolScalpStrategy,
             "prebreakout": PreBreakoutStrategy,
             "premarket_gap": PreMarketGapStrategy,
+            "options_momentum": OptionsMomentumStrategy,
+            "short_squeeze": ShortSqueezeStrategy,
+            "pead": PEADStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -386,6 +426,16 @@ class TradingEngine:
         if gap_strat and hasattr(gap_strat, "add_dynamic_symbols"):
             gap_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into pre-market gap")
+
+        squeeze_strat = self.strategies.get("short_squeeze")
+        if squeeze_strat and hasattr(squeeze_strat, "add_dynamic_symbols"):
+            squeeze_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into short squeeze")
+
+        pead_strat = self.strategies.get("pead")
+        if pead_strat and hasattr(pead_strat, "add_dynamic_symbols"):
+            pead_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into PEAD")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
@@ -741,8 +791,46 @@ class TradingEngine:
                             rejected=rejected_count if rejected_count > 0 else None,
                         )
 
-                    # 8. Execute approved signals
+                    # 7f. UOA confirmation boost — check unusual options activity
+                    # for high-score buy signals to detect smart money alignment
+                    if approved and hasattr(self, 'polygon_scanner') and self.polygon_scanner:
+                        for sig in approved:
+                            if (sig.get("action") == "buy" and
+                                    sig.get("score", 0) >= 50 and
+                                    not sig.get("uoa_checked")):
+                                try:
+                                    uoa = self.polygon_scanner.check_unusual_options(sig["symbol"])
+                                    if uoa and uoa.get("bullish") and uoa.get("uoa_score", 0) >= 15:
+                                        boost = min(15, uoa["uoa_score"])
+                                        sig["score"] = sig.get("score", 0) + boost
+                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.10)
+                                        sig["reason"] = sig.get("reason", "") + f" | UOA BULLISH (sweeps: {uoa.get('large_sweeps', 0)})"
+                                        log.info(
+                                            f"UOA BOOST: {sig['symbol']} score +{boost} "
+                                            f"(calls: {uoa['call_vol']:,}, sweeps: {uoa['large_sweeps']})"
+                                        )
+                                    sig["uoa_checked"] = True
+                                except Exception:
+                                    pass
+
+                    # 8. Deduplicate approved signals per-symbol (keep highest score)
+                    #    Prevents multiple strategies from placing separate orders
+                    #    for the same symbol in a single cycle (e.g. LUNR 200+300+290).
+                    best_per_symbol = {}
                     for sig in approved:
+                        sym = sig.get("symbol", "")
+                        action = sig.get("action", "")
+                        key = (sym, action)
+                        existing = best_per_symbol.get(key)
+                        if existing is None or sig.get("score", 0) > existing.get("score", 0):
+                            best_per_symbol[key] = sig
+                    deduped = list(best_per_symbol.values())
+                    if len(deduped) < len(approved):
+                        log.info(
+                            f"DEDUP: {len(approved)} signals -> {len(deduped)} "
+                            f"(merged duplicate symbols)"
+                        )
+                    for sig in deduped:
                         self._execute_signal(sig)
                         # Record regime context for learning
                         if self.trade_analyzer and regime_result:
@@ -899,9 +987,13 @@ class TradingEngine:
             self._data_log_counter = 0
             with_data = sum(1 for s in all_symbols if self.market_data.get_data(s) is not None)
             with_price = sum(1 for s in all_symbols if self.market_data._price_cache.get(s))
+            blacklisted = len(self.broker._invalid_symbols) if self.broker and hasattr(self.broker, '_invalid_symbols') else 0
+            fail_cached = len(self.market_data._bars_fail_cache) if hasattr(self.market_data, '_bars_fail_cache') else 0
             log.info(
                 f"DATA COVERAGE: {with_data}/{len(all_symbols)} symbols have bars, "
                 f"{with_price}/{len(all_symbols)} have prices"
+                f"{f' | IBKR blacklisted: {blacklisted}' if blacklisted else ''}"
+                f"{f' | bar-fetch backoff: {fail_cached}' if fail_cached else ''}"
             )
             if with_data == 0:
                 log.warning("ZERO DATA: No market data received — strategies cannot generate signals!")
@@ -1023,14 +1115,21 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Quick take profit check for ALL positions ---
+            # --- Take profit target reached = tighten trail, NOT hard exit ---
+            # Let runners run. Trailing stop protects profits, no hard ceiling.
             target_price = pos.get("take_profit")
-            if target_price:
+            if target_price and not pos.get("tp_trail_activated"):
                 hit = (direction == "long" and current_price >= target_price) or \
                       (direction == "short" and current_price <= target_price)
                 if hit:
-                    positions_to_close.append(
-                        (symbol, "take_profit", f"Target hit at ${current_price:.2f}")
+                    pos["tp_trail_activated"] = True
+                    pos["trailing_stop_pct"] = min(
+                        pos.get("trailing_stop_pct", 0.02), 0.015
+                    )
+                    log.info(
+                        f"RUNNER MODE: {symbol} hit TP ${target_price:.2f} at "
+                        f"${current_price:.2f} ({pnl_pct:+.1%}) — trailing stop "
+                        f"tightened to {pos['trailing_stop_pct']:.1%}, NO hard exit"
                     )
 
         # Execute exits
@@ -1039,6 +1138,55 @@ class TradingEngine:
 
         for symbol, reason_type, reason_msg in positions_to_close:
             self._close_position(symbol, reason_type, reason_msg)
+
+    def _on_5sec_bar(self, symbol, bar):
+        """
+        Callback fired every 5 seconds with real-time bar data from IBKR.
+        Used for ultra-fast RVOL detection and scalp position management.
+        Updates the live price cache immediately (no polling delay).
+        """
+        try:
+            price = bar.get("close", 0)
+            volume = bar.get("volume", 0)
+
+            if price <= 0:
+                return
+
+            # Update price cache instantly (faster than polling cycle)
+            if self.market_data:
+                self.market_data._price_cache[symbol] = price
+
+            # If we hold this position, update unrealized P&L in real-time
+            pos = self.positions.get(symbol)
+            if pos:
+                pos["current_price"] = price
+                entry = pos["entry_price"]
+                if pos["direction"] == "long":
+                    pos["unrealized_pnl_pct"] = (price - entry) / entry
+                else:
+                    pos["unrealized_pnl_pct"] = (entry - price) / entry
+
+            # Detect sudden volume surge on 5-sec bars (RVOL micro-spike)
+            # This fires much faster than the 1-min bar scanner
+            if volume > 0 and hasattr(self, '_5sec_vol_avg'):
+                avg = self._5sec_vol_avg.get(symbol, 0)
+                if avg > 0 and volume > avg * 5:
+                    log.info(
+                        f"5-SEC VOLUME SURGE: {symbol} vol={volume:,} "
+                        f"({volume/avg:.1f}x avg) @ ${price:.2f}"
+                    )
+                # Update rolling average (exponential)
+                if avg > 0:
+                    self._5sec_vol_avg[symbol] = avg * 0.95 + volume * 0.05
+                else:
+                    self._5sec_vol_avg[symbol] = volume
+            else:
+                if not hasattr(self, '_5sec_vol_avg'):
+                    self._5sec_vol_avg = {}
+                self._5sec_vol_avg[symbol] = volume
+
+        except Exception as e:
+            log.debug(f"5-sec bar callback error for {symbol}: {e}")
 
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
@@ -1165,40 +1313,45 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Take Profit (full exit if no partial taking, or for remaining shares) ---
-            target_price = pos.get("take_profit")
-            if target_price:
-                hit = (direction == "long" and current_price >= target_price) or \
-                      (direction == "short" and current_price <= target_price)
-                if hit:
-                    positions_to_close.append(
-                        (symbol, "take_profit", f"Target hit at ${current_price:.2f}")
-                    )
-                    continue
+            # --- NO hard take profit ceiling ---
+            # TP target is handled as a trail-tighten trigger in the scalp monitor above.
+            # The trailing stop is the ONLY exit mechanism for winners.
+            # This lets runners run 50%, 100%, 400%+ with trailing protection.
 
             # --- Dynamic Trailing Stop (tightens as profit grows) ---
             base_trail = pos.get("trailing_stop_pct",
                                  self.config.risk_config.get("trailing_stop_pct", 0.02))
 
             # Tighten trail dynamically based on profit level
-            # Breakout plays get wider trails to ride the full move
+            # NO hard ceiling — trailing stop is the ONLY exit for winners
+            # Designed for biotech/momentum runners that can go 50-400%+
             is_breakout_play = pos.get("breakout_play") or pos.get("source") == "prebreakout"
-            if is_breakout_play:
-                # Breakout plays: wider trail to let runners breathe
+
+            # EXTREME RUNNER TIERS (applies to ALL positions)
+            # At massive profit levels, use wider percentage trails
+            # because a 5% pullback on a 200% runner is noise, not a reversal
+            if pnl_pct >= 2.00:
+                trailing_pct = 0.08   # 8% trail at 200%+ — ride the monster
+            elif pnl_pct >= 1.00:
+                trailing_pct = 0.06   # 6% trail at 100%+ — huge runner, give room
+            elif pnl_pct >= 0.50:
+                trailing_pct = 0.05   # 5% trail at 50%+ — confirmed runner
+            elif pnl_pct >= 0.20:
+                trailing_pct = 0.035  # 3.5% trail at 20%+ — strong momentum
+            elif is_breakout_play:
+                # Breakout plays: WIDE trail to let runners breathe
                 if pnl_pct >= 0.10:
-                    trailing_pct = base_trail * 0.5   # Tighten at 10%+ (protect the bag)
+                    trailing_pct = base_trail * 0.65  # Moderate at 10%+
                 elif pnl_pct >= 0.05:
-                    trailing_pct = base_trail * 0.7   # Moderate at 5%+
-                elif pnl_pct >= 0.02:
-                    trailing_pct = base_trail * 0.85  # Gentle tighten at 2%+
+                    trailing_pct = base_trail * 0.8   # Gentle at 5%+
                 else:
                     trailing_pct = base_trail          # Full width while building
+            elif pnl_pct >= 0.10:
+                trailing_pct = base_trail * 0.5  # Tighten at 10%+ (protect profits)
             elif pnl_pct >= 0.05:
-                trailing_pct = base_trail * 0.4  # Very tight at 5%+ profit
+                trailing_pct = base_trail * 0.65 # Moderate at 5%+ (let it run)
             elif pnl_pct >= 0.03:
-                trailing_pct = base_trail * 0.5  # Tight at 3%+ profit
-            elif pnl_pct >= 0.015:
-                trailing_pct = base_trail * 0.7  # Moderately tight at 1.5%+
+                trailing_pct = base_trail * 0.8  # Gentle at 3%+ (building momentum)
             else:
                 trailing_pct = base_trail
 
@@ -1294,14 +1447,14 @@ class TradingEngine:
                 max_hold_days = pos.get("max_hold_days", 0)
                 is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                 if is_breakout:
-                    stale_threshold_min = 360  # 6 hours for breakout plays (they consolidate)
-                    stale_move_pct = 0.008     # 0.8% threshold (tight ranges expected)
+                    stale_threshold_min = 480  # 8 hours for breakout plays (consolidation is normal)
+                    stale_move_pct = 0.01      # 1% threshold (tight ranges expected)
                 elif max_hold_days > 0:
-                    stale_threshold_min = 120  # 2 hours for swing
-                    stale_move_pct = 0.005     # 0.5% for swing
+                    stale_threshold_min = 180  # 3 hours for swing (was 2h — too aggressive)
+                    stale_move_pct = 0.008     # 0.8% for swing (was 0.5% — shaking out winners)
                 else:
-                    stale_threshold_min = 30   # 30min for scalp
-                    stale_move_pct = 0.003     # 0.3% for scalp
+                    stale_threshold_min = 60   # 1 hour for momentum (was 30min — too tight)
+                    stale_move_pct = 0.005     # 0.5% for momentum (was 0.3% — normal consolidation)
                 if elapsed_min >= stale_threshold_min and abs(pnl_pct) < stale_move_pct:
                     positions_to_close.append(
                         (symbol, "stale_exit",
@@ -1389,6 +1542,16 @@ class TradingEngine:
                 )
                 return
 
+        # --- LEARNING AVOIDANCE GUARD ---
+        # Skip symbols the trade analyzer flagged as consistent losers
+        if action in ("buy", "short") and self.trade_analyzer:
+            if self.trade_analyzer.should_avoid_symbol(symbol):
+                log.warning(
+                    f"LEARNING BLOCK: {symbol} avoided — consistent loser "
+                    f"(score: {self.trade_analyzer.symbol_scores.get(symbol, 0)})"
+                )
+                return
+
         # --- DUPLICATE ENTRY GUARD ---
         # Prevent same symbol from being entered twice within cooldown window
         if action in ("buy", "short"):
@@ -1396,14 +1559,28 @@ class TradingEngine:
                 log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
                 return
 
-            last_signal = self._signal_cooldowns.get(symbol)
-            if last_signal and (now - last_signal).total_seconds() < self._signal_cooldown_secs:
-                elapsed = int((now - last_signal).total_seconds())
-                log.warning(
-                    f"COOLDOWN BLOCKED: {symbol} signal rejected - "
-                    f"last signal {elapsed}s ago (min {self._signal_cooldown_secs}s)"
-                )
+            # Pending order guard: block if an order for this symbol is already in-flight
+            if symbol in self._pending_orders:
+                log.info(f"PENDING ORDER BLOCKED: {symbol} order already in-flight")
                 return
+
+            last_signal = self._signal_cooldowns.get(symbol)
+            score = signal.get("score", 0)
+            if last_signal and (now - last_signal).total_seconds() < self._signal_cooldown_secs:
+                # High-conviction signals (score >= 85) bypass cooldown
+                if score >= 85:
+                    elapsed = int((now - last_signal).total_seconds())
+                    log.info(
+                        f"COOLDOWN BYPASSED: {symbol} score {score} overrides "
+                        f"cooldown ({elapsed}s ago) — strong signal"
+                    )
+                else:
+                    elapsed = int((now - last_signal).total_seconds())
+                    log.warning(
+                        f"COOLDOWN BLOCKED: {symbol} signal rejected - "
+                        f"last signal {elapsed}s ago (min {self._signal_cooldown_secs}s)"
+                    )
+                    return
 
             # Record this signal time BEFORE execution (prevents race condition)
             self._signal_cooldowns[symbol] = now
@@ -1452,6 +1629,25 @@ class TradingEngine:
             log.debug(f"Position size 0 for {symbol} - skipping")
             return
 
+        # Low-float guard: reduce position size for low-float stocks (< 20M shares)
+        # These are more volatile and can gap violently
+        if action == "buy" and self.polygon and self.polygon.enabled:
+            float_shares = self.polygon.get_float(symbol)
+            if float_shares > 0 and float_shares < 20_000_000:
+                # Scale down: ultra-low float (<5M) = 40% size, low float (<20M) = 60% size
+                if float_shares < 5_000_000:
+                    low_float_mult = 0.40
+                elif float_shares < 10_000_000:
+                    low_float_mult = 0.50
+                else:
+                    low_float_mult = 0.60
+                old_qty = qty
+                qty = max(1, int(qty * low_float_mult))
+                log.info(
+                    f"LOW FLOAT SIZING: {symbol} float={float_shares/1e6:.1f}M — "
+                    f"reduced from {old_qty} to {qty} shares ({low_float_mult:.0%})"
+                )
+
         # Calculate take profit
         take_profit_price = signal.get("take_profit")
         if not take_profit_price:
@@ -1464,18 +1660,49 @@ class TradingEngine:
         order = None
         executed_via = None
 
+        # Mark symbol as pending to block concurrent orders from webhooks/other threads
+        if action in ("buy", "short"):
+            self._pending_orders.add(symbol)
+
+        # Outside-RTH flag: allow pre/post market orders
+        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
+
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
-            log.info(f"Executing {symbol} via IBKR...")
-            order = self.broker.place_order(
-                symbol=symbol,
-                action=action.upper(),
-                quantity=qty,
-                order_type="LIMIT",
-                limit_price=current_price,
-            )
+            log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
+
+            # Use MIDPRICE for entries during RTH (free price improvement)
+            # Falls back to LIMIT during extended hours (MIDPRICE not supported)
+            if action in ("buy", "short"):
+                entry_order_type = "MIDPRICE" if not outside_rth else "LIMIT"
+                order = self.broker.place_order(
+                    symbol=symbol,
+                    action=action.upper(),
+                    quantity=qty,
+                    order_type=entry_order_type,
+                    limit_price=current_price,
+                    outside_rth=outside_rth,
+                    stop_loss=stop_loss_price,
+                    take_profit=take_profit_price,
+                )
+            else:
+                # Exits use simple market orders
+                order = self.broker.place_order(
+                    symbol=symbol,
+                    action=action.upper(),
+                    quantity=qty,
+                    order_type="MARKET",
+                    outside_rth=outside_rth,
+                )
+
             if order:
                 executed_via = "IBKR"
+                if order.get("bracket"):
+                    log.info(
+                        f"BRACKET ORDER active: {symbol} | "
+                        f"SL: ${stop_loss_price:.2f} | TP: ${take_profit_price:.2f} "
+                        f"(managed by IBKR server-side)"
+                    )
             else:
                 log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
         else:
@@ -1493,12 +1720,14 @@ class TradingEngine:
                             f"HARD LIMIT: Alpaca has {actual_count} positions "
                             f"(max {self.risk_manager.max_positions}). BLOCKING {symbol}."
                         )
+                        self._pending_orders.discard(symbol)
                         return
                     broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
                     if symbol.upper() in broker_symbols:
                         log.warning(f"DUPLICATE BLOCKED: {symbol} already open at Alpaca.")
                         if symbol not in self.positions:
                             self._sync_positions_from_alpaca()
+                        self._pending_orders.discard(symbol)
                         return
                     account = self._alpaca_api_call("/v2/account")
                     if isinstance(account, dict):
@@ -1506,6 +1735,7 @@ class TradingEngine:
                         order_cost = current_price * qty
                         if order_cost > buying_power:
                             log.error(f"INSUFFICIENT BUYING POWER: {symbol} ${order_cost:,.2f} > ${buying_power:,.2f}. BLOCKING.")
+                            self._pending_orders.discard(symbol)
                             return
             except Exception as e:
                 log.warning(f"Alpaca pre-check error: {e} — proceeding (risk manager approved)")
@@ -1579,6 +1809,7 @@ class TradingEngine:
                 f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}, "
                 f"Alpaca={'configured' if self.config.alpaca_api_key else 'NOT configured'}"
             )
+            self._pending_orders.discard(symbol)
             return
 
         risk_amount = abs(current_price - stop_loss_price) * qty
@@ -1647,6 +1878,12 @@ class TradingEngine:
         # NOTE: Do NOT forward IBKR orders to TradersPost — that causes
         # duplicate execution. TradersPost is a FALLBACK, not a mirror.
 
+        # Subscribe to 5-sec real-time bars for new scalp positions (fastest exit monitoring)
+        if (signal.get("scalp_mode") or signal.get("strategy") == "rvol_scalp") and \
+                self.broker and self.broker.is_connected() and \
+                hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
+            self.broker.subscribe_realtime_bars_with_callback([symbol], self._on_5sec_bar)
+
         # Track trade
         self.daily_trades.append({
             "time": datetime.now(self.tz).isoformat(),
@@ -1657,6 +1894,9 @@ class TradingEngine:
             "strategy": strategy,
             "executed_via": executed_via,
         })
+
+        # Clear pending flag now that position is recorded
+        self._pending_orders.discard(symbol)
 
     def _close_position(self, symbol, reason_type, reason_msg):
         """Close a position through broker chain. Thread-safe with double-close guard."""
@@ -1701,12 +1941,14 @@ class TradingEngine:
 
         # Try to close via broker chain
         order = None
+        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
         if self.broker and self.broker.is_connected():
             order = self.broker.place_order(
                 symbol=symbol,
                 action=action,
                 quantity=pos["quantity"],
                 order_type="MARKET",
+                outside_rth=outside_rth,
             )
             if order:
                 close_broker = "IBKR"
@@ -1828,7 +2070,7 @@ class TradingEngine:
             pnl_pct=pnl_pct * 100,
             reason_type=reason_type,
             reason_msg=reason_msg,
-            strategy=pos["strategy"],
+            strategy=pos.get("strategy", "unknown"),
             executed_via=executed_via,
             hold_time=hold_time,
         )
@@ -1840,10 +2082,10 @@ class TradingEngine:
             "quantity": pos["quantity"],
             "pnl": pnl,
             "pnl_pct": pnl_pct,
-            "strategy": pos["strategy"],
+            "strategy": pos.get("strategy", "unknown"),
             "reason": reason_type,
             "executed_via": executed_via,
-            "entry_time": pos["entry_time"].isoformat(),
+            "entry_time": pos["entry_time"].isoformat() if "entry_time" in pos else datetime.now(self.tz).isoformat(),
             "exit_time": datetime.now(self.tz).isoformat(),
         })
 
@@ -1853,6 +2095,21 @@ class TradingEngine:
         # Persist trade to disk (survives restarts for AI learning)
         if self.trade_analyzer:
             self.trade_analyzer.persist_trade(self.trade_history[-1])
+
+        # Auto-trigger Claude AI quick insight every 5 trades
+        if self.ai_insights and self.ai_insights.is_available() and len(self.trade_history) % 5 == 0:
+            try:
+                insight = self.ai_insights.get_quick_insight(
+                    self.trade_history, self.performance_stats
+                )
+                if insight:
+                    log.info(f"AI INSIGHT: {insight[:200]}")
+                    self.notifier.system_alert(
+                        f"AI Quick Insight (after {len(self.trade_history)} trades):\n{insight}",
+                        level="info"
+                    )
+            except Exception as e:
+                log.debug(f"AI quick insight error: {e}")
 
         # Log trade to Google Sheets
         if self.sheets_logger and self.sheets_logger.is_enabled():
@@ -1884,10 +2141,12 @@ class TradingEngine:
 
         # Execute via broker chain
         order = None
+        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
         if self.broker and self.broker.is_connected():
             order = self.broker.place_order(
                 symbol=symbol, action=action,
                 quantity=qty_to_close, order_type="MARKET",
+                outside_rth=outside_rth,
             )
             if order:
                 close_broker = "IBKR"
@@ -1945,7 +2204,7 @@ class TradingEngine:
             pnl=pnl,
             target_idx=target_idx,
             target_pct=target_pct,
-            strategy=pos["strategy"],
+            strategy=pos.get("strategy", "unknown"),
         )
 
         # Record partial trade in history
@@ -1957,10 +2216,10 @@ class TradingEngine:
             "quantity": qty_to_close,
             "pnl": pnl,
             "pnl_pct": pnl / (pos["entry_price"] * qty_to_close) if pos["entry_price"] > 0 else 0,
-            "strategy": pos["strategy"],
+            "strategy": pos.get("strategy", "unknown"),
             "reason": f"partial_target_{target_idx + 1}",
             "executed_via": executed_via,
-            "entry_time": pos["entry_time"].isoformat(),
+            "entry_time": pos["entry_time"].isoformat() if "entry_time" in pos else datetime.now(self.tz).isoformat(),
             "exit_time": datetime.now(self.tz).isoformat(),
             "partial": True,
         })
@@ -2011,6 +2270,11 @@ class TradingEngine:
     def _close_all_positions(self, reason):
         """Emergency close all positions."""
         log.warning(f"Closing all positions: {reason}")
+
+        # Cancel all pending IBKR orders first (bracket stop/target orders)
+        if self.broker and self.broker.is_connected() and hasattr(self.broker, 'cancel_all_orders'):
+            self.broker.cancel_all_orders()
+
         with self._positions_lock:
             symbols = list(self.positions.keys())
         for symbol in symbols:
@@ -2035,12 +2299,21 @@ class TradingEngine:
                     "net_liquidation", self.current_balance
                 )
 
+            # Use IBKR native real-time PnL if available (more accurate than manual calc)
+            if hasattr(self.broker, 'get_realtime_pnl'):
+                pnl_data = self.broker.get_realtime_pnl()
+                if pnl_data:
+                    self.daily_pnl = pnl_data.get("daily", self.daily_pnl)
+                    self._ibkr_unrealized_pnl = pnl_data.get("unrealized", 0)
+                    self._ibkr_realized_pnl = pnl_data.get("realized", 0)
+
         self.peak_balance = max(self.peak_balance, self.current_balance)
 
-        # Update scaling tier
+        # Update scaling tier (both risk manager AND position sizer)
         tier = self.config.get_scaling_tier(self.current_balance)
         if tier:
             self.risk_manager.update_tier(tier)
+            self.position_sizer.update_tier(tier)
 
         # Track equity curve (include unrealized P&L)
         unrealized_pnl = 0
@@ -2436,6 +2709,12 @@ class TradingEngine:
                 qty = abs(float(p.get("qty", 0)))
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
+
+                # LONG-ONLY: Skip short positions from broker sync
+                if side == "short":
+                    log.info(f"LONG-ONLY SYNC: Skipping SHORT position {symbol} ({int(qty)} shares) from Alpaca")
+                    continue
+
                 unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
                 # Use current market price for smarter stop/target
                 current_mkt = None
@@ -2446,8 +2725,8 @@ class TradingEngine:
                         pass
                 ref_price = current_mkt or entry
                 is_crypto = any(symbol.upper().endswith(s) for s in ["-USD", "-USDT"])
-                stop_pct = 0.05 if is_crypto else 0.03
-                tp_pct = 0.08 if is_crypto else 0.06
+                stop_pct = 0.05 if is_crypto else self.config.risk_config.get("stop_loss_pct", 0.03)
+                tp_pct = 0.08 if is_crypto else self.config.risk_config.get("take_profit_pct", 0.20)
                 self.positions[symbol] = {
                     "symbol": symbol,
                     "direction": side,
@@ -2558,14 +2837,20 @@ class TradingEngine:
                     qty = abs(float(p.get("qty", 0)))
                     entry = float(p.get("avg_entry_price", 0))
                     side = "long" if float(p.get("qty", 0)) > 0 else "short"
+
+                    # LONG-ONLY: Skip short positions from broker sync
+                    if side == "short":
+                        log.debug(f"LONG-ONLY SYNC: Skipping SHORT {sym} from continuous sync")
+                        continue
+
                     self.positions[sym] = {
                         "symbol": sym,
                         "direction": side,
                         "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
                         "entry_price": entry,
                         "entry_time": datetime.now(self.tz),
-                        "stop_loss": entry * 0.97 if side == "long" else entry * 1.03,
-                        "take_profit": entry * 1.06 if side == "long" else entry * 0.94,
+                        "stop_loss": entry * (1 - self.config.risk_config.get("stop_loss_pct", 0.03)),
+                        "take_profit": entry * (1 + self.config.risk_config.get("take_profit_pct", 0.20)),
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                         "strategy": "synced_from_alpaca",
                         "executed_via": "Alpaca",
@@ -2617,6 +2902,21 @@ class TradingEngine:
     def _handle_news_signal(self, signal):
         """Handle incoming news-based signal."""
         log.info(f"News signal: {signal['action'].upper()} {signal['symbol']} | {signal.get('reason', '')[:60]}")
+
+        # Fill in market price and default stop_loss for buy signals so they
+        # pass risk manager checks (news signals don't include price data)
+        if signal.get("action") == "buy":
+            symbol = signal["symbol"]
+            price = self.market_data.get_price(symbol) if self.market_data else None
+            if price and price > 0:
+                signal["price"] = price
+                if not signal.get("stop_loss"):
+                    signal["stop_loss"] = price * (1 - self.config.stop_loss_pct)
+                if not signal.get("take_profit"):
+                    signal["take_profit"] = price * (1 + self.config.take_profit_pct)
+            else:
+                log.warning(f"No market price for news signal {symbol} — skipping")
+                return
 
         approved = self.risk_manager.filter_signals(
             [signal], self.positions, self.current_balance
@@ -3293,6 +3593,22 @@ class TradingEngine:
                     positions_to_close.append(symbol)
                     continue
 
+                # NEVER hold through earnings — gap risk is extreme
+                if self.polygon and self.polygon.enabled:
+                    try:
+                        if self.polygon.has_earnings_soon(symbol, days_ahead=1):
+                            log.warning(
+                                f"EARNINGS BLOCK: Closing {symbol} — earnings imminent, "
+                                f"overnight gap risk too high | P&L: {pnl_pct:.1%}"
+                            )
+                            self.notifier.risk_alert(
+                                f"Closing {symbol} before earnings — overnight gap risk"
+                            )
+                            positions_to_close.append(symbol)
+                            continue
+                    except Exception as e:
+                        log.debug(f"Earnings check failed for {symbol}: {e}")
+
                 # ALWAYS close RVOL scalp (ultra short-term, never hold)
                 if pos.get("strategy") == "rvol_scalp":
                     log.info(f"RVOL SCALP EXIT: Closing {symbol} - scalp positions are intraday only")
@@ -3610,8 +3926,29 @@ class TradingEngine:
             "learning": self.trade_analyzer.get_status() if self.trade_analyzer else None,
             "trading_profile": self.config.trading_profile,
             "data_source": self._get_data_source_info(),
+            # IBKR enhanced features status
+            "ibkr_features": self._get_ibkr_features_status(),
         }
         return status
+
+    def _get_ibkr_features_status(self):
+        """Get status of active IBKR features for dashboard."""
+        if not self.broker or not self.broker.is_connected():
+            return {"active": False}
+
+        pnl = self.broker.get_realtime_pnl() if hasattr(self.broker, 'get_realtime_pnl') else None
+        live_bars_count = len(self.broker._live_bars) if hasattr(self.broker, '_live_bars') else 0
+        open_orders = len(self.broker.get_open_orders()) if hasattr(self.broker, 'get_open_orders') else 0
+
+        return {
+            "active": True,
+            "bracket_orders": True,
+            "outside_rth": True,
+            "realtime_pnl": pnl,
+            "five_sec_bars_symbols": live_bars_count,
+            "open_orders": open_orders,
+            "news_subscription": hasattr(self.broker, '_news_callback') and self.broker._news_callback is not None,
+        }
 
     def _get_data_source_info(self):
         """Get current data source status for dashboard."""
@@ -3661,14 +3998,14 @@ class TradingEngine:
             "risk": {
                 "stop_loss_pct": risk.get("stop_loss_pct", 0.03),
                 "trailing_stop_pct": risk.get("trailing_stop_pct", 0.02),
-                "take_profit_pct": risk.get("take_profit_pct", 0.06),
-                "max_positions": risk.get("max_positions", 5),
-                "risk_per_trade_pct": risk.get("risk_per_trade_pct", 0.01),
+                "take_profit_pct": risk.get("take_profit_pct", 0.20),
+                "max_positions": risk.get("max_positions", 12),
+                "risk_per_trade_pct": risk.get("risk_per_trade_pct", 0.02),
                 "max_position_size_pct": risk.get("max_position_size_pct", 0.15),
             },
             "schedule": {
-                "avoid_first_minutes": schedule.get("avoid_first_minutes", 30),
-                "avoid_last_minutes": schedule.get("avoid_last_minutes", 30),
+                "avoid_first_minutes": schedule.get("avoid_first_minutes", 5),
+                "avoid_last_minutes": schedule.get("avoid_last_minutes", 10),
             },
             "overnight": {
                 "enabled": overnight.get("enabled", False),
@@ -3727,7 +4064,9 @@ class TradingEngine:
         mr_strat = self.strategies.get("mean_reversion")
         pb_strat = self.strategies.get("prebreakout")
         gap_strat = self.strategies.get("premarket_gap")
-        if not rvol_strat and not scalp_strat and not mr_strat and not pb_strat and not gap_strat:
+        squeeze_strat = self.strategies.get("short_squeeze")
+        pead_strat = self.strategies.get("pead")
+        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat]):
             return
 
         try:
@@ -3775,6 +4114,21 @@ class TradingEngine:
                     gap_strat.add_dynamic_symbols(gap_syms)
                     log.debug(f"Polygon: injected {len(gap_syms)} gap-ups into pre-market gap")
 
+                # Feed gap-ups into PEAD — earnings gaps are drift candidates
+                if poly_gap_ups and pead_strat:
+                    gap_syms = [g["symbol"] for g in poly_gap_ups if g.get("symbol")]
+                    pead_strat.add_dynamic_symbols(gap_syms)
+                    # Auto-feed earnings data for large gaps (PEAD will check if earnings-related)
+                    for g in poly_gap_ups:
+                        sym = g.get("symbol", "")
+                        gap_pct = g.get("gap_pct", 0)
+                        rvol = g.get("rvol", 0)
+                        price = g.get("price", 0)
+                        if sym and gap_pct >= 5.0 and rvol >= 2.0 and price > 0:
+                            from datetime import datetime as dt
+                            pead_strat.feed_earnings_data(sym, gap_pct, rvol, dt.now().date(), price)
+                    log.debug(f"Polygon: fed {len(poly_gap_ups)} gap-ups into PEAD strategy")
+
                 if poly_runners:
                     runner_syms = [r["symbol"] for r in poly_runners if r.get("symbol")]
                     if runner_syms:
@@ -3789,6 +4143,10 @@ class TradingEngine:
                             pb_strat.add_dynamic_symbols(runner_syms)
                         if gap_strat:
                             gap_strat.add_dynamic_symbols(runner_syms)
+                        if squeeze_strat:
+                            squeeze_strat.add_dynamic_symbols(runner_syms)
+                        if pead_strat:
+                            pead_strat.add_dynamic_symbols(runner_syms)
                         log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
             # Get top movers from Polygon (filtered to $0.50-$50 range)
             movers = self.get_top_movers()
@@ -3842,6 +4200,17 @@ class TradingEngine:
                     pb_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into pre-breakout")
 
+                # Feed movers into short squeeze (high-volume movers may be squeezing)
+                if squeeze_strat and mover_symbols:
+                    squeeze_strat.add_dynamic_symbols(mover_symbols)
+                    # Estimate short interest for top movers and feed to squeeze strategy
+                    if self.polygon and hasattr(self.polygon, 'estimate_short_interest'):
+                        si_data = self.polygon.estimate_short_interest(mover_symbols[:10])
+                        if si_data:
+                            squeeze_strat.feed_short_interest(si_data)
+                            log.debug(f"Fed short interest data for {len(si_data)} symbols to squeeze strategy")
+                    log.debug(f"Injected {len(mover_symbols)} movers into short squeeze")
+
                 # Feed gap-up stocks into pre-market gap strategy
                 if gap_strat and gap_symbols:
                     gap_strat.add_dynamic_symbols(gap_symbols)
@@ -3882,7 +4251,11 @@ class TradingEngine:
                         pb_strat.add_dynamic_symbols(runner_symbols)
                     if gap_strat:
                         gap_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL + pre-breakout + gap strategies")
+                    if squeeze_strat:
+                        squeeze_strat.add_dynamic_symbols(runner_symbols)
+                    if pead_strat:
+                        pead_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} runners into all strategies")
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")
@@ -3967,6 +4340,12 @@ class TradingEngine:
                 price = r.get("price", 0)
                 change_pct = r.get("change_pct", 0)
                 volume = r.get("volume", 0)
+                # Enrich with float data from Polygon cache
+                float_shares = self.polygon.get_float(sym) if self.polygon else 0
+                is_low_float = float_shares > 0 and float_shares < 20_000_000
+                runner_type = "LOW FLOAT SQUEEZE" if is_low_float else (
+                    "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER"
+                )
                 runners.append({
                     "symbol": sym,
                     "name": sym,
@@ -3976,11 +4355,11 @@ class TradingEngine:
                     "avg_volume": r.get("avg_volume", 0),
                     "rvol": r.get("rvol", 0),
                     "market_cap": 0,
-                    "float_shares": 0,
-                    "float_display": "N/A",
+                    "float_shares": float_shares,
+                    "float_display": self._format_float(float_shares),
                     "shares_outstanding": 0,
-                    "runner_type": "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER",
-                    "is_low_float": False,
+                    "runner_type": runner_type,
+                    "is_low_float": is_low_float,
                     "is_post_split": False,
                     "on_watchlist": sym in self.watchlist,
                 })
@@ -4631,9 +5010,9 @@ class TradingEngine:
                     reasons.append("Volume increasing - confirms momentum")
 
                 # Above 200 EMA
-                if ema200 is not None and current_price > ema200:
+                if ema200_val is not None and current_price > ema200_val:
                     score += 10
-                    reasons.append(f"Above 200 EMA (${ema200:.2f}) - long-term bullish")
+                    reasons.append(f"Above 200 EMA (${ema200_val:.2f}) - long-term bullish")
 
                 # --- Calculate targets and hold period ---
                 # Target: next resistance or 2-3x ATR above
@@ -4691,8 +5070,8 @@ class TradingEngine:
                     "hold_period": hold_desc,
                     "hold_days": est_hold_days,
                     "vol_rising": vol_rising,
-                    "ema50": round(ema50, 2),
-                    "ema200": round(ema200, 2) if ema200 is not None else None,
+                    "ema50": round(float(ema50_val), 2) if ema50_val is not None else None,
+                    "ema200": round(float(ema200_val), 2) if ema200_val is not None else None,
                     "reasons": reasons,
                 })
 
