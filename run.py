@@ -10,6 +10,13 @@ Usage:
 """
 import sys
 import os
+import asyncio
+
+# Ensure an event loop exists before ib_async/eventkit import (Python 3.10+)
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
