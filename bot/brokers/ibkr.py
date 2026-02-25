@@ -713,6 +713,17 @@ class IBKRBroker(BaseBroker):
                 log.warning(f"Blacklisting '{symbol}' - no security definition (likely delisted)")
             return
 
+        # Error 201 = "Order rejected - 15 orders limit on same side for this contract"
+        # Auto-cancel stale orders for the symbol to unblock future orders
+        if errorCode == 201 and "minimum of 15 orders" in str(errorString):
+            symbol = None
+            if contract and hasattr(contract, 'symbol'):
+                symbol = contract.symbol
+            if symbol:
+                log.warning(f"Order limit hit for {symbol} — auto-cancelling stale orders")
+                self.cancel_symbol_orders(symbol)
+            return
+
         # Error 300 = "Can't find EId" (stale ticker reference, non-critical)
         if errorCode == 300:
             return
@@ -971,6 +982,37 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.error(f"Failed to get open orders: {e}")
             return []
+
+    def cancel_symbol_orders(self, symbol, side=None):
+        """Cancel all open orders for a specific symbol (optionally filtered by side).
+
+        Args:
+            symbol: The ticker symbol to cancel orders for.
+            side: Optional 'BUY' or 'SELL' to only cancel one side.
+
+        Returns:
+            Number of orders cancelled.
+        """
+        if not self.is_connected():
+            return 0
+
+        cancelled = 0
+        try:
+            for trade in self.ib.openTrades():
+                if trade.contract.symbol == symbol:
+                    if side and trade.order.action != side:
+                        continue
+                    try:
+                        self.ib.cancelOrder(trade.order)
+                        cancelled += 1
+                    except Exception:
+                        pass
+            if cancelled:
+                log.info(f"Cancelled {cancelled} stale orders for {symbol}" +
+                         (f" ({side} side)" if side else ""))
+        except Exception as e:
+            log.error(f"Failed to cancel orders for {symbol}: {e}")
+        return cancelled
 
     def cancel_all_orders(self):
         """Cancel all open orders. Use for emergency stop."""
