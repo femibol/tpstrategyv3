@@ -75,6 +75,11 @@ class IBKRBroker(BaseBroker):
             )
             self._connected = True
 
+            # Quiet ib_insync's own noisy logger (Error 200, Unknown contract, etc.)
+            import logging as _logging
+            _logging.getLogger('ib_insync.wrapper').setLevel(_logging.CRITICAL)
+            _logging.getLogger('ib_insync.ib').setLevel(_logging.CRITICAL)
+
             # Register callbacks
             self.ib.orderStatusEvent += self._on_order_status
             self.ib.errorEvent += self._on_error
@@ -608,31 +613,16 @@ class IBKRBroker(BaseBroker):
             return
 
         # Error 200 = "No security definition" (delisted or invalid symbol)
+        # Suppress entirely — calling code (qualifyContracts + conId==0 check)
+        # already handles blacklisting in _invalid_symbols
         if errorCode == 200:
             symbol = None
-
-            # Try to get symbol from contract param (ib_insync passes Contract or None)
             if contract and hasattr(contract, 'symbol'):
                 symbol = contract.symbol
-
-            # Fallback: check ib_insync internal reqId->contract mapping
-            if not symbol and self.ib:
-                wrapper = getattr(self.ib, 'wrapper', None)
-                if wrapper:
-                    c = getattr(wrapper, '_reqId2Contract', {}).get(reqId)
-                    if c and hasattr(c, 'symbol'):
-                        symbol = c.symbol
-
             if symbol and symbol not in self._invalid_symbols:
                 self._invalid_symbols.add(symbol)
-                log.warning(
-                    f"IBKR Error {errorCode}: {errorString} | "
-                    f"Blacklisting '{symbol}' - likely delisted or invalid"
-                )
-                return
-            # Already blacklisted or symbol unknown - suppress duplicate warnings
-            if symbol:
-                return
+                log.warning(f"Blacklisting '{symbol}' - no security definition (likely delisted)")
+            return
 
         # Error 300 = "Can't find EId" (stale ticker reference, non-critical)
         if errorCode == 300:
