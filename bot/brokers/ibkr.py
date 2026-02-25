@@ -55,6 +55,9 @@ class IBKRBroker(BaseBroker):
         # Prevents repeated error 200 "No security definition" requests
         self._invalid_symbols = set()
 
+        # News callback (set by subscribe_news)
+        self._news_callback = None
+
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
         if not HAS_IB:
@@ -605,8 +608,21 @@ class IBKRBroker(BaseBroker):
             return
 
         # Error 200 = "No security definition" (delisted or invalid symbol)
-        if errorCode == 200 and contract:
-            symbol = getattr(contract, 'symbol', None)
+        if errorCode == 200:
+            symbol = None
+
+            # Try to get symbol from contract param (ib_insync passes Contract or None)
+            if contract and hasattr(contract, 'symbol'):
+                symbol = contract.symbol
+
+            # Fallback: check ib_insync internal reqId->contract mapping
+            if not symbol and self.ib:
+                wrapper = getattr(self.ib, 'wrapper', None)
+                if wrapper:
+                    c = getattr(wrapper, '_reqId2Contract', {}).get(reqId)
+                    if c and hasattr(c, 'symbol'):
+                        symbol = c.symbol
+
             if symbol and symbol not in self._invalid_symbols:
                 self._invalid_symbols.add(symbol)
                 log.warning(
@@ -614,8 +630,99 @@ class IBKRBroker(BaseBroker):
                     f"Blacklisting '{symbol}' - likely delisted or invalid"
                 )
                 return
+            # Already blacklisted or symbol unknown - suppress duplicate warnings
+            if symbol:
+                return
+
+        # Error 300 = "Can't find EId" (stale ticker reference, non-critical)
+        if errorCode == 300:
+            return
 
         log.warning(f"IBKR Error {errorCode}: {errorString}")
+
+    # --- IBKR News Integration ---
+
+    def subscribe_news(self, callback=None):
+        """
+        Subscribe to IBKR real-time news ticks.
+        News ticks fire for all subscribed contracts automatically.
+
+        Args:
+            callback: Function(news_tick_dict) called for each news headline.
+        """
+        if not self.is_connected():
+            return False
+
+        self._news_callback = callback
+        self.ib.tickNewsEvent += self._on_news_tick
+
+        # Also subscribe to IB bulletins (system-wide news)
+        try:
+            self.ib.reqNewsBulletins(allMessages=False)
+        except Exception as e:
+            log.debug(f"Failed to subscribe to IB bulletins: {e}")
+
+        log.info("IBKR real-time news subscription active")
+        return True
+
+    def _on_news_tick(self, news):
+        """Handle incoming IBKR news tick."""
+        try:
+            headline = getattr(news, 'headline', '') or ''
+            provider = getattr(news, 'providerCode', '') or ''
+            article_id = getattr(news, 'articleId', '') or ''
+            extra_data = getattr(news, 'extraData', '') or ''
+
+            # extraData format: "K:symbol" (e.g. "K:AAPL")
+            symbol = ''
+            if extra_data:
+                for part in extra_data.split(':'):
+                    part = part.strip()
+                    if part and part.isalpha() and 1 <= len(part) <= 5:
+                        symbol = part.upper()
+
+            if not headline:
+                return
+
+            tick_dict = {
+                'headline': headline,
+                'provider': provider,
+                'article_id': article_id,
+                'symbol': symbol,
+                'source': 'ibkr',
+            }
+
+            if self._news_callback:
+                self._news_callback(tick_dict)
+
+        except Exception as e:
+            log.debug(f"News tick error: {e}")
+
+    def get_news_providers(self):
+        """Get available IBKR news providers (e.g. BZ=Benzinga, FLY=Flyonthewall)."""
+        if not self.is_connected():
+            return []
+        try:
+            providers = self.ib.reqNewsProviders()
+            return [{'code': p.code, 'name': p.name} for p in providers]
+        except Exception as e:
+            log.debug(f"Failed to get news providers: {e}")
+            return []
+
+    def get_news_article(self, provider_code, article_id):
+        """Fetch full article body from IBKR."""
+        if not self.is_connected():
+            return None
+        try:
+            article = self.ib.reqNewsArticle(provider_code, article_id)
+            if article:
+                return {
+                    'type': article.articleType,
+                    'text': article.articleText,
+                }
+        except Exception as e:
+            log.debug(f"Failed to fetch article {article_id}: {e}")
+        return None
 
     def _on_disconnect(self):
         """Handle disconnection."""

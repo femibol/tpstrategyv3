@@ -228,14 +228,22 @@ class TradingEngine:
         )
         log.info("Politician trade tracker enabled")
 
-        # Polygon news-driven trading (uses same Polygon API key)
-        if self.config.polygon_api_key:
+        # News-driven trading: Polygon (polled) + IBKR (real-time ticks)
+        has_polygon = bool(self.config.polygon_api_key)
+        has_ibkr = self.broker and self.broker.is_connected()
+        if has_polygon or has_ibkr:
             self.news_feed = NewsFeed(
                 self.config,
                 callback=self._handle_news_signal,
                 polygon_api_key=self.config.polygon_api_key,
+                broker=self.broker,
             )
-            log.info("Polygon news catalyst scanner ENABLED")
+            sources = []
+            if has_polygon:
+                sources.append("Polygon")
+            if has_ibkr:
+                sources.append("IBKR")
+            log.info(f"News catalyst scanner ENABLED ({' + '.join(sources)})")
 
         # Trade learning system
         self.trade_analyzer = TradeAnalyzer(self.config)

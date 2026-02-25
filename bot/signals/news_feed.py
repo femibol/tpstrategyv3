@@ -85,15 +85,19 @@ BEARISH_CATALYSTS = {
 
 class NewsFeed:
     """
-    Polygon.io news-driven trading signal generator (v3 official client).
+    Multi-source news-driven trading signal generator.
 
-    Scans real-time news every 2 minutes, scores catalysts,
-    and generates BUY/SELL signals for the engine to execute.
+    Sources:
+      1. Polygon.io (v3 client) — polls every 2 minutes for article news
+      2. IBKR real-time news ticks — instant headlines via TWS connection
+
+    Generates BUY/SELL signals based on catalyst scoring.
     """
 
-    def __init__(self, config, callback=None, polygon_api_key=None):
+    def __init__(self, config, callback=None, polygon_api_key=None, broker=None):
         self.config = config
         self.callback = callback
+        self.broker = broker  # IBKRBroker instance for real-time news
         self.api_key = polygon_api_key or config.polygon_api_key
         self.poll_interval = 120  # 2 minutes
         self._running = False
@@ -120,14 +124,26 @@ class NewsFeed:
         self.watched_symbols = set(symbols)
 
     def start(self):
-        """Start the news feed in a background thread."""
-        if not self._client:
-            log.warning("Polygon API key not set — news trading disabled")
-            return
-        self._running = True
-        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
-        self._thread.start()
-        log.info("Polygon news scanner started (v3 client) — scanning for catalysts every 2 min")
+        """Start the news feed: Polygon polling + IBKR real-time ticks."""
+        sources = []
+
+        if self._client:
+            self._running = True
+            self._thread = threading.Thread(target=self._poll_loop, daemon=True)
+            self._thread.start()
+            sources.append("Polygon")
+
+        # Subscribe to IBKR real-time news ticks (instant headlines)
+        if self.broker and hasattr(self.broker, 'subscribe_news'):
+            if self.broker.is_connected():
+                self.broker.subscribe_news(callback=self._handle_ibkr_news)
+                sources.append("IBKR")
+
+        if sources:
+            self._running = True
+            log.info(f"News scanner started ({' + '.join(sources)}) - scanning for catalysts")
+        else:
+            log.warning("No news sources configured - news trading disabled")
 
     def stop(self):
         self._running = False
@@ -337,6 +353,54 @@ class NewsFeed:
         return signal
 
     # =========================================================================
+    # IBKR Real-Time News Processing
+    # =========================================================================
+
+    def _handle_ibkr_news(self, tick):
+        """
+        Process an IBKR real-time news tick. Fires instantly when
+        headlines arrive via TWS connection (no polling delay).
+        """
+        try:
+            headline = tick.get('headline', '')
+            symbol = tick.get('symbol', '')
+            article_id = tick.get('article_id', '')
+            provider = tick.get('provider', '')
+
+            if not headline:
+                return
+
+            # Deduplicate
+            key = f"ibkr:{article_id or headline[:60]}"
+            if key in self.seen_articles:
+                return
+            self.seen_articles.add(key)
+
+            # Store for dashboard
+            self.recent_news.append({
+                "title": headline,
+                "description": "",
+                "url": "",
+                "published": "",
+                "tickers": [symbol] if symbol else [],
+                "publisher": provider,
+                "source": "ibkr",
+            })
+
+            # Score the headline
+            if symbol and len(symbol) <= 5 and "." not in symbol:
+                article = {"title": headline, "description": "", "tickers": [symbol]}
+                signal = self._score_article(article, symbol)
+                if signal:
+                    signal["source_detail"] = f"ibkr_{provider}"
+                    self.signals_generated.append(signal)
+                    if self.callback:
+                        self.callback(signal)
+
+        except Exception as e:
+            log.debug(f"IBKR news processing error: {e}")
+
+    # =========================================================================
     # Dashboard / Status Methods
     # =========================================================================
 
@@ -349,11 +413,17 @@ class NewsFeed:
         return self.signals_generated[-limit:]
 
     def get_status(self):
+        sources = []
+        if self._client:
+            sources.append("polygon")
+        if self.broker and hasattr(self.broker, 'subscribe_news') and self.broker.is_connected():
+            sources.append("ibkr")
         return {
             "running": self._running,
             "api_configured": bool(self._client),
+            "ibkr_news": "ibkr" in sources,
             "total_articles": len(self.recent_news),
             "total_signals": len(self.signals_generated),
             "watched_symbols": list(self.watched_symbols)[:20],
-            "source": "polygon",
+            "sources": sources,
         }
