@@ -101,7 +101,8 @@ schedule:
 # Bot auto-adjusts as account grows
 scaling:
   enabled: true
-  # Fewer positions, larger sizes — concentrated bets on best setups
+  # Aggressive deployment — use available capital, don't sit on cash
+  # Position % stays high at all tiers so the bot actually deploys money
   tiers:
     - min_balance: 5000
       max_positions: 5
@@ -120,9 +121,13 @@ scaling:
       risk_per_trade: 0.02
       max_position_pct: 0.15       # $7,500 max per position
     - min_balance: 100000
+      max_positions: 15
+      risk_per_trade: 0.02
+      max_position_pct: 0.15       # $15K max per position — matches global config
+    - min_balance: 250000
       max_positions: 18
       risk_per_trade: 0.02
-      max_position_pct: 0.10       # $10,000 max per position
+      max_position_pct: 0.15       # $37.5K max per position — deploy capital aggressively
 
 # --- Hedging ---
 # Automatic portfolio protection via inverse ETFs during bearish regimes

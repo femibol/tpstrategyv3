@@ -176,6 +176,7 @@ class TradingEngine:
         scaling_tier = self.config.get_scaling_tier(self.current_balance)
         if scaling_tier:
             self.risk_manager.update_tier(scaling_tier)
+            self.position_sizer.update_tier(scaling_tier)
             log.info(
                 f"Scaling tier active: balance >= ${scaling_tier['min_balance']:,} | "
                 f"max_positions={scaling_tier['max_positions']} | "
@@ -424,6 +425,16 @@ class TradingEngine:
         if gap_strat and hasattr(gap_strat, "add_dynamic_symbols"):
             gap_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into pre-market gap")
+
+        squeeze_strat = self.strategies.get("short_squeeze")
+        if squeeze_strat and hasattr(squeeze_strat, "add_dynamic_symbols"):
+            squeeze_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into short squeeze")
+
+        pead_strat = self.strategies.get("pead")
+        if pead_strat and hasattr(pead_strat, "add_dynamic_symbols"):
+            pead_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into PEAD")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
@@ -2261,10 +2272,11 @@ class TradingEngine:
 
         self.peak_balance = max(self.peak_balance, self.current_balance)
 
-        # Update scaling tier
+        # Update scaling tier (both risk manager AND position sizer)
         tier = self.config.get_scaling_tier(self.current_balance)
         if tier:
             self.risk_manager.update_tier(tier)
+            self.position_sizer.update_tier(tier)
 
         # Track equity curve (include unrealized P&L)
         unrealized_pnl = 0
@@ -4003,7 +4015,9 @@ class TradingEngine:
         mr_strat = self.strategies.get("mean_reversion")
         pb_strat = self.strategies.get("prebreakout")
         gap_strat = self.strategies.get("premarket_gap")
-        if not rvol_strat and not scalp_strat and not mr_strat and not pb_strat and not gap_strat:
+        squeeze_strat = self.strategies.get("short_squeeze")
+        pead_strat = self.strategies.get("pead")
+        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat]):
             return
 
         try:
@@ -4051,6 +4065,21 @@ class TradingEngine:
                     gap_strat.add_dynamic_symbols(gap_syms)
                     log.debug(f"Polygon: injected {len(gap_syms)} gap-ups into pre-market gap")
 
+                # Feed gap-ups into PEAD — earnings gaps are drift candidates
+                if poly_gap_ups and pead_strat:
+                    gap_syms = [g["symbol"] for g in poly_gap_ups if g.get("symbol")]
+                    pead_strat.add_dynamic_symbols(gap_syms)
+                    # Auto-feed earnings data for large gaps (PEAD will check if earnings-related)
+                    for g in poly_gap_ups:
+                        sym = g.get("symbol", "")
+                        gap_pct = g.get("gap_pct", 0)
+                        rvol = g.get("rvol", 0)
+                        price = g.get("price", 0)
+                        if sym and gap_pct >= 5.0 and rvol >= 2.0 and price > 0:
+                            from datetime import datetime as dt
+                            pead_strat.feed_earnings_data(sym, gap_pct, rvol, dt.now().date(), price)
+                    log.debug(f"Polygon: fed {len(poly_gap_ups)} gap-ups into PEAD strategy")
+
                 if poly_runners:
                     runner_syms = [r["symbol"] for r in poly_runners if r.get("symbol")]
                     if runner_syms:
@@ -4065,6 +4094,10 @@ class TradingEngine:
                             pb_strat.add_dynamic_symbols(runner_syms)
                         if gap_strat:
                             gap_strat.add_dynamic_symbols(runner_syms)
+                        if squeeze_strat:
+                            squeeze_strat.add_dynamic_symbols(runner_syms)
+                        if pead_strat:
+                            pead_strat.add_dynamic_symbols(runner_syms)
                         log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
             # Get top movers from Polygon (filtered to $0.50-$50 range)
             movers = self.get_top_movers()
@@ -4118,6 +4151,17 @@ class TradingEngine:
                     pb_strat.add_dynamic_symbols(scalp_symbols)
                     log.debug(f"Injected {len(scalp_symbols)} movers into pre-breakout")
 
+                # Feed movers into short squeeze (high-volume movers may be squeezing)
+                if squeeze_strat and mover_symbols:
+                    squeeze_strat.add_dynamic_symbols(mover_symbols)
+                    # Estimate short interest for top movers and feed to squeeze strategy
+                    if self.polygon and hasattr(self.polygon, 'estimate_short_interest'):
+                        si_data = self.polygon.estimate_short_interest(mover_symbols[:10])
+                        if si_data:
+                            squeeze_strat.feed_short_interest(si_data)
+                            log.debug(f"Fed short interest data for {len(si_data)} symbols to squeeze strategy")
+                    log.debug(f"Injected {len(mover_symbols)} movers into short squeeze")
+
                 # Feed gap-up stocks into pre-market gap strategy
                 if gap_strat and gap_symbols:
                     gap_strat.add_dynamic_symbols(gap_symbols)
@@ -4158,7 +4202,11 @@ class TradingEngine:
                         pb_strat.add_dynamic_symbols(runner_symbols)
                     if gap_strat:
                         gap_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} runners into RVOL + pre-breakout + gap strategies")
+                    if squeeze_strat:
+                        squeeze_strat.add_dynamic_symbols(runner_symbols)
+                    if pead_strat:
+                        pead_strat.add_dynamic_symbols(runner_symbols)
+                    log.debug(f"Injected {len(runner_symbols)} runners into all strategies")
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")

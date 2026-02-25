@@ -175,6 +175,7 @@ class PolygonScanner:
                     "price": round(price, 2),
                     "prev_close": round(prev_close, 2),
                     "volume": int(volume) if volume == volume else 0,
+                    "avg_volume": int(prev_volume) if prev_volume == prev_volume else 0,
                     "change_pct": round(change_pct, 2),
                     "open": round(open_price, 2),
                 }
@@ -631,6 +632,83 @@ class PolygonScanner:
         except Exception as e:
             log.debug(f"UOA check failed for {symbol}: {e}")
             return None
+
+    def estimate_short_interest(self, symbols, max_fetches=3):
+        """Estimate short interest using ticker details + volume patterns.
+
+        Polygon free tier doesn't have FINRA short interest data directly,
+        but we can use:
+        1. Ticker details: shares_outstanding vs weighted_shares_outstanding
+        2. High short volume ratio from recent trading as a proxy
+        3. Low float + high volume = squeeze candidate
+
+        Returns:
+            dict of {symbol: {short_pct (estimated), days_to_cover, avg_daily_volume}}
+        """
+        results = {}
+        if not self.enabled or not self._client:
+            return results
+
+        fetched = 0
+        for sym in symbols:
+            if fetched >= max_fetches:
+                break
+
+            # Use cached float/shares data
+            cached = self._float_cache.get(sym, {})
+            float_shares = cached.get("float", 0)
+            shares_outstanding = cached.get("shares_outstanding", 0)
+
+            # Get current volume from price cache
+            price_data = self._price_cache.get(sym, {})
+            current_volume = price_data.get("volume", 0)
+            avg_volume = price_data.get("avg_volume", 0) or current_volume
+
+            if not float_shares or not avg_volume:
+                continue
+
+            # Estimate short interest from float utilization
+            # Low float + high volume relative to float = likely high short interest
+            # This is a rough proxy — real short interest requires FINRA data
+            volume_to_float_ratio = current_volume / float_shares if float_shares > 0 else 0
+
+            # Heuristic: if daily volume is > 30% of float, shorts are likely active
+            estimated_short_pct = 0
+            if volume_to_float_ratio > 0.50:
+                estimated_short_pct = 35  # Very likely heavily shorted
+            elif volume_to_float_ratio > 0.30:
+                estimated_short_pct = 25
+            elif volume_to_float_ratio > 0.15:
+                estimated_short_pct = 18
+            elif volume_to_float_ratio > 0.08:
+                estimated_short_pct = 12
+
+            # Boost for tiny float (< 10M shares) — these are squeeze magnets
+            if float_shares < 5_000_000:
+                estimated_short_pct = min(50, estimated_short_pct + 10)
+            elif float_shares < 15_000_000:
+                estimated_short_pct = min(50, estimated_short_pct + 5)
+
+            if estimated_short_pct >= 12:
+                # Days to cover = estimated short shares / avg daily volume
+                estimated_short_shares = float_shares * (estimated_short_pct / 100)
+                days_to_cover = estimated_short_shares / avg_volume if avg_volume > 0 else 0
+
+                results[sym] = {
+                    "short_pct": estimated_short_pct,
+                    "shares_short": int(estimated_short_shares),
+                    "days_to_cover": round(days_to_cover, 1),
+                    "avg_daily_volume": int(avg_volume),
+                    "float_shares": int(float_shares),
+                }
+                log.debug(
+                    f"Short interest est: {sym} — ~{estimated_short_pct}% SI, "
+                    f"DTC {days_to_cover:.1f}, float {float_shares/1e6:.1f}M"
+                )
+
+            fetched += 1
+
+        return results
 
     def get_losers(self, limit=100):
         """Get top losers from cached scan data ($0.50-$100 range)."""

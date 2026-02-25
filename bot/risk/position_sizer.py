@@ -55,6 +55,12 @@ class PositionSizer:
             "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
         )
 
+    def update_tier(self, tier):
+        """Update sizing parameters from scaling tier."""
+        if tier:
+            self.risk_per_trade_pct = tier.get("risk_per_trade", self.risk_per_trade_pct)
+            self.max_position_pct = tier.get("max_position_pct", self.max_position_pct)
+
     def _get_tier_limits(self, price):
         """Get min/max share limits based on stock price tier."""
         for max_price, min_shares, max_shares in PRICE_TIERS:
