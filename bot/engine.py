@@ -1057,14 +1057,21 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Quick take profit check for ALL positions ---
+            # --- Take profit target reached = tighten trail, NOT hard exit ---
+            # Let runners run. Trailing stop protects profits, no hard ceiling.
             target_price = pos.get("take_profit")
-            if target_price:
+            if target_price and not pos.get("tp_trail_activated"):
                 hit = (direction == "long" and current_price >= target_price) or \
                       (direction == "short" and current_price <= target_price)
                 if hit:
-                    positions_to_close.append(
-                        (symbol, "take_profit", f"Target hit at ${current_price:.2f}")
+                    pos["tp_trail_activated"] = True
+                    pos["trailing_stop_pct"] = min(
+                        pos.get("trailing_stop_pct", 0.02), 0.015
+                    )
+                    log.info(
+                        f"RUNNER MODE: {symbol} hit TP ${target_price:.2f} at "
+                        f"${current_price:.2f} ({pnl_pct:+.1%}) — trailing stop "
+                        f"tightened to {pos['trailing_stop_pct']:.1%}, NO hard exit"
                     )
 
         # Execute exits
@@ -1248,36 +1255,41 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Take Profit (full exit if no partial taking, or for remaining shares) ---
-            target_price = pos.get("take_profit")
-            if target_price:
-                hit = (direction == "long" and current_price >= target_price) or \
-                      (direction == "short" and current_price <= target_price)
-                if hit:
-                    positions_to_close.append(
-                        (symbol, "take_profit", f"Target hit at ${current_price:.2f}")
-                    )
-                    continue
+            # --- NO hard take profit ceiling ---
+            # TP target is handled as a trail-tighten trigger in the scalp monitor above.
+            # The trailing stop is the ONLY exit mechanism for winners.
+            # This lets runners run 50%, 100%, 400%+ with trailing protection.
 
             # --- Dynamic Trailing Stop (tightens as profit grows) ---
             base_trail = pos.get("trailing_stop_pct",
                                  self.config.risk_config.get("trailing_stop_pct", 0.02))
 
             # Tighten trail dynamically based on profit level
-            # Breakout plays get wider trails to ride the full move
+            # NO hard ceiling — trailing stop is the ONLY exit for winners
+            # Designed for biotech/momentum runners that can go 50-400%+
             is_breakout_play = pos.get("breakout_play") or pos.get("source") == "prebreakout"
-            if is_breakout_play:
+
+            # EXTREME RUNNER TIERS (applies to ALL positions)
+            # At massive profit levels, use wider percentage trails
+            # because a 5% pullback on a 200% runner is noise, not a reversal
+            if pnl_pct >= 2.00:
+                trailing_pct = 0.08   # 8% trail at 200%+ — ride the monster
+            elif pnl_pct >= 1.00:
+                trailing_pct = 0.06   # 6% trail at 100%+ — huge runner, give room
+            elif pnl_pct >= 0.50:
+                trailing_pct = 0.05   # 5% trail at 50%+ — confirmed runner
+            elif pnl_pct >= 0.20:
+                trailing_pct = 0.035  # 3.5% trail at 20%+ — strong momentum
+            elif is_breakout_play:
                 # Breakout plays: WIDE trail to let runners breathe
-                if pnl_pct >= 0.20:
-                    trailing_pct = base_trail * 0.5   # Tighten at 20%+ (protect the bag)
-                elif pnl_pct >= 0.10:
+                if pnl_pct >= 0.10:
                     trailing_pct = base_trail * 0.65  # Moderate at 10%+
                 elif pnl_pct >= 0.05:
                     trailing_pct = base_trail * 0.8   # Gentle at 5%+
                 else:
                     trailing_pct = base_trail          # Full width while building
             elif pnl_pct >= 0.10:
-                trailing_pct = base_trail * 0.5  # Tighten at 10%+ (big profit, protect it)
+                trailing_pct = base_trail * 0.5  # Tighten at 10%+ (protect profits)
             elif pnl_pct >= 0.05:
                 trailing_pct = base_trail * 0.65 # Moderate at 5%+ (let it run)
             elif pnl_pct >= 0.03:

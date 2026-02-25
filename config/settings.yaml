@@ -28,7 +28,7 @@ risk:
   max_correlated_positions: 3     # Max 3 in same sector - allow more if sector is hot (was 2)
   stop_loss_pct: 0.03             # 3% stop loss - small caps need slightly wider stops (was 2.5%)
   trailing_stop_pct: 0.02         # 2% trailing stop - wider for volatile small caps (was 1.4%)
-  take_profit_pct: 0.20           # 20% take profit - let runners RUN even further (was 15%)
+  take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners. Runners ride to 50-400%+
   max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads (was 0.5%)
 
   # --- Profit Taking (Partial Exits) ---
@@ -36,19 +36,23 @@ risk:
   # Problem before: closing 25% at +3% leaves money on the table for 20%+ runners
   profit_taking:
     enabled: true
+    # NO HARD CEILING — partials lock in gains, trailing stop rides the rest forever
+    # After all partials: ~40% of original position still riding with trail protection
     targets:
-      - pct_from_entry: 0.05      # At +5% profit - first partial (was 3% - too early, runners need room)
-        close_pct: 0.15           # Close only 15% - keep 85% riding (was 25%)
+      - pct_from_entry: 0.05      # At +5% profit - first partial
+        close_pct: 0.15           # Close 15% - keep 85% riding
         move_stop: "breakeven"    # Move stop to break even (risk-free from here)
-      - pct_from_entry: 0.10      # At +10% profit (was 7%)
-        close_pct: 0.20           # Close 20% of remaining (was 25%)
-        tighten_trail: 0.03       # 3% trail - wider to survive shakeouts (was 2%)
-      - pct_from_entry: 0.20      # At +20% profit (was 12%)
-        close_pct: 0.20           # Close 20% of remaining (was 25%)
-        tighten_trail: 0.025      # 2.5% trail (was 1.5% - too tight)
-      - pct_from_entry: 0.35      # At +35% profit - RUNNER territory (was 20%)
-        close_pct: 0.30           # Close 30% of remaining (was 50%)
-        tighten_trail: 0.02       # 2% trail on remaining runner shares (was 1%)
+      - pct_from_entry: 0.10      # At +10% profit
+        close_pct: 0.15           # Close 15% of remaining (~13% of original)
+        tighten_trail: 0.03       # 3% trail
+      - pct_from_entry: 0.25      # At +25% profit
+        close_pct: 0.15           # Close 15% of remaining
+        tighten_trail: 0.035      # 3.5% trail — wider for volatile runners
+      - pct_from_entry: 0.50      # At +50% profit - confirmed monster runner
+        close_pct: 0.20           # Close 20% of remaining — lock in big gains
+        tighten_trail: 0.05       # 5% trail — give monster room to breathe
+      # Remaining ~40% of shares ride with dynamic trailing stop (no ceiling)
+      # Trail widens at extreme levels: 6% at 100%+, 8% at 200%+
 
   # --- Break Even Stop ---
   breakeven:
