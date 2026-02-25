@@ -1453,6 +1453,16 @@ class TradingEngine:
                 )
                 return
 
+        # --- LEARNING AVOIDANCE GUARD ---
+        # Skip symbols the trade analyzer flagged as consistent losers
+        if action in ("buy", "short") and self.trade_analyzer:
+            if self.trade_analyzer.should_avoid_symbol(symbol):
+                log.warning(
+                    f"LEARNING BLOCK: {symbol} avoided — consistent loser "
+                    f"(score: {self.trade_analyzer.symbol_scores.get(symbol, 0)})"
+                )
+                return
+
         # --- DUPLICATE ENTRY GUARD ---
         # Prevent same symbol from being entered twice within cooldown window
         if action in ("buy", "short"):
@@ -1515,6 +1525,25 @@ class TradingEngine:
         if qty <= 0:
             log.debug(f"Position size 0 for {symbol} - skipping")
             return
+
+        # Low-float guard: reduce position size for low-float stocks (< 20M shares)
+        # These are more volatile and can gap violently
+        if action == "buy" and self.polygon and self.polygon.enabled:
+            float_shares = self.polygon.get_float(symbol)
+            if float_shares > 0 and float_shares < 20_000_000:
+                # Scale down: ultra-low float (<5M) = 40% size, low float (<20M) = 60% size
+                if float_shares < 5_000_000:
+                    low_float_mult = 0.40
+                elif float_shares < 10_000_000:
+                    low_float_mult = 0.50
+                else:
+                    low_float_mult = 0.60
+                old_qty = qty
+                qty = max(1, int(qty * low_float_mult))
+                log.info(
+                    f"LOW FLOAT SIZING: {symbol} float={float_shares/1e6:.1f}M — "
+                    f"reduced from {old_qty} to {qty} shares ({low_float_mult:.0%})"
+                )
 
         # Calculate take profit
         take_profit_price = signal.get("take_profit")
@@ -1950,6 +1979,21 @@ class TradingEngine:
         # Persist trade to disk (survives restarts for AI learning)
         if self.trade_analyzer:
             self.trade_analyzer.persist_trade(self.trade_history[-1])
+
+        # Auto-trigger Claude AI quick insight every 5 trades
+        if self.ai_insights and self.ai_insights.is_available() and len(self.trade_history) % 5 == 0:
+            try:
+                insight = self.ai_insights.get_quick_insight(
+                    self.trade_history, self.performance_stats
+                )
+                if insight:
+                    log.info(f"AI INSIGHT: {insight[:200]}")
+                    self.notifier.system_alert(
+                        f"AI Quick Insight (after {len(self.trade_history)} trades):\n{insight}",
+                        level="info"
+                    )
+            except Exception as e:
+                log.debug(f"AI quick insight error: {e}")
 
         # Log trade to Google Sheets
         if self.sheets_logger and self.sheets_logger.is_enabled():
@@ -2730,6 +2774,21 @@ class TradingEngine:
         """Handle incoming news-based signal."""
         log.info(f"News signal: {signal['action'].upper()} {signal['symbol']} | {signal.get('reason', '')[:60]}")
 
+        # Fill in market price and default stop_loss for buy signals so they
+        # pass risk manager checks (news signals don't include price data)
+        if signal.get("action") == "buy":
+            symbol = signal["symbol"]
+            price = self.market_data.get_price(symbol) if self.market_data else None
+            if price and price > 0:
+                signal["price"] = price
+                if not signal.get("stop_loss"):
+                    signal["stop_loss"] = price * (1 - self.config.stop_loss_pct)
+                if not signal.get("take_profit"):
+                    signal["take_profit"] = price * (1 + self.config.take_profit_pct)
+            else:
+                log.warning(f"No market price for news signal {symbol} — skipping")
+                return
+
         approved = self.risk_manager.filter_signals(
             [signal], self.positions, self.current_balance
         )
@@ -3404,6 +3463,22 @@ class TradingEngine:
                     log.warning(f"SPLIT BLOCK: Closing {symbol} - split candidate, no overnight hold")
                     positions_to_close.append(symbol)
                     continue
+
+                # NEVER hold through earnings — gap risk is extreme
+                if self.polygon and self.polygon.enabled:
+                    try:
+                        if self.polygon.has_earnings_soon(symbol, days_ahead=1):
+                            log.warning(
+                                f"EARNINGS BLOCK: Closing {symbol} — earnings imminent, "
+                                f"overnight gap risk too high | P&L: {pnl_pct:.1%}"
+                            )
+                            self.notifier.risk_alert(
+                                f"Closing {symbol} before earnings — overnight gap risk"
+                            )
+                            positions_to_close.append(symbol)
+                            continue
+                    except Exception as e:
+                        log.debug(f"Earnings check failed for {symbol}: {e}")
 
                 # ALWAYS close RVOL scalp (ultra short-term, never hold)
                 if pos.get("strategy") == "rvol_scalp":
@@ -4100,6 +4175,12 @@ class TradingEngine:
                 price = r.get("price", 0)
                 change_pct = r.get("change_pct", 0)
                 volume = r.get("volume", 0)
+                # Enrich with float data from Polygon cache
+                float_shares = self.polygon.get_float(sym) if self.polygon else 0
+                is_low_float = float_shares > 0 and float_shares < 20_000_000
+                runner_type = "LOW FLOAT SQUEEZE" if is_low_float else (
+                    "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER"
+                )
                 runners.append({
                     "symbol": sym,
                     "name": sym,
@@ -4109,11 +4190,11 @@ class TradingEngine:
                     "avg_volume": r.get("avg_volume", 0),
                     "rvol": r.get("rvol", 0),
                     "market_cap": 0,
-                    "float_shares": 0,
-                    "float_display": "N/A",
+                    "float_shares": float_shares,
+                    "float_display": self._format_float(float_shares),
                     "shares_outstanding": 0,
-                    "runner_type": "HIGH MOMENTUM" if change_pct < 40 else "DAY RUNNER",
-                    "is_low_float": False,
+                    "runner_type": runner_type,
+                    "is_low_float": is_low_float,
                     "is_post_split": False,
                     "on_watchlist": sym in self.watchlist,
                 })
@@ -4764,9 +4845,9 @@ class TradingEngine:
                     reasons.append("Volume increasing - confirms momentum")
 
                 # Above 200 EMA
-                if ema200 is not None and current_price > ema200:
+                if ema200_val is not None and current_price > ema200_val:
                     score += 10
-                    reasons.append(f"Above 200 EMA (${ema200:.2f}) - long-term bullish")
+                    reasons.append(f"Above 200 EMA (${ema200_val:.2f}) - long-term bullish")
 
                 # --- Calculate targets and hold period ---
                 # Target: next resistance or 2-3x ATR above
@@ -4824,8 +4905,8 @@ class TradingEngine:
                     "hold_period": hold_desc,
                     "hold_days": est_hold_days,
                     "vol_rising": vol_rising,
-                    "ema50": round(ema50, 2),
-                    "ema200": round(ema200, 2) if ema200 is not None else None,
+                    "ema50": round(float(ema50_val), 2) if ema50_val is not None else None,
+                    "ema200": round(float(ema200_val), 2) if ema200_val is not None else None,
                     "reasons": reasons,
                 })
 

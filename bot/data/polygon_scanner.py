@@ -489,6 +489,52 @@ class PolygonScanner:
             counts[sector] = counts.get(sector, 0) + 1
         return counts
 
+    def has_earnings_soon(self, symbol, days_ahead=1):
+        """Check if a symbol has earnings within the next N days.
+        Uses news catalysts as a proxy (Polygon free tier doesn't include earnings calendar).
+        Returns True if recent news mentions earnings/results for this ticker."""
+        # Check news-based earnings detection cache
+        cache_key = f"earnings_{symbol}"
+        cached = self._float_cache.get(cache_key)
+        if cached and time.time() - cached.get("fetched", 0) < 3600:
+            return cached.get("has_earnings", False)
+
+        # Check Polygon news for earnings-related headlines in the last 24h
+        if not self._client:
+            return False
+
+        try:
+            from datetime import date
+            today = date.today()
+            count = 0
+            for n in self._client.list_ticker_news(
+                ticker=symbol,
+                order="desc",
+                limit=5,
+                sort="published_utc",
+            ):
+                title = (getattr(n, 'title', '') or '').lower()
+                desc = (getattr(n, 'description', '') or '').lower()
+                content = f"{title} {desc}"
+                earnings_keywords = [
+                    "earnings", "quarterly results", "q1 ", "q2 ", "q3 ", "q4 ",
+                    "quarterly report", "eps", "revenue report", "earnings call",
+                    "reports after", "reports before", "reports tomorrow",
+                    "fiscal quarter", "quarterly earnings",
+                ]
+                if any(kw in content for kw in earnings_keywords):
+                    self._float_cache[cache_key] = {"has_earnings": True, "fetched": time.time()}
+                    log.info(f"EARNINGS DETECTED: {symbol} has earnings-related news")
+                    return True
+                count += 1
+                if count >= 5:
+                    break
+        except Exception as e:
+            log.debug(f"Earnings check failed for {symbol}: {e}")
+
+        self._float_cache[cache_key] = {"has_earnings": False, "fetched": time.time()}
+        return False
+
     def get_losers(self, limit=100):
         """Get top losers from cached scan data ($0.50-$100 range)."""
         losers = []

@@ -48,7 +48,7 @@ class AIInsights:
 
         # API key from environment
         self.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        self.model = "claude-sonnet-4-5-20250929"  # Fast + smart
+        self.model = "claude-sonnet-4-5-20250514"  # Fast + smart
         self.max_tokens = 2000
 
         # Cache insights (don't call Claude on every request)

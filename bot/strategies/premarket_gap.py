@@ -15,6 +15,11 @@ Works on: Low-to-mid float stocks with catalyst (earnings, news, upgrades)
 """
 import numpy as np
 from datetime import datetime
+try:
+    import pytz
+    ET = pytz.timezone("US/Eastern")
+except ImportError:
+    ET = None
 from bot.strategies.base import BaseStrategy
 from bot.utils.logger import get_logger
 
@@ -73,7 +78,8 @@ class PreMarketGapStrategy(BaseStrategy):
         """
         signals = []
 
-        today = datetime.now().date()
+        now = datetime.now(ET) if ET else datetime.now()
+        today = now.date()
         if self.last_trade_date != today:
             self.trades_today = 0
             self.last_trade_date = today
@@ -82,14 +88,13 @@ class PreMarketGapStrategy(BaseStrategy):
         if self.trades_today >= self.max_trades_per_day:
             return signals
 
-        # Time-of-day filter: only trade gap plays during the morning window
-        now = datetime.now()
+        # Time-of-day filter: only trade gap plays during the morning window (ET)
         current_hour = now.hour
         current_minute = now.minute
         if current_hour < self.start_hour or current_hour >= self.end_hour:
             return signals  # Outside gap trading window
 
-        # Post-open dead zone: 9:30-9:35 (configurable) — gap stocks whipsaw hard
+        # Post-open dead zone: 9:30-9:35 ET (configurable) — gap stocks whipsaw hard
         # Wait for the initial volatility to settle before entering
         if current_hour == 9 and 30 <= current_minute < 30 + self.open_dead_zone_minutes:
             log.debug(f"Pre-market gap: in open dead zone (first {self.open_dead_zone_minutes} min), waiting...")
@@ -246,8 +251,9 @@ class PreMarketGapStrategy(BaseStrategy):
         has_structure_break = above_pullback_high and reclaiming
 
         # Higher score requirement in the first 15 min after open (fakeout zone)
-        now_h = datetime.now().hour
-        now_m = datetime.now().minute
+        now_et = datetime.now(ET) if ET else datetime.now()
+        now_h = now_et.hour
+        now_m = now_et.minute
         in_fakeout_zone = (now_h == 9 and 30 + self.open_dead_zone_minutes <= now_m <= 45)
         min_score_for_signal = 70 if in_fakeout_zone else 60
 
