@@ -2,9 +2,9 @@
 Market Data Feed - provides REAL price data to strategies.
 
 Data sources (in priority order):
-1. IBKR real-time (if connected to TWS/IB Gateway)
-2. Polygon.io (primary — real-time prices from snapshot, bars from aggregates)
-3. Yahoo Finance direct API (free fallback, ~15 min delay)
+1. IBKR real-time (PRIMARY — streaming + historical via TWS/IB Gateway)
+2. Polygon.io (fallback — real-time prices from snapshot, bars from aggregates)
+3. Yahoo Finance direct API (last resort, ~15 min delay)
 
 No fake data. No simulated prices.
 """
@@ -43,12 +43,14 @@ class MarketDataFeed:
         self.lookback_days = config.settings.get("data", {}).get("lookback_days", 30)
 
         # Log data source status
-        if self.polygon and self.polygon.enabled:
-            log.info("Polygon.io data connected (primary source for prices + bars)")
+        if self.broker and self.broker.is_connected():
+            log.info("IBKR connected — primary data source (real-time streaming + bars)")
+        elif self.polygon and self.polygon.enabled:
+            log.info("IBKR not connected — using Polygon.io as data source (real-time)")
         else:
             log.warning(
-                "Polygon API key not set — falling back to Yahoo (15-min delay). "
-                "Set POLYGON_API_KEY env var for real-time data."
+                "IBKR not connected, Polygon API key not set — falling back to Yahoo (15-min delay). "
+                "Connect to IBKR or set POLYGON_API_KEY for real-time data."
             )
 
         # Cache

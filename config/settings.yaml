@@ -170,8 +170,9 @@ crypto:
 
 # --- Data Sources ---
 data:
-  primary: "polygon"              # Primary: Polygon.io (real-time scanning + prices + bars)
-  fallback: "yfinance"            # Fallback to yfinance
+  primary: "ibkr"                 # Primary: IBKR (real-time streaming + historical bars)
+  fallback: "polygon"             # Fallback: Polygon.io (scanning + prices + bars)
+  fallback2: "yfinance"           # Last resort: yfinance
   bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
   scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback

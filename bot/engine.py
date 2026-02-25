@@ -180,10 +180,10 @@ class TradingEngine:
                 f"max_position_pct={scaling_tier['max_position_pct']:.0%}"
             )
 
-        # Polygon.io — primary data source for scanning + prices + bars
+        # Polygon.io — scanning + fallback data source
         self.polygon = PolygonScanner(self.config.polygon_api_key)
 
-        # Market data feed (Polygon primary, Yahoo fallback)
+        # Market data feed (IBKR primary, Polygon fallback, Yahoo last resort)
         self.market_data = MarketDataFeed(self.config, self.broker, polygon=self.polygon)
 
         # Start IBKR real-time streaming if connected
@@ -278,19 +278,24 @@ class TradingEngine:
         log.info("All components initialized successfully")
 
     def _connect_broker(self):
-        """Connect to IBKR (skipped on Render where no TWS is available)."""
+        """Connect to IBKR as primary broker/data source."""
         self.broker = IBKRBroker(self.config)
 
-        # Skip IBKR connection on Render - no TWS/Gateway available
-        if os.environ.get("RENDER"):
-            log.info("Running on Render - skipping IBKR connection (using yfinance for data)")
-            # Sync positions from Alpaca on startup (Render uses TradersPost → Alpaca)
-            self._sync_positions_from_alpaca()
-            return
+        # Attempt IBKR connection with retry (works locally or with remote Gateway)
+        connected = False
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            connected = self.broker.connect()
+            if connected:
+                break
+            if attempt < max_retries:
+                wait = 2 ** attempt
+                log.warning(f"IBKR connection attempt {attempt}/{max_retries} failed - retrying in {wait}s...")
+                import time as _time
+                _time.sleep(wait)
 
-        connected = self.broker.connect()
         if connected:
-            log.info(f"Connected to IBKR ({self.config.mode} mode)")
+            log.info(f"Connected to IBKR ({self.config.mode} mode) - using as primary data source")
             # Sync account state
             account = self.broker.get_account_summary()
             if account:
@@ -302,7 +307,14 @@ class TradingEngine:
             if self.positions:
                 log.info(f"Synced {len(self.positions)} existing positions")
         else:
-            log.warning("IBKR connection failed - running in data-only mode")
+            log.warning(
+                "IBKR connection failed after %d attempts - falling back to Polygon/Yahoo for data. "
+                "Ensure IB Gateway is running and IBKR_HOST/IBKR_PORT are set correctly.",
+                max_retries,
+            )
+            # On Render or when IBKR unavailable, sync positions from Alpaca
+            if os.environ.get("RENDER") or self.config.alpaca_api_key:
+                self._sync_positions_from_alpaca()
 
     def _load_strategies(self):
         """Load and initialize all enabled strategies."""
@@ -3642,6 +3654,9 @@ class TradingEngine:
             status = "live"
         elif self.broker and self.broker.is_connected():
             source = "IBKR Historical"
+            status = "connected"
+        elif self.polygon and self.polygon.enabled:
+            source = "Polygon.io"
             status = "connected"
         elif self.market_data and self.market_data.alpaca:
             source = "Alpaca"
