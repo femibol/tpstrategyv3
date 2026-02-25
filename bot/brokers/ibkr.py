@@ -147,7 +147,7 @@ class IBKRBroker(BaseBroker):
             return None
 
         if symbol in self._invalid_symbols:
-            log.warning(f"Cannot place order for '{symbol}' — known invalid/delisted symbol")
+            log.warning(f"Cannot place order for '{symbol}' - known invalid/delisted symbol")
             return None
 
         try:
@@ -369,7 +369,7 @@ class IBKRBroker(BaseBroker):
 
             if contract.conId == 0:
                 self._invalid_symbols.add(symbol)
-                log.warning(f"Unknown contract: {contract} — skipping historical bars")
+                log.warning(f"Unknown contract: {contract} - skipping historical bars")
                 return None
 
             bars = self.ib.reqHistoricalData(
@@ -419,7 +419,7 @@ class IBKRBroker(BaseBroker):
                 # conId == 0 means IBKR couldn't resolve the contract
                 if contract.conId == 0:
                     self._invalid_symbols.add(symbol)
-                    log.warning(f"Unknown contract: {contract} — skipping")
+                    log.warning(f"Unknown contract: {contract} - skipping")
                     continue
 
                 self._streaming_contracts[symbol] = contract
@@ -490,7 +490,7 @@ class IBKRBroker(BaseBroker):
 
                 if contract.conId == 0:
                     self._invalid_symbols.add(symbol)
-                    log.warning(f"Unknown contract: {contract} — skipping real-time bars")
+                    log.warning(f"Unknown contract: {contract} - skipping real-time bars")
                     continue
 
                 bars = self.ib.reqRealTimeBars(
@@ -611,7 +611,7 @@ class IBKRBroker(BaseBroker):
                 self._invalid_symbols.add(symbol)
                 log.warning(
                     f"IBKR Error {errorCode}: {errorString} | "
-                    f"Blacklisting '{symbol}' — likely delisted or invalid"
+                    f"Blacklisting '{symbol}' - likely delisted or invalid"
                 )
                 return
 
