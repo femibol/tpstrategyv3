@@ -604,7 +604,7 @@ class IBKRBroker(BaseBroker):
     def _on_error(self, reqId, errorCode, errorString, contract):
         """Handle errors from IBKR."""
         # Filter out common non-critical messages
-        if errorCode in (2104, 2106, 2158):  # Data farm connections
+        if errorCode in (162, 2104, 2106, 2158):
             return
 
         # Error 200 = "No security definition" (delisted or invalid symbol)
