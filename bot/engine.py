@@ -1464,68 +1464,6 @@ class TradingEngine:
         order = None
         executed_via = None
 
-        # SAFETY CHECK: Verify Alpaca position count + buying power before entry.
-        # If the API is unreachable, fall through (rely on risk manager limits).
-        if action in ("buy", "short"):
-            try:
-                broker_positions = self._alpaca_api_call("/v2/positions")
-                if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
-                    # API unreachable — warn but allow trade (risk manager already checked)
-                    log.warning(f"Alpaca pre-check unavailable — proceeding with {action.upper()} {symbol} (risk manager approved)")
-                elif isinstance(broker_positions, list):
-                    actual_count = len(broker_positions)
-                    if actual_count >= self.risk_manager.max_positions:
-                        log.error(
-                            f"HARD LIMIT: Alpaca has {actual_count} open positions "
-                            f"(max {self.risk_manager.max_positions}). BLOCKING {action.upper()} {symbol}."
-                        )
-                        return
-
-                    # Enforce separate crypto/equity position limits
-                    is_crypto_entry = self._is_crypto_symbol(symbol)
-                    risk_cfg = self.config.settings.get("risk", {})
-                    max_crypto = risk_cfg.get("max_crypto_positions", 6)
-                    max_equity = risk_cfg.get("max_equity_positions", 8)
-                    crypto_count = sum(1 for p in broker_positions
-                                       if self._is_crypto_symbol(p.get("symbol", "")))
-                    equity_count = actual_count - crypto_count
-                    if is_crypto_entry and crypto_count >= max_crypto:
-                        log.warning(
-                            f"CRYPTO LIMIT: {crypto_count} crypto positions open "
-                            f"(max {max_crypto}). BLOCKING {symbol}."
-                        )
-                        return
-                    if not is_crypto_entry and equity_count >= max_equity:
-                        log.warning(
-                            f"EQUITY LIMIT: {equity_count} equity positions open "
-                            f"(max {max_equity}). BLOCKING {symbol}."
-                        )
-                        return
-
-                    # Check if we already hold this symbol at the broker
-                    broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
-                    if symbol.upper() in broker_symbols:
-                        log.warning(
-                            f"DUPLICATE BLOCKED: {symbol} already open at Alpaca broker."
-                        )
-                        if symbol not in self.positions:
-                            self._sync_positions_from_alpaca()
-                        return
-
-                    # Check buying power
-                    account = self._alpaca_api_call("/v2/account")
-                    if isinstance(account, dict):
-                        buying_power = float(account.get("buying_power", 0))
-                        order_cost = current_price * qty
-                        if order_cost > buying_power:
-                            log.error(
-                                f"INSUFFICIENT BUYING POWER: {symbol} ${order_cost:,.2f} "
-                                f"> ${buying_power:,.2f} available. BLOCKING."
-                            )
-                            return
-            except Exception as e:
-                log.warning(f"Alpaca pre-check error: {e} — proceeding anyway (risk manager approved)")
-
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR...")
@@ -1543,7 +1481,35 @@ class TradingEngine:
         else:
             log.debug(f"IBKR not connected - trying TradersPost for {symbol}")
 
-        # 2. TradersPost webhook (primary on Render where IBKR unavailable)
+        # 2. TradersPost webhook (fallback when IBKR unavailable)
+        # Alpaca pre-checks only needed for non-IBKR brokers (TradersPost routes to Alpaca)
+        if not order and action in ("buy", "short") and (self.tp_broker or self.config.alpaca_api_key):
+            try:
+                broker_positions = self._alpaca_api_call("/v2/positions")
+                if isinstance(broker_positions, list):
+                    actual_count = len(broker_positions)
+                    if actual_count >= self.risk_manager.max_positions:
+                        log.error(
+                            f"HARD LIMIT: Alpaca has {actual_count} positions "
+                            f"(max {self.risk_manager.max_positions}). BLOCKING {symbol}."
+                        )
+                        return
+                    broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
+                    if symbol.upper() in broker_symbols:
+                        log.warning(f"DUPLICATE BLOCKED: {symbol} already open at Alpaca.")
+                        if symbol not in self.positions:
+                            self._sync_positions_from_alpaca()
+                        return
+                    account = self._alpaca_api_call("/v2/account")
+                    if isinstance(account, dict):
+                        buying_power = float(account.get("buying_power", 0))
+                        order_cost = current_price * qty
+                        if order_cost > buying_power:
+                            log.error(f"INSUFFICIENT BUYING POWER: {symbol} ${order_cost:,.2f} > ${buying_power:,.2f}. BLOCKING.")
+                            return
+            except Exception as e:
+                log.warning(f"Alpaca pre-check error: {e} — proceeding (risk manager approved)")
+
         if not order and self.tp_broker:
             log.info(f"Sending {action.upper()} {symbol} to TradersPost webhook...")
             tp_signal = {
@@ -1678,9 +1644,8 @@ class TradingEngine:
             targets=signal.get("targets"),
         )
 
-        # Also forward to TradersPost if IBKR was the primary executor
-        if executed_via == "IBKR" and self.tp_broker:
-            self.tp_broker.send_signal(signal)
+        # NOTE: Do NOT forward IBKR orders to TradersPost — that causes
+        # duplicate execution. TradersPost is a FALLBACK, not a mirror.
 
         # Track trade
         self.daily_trades.append({
