@@ -64,9 +64,11 @@ class MarketDataFeed:
         # Streaming state (IBKR only)
         self._streaming_active = False
         self._subscribed_symbols = set()
+        # IBKR paper accounts allow max 100 simultaneous streams
+        self._max_ibkr_streams = config.settings.get("data", {}).get("max_ibkr_streams", 95)
 
     def start_streaming(self, symbols):
-        """Start IBKR real-time streaming for symbols."""
+        """Start IBKR real-time streaming for symbols (capped at _max_ibkr_streams)."""
         if not self.broker or not self.broker.is_connected():
             return False
         if not hasattr(self.broker, 'subscribe_market_data'):
@@ -75,6 +77,21 @@ class MarketDataFeed:
         new_symbols = [s for s in symbols if s not in self._subscribed_symbols]
         if not new_symbols:
             return self._streaming_active
+
+        # Cap subscriptions to stay under IBKR limit
+        remaining_capacity = self._max_ibkr_streams - len(self._subscribed_symbols)
+        if remaining_capacity <= 0:
+            log.warning(
+                f"IBKR stream limit reached ({len(self._subscribed_symbols)}/{self._max_ibkr_streams}). "
+                f"Skipping {len(new_symbols)} new symbols."
+            )
+            return self._streaming_active
+        if len(new_symbols) > remaining_capacity:
+            log.warning(
+                f"Trimming IBKR subscriptions: requested {len(new_symbols)}, "
+                f"capacity {remaining_capacity}/{self._max_ibkr_streams}"
+            )
+            new_symbols = new_symbols[:remaining_capacity]
 
         try:
             result = self.broker.subscribe_market_data(new_symbols)
