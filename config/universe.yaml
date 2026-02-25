@@ -1,16 +1,15 @@
 # ============================================
 # TRADING UNIVERSE - Full stock scan list
 # ============================================
-# 200+ liquid US stocks + crypto for RVOL scanning
-# All strategies pull from this list automatically
+# ~90 liquid US stocks for RVOL scanning (IBKR paper limit: 100)
+# Dynamic scanner will still catch momentum runners outside this list
 # Organized by sector for easy maintenance
 
-# --- Mega Cap Tech ---
+# --- Mega Cap Tech (core, always moving) ---
 mega_tech:
   - AAPL
   - MSFT
   - GOOGL
-  - GOOG
   - AMZN
   - META
   - NVDA
@@ -18,280 +17,103 @@ mega_tech:
   - AVGO
   - ORCL
   - CRM
-  - ADBE
-  - ACN
-  - CSCO
-  - IBM
-  - INTC
-  - TXN
-  - QCOM
-  - AMAT
-  - ADI
 
-# --- High-Beta Tech / Growth ---
+# --- High-Beta Tech / Growth (momentum runners) ---
 growth_tech:
   - AMD
   - ARM
   - SMCI
   - PLTR
-  - SNOW
   - CRWD
   - NET
-  - DDOG
-  - ZS
-  - MDB
+  - SNOW
   - PANW
-  - FTNT
-  - NOW
-  - SHOP
   - SQ
-  - MELI
-  - SE
-  - PINS
-  - SNAP
-  - ROKU
-  - TWLO
-  - U
-  - RBLX
+  - SHOP
   - HOOD
   - SOFI
   - AFRM
-  - UPST
   - IONQ
   - RGTI
   - AI
-  - BBAI
   - SOUN
-  - MARA
-  - RIOT
   - COIN
   - MSTR
-  - CIFR
-  - CLSK
+  - MARA
+  - RIOT
 
 # --- Semiconductors ---
 semis:
   - MU
+  - MRVL
   - LRCX
   - KLAC
-  - MRVL
-  - ON
-  - NXPI
-  - SWKS
-  - MPWR
-  - WOLF
-  - GFS
-  - ASML
   - TSM
+  - ASML
+  - ON
 
-# --- Consumer / Retail / E-commerce ---
+# --- Consumer (high-vol names) ---
 consumer:
   - NFLX
   - DIS
-  - CMCSA
-  - WMT
-  - COST
-  - TGT
-  - HD
-  - LOW
-  - NKE
-  - SBUX
-  - MCD
   - ABNB
-  - BKNG
   - DASH
   - UBER
-  - LYFT
   - DKNG
-  - PENN
-  - MGM
-  - WYNN
-  - LVS
-  - CHWY
-  - ETSY
 
 # --- Financials ---
 financials:
   - JPM
-  - BAC
   - GS
-  - MS
-  - WFC
-  - C
-  - SCHW
-  - BLK
-  - AXP
   - V
   - MA
   - PYPL
-  - COF
-  - SYF
-  - ALLY
-  - XLF
 
 # --- Healthcare / Biotech ---
 healthcare:
-  - UNH
-  - JNJ
-  - PFE
-  - ABBV
-  - MRK
   - LLY
-  - BMY
-  - AMGN
-  - GILD
+  - UNH
   - MRNA
-  - BNTX
-  - ISRG
-  - DXCM
   - HIMS
-  - TMDX
 
 # --- Energy ---
 energy:
   - XOM
-  - CVX
-  - COP
-  - SLB
   - OXY
   - DVN
-  - MPC
-  - VLO
-  - PSX
-  - HAL
   - FANG
-  - XLE
 
-# --- Industrials / Defense ---
-industrials:
-  - BA
-  - CAT
-  - DE
-  - GE
-  - HON
-  - LMT
-  - RTX
-  - NOC
-  - GD
-  - UPS
-  - FDX
-
-# --- Materials / Mining ---
-materials:
-  - FCX
-  - NEM
-  - GOLD
-  - X
-  - CLF
-  - AA
-  - MP
-
-# --- REITs / Real Estate ---
-reits:
-  - O
-  - SPG
-  - AMT
-  - EQIX
-
-# --- ETFs (major) ---
+# --- ETFs (major indices + leveraged) ---
 etfs:
   - SPY
   - QQQ
   - IWM
-  - DIA
-  - XLK
-  - XLF
-  - XLE
-  - XLV
-  - XLI
   - ARKK
   - SOXL
   - TQQQ
-  - TNA
-  - KWEB
-  - EEM
   - GLD
-  - SLV
-  - USO
-  - VXX
 
-# --- EV / Clean Energy ---
+# --- EV / Clean Energy (volatile runners) ---
 ev_clean:
   - RIVN
   - LCID
   - NIO
-  - LI
-  - XPEV
   - ENPH
   - FSLR
-  - RUN
   - PLUG
-  - CHPT
-  - QS
-  - BLNK
 
-# --- SPACs / Meme / High-Volatility ---
+# --- High-Volatility / Meme (momentum plays) ---
 high_vol:
   - GME
   - AMC
-  - BBBY
-  - CLOV
-  - WISH
-  - OPEN
-  - SPCE
-  - JOBY
-  - DNA
-  - MVST
-  - LUNR
-  - RDW
-  - ASTS
   - RKLB
+  - LUNR
+  - ASTS
+  - JOBY
 
-# --- Cannabis ---
-cannabis:
-  - TLRY
-  - CGC
-  - ACB
-  - SNDL
-
-# --- Chinese ADRs (volatile, high volume) ---
+# --- Chinese ADRs ---
 china_adr:
   - BABA
-  - JD
   - PDD
+  - JD
   - BIDU
-  - NIO
-  - LI
-  - XPEV
-  - BILI
-  - TME
-  - FUTU
-
-# --- Crypto (24/7 trading via Alpaca) ---
-crypto:
-  - BTC-USD
-  - ETH-USD
-  - SOL-USD
-  - DOGE-USD
-  - ADA-USD
-  - AVAX-USD
-  - LINK-USD
-  - DOT-USD
-  - MATIC-USD
-  - XRP-USD
-  - SHIB-USD
-  - UNI-USD
-  - LTC-USD
-  - NEAR-USD
-  - AAVE-USD
-  - PEPE-USD
-  - SUI-USD
-  - APT-USD
-  - FIL-USD
-  - ATOM-USD
-  - ARB-USD
-  - OP-USD
-  - INJ-USD
-  - RENDER-USD
-  - FET-USD
-  - GRT-USD
