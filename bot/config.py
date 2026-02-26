@@ -75,6 +75,31 @@ class Config:
     def take_profit_pct(self):
         return self.risk_config.get("take_profit_pct", 0.20)
 
+    # --- Portfolio-Level Risk Limits ---
+    @property
+    def portfolio_limits(self):
+        return self.risk_config.get("portfolio_limits", {})
+
+    @property
+    def max_single_name_pct(self):
+        return self.portfolio_limits.get("max_single_name_pct", 0.25)
+
+    @property
+    def max_gross_exposure_pct(self):
+        return self.portfolio_limits.get("max_gross_exposure_pct", 1.50)
+
+    @property
+    def max_net_exposure_pct(self):
+        return self.portfolio_limits.get("max_net_exposure_pct", 1.00)
+
+    @property
+    def max_loss_per_position_pct(self):
+        return self.portfolio_limits.get("max_loss_per_position_pct", 0.08)
+
+    @property
+    def monitor_all_broker_positions(self):
+        return self.portfolio_limits.get("monitor_all_broker_positions", True)
+
     # --- Schedule ---
     @property
     def schedule_config(self):

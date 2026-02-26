@@ -11,14 +11,20 @@ import time
 from dotenv import load_dotenv
 load_dotenv()
 
+from bot.config import Config
 from bot.brokers.ibkr import IBKRBroker
 
-HOST = os.getenv("IBKR_HOST", "127.0.0.1")
-PORT = int(os.getenv("IBKR_PORT", 7497))
-CLIENT_ID = int(os.getenv("IBKR_CLIENT_ID", 1)) + 99  # Use different client ID to avoid conflict
+config = Config()
+# Override client ID to avoid conflicting with running bot
+original_client_id = config.ibkr_client_id
+config._override_client_id = original_client_id + 99
 
-print(f"Connecting to IBKR at {HOST}:{PORT} (clientId={CLIENT_ID})...")
-broker = IBKRBroker(host=HOST, port=PORT, client_id=CLIENT_ID)
+# Monkey-patch to use the override
+_orig_prop = type(config).ibkr_client_id
+type(config).ibkr_client_id = property(lambda self: self._override_client_id)
+
+print(f"Connecting to IBKR at {config.ibkr_host}:{config.ibkr_port} (clientId={config.ibkr_client_id})...")
+broker = IBKRBroker(config)
 
 if not broker.connect():
     print("ERROR: Could not connect to IBKR. Is TWS/Gateway running?")

@@ -64,6 +64,15 @@ risk:
   scanner_max_price: 100.00       # Scanner discovers movers under $100 - catch mid-cap runners too (was $50)
   # No hard ceiling — bot rides runners past $100 if uptrend is confirmed
 
+  # --- Portfolio-Level Risk Limits ---
+  # Prevents concentrated bets, runaway exposure, and unmanaged positions
+  portfolio_limits:
+    max_single_name_pct: 0.25       # HARD CEILING: No single position > 25% of net liquidation
+    max_gross_exposure_pct: 1.50    # Max 150% gross exposure (longs + |shorts|) / net liq
+    max_net_exposure_pct: 1.00      # Max 100% net exposure (longs - |shorts|) / net liq
+    max_loss_per_position_pct: 0.08 # Force-close any position down > 8% from entry
+    monitor_all_broker_positions: true  # Track ALL broker positions (including shorts) for risk monitoring
+
 # --- Trading Schedule ---
 schedule:
   market_open: "09:30"
