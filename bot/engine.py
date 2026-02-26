@@ -201,14 +201,21 @@ class TradingEngine:
             if hasattr(self.broker, 'subscribe_account_pnl'):
                 self.broker.subscribe_account_pnl()
 
-            # Subscribe to 5-second real-time bars for scalp positions
-            # (fastest data IBKR provides — fires callback every 5 sec)
-            if hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
-                scalp_symbols = list(self.positions.keys())[:10]  # Start with open positions
-                if scalp_symbols:
+            # Subscribe to tick-by-tick data for held positions (fastest possible —
+            # fires on every trade print, not aggregated 5-sec bars)
+            scalp_symbols = list(self.positions.keys())[:10]
+            if scalp_symbols and hasattr(self.broker, 'subscribe_tick_by_tick'):
+                self.broker.subscribe_tick_by_tick(scalp_symbols, self._on_tick)
+                # Also keep 5-sec bars as backup for volume analysis
+                if hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
                     self.broker.subscribe_realtime_bars_with_callback(
                         scalp_symbols, self._on_5sec_bar
                     )
+            elif scalp_symbols and hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
+                # Fallback: 5-sec bars if tick-by-tick unavailable
+                self.broker.subscribe_realtime_bars_with_callback(
+                    scalp_symbols, self._on_5sec_bar
+                )
 
         # Load trading universe (scanner-driven — may be empty if no static list)
         self.universe = self.config.get_universe()
@@ -1302,6 +1309,79 @@ class TradingEngine:
         except Exception as e:
             log.debug(f"5-sec bar callback error for {symbol}: {e}")
 
+    def _on_tick(self, symbol, tick):
+        """
+        Callback fired on EVERY trade print from IBKR tick-by-tick data.
+        This is the absolute fastest exit path — fires on each individual
+        trade, not aggregated 5-second bars. Sub-100ms latency.
+        """
+        try:
+            price = tick.get("price", 0)
+            size = tick.get("size", 0)
+
+            if price <= 0:
+                return
+
+            # Update price cache instantly
+            if self.market_data:
+                self.market_data._price_cache[symbol] = price
+
+            # If we hold this position, check exits on every single trade
+            pos = self.positions.get(symbol)
+            if not pos:
+                return
+
+            entry = pos["entry_price"]
+            pos["current_price"] = price
+
+            if pos["direction"] == "long":
+                pnl_pct = (price - entry) / entry
+            else:
+                pnl_pct = (entry - price) / entry
+            pos["unrealized_pnl_pct"] = pnl_pct
+
+            # --- INSTANT TRAILING STOP CHECK ---
+            trailing_stop = pos.get("trailing_stop")
+            if trailing_stop and pos["direction"] == "long" and price <= trailing_stop:
+                trail_pct = pos.get("trailing_stop_pct", 0.02)
+                self._close_position(
+                    symbol, "trailing_stop",
+                    f"Tick trail stop at ${price:.2f} | "
+                    f"P&L: {pnl_pct:+.1%} | trail: {trail_pct:.1%}"
+                )
+                return
+
+            # --- INSTANT STOP LOSS CHECK ---
+            stop_price = pos.get("stop_loss")
+            if stop_price and pos["direction"] == "long" and price <= stop_price:
+                self._close_position(
+                    symbol, "stop_loss",
+                    f"Tick stop hit at ${price:.2f}"
+                )
+                return
+
+            # --- RATCHET TRAILING STOP UP ON NEW HIGHS ---
+            hwm = pos.get("_high_water_mark", entry)
+            if price > hwm:
+                pos["_high_water_mark"] = price
+                trail_pct = pos.get("trailing_stop_pct", 0.02)
+                new_trail = price * (1 - trail_pct)
+                if new_trail > pos.get("trailing_stop", 0):
+                    pos["trailing_stop"] = new_trail
+
+            # --- MOMENTUM TRACKING (per-trade resolution) ---
+            prev = pos.get("_last_tick_price", entry)
+            if price > prev:
+                pos["_uptick_count"] = pos.get("_uptick_count", 0) + 1
+                pos["_downtick_count"] = 0
+            elif price < prev:
+                pos["_downtick_count"] = pos.get("_downtick_count", 0) + 1
+                pos["_uptick_count"] = 0
+            pos["_last_tick_price"] = price
+
+        except Exception as e:
+            log.debug(f"Tick callback error for {symbol}: {e}")
+
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
         positions_to_close = []
@@ -2052,11 +2132,14 @@ class TradingEngine:
         # NOTE: Do NOT forward IBKR orders to TradersPost — that causes
         # duplicate execution. TradersPost is a FALLBACK, not a mirror.
 
-        # Subscribe to 5-sec real-time bars for new scalp positions (fastest exit monitoring)
-        if (signal.get("scalp_mode") or signal.get("strategy") == "rvol_scalp") and \
-                self.broker and self.broker.is_connected() and \
-                hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
-            self.broker.subscribe_realtime_bars_with_callback([symbol], self._on_5sec_bar)
+        # Subscribe to tick-by-tick for ALL new positions (fastest exit monitoring —
+        # fires on every trade print, not just every 5 seconds)
+        if self.broker and self.broker.is_connected():
+            if hasattr(self.broker, 'subscribe_tick_by_tick'):
+                self.broker.subscribe_tick_by_tick([symbol], self._on_tick)
+            # Also keep 5-sec bars for volume surge detection
+            if hasattr(self.broker, 'subscribe_realtime_bars_with_callback'):
+                self.broker.subscribe_realtime_bars_with_callback([symbol], self._on_5sec_bar)
 
         # Track trade
         self.daily_trades.append({
@@ -2328,6 +2411,13 @@ class TradingEngine:
 
         with self._positions_lock:
             self.positions.pop(symbol, None)
+
+        # Clean up tick-by-tick subscription for closed position
+        if self.broker and hasattr(self.broker, 'unsubscribe_tick_by_tick'):
+            try:
+                self.broker.unsubscribe_tick_by_tick([symbol])
+            except Exception:
+                pass
 
         # Record exit cooldown — prevents Alpaca sync from re-adding this
         # position during settlement delay (causes duplicate exit rejections)

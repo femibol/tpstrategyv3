@@ -50,6 +50,7 @@ class IBKRBroker(BaseBroker):
         self._streaming_tickers = {}     # symbol -> Ticker object
         self._live_prices = {}           # symbol -> {bid, ask, last, volume, ...}
         self._live_bars = {}             # symbol -> list of 5-sec bars
+        self._live_ticks = {}            # symbol -> {ticker, callback} for tick-by-tick
         self._stream_lock = threading.Lock()
 
         # Track symbols that fail contract qualification (e.g. delisted)
@@ -1008,6 +1009,119 @@ class IBKRBroker(BaseBroker):
         if entry and entry.get("recent"):
             return entry["recent"][-count:]
         return []
+
+    # =========================================================================
+    # Tick-by-Tick Data (fastest possible — every trade print)
+    # =========================================================================
+
+    def subscribe_tick_by_tick(self, symbols, callback):
+        """
+        Subscribe to tick-by-tick trade data for instant processing.
+        Fires callback(symbol, tick_dict) on EVERY trade print — faster than
+        5-sec bars by orders of magnitude on active stocks.
+
+        Uses IBKR reqTickByTickData with 'AllLast' (all exchanges).
+        Each subscription uses one market data line (same pool as reqMktData).
+
+        Args:
+            symbols: List of symbols to subscribe
+            callback: Function(symbol, tick_dict) called on every trade
+        """
+        if not self.is_connected() or not HAS_IB:
+            return False
+
+        subscribed = 0
+        for symbol in symbols:
+            if symbol in self._live_ticks:
+                continue
+            if symbol in self._invalid_symbols:
+                continue
+
+            try:
+                contract = Stock(symbol, "SMART", "USD")
+                self.ib.qualifyContracts(contract)
+
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    continue
+
+                ticker = self.ib.reqTickByTickData(
+                    contract,
+                    tickType="AllLast",
+                    numberOfTicks=0,
+                    ignoreSize=False,
+                )
+
+                self._live_ticks[symbol] = {
+                    "ticker": ticker,
+                    "contract": contract,
+                    "callback": callback,
+                }
+
+                # Fire handler on every tick update for this symbol
+                ticker.updateEvent += lambda t, sym=symbol: self._on_tick_data(sym, t)
+
+                subscribed += 1
+                log.debug(f"Subscribed to tick-by-tick: {symbol}")
+
+            except Exception as e:
+                log.debug(f"Failed to subscribe tick-by-tick for {symbol}: {e}")
+
+        if subscribed > 0:
+            log.info(f"Tick-by-tick active for {subscribed} symbols (every trade print)")
+        return subscribed > 0
+
+    def _on_tick_data(self, symbol, ticker):
+        """Handle incoming tick-by-tick trade data."""
+        try:
+            ticks = ticker.tickByTicks
+            if not ticks:
+                return
+            tick = ticks[-1]
+
+            price = float(tick.price) if hasattr(tick, 'price') and tick.price else 0
+            size = int(tick.size) if hasattr(tick, 'size') and tick.size else 0
+
+            if price <= 0:
+                return
+
+            tick_dict = {
+                "time": tick.time if hasattr(tick, 'time') else None,
+                "price": price,
+                "size": size,
+                "exchange": getattr(tick, 'exchange', ''),
+            }
+
+            # Update live prices cache
+            with self._stream_lock:
+                if symbol in self._live_prices:
+                    self._live_prices[symbol]["last"] = price
+                    self._live_prices[symbol]["last_update"] = time.time()
+
+            # Fire callback
+            entry = self._live_ticks.get(symbol)
+            if entry:
+                cb = entry.get("callback")
+                if cb:
+                    cb(symbol, tick_dict)
+
+        except Exception as e:
+            log.debug(f"Tick-by-tick error for {symbol}: {e}")
+
+    def unsubscribe_tick_by_tick(self, symbols=None):
+        """Cancel tick-by-tick subscriptions."""
+        if not self.is_connected():
+            return
+
+        targets = symbols or list(self._live_ticks.keys())
+        for symbol in targets:
+            entry = self._live_ticks.pop(symbol, None)
+            if entry and entry.get("ticker"):
+                try:
+                    self.ib.cancelTickByTickData(entry["ticker"])
+                    log.debug(f"Unsubscribed tick-by-tick: {symbol}")
+                except Exception as e:
+                    log.debug(f"Failed to cancel tick-by-tick for {symbol}: {e}")
 
     # =========================================================================
     # Open Orders Management
