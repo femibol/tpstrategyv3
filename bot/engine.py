@@ -210,7 +210,7 @@ class TradingEngine:
                         scalp_symbols, self._on_5sec_bar
                     )
 
-        # Load trading universe (200+ symbols for RVOL scanning)
+        # Load trading universe (scanner-driven — may be empty if no static list)
         self.universe = self.config.get_universe()
         log.info(f"Trading universe loaded: {len(self.universe)} symbols")
 

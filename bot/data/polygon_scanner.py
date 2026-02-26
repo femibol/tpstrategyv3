@@ -107,11 +107,11 @@ class PolygonScanner:
     # Full-Market Snapshot (scanning + price cache)
     # =========================================================================
 
-    def scan_full_market(self, min_change_pct=2.0, min_price=0.50, max_price=100.0, min_volume=30000):
+    def scan_full_market(self, min_change_pct=5.0, min_price=1.00, max_price=100.0, min_volume=50000):
         """
-        Scan the entire US market for movers.
+        Scan the entire US market for extreme momentum movers.
         Also caches prices for ALL tickers (used by market_data for quotes).
-        Filters movers to $0.50-$50 range for maximum % gains.
+        Filters: $1-$100 range, 5%+ movers, 10%+ runners, 8%+ gaps.
 
         Returns tuple: (movers, runners, gap_ups)
         """
@@ -210,11 +210,11 @@ class PolygonScanner:
                     "source": "polygon",
                 }
 
-                if change_pct >= 2.0:
+                if change_pct >= 5.0:
                     movers.append(entry)
                 if change_pct >= 10.0:
                     runners.append(entry)  # Runners have no price cap — catch explosive movers at any price
-                if gap_pct >= 5.0:
+                if gap_pct >= 8.0:
                     gap_ups.append(entry)
 
             movers.sort(key=lambda x: x["change_pct"], reverse=True)
@@ -229,8 +229,8 @@ class PolygonScanner:
 
             log.info(
                 f"Polygon scan: {ticker_count} tickers | "
-                f"{len(movers)} movers (2%+) | {len(runners)} runners (10%+) | "
-                f"{len(gap_ups)} gap-ups (5%+)"
+                f"{len(movers)} movers (5%+) | {len(runners)} runners (10%+) | "
+                f"{len(gap_ups)} gap-ups (8%+)"
             )
 
             return movers, runners, gap_ups
