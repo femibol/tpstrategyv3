@@ -332,10 +332,17 @@ class TradingEngine:
             raw_positions = self.broker.get_positions()
             if raw_positions:
                 now = datetime.now(self.tz)
+                skipped_shorts = []
                 for sym, pos in raw_positions.items():
                     entry = pos.get("entry_price", pos.get("avg_cost", 0))
                     side = pos.get("direction", "long")
                     qty = pos.get("quantity", 0)
+
+                    # Skip short positions — long-only bot should not manage shorts
+                    if side == "short":
+                        skipped_shorts.append(sym)
+                        continue
+
                     stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
                     tp_pct = self.config.risk_config.get("take_profit_pct", 0.20)
                     self.positions[sym] = {
@@ -350,7 +357,12 @@ class TradingEngine:
                         "bar_seconds": 300,
                         "max_hold_days": 5,
                     }
-                log.info(f"Synced {len(self.positions)} existing positions from IBKR")
+                if skipped_shorts:
+                    log.warning(
+                        f"IBKR SYNC: Skipped {len(skipped_shorts)} short positions "
+                        f"(long-only mode): {', '.join(skipped_shorts)}"
+                    )
+                log.info(f"Synced {len(self.positions)} LONG positions from IBKR")
         else:
             log.warning(
                 "IBKR connection failed after %d attempts - falling back to Polygon/Yahoo for data. "
@@ -2016,8 +2028,41 @@ class TradingEngine:
             current_price = pos.get("current_price", pos["entry_price"])
 
         action = "SELL" if pos["direction"] == "long" else "BUY"
+        close_qty = pos["quantity"]
         original_broker = pos.get("executed_via", "Simulated")
         close_broker = None  # Track which broker ACTUALLY closed it (None = nothing worked)
+
+        # Verify actual broker quantity before closing to prevent accidental shorts
+        if self.broker and self.broker.is_connected() and action == "SELL":
+            try:
+                broker_positions = self.broker.get_positions()
+                broker_pos = broker_positions.get(symbol) if broker_positions else None
+                if broker_pos:
+                    broker_qty = broker_pos.get("quantity", 0)
+                    if broker_qty <= 0:
+                        log.warning(
+                            f"CLOSE BLOCKED: {symbol} not held at broker (qty={broker_qty}). "
+                            f"Removing phantom position."
+                        )
+                        with self._positions_lock:
+                            self.positions.pop(symbol, None)
+                        return
+                    if close_qty > broker_qty:
+                        log.warning(
+                            f"CLOSE QTY ADJUSTED: {symbol} bot has {close_qty} but broker "
+                            f"has {broker_qty}. Using broker qty to prevent short."
+                        )
+                        close_qty = broker_qty
+                elif original_broker == "IBKR":
+                    log.warning(
+                        f"CLOSE BLOCKED: {symbol} not found at IBKR broker. "
+                        f"Removing phantom position."
+                    )
+                    with self._positions_lock:
+                        self.positions.pop(symbol, None)
+                    return
+            except Exception as e:
+                log.warning(f"Could not verify broker position for {symbol}: {e}")
 
         # Try to close via broker chain
         order = None
@@ -2026,7 +2071,7 @@ class TradingEngine:
             order = self.broker.place_order(
                 symbol=symbol,
                 action=action,
-                quantity=pos["quantity"],
+                quantity=close_qty,
                 order_type="MARKET",
                 outside_rth=outside_rth,
             )
@@ -2790,15 +2835,15 @@ class TradingEngine:
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
 
-                # Track ALL positions (including shorts) for portfolio risk monitoring.
-                # The bot won't ENTER new shorts (long_only blocks that), but it must
-                # be AWARE of existing shorts to enforce concentration/exposure limits
-                # and force-close positions that breach risk thresholds.
+                # Skip short positions — long-only bot must not manage shorts.
+                # Managing shorts causes the monitor to send exit orders that create
+                # more problems (covering shorts, then opening unwanted longs).
                 if side == "short":
                     log.warning(
-                        f"SYNC: Tracking SHORT position {symbol} ({int(qty)} shares) from Alpaca "
-                        f"for risk monitoring (bot will not enter new shorts)"
+                        f"SYNC: Skipping SHORT position {symbol} ({int(qty)} shares) from Alpaca "
+                        f"(long-only mode — cover manually in broker)"
                     )
+                    continue
 
                 unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
                 # Use current market price for smarter stop/target
@@ -2923,9 +2968,10 @@ class TradingEngine:
                     entry = float(p.get("avg_entry_price", 0))
                     side = "long" if float(p.get("qty", 0)) > 0 else "short"
 
-                    # Track ALL positions (including shorts) for portfolio risk monitoring
+                    # Skip short positions — long-only bot should not manage shorts
                     if side == "short":
-                        log.info(f"SYNC: Tracking SHORT {sym} from continuous sync for risk monitoring")
+                        log.info(f"SYNC: Ignoring SHORT {sym} from continuous sync (long-only mode)")
+                        continue
 
                     self.positions[sym] = {
                         "symbol": sym,
