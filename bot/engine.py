@@ -1624,8 +1624,10 @@ class TradingEngine:
             )
             return
 
-        # --- SELL/EXIT WITHOUT POSITION GUARD ---
-        # Never send sell/exit to broker for symbols we don't hold
+        # --- SELL/EXIT SIGNALS: Route through _close_position instead ---
+        # Webhook-driven exits (TradingView sends "sell") must use the close path,
+        # NOT the entry path. If we let them fall through, the position tracking at
+        # the bottom creates a "short" entry, overwriting the long — catastrophic.
         if action in ("sell", "cover", "close", "exit"):
             if symbol not in self.positions:
                 log.warning(
@@ -1633,6 +1635,10 @@ class TradingEngine:
                     f"Preventing phantom exit signal to broker."
                 )
                 return
+            log.info(f"Webhook exit signal: routing {action.upper()} {symbol} through close path")
+            self._close_position(symbol, "webhook_exit",
+                                 f"External {action} signal from {signal.get('strategy', 'webhook')}")
+            return
 
         # --- LEARNING AVOIDANCE GUARD ---
         # Skip symbols the trade analyzer flagged as consistent losers
