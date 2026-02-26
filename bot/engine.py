@@ -1957,6 +1957,15 @@ class TradingEngine:
                         f"SL: ${stop_loss_price:.2f} | TP: ${take_profit_price:.2f} "
                         f"(managed by IBKR server-side)"
                     )
+                # Mirror to TradersPost for dashboard visibility
+                if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
+                    self.tp_broker.notify_trade({
+                        "symbol": symbol,
+                        "action": action,
+                        "quantity": qty,
+                        "price": current_price,
+                        "strategy": strategy,
+                    })
             else:
                 log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
         else:
@@ -2242,6 +2251,15 @@ class TradingEngine:
             )
             if order:
                 close_broker = "IBKR"
+                # Mirror exit to TradersPost for dashboard visibility
+                if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
+                    self.tp_broker.notify_trade({
+                        "symbol": symbol,
+                        "action": "exit",
+                        "quantity": close_qty,
+                        "price": current_price,
+                        "source": "exit",
+                    })
 
         if not order:
             # Always try Alpaca direct close FIRST — Alpaca is the actual broker

@@ -324,6 +324,79 @@ class TradersPostBroker(BaseBroker):
             log.error(f"TradersPost error: {e}")
             return None
 
+    def notify_trade(self, signal):
+        """
+        Mirror a trade to TradersPost for dashboard visibility.
+        Called after IBKR executes — TradersPost gets the signal so the trade
+        appears in its UI, but IBKR is the actual execution broker.
+
+        NOTE: If your TradersPost strategy has auto-execute ON, this will
+        create a duplicate order on the connected broker (e.g. Alpaca).
+        To avoid duplicates, either:
+        - Set the strategy to paper/log-only mode in TradersPost
+        - Use a separate webhook URL for notifications (secondary webhook)
+        """
+        if not self.webhook_url:
+            return None
+
+        symbol = signal.get("symbol", "")
+        action = signal.get("action", "").lower()
+        is_exit = action in ("sell", "cover", "close", "exit") or signal.get("source") == "exit"
+
+        # Build minimal payload (no SL/TP — IBKR manages those server-side)
+        tp_action = "exit" if is_exit else "buy"
+        payload = {
+            "ticker": symbol,
+            "action": tp_action,
+        }
+        if tp_action == "buy":
+            payload["sentiment"] = "bullish"
+        if "quantity" in signal:
+            payload["quantity"] = signal["quantity"]
+        if "price" in signal:
+            payload["price"] = signal["price"]
+
+        # Send to secondary webhook if available (safer — usually paper mode),
+        # otherwise use primary webhook
+        target_url = self.webhook_url_secondary or self.webhook_url
+        target_label = "secondary" if self.webhook_url_secondary else "primary"
+
+        try:
+            headers = {"Content-Type": "application/json"}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
+
+            response = requests.post(
+                target_url,
+                json=payload,
+                headers=headers,
+                timeout=10,
+            )
+
+            success = response.status_code in (200, 201, 202)
+            result = {
+                "success": success,
+                "status_code": response.status_code,
+                "response": response.text[:200],
+                "mirror": True,
+            }
+
+            # Persist for signal log
+            self._persist_signal(
+                {**signal, "mirror": True}, result, payload
+            )
+
+            log.info(
+                f"TP MIRROR: {tp_action.upper()} {symbol} "
+                f"qty={signal.get('quantity', '?')} @ ${signal.get('price', 0):.2f} "
+                f"→ {target_label} webhook ({response.status_code})"
+            )
+            return result
+
+        except Exception as e:
+            log.debug(f"TradersPost mirror notification failed: {e}")
+            return None
+
     def place_order(self, symbol, action, quantity, order_type="LIMIT",
                     limit_price=None, stop_price=None):
         """Place order via TradersPost webhook."""
