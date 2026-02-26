@@ -1,24 +1,24 @@
 # ============================================
 # STRATEGY CONFIGURATIONS - EXTREME MOMENTUM
 # ============================================
-# Two strategies only. Scanner discovers everything dynamically.
+# Three strategies. Scanner discovers everything dynamically.
 # No static symbol lists — let the market tell you what's running.
+# Pre-breakout enters BEFORE the explosion. RVOL + Gap catch it live.
 
 # --- Strategy Allocation ---
-# 60/40 split: RVOL Momentum is the core, Pre-Market Gap catches the openers
 allocation:
   smc_forever: 0.00
   mean_reversion: 0.00
   momentum: 0.00
-  rvol_momentum: 0.60             # 60% - THE money machine
-  rvol_scalp: 0.00                # DISABLED - focus on fewer, bigger trades
+  rvol_momentum: 0.50             # 50% - THE money machine (react to live momentum)
+  rvol_scalp: 0.00
   vwap_scalp: 0.00
   pairs_trading: 0.00
-  prebreakout: 0.00               # DISABLED - anticipatory, not reactive
-  premarket_gap: 0.40             # 40% - biggest day-1 runners come from gaps
-  options_momentum: 0.00          # DISABLED - adds complexity
-  short_squeeze: 0.00             # DISABLED - consolidate into RVOL momentum
-  pead: 0.00                      # DISABLED - slow drift, not extreme momentum
+  prebreakout: 0.20               # 20% - enter BEFORE the breakout (accumulation detection)
+  premarket_gap: 0.30             # 30% - biggest day-1 runners come from gaps
+  options_momentum: 0.00
+  short_squeeze: 0.00
+  pead: 0.00
 
 # --- Mean Reversion Strategy ---
 mean_reversion:
@@ -137,26 +137,28 @@ rvol_scalp:
   symbols: []
 
 # --- Pre-Breakout Accumulation ---
+# Enter BEFORE the explosion: detect BB squeeze + volume building + higher lows
+# Scanner discovers candidates dynamically — no static list
 prebreakout:
-  enabled: false
+  enabled: true
   timeframe: "5m"
-  min_score: 45
-  min_price: 0.50
+  min_score: 50                    # Moderate bar — catch accumulation early
+  min_price: 1.00                  # $1 floor
   max_price: 100.00
-  min_volume: 50000
+  min_volume: 75000                # 75K — need some liquidity
   bollinger_period: 20
   bollinger_std: 2.0
   squeeze_lookback: 50
-  squeeze_percentile: 25
+  squeeze_percentile: 20           # Tighter squeeze = higher conviction
   vol_build_bars: 5
-  vol_build_multiplier: 1.3
-  atr_stop_multiplier: 2.0
-  atr_target_multiplier: 6.0
-  runner_atr_multiplier: 15.0
-  max_hold_days: 5
-  max_trades_per_day: 10
-  trailing_stop_pct: 0.04
-  symbols: []
+  vol_build_multiplier: 1.4        # Stronger volume build required
+  atr_stop_multiplier: 1.5         # Tighter stop (was 2.0) — if it doesn't explode, get out
+  atr_target_multiplier: 6.0       # 6x ATR first target
+  runner_atr_multiplier: 15.0      # 15x ATR for multi-baggers
+  max_hold_days: 3                 # Shorter hold — explode or bail (was 5)
+  max_trades_per_day: 8
+  trailing_stop_pct: 0.02          # 2% trail (was 4% — tighter for aggressive system)
+  symbols: []                      # EMPTY — scanner discovers everything
 
 # --- Pre-Market Gap Scanner Strategy ---
 # Catches the biggest gap-ups before open — extreme gaps only

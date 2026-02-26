@@ -1027,14 +1027,16 @@ class TradingEngine:
             self.market_data.update_1m_bars(scalp_symbols)
 
     def _fast_scalp_monitor(self):
-        """Fast position monitor for scalp exits (runs every 3 seconds).
+        """AGGRESSIVE universal position monitor (runs every 3 seconds).
 
-        Refreshes prices for all open positions and checks for:
-        - Same-candle profit taking (scalp positions)
-        - Quick stop loss exits
-        - Trailing stop updates
-        This gives near-real-time exit capability without waiting for the
-        full 10-second strategy cycle.
+        Refreshes prices for ALL open positions and applies:
+        - Intra-candle profit-taking (partial exits) for every position
+        - Real-time trailing stop ratcheting (moves stop up on every up-tick)
+        - Momentum detection (consecutive up-ticks = sustained move)
+        - Stop-loss enforcement with zero delay
+
+        This is the primary exit manager. The slower _monitor_positions()
+        handles break-even and max-hold-time only.
         """
         if not self.positions:
             return
@@ -1047,6 +1049,11 @@ class TradingEngine:
         position_symbols = list(positions_snapshot.keys())
         if self.market_data:
             self.market_data.refresh_prices(position_symbols)
+
+        # Load profit taking config
+        pt_config = self.config.risk_config.get("profit_taking", {})
+        pt_enabled = pt_config.get("enabled", False)
+        pt_targets = pt_config.get("targets", [])
 
         # Check each position for quick exits
         positions_to_close = []
@@ -1069,57 +1076,23 @@ class TradingEngine:
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
 
-            # --- SCALP QUICK EXIT (same-candle profit taking) ---
-            if pos.get("strategy") in ("rvol_scalp",) or pos.get("scalp_mode"):
-                quick_target_pct = pos.get("quick_scalp_pct", 0.008)
-                runner_pct = pos.get("runner_pct", 0.02)
+            # --- MOMENTUM TRACKING (consecutive up-ticks) ---
+            prev_price = pos.get("_last_tick_price", entry_price)
+            if current_price > prev_price:
+                pos["_uptick_count"] = pos.get("_uptick_count", 0) + 1
+                pos["_downtick_count"] = 0
+            elif current_price < prev_price:
+                pos["_downtick_count"] = pos.get("_downtick_count", 0) + 1
+                pos["_uptick_count"] = 0
+            pos["_last_tick_price"] = current_price
 
-                # Quick scalp target hit - take partial profit
-                if pnl_pct >= quick_target_pct and not pos.get("scalp_target_1_hit"):
-                    pos["scalp_target_1_hit"] = True
-                    qty = pos["quantity"]
-                    if qty > 1:
-                        # Close 50% at quick target
-                        close_qty = max(1, int(qty * 0.5))
-                        partial_exits.append((symbol, close_qty, 0, {
-                            "pct_from_entry": quick_target_pct,
-                            "close_pct": 0.5,
-                        }))
-                        # Move stop to breakeven
-                        if direction == "long":
-                            pos["stop_loss"] = entry_price * 1.001
-                        pos["breakeven_hit"] = True
-                        log.info(
-                            f"SCALP TARGET 1: {symbol} +{pnl_pct:.1%} | "
-                            f"Closing 50% at ${current_price:.2f}"
-                        )
-                    else:
-                        # Single share - close all at quick target
-                        positions_to_close.append(
-                            (symbol, "scalp_target", f"Quick scalp +{pnl_pct:.1%} at ${current_price:.2f}")
-                        )
-                        continue
+            # Track high water mark for aggressive trailing
+            hwm = pos.get("_high_water_mark", entry_price)
+            if direction == "long" and current_price > hwm:
+                pos["_high_water_mark"] = current_price
+            hwm = pos.get("_high_water_mark", entry_price)
 
-                # Runner target hit - close remaining
-                if pnl_pct >= runner_pct and pos.get("scalp_target_1_hit"):
-                    positions_to_close.append(
-                        (symbol, "scalp_runner", f"Runner target +{pnl_pct:.1%} at ${current_price:.2f}")
-                    )
-                    continue
-
-                # Tight trailing for scalps (0.5% trail)
-                trail_pct = pos.get("trailing_stop_pct", 0.005)
-                if direction == "long":
-                    new_trail = current_price * (1 - trail_pct)
-                    if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
-                        pos["trailing_stop"] = new_trail
-                    if current_price <= pos.get("trailing_stop", 0):
-                        positions_to_close.append(
-                            (symbol, "scalp_trail", f"Scalp trail stop at ${current_price:.2f}")
-                        )
-                        continue
-
-            # --- Quick stop loss check for ALL positions ---
+            # --- STOP LOSS (instant check) ---
             stop_price = pos.get("stop_loss")
             if stop_price:
                 hit = (direction == "long" and current_price <= stop_price) or \
@@ -1130,8 +1103,93 @@ class TradingEngine:
                     )
                     continue
 
-            # --- Take profit target reached = tighten trail, NOT hard exit ---
-            # Let runners run. Trailing stop protects profits, no hard ceiling.
+            # --- INTRA-CANDLE PARTIAL PROFIT TAKING (every 3 seconds) ---
+            if pt_enabled and pos["quantity"] > 1:
+                targets_hit = pos.get("targets_hit", [])
+                for i, target in enumerate(pt_targets):
+                    if i in targets_hit:
+                        continue
+                    target_pct = target.get("pct_from_entry", 0)
+                    if pnl_pct >= target_pct:
+                        close_pct = target.get("close_pct", 0.25)
+                        qty_to_close = max(1, int(pos["quantity"] * close_pct))
+
+                        # Don't close everything via partial - leave at least 1
+                        if qty_to_close >= pos["quantity"]:
+                            qty_to_close = pos["quantity"] - 1
+
+                        if qty_to_close > 0:
+                            partial_exits.append((symbol, qty_to_close, i, target))
+                            targets_hit.append(i)
+                            pos["targets_hit"] = targets_hit
+
+                            # Move stop to break-even on first target
+                            be_buffer = self.config.risk_config.get(
+                                "breakeven", {}).get("buffer_pct", 0.002)
+                            if target.get("move_stop") == "breakeven" and not pos.get("breakeven_hit"):
+                                be_stop = entry_price * (1 + be_buffer) if direction == "long" else entry_price * (1 - be_buffer)
+                                pos["stop_loss"] = be_stop
+                                pos["breakeven_hit"] = True
+
+                            # Tighten trailing stop if specified
+                            if target.get("tighten_trail"):
+                                pos["trailing_stop_pct"] = target["tighten_trail"]
+                                log.info(
+                                    f"TRAIL TIGHTENED: {symbol} now {target['tighten_trail']:.1%} "
+                                    f"at +{pnl_pct:.1%}"
+                                )
+
+                        break  # Only hit one target per tick
+
+            # --- AGGRESSIVE TRAILING STOP RATCHET (every 3 seconds) ---
+            # Moves the trailing stop UP on every price tick, not just every 10 seconds
+            base_trail = pos.get("trailing_stop_pct",
+                                 self.config.risk_config.get("trailing_stop_pct", 0.02))
+
+            # Momentum-aware trail: consecutive up-ticks = sustained move = give more room
+            upticks = pos.get("_uptick_count", 0)
+            momentum_buffer = 0.0
+            if upticks >= 5:
+                momentum_buffer = 0.005   # Sustained momentum: add 0.5% buffer to not get shaken
+            elif upticks >= 3:
+                momentum_buffer = 0.003   # Building momentum: add 0.3% buffer
+
+            # Dynamic trailing based on profit level
+            if pnl_pct >= 2.00:
+                trailing_pct = 0.08       # 8% trail at 200%+ — ride the monster
+            elif pnl_pct >= 1.00:
+                trailing_pct = 0.06       # 6% trail at 100%+
+            elif pnl_pct >= 0.50:
+                trailing_pct = 0.05       # 5% trail at 50%+
+            elif pnl_pct >= 0.25:
+                trailing_pct = 0.035      # 3.5% trail at 25%+
+            elif pnl_pct >= 0.10:
+                trailing_pct = 0.025      # 2.5% trail at 10%+ — lock it in
+            elif pnl_pct >= 0.05:
+                trailing_pct = 0.02       # 2% trail at 5%+
+            elif pnl_pct >= 0.02:
+                trailing_pct = 0.015      # 1.5% trail at 2%+ — aggressive protection
+            else:
+                trailing_pct = base_trail
+
+            # Add momentum buffer for sustained moves
+            trailing_pct += momentum_buffer
+
+            if direction == "long":
+                new_trail = current_price * (1 - trailing_pct)
+                # Only move stop UP, never down
+                if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+                    pos["trailing_stop"] = new_trail
+                if current_price <= pos.get("trailing_stop", 0):
+                    positions_to_close.append(
+                        (symbol, "trailing_stop",
+                         f"Trail stop at ${current_price:.2f} | "
+                         f"P&L: {pnl_pct:+.1%} | trail: {trailing_pct:.1%}")
+                    )
+                    continue
+
+            # --- TAKE PROFIT TRAIL TRIGGER ---
+            # When TP target hit, activate runner mode with tighter trail
             target_price = pos.get("take_profit")
             if target_price and not pos.get("tp_trail_activated"):
                 hit = (direction == "long" and current_price >= target_price) or \
@@ -1157,8 +1215,8 @@ class TradingEngine:
     def _on_5sec_bar(self, symbol, bar):
         """
         Callback fired every 5 seconds with real-time bar data from IBKR.
-        Used for ultra-fast RVOL detection and scalp position management.
-        Updates the live price cache immediately (no polling delay).
+        Updates price cache instantly and triggers immediate exit checks
+        for held positions — this is the fastest possible exit path.
         """
         try:
             price = bar.get("close", 0)
@@ -1171,19 +1229,64 @@ class TradingEngine:
             if self.market_data:
                 self.market_data._price_cache[symbol] = price
 
-            # If we hold this position, update unrealized P&L in real-time
+            # If we hold this position, update P&L and check exits in real-time
             pos = self.positions.get(symbol)
             if pos:
-                pos["current_price"] = price
                 entry = pos["entry_price"]
+                pos["current_price"] = price
+
                 if pos["direction"] == "long":
-                    pos["unrealized_pnl_pct"] = (price - entry) / entry
+                    pnl_pct = (price - entry) / entry
                 else:
-                    pos["unrealized_pnl_pct"] = (entry - price) / entry
+                    pnl_pct = (entry - price) / entry
+                pos["unrealized_pnl_pct"] = pnl_pct
+
+                # --- INSTANT TRAILING STOP CHECK ---
+                # Don't wait for the 3-second poll — exit immediately on IBKR data
+                trailing_stop = pos.get("trailing_stop")
+                if trailing_stop and pos["direction"] == "long" and price <= trailing_stop:
+                    trail_pct = pos.get("trailing_stop_pct", 0.02)
+                    self._close_position(
+                        symbol, "trailing_stop",
+                        f"5-sec trail stop at ${price:.2f} | "
+                        f"P&L: {pnl_pct:+.1%} | trail: {trail_pct:.1%}"
+                    )
+                    return
+
+                # --- INSTANT STOP LOSS CHECK ---
+                stop_price = pos.get("stop_loss")
+                if stop_price and pos["direction"] == "long" and price <= stop_price:
+                    self._close_position(
+                        symbol, "stop_loss",
+                        f"5-sec stop hit at ${price:.2f}"
+                    )
+                    return
+
+                # --- RATCHET TRAILING STOP UP ON NEW HIGHS ---
+                hwm = pos.get("_high_water_mark", entry)
+                if price > hwm:
+                    pos["_high_water_mark"] = price
+                    # Recalculate trail from new high
+                    trail_pct = pos.get("trailing_stop_pct", 0.02)
+                    new_trail = price * (1 - trail_pct)
+                    if new_trail > pos.get("trailing_stop", 0):
+                        pos["trailing_stop"] = new_trail
+
+                # --- MOMENTUM TRACKING ---
+                prev = pos.get("_last_tick_price", entry)
+                if price > prev:
+                    pos["_uptick_count"] = pos.get("_uptick_count", 0) + 1
+                    pos["_downtick_count"] = 0
+                elif price < prev:
+                    pos["_downtick_count"] = pos.get("_downtick_count", 0) + 1
+                    pos["_uptick_count"] = 0
+                pos["_last_tick_price"] = price
 
             # Detect sudden volume surge on 5-sec bars (RVOL micro-spike)
-            # This fires much faster than the 1-min bar scanner
-            if volume > 0 and hasattr(self, '_5sec_vol_avg'):
+            if not hasattr(self, '_5sec_vol_avg'):
+                self._5sec_vol_avg = {}
+
+            if volume > 0:
                 avg = self._5sec_vol_avg.get(symbol, 0)
                 if avg > 0 and volume > avg * 5:
                     log.info(
@@ -1195,10 +1298,6 @@ class TradingEngine:
                     self._5sec_vol_avg[symbol] = avg * 0.95 + volume * 0.05
                 else:
                     self._5sec_vol_avg[symbol] = volume
-            else:
-                if not hasattr(self, '_5sec_vol_avg'):
-                    self._5sec_vol_avg = {}
-                self._5sec_vol_avg[symbol] = volume
 
         except Exception as e:
             log.debug(f"5-sec bar callback error for {symbol}: {e}")
@@ -1271,26 +1370,19 @@ class TradingEngine:
                     )
 
             # --- Partial Profit Taking ---
-            # Skip tiered profit-taking entirely for scalp strategies
-            # (they use their own quick_scalp_target / runner exits)
+            # NOTE: Partials are now handled by _fast_scalp_monitor() every 3 seconds
+            # for intra-candle execution. This block is a fallback safety net only.
             is_scalp_pos = pos.get("strategy") in ("rvol_scalp", "vwap_scalp")
             if pt_enabled and pos["quantity"] > 1 and not is_scalp_pos:
                 targets_hit = pos.get("targets_hit", [])
-                # Breakout plays: skip early profit-taking tiers (let runners run)
-                # Only start taking profit at tier 2+ (3%+) for breakout plays
-                is_breakout_pos = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                 for i, target in enumerate(pt_targets):
                     if i in targets_hit:
                         continue
                     target_pct = target.get("pct_from_entry", 0)
-                    # Skip the first (smallest) profit tier for breakout plays
-                    if is_breakout_pos and target_pct < 0.03:
-                        continue
                     if pnl_pct >= target_pct:
-                        close_pct = target.get("close_pct", 0.33)
+                        close_pct = target.get("close_pct", 0.25)
                         qty_to_close = max(1, int(pos["quantity"] * close_pct))
 
-                        # Don't close everything via partial - leave at least 1
                         if qty_to_close >= pos["quantity"]:
                             qty_to_close = pos["quantity"] - 1
 
@@ -1299,23 +1391,16 @@ class TradingEngine:
                             targets_hit.append(i)
                             pos["targets_hit"] = targets_hit
 
-                            # Move stop to break-even if specified
+                            be_buffer_val = be_config.get("buffer_pct", 0.001)
                             if target.get("move_stop") == "breakeven" and not pos.get("breakeven_hit"):
-                                be_stop = entry_price * (1 + be_buffer) if direction == "long" else entry_price * (1 - be_buffer)
+                                be_stop = entry_price * (1 + be_buffer_val) if direction == "long" else entry_price * (1 - be_buffer_val)
                                 pos["stop_loss"] = be_stop
                                 pos["breakeven_hit"] = True
 
-                            # Tighten trailing stop if specified
                             if target.get("tighten_trail"):
-                                old_trail = pos.get("trailing_stop_pct", 0.02)
                                 pos["trailing_stop_pct"] = target["tighten_trail"]
-                                log.info(f"TRAIL TIGHTENED: {symbol} trailing stop now {target['tighten_trail']:.1%}")
-                                self.notifier.position_update(
-                                    symbol, "trailing_tightened",
-                                    f"Trailing stop tightened from {old_trail:.1%} to {target['tighten_trail']:.1%}"
-                                )
 
-                        break  # Only hit one target per cycle
+                        break
 
             # --- Stop Loss ---
             stop_price = pos.get("stop_loss")
@@ -1333,42 +1418,33 @@ class TradingEngine:
             # The trailing stop is the ONLY exit mechanism for winners.
             # This lets runners run 50%, 100%, 400%+ with trailing protection.
 
-            # --- Dynamic Trailing Stop (tightens as profit grows) ---
+            # --- Dynamic Trailing Stop (matches aggressive tiers in _fast_scalp_monitor) ---
             base_trail = pos.get("trailing_stop_pct",
-                                 self.config.risk_config.get("trailing_stop_pct", 0.02))
+                                 self.config.risk_config.get("trailing_stop_pct", 0.015))
 
-            # Tighten trail dynamically based on profit level
-            # NO hard ceiling — trailing stop is the ONLY exit for winners
-            # Designed for biotech/momentum runners that can go 50-400%+
-            is_breakout_play = pos.get("breakout_play") or pos.get("source") == "prebreakout"
+            # Aggressive trailing tiers — same as _fast_scalp_monitor for consistency
+            # Momentum buffer from uptick tracking
+            upticks = pos.get("_uptick_count", 0)
+            momentum_buffer = 0.005 if upticks >= 5 else (0.003 if upticks >= 3 else 0.0)
 
-            # EXTREME RUNNER TIERS (applies to ALL positions)
-            # At massive profit levels, use wider percentage trails
-            # because a 5% pullback on a 200% runner is noise, not a reversal
             if pnl_pct >= 2.00:
-                trailing_pct = 0.08   # 8% trail at 200%+ — ride the monster
+                trailing_pct = 0.08       # 8% trail at 200%+
             elif pnl_pct >= 1.00:
-                trailing_pct = 0.06   # 6% trail at 100%+ — huge runner, give room
+                trailing_pct = 0.06       # 6% trail at 100%+
             elif pnl_pct >= 0.50:
-                trailing_pct = 0.05   # 5% trail at 50%+ — confirmed runner
-            elif pnl_pct >= 0.20:
-                trailing_pct = 0.035  # 3.5% trail at 20%+ — strong momentum
-            elif is_breakout_play:
-                # Breakout plays: WIDE trail to let runners breathe
-                if pnl_pct >= 0.10:
-                    trailing_pct = base_trail * 0.65  # Moderate at 10%+
-                elif pnl_pct >= 0.05:
-                    trailing_pct = base_trail * 0.8   # Gentle at 5%+
-                else:
-                    trailing_pct = base_trail          # Full width while building
+                trailing_pct = 0.05       # 5% trail at 50%+
+            elif pnl_pct >= 0.25:
+                trailing_pct = 0.035      # 3.5% trail at 25%+
             elif pnl_pct >= 0.10:
-                trailing_pct = base_trail * 0.5  # Tighten at 10%+ (protect profits)
+                trailing_pct = 0.025      # 2.5% trail at 10%+
             elif pnl_pct >= 0.05:
-                trailing_pct = base_trail * 0.65 # Moderate at 5%+ (let it run)
-            elif pnl_pct >= 0.03:
-                trailing_pct = base_trail * 0.8  # Gentle at 3%+ (building momentum)
+                trailing_pct = 0.02       # 2% trail at 5%+
+            elif pnl_pct >= 0.02:
+                trailing_pct = 0.015      # 1.5% trail at 2%+
             else:
                 trailing_pct = base_trail
+
+            trailing_pct += momentum_buffer
 
             if direction == "long":
                 new_trail = current_price * (1 - trailing_pct)
