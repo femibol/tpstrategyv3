@@ -177,6 +177,30 @@ class IBKRBroker(BaseBroker):
             log.warning(f"Cannot place order for '{symbol}' - known invalid/delisted symbol")
             return None
 
+        # SHORT-SELL GUARD: Before sending a SELL, verify we actually hold shares
+        # at the broker. Prevents accidental naked shorts when internal state is stale.
+        if action.upper() == "SELL" and kwargs.get("asset_type") != "option":
+            try:
+                broker_qty = 0
+                for pos in self.ib.positions():
+                    if pos.contract.symbol == symbol and pos.position > 0:
+                        broker_qty = int(pos.position)
+                        break
+                if broker_qty <= 0:
+                    log.error(
+                        f"SHORT-SELL BLOCKED: SELL {quantity} {symbol} but broker "
+                        f"holds {broker_qty} shares. Refusing to create short position."
+                    )
+                    return None
+                if quantity > broker_qty:
+                    log.warning(
+                        f"SELL QTY CAPPED: {symbol} requested {quantity} but broker "
+                        f"only holds {broker_qty}. Capping to prevent short."
+                    )
+                    quantity = broker_qty
+            except Exception as e:
+                log.warning(f"Could not verify broker position for {symbol}: {e} — proceeding cautiously")
+
         try:
             # Create contract (stock or option)
             if kwargs.get("asset_type") == "option":
