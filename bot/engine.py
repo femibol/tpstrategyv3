@@ -675,6 +675,9 @@ class TradingEngine:
                     # 3. Monitor existing positions (stops, targets, trailing)
                     self._monitor_positions()
 
+                    # 3b. Portfolio-level risk audit (concentration, exposure, max loss)
+                    self._check_portfolio_risk()
+
                     # 4. Run strategies and generate signals
                     signals = self._run_strategies()
 
@@ -1511,6 +1514,83 @@ class TradingEngine:
                 self.analysis_log = self.analysis_log[-self.max_analysis_log:]
 
         return all_signals
+
+    def _check_portfolio_risk(self):
+        """
+        Portfolio-level risk audit. Runs every cycle.
+
+        Checks all tracked positions (including shorts from broker sync) for:
+        - Single-name concentration > 25% of net liquidation
+        - Per-position loss > 8% from entry
+        - Gross/net exposure breaches
+
+        Force-closes positions that breach critical thresholds.
+        Sends alerts for portfolio-level warnings.
+        """
+        if not self.positions:
+            return
+
+        # Get net liquidation from broker or fall back to current_balance
+        net_liq = self.current_balance
+        if self.broker and self.broker.is_connected():
+            try:
+                summary = self.broker.get_account_summary()
+                if summary and summary.get("net_liquidation"):
+                    net_liq = summary["net_liquidation"]
+            except Exception:
+                pass
+
+        if net_liq <= 0:
+            return
+
+        # Price lookup function for the risk manager
+        def get_price(symbol):
+            if self.market_data:
+                return self.market_data.get_price(symbol)
+            return None
+
+        # Run portfolio health audit
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
+        actions = self.risk_manager.check_portfolio_health(
+            positions_snapshot, net_liq, get_price_fn=get_price
+        )
+
+        if not actions:
+            return
+
+        # Process actions
+        force_close_symbols = set()
+        for item in actions:
+            severity = item.get("severity", "warning")
+            reason = item["reason"]
+
+            if item["action"] == "force_close":
+                symbol = item["symbol"]
+                if symbol not in force_close_symbols:
+                    force_close_symbols.add(symbol)
+                    log.warning(f"PORTFOLIO RISK: {reason}")
+                    self.notifier.risk_alert(reason)
+                    self._close_position(symbol, "portfolio_risk", reason)
+
+            elif item["action"] == "alert":
+                log.warning(f"PORTFOLIO RISK: {reason}")
+                # Rate-limit alerts to avoid spam (once per 5 minutes)
+                alert_key = f"portfolio_alert_{item['symbol']}"
+                now = datetime.now(self.tz)
+                last_alert = getattr(self, '_last_portfolio_alerts', {}).get(alert_key)
+                if not last_alert or (now - last_alert).total_seconds() > 300:
+                    self.notifier.risk_alert(reason)
+                    if not hasattr(self, '_last_portfolio_alerts'):
+                        self._last_portfolio_alerts = {}
+                    self._last_portfolio_alerts[alert_key] = now
+
+        if force_close_symbols:
+            log.warning(
+                f"PORTFOLIO RISK: Force-closed {len(force_close_symbols)} positions: "
+                f"{', '.join(sorted(force_close_symbols))}"
+            )
 
     def _execute_signal(self, signal):
         """Execute a trading signal through broker chain (IBKR -> TradersPost fallback)."""
@@ -2710,10 +2790,15 @@ class TradingEngine:
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
 
-                # LONG-ONLY: Skip short positions from broker sync
+                # Track ALL positions (including shorts) for portfolio risk monitoring.
+                # The bot won't ENTER new shorts (long_only blocks that), but it must
+                # be AWARE of existing shorts to enforce concentration/exposure limits
+                # and force-close positions that breach risk thresholds.
                 if side == "short":
-                    log.info(f"LONG-ONLY SYNC: Skipping SHORT position {symbol} ({int(qty)} shares) from Alpaca")
-                    continue
+                    log.warning(
+                        f"SYNC: Tracking SHORT position {symbol} ({int(qty)} shares) from Alpaca "
+                        f"for risk monitoring (bot will not enter new shorts)"
+                    )
 
                 unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
                 # Use current market price for smarter stop/target
@@ -2838,10 +2923,9 @@ class TradingEngine:
                     entry = float(p.get("avg_entry_price", 0))
                     side = "long" if float(p.get("qty", 0)) > 0 else "short"
 
-                    # LONG-ONLY: Skip short positions from broker sync
+                    # Track ALL positions (including shorts) for portfolio risk monitoring
                     if side == "short":
-                        log.debug(f"LONG-ONLY SYNC: Skipping SHORT {sym} from continuous sync")
-                        continue
+                        log.info(f"SYNC: Tracking SHORT {sym} from continuous sync for risk monitoring")
 
                     self.positions[sym] = {
                         "symbol": sym,
