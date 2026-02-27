@@ -13,6 +13,7 @@ by entering DURING accumulation, before the explosive move happens.
 
 Targets are intentionally wide — these are multi-bagger setups.
 """
+import time
 import numpy as np
 from datetime import datetime
 from bot.strategies.base import BaseStrategy
@@ -63,9 +64,12 @@ class PreBreakoutStrategy(BaseStrategy):
 
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols."""
+        now = time.time()
         for sym in symbols:
             if sym and isinstance(sym, str):
-                self._dynamic_symbols.add(sym.upper())
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
 
     def get_symbols(self):
         """Return combined static + dynamic symbol list."""

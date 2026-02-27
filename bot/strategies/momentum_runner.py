@@ -28,6 +28,7 @@ Exit via 4-phase adaptive trailing stop (managed by engine):
 - Phase 3 (5%+): Trail 5-candle low or 9 EMA (whichever tighter)
 - Phase 4 (15%+): Trail 5 EMA, exit if candle closes below on 2x volume
 """
+import time
 import numpy as np
 from datetime import datetime
 
@@ -75,9 +76,12 @@ class MomentumRunnerStrategy(BaseStrategy):
 
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols."""
+        now = time.time()
         for sym in symbols:
             if sym and isinstance(sym, str):
-                self._dynamic_symbols.add(sym.upper())
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
 
     def feed_snapshot_data(self, snapshot_entries):
         """Feed Polygon snapshot data for fast-path analysis."""

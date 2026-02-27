@@ -44,7 +44,12 @@ class ShortSqueezeStrategy(BaseStrategy):
 
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols from scanner."""
-        self._dynamic_symbols.update(symbols)
+        now = time.time()
+        for sym in symbols:
+            if sym and isinstance(sym, str):
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
 
     def get_symbols(self):
         return list(set(self.symbols) | self._dynamic_symbols)

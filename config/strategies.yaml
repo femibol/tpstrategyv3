@@ -10,13 +10,13 @@ allocation:
   smc_forever: 0.00
   mean_reversion: 0.00
   momentum: 0.00
-  momentum_runner: 0.60           # 60% - PRIMARY: aggressive runner catching (3 entry types)
-  rvol_momentum: 0.15             # 15% - Money machine backup (snapshot fast path)
+  momentum_runner: 0.70           # 70% - PRIMARY: aggressive runner catching (3 entry types, 7 slots)
+  rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
   rvol_scalp: 0.00
   vwap_scalp: 0.00
   pairs_trading: 0.00
   prebreakout: 0.10               # 10% - enter BEFORE the breakout (accumulation detection)
-  premarket_gap: 0.15             # 15% - pre-market gap plays
+  premarket_gap: 0.10             # 10% - pre-market gap plays
   options_momentum: 0.00
   short_squeeze: 0.00
   pead: 0.00
@@ -113,8 +113,8 @@ momentum_runner:
   max_price: 100.00                  # $100 ceiling
   min_volume: 500000                 # 500K avg daily volume — real liquidity only
   max_daily_change_pct: 30.0         # Skip >30% unless fresh catalyst
-  max_open_positions: 5              # Max 5 momentum positions at once
-  max_trades_per_day: 10             # Focused — only the best setups
+  max_open_positions: 7              # Max 7 momentum runner positions (up from 5, uses 10-slot capacity)
+  max_trades_per_day: 15             # More shots on goal (up from 10)
   atr_stop_multiplier: 1.0           # 1x ATR(14) initial stop
   spike_size_pct: 0.50               # 50% position size for spike entries
   open_dead_zone_minutes: 2          # 2-min dead zone after open (chaos period)
