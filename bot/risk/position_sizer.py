@@ -13,12 +13,14 @@ log = get_logger("risk.position_sizer")
 # More shares on cheap stocks = bigger dollar profit on % moves
 PRICE_TIERS = [
     # (max_price, min_shares, max_shares_cap)
-    (2,      10,  2000),  # Sub-$2 runners: 10-2000 shares (big lot sizes for % gains)
-    (5,      10,  1000),  # $2-$5 range: 10-1000 shares
-    (10,     5,   500),   # $5-$10 range: 5-500 shares
-    (25,     3,   300),   # $10-$25 range: 3-300 shares
-    (50,     2,   200),   # $25-$50 range: 2-200 shares
-    (150,    1,   100),   # $50-$150 (runners past scanner): 1-100 shares
+    # Caps raised — old caps were capping positions well below max_position_size_pct
+    # A $47K account with 15% max position = $7K. Tier caps must allow that.
+    (2,      10,  5000),  # Sub-$2 runners: 10-5000 shares ($10K max position value)
+    (5,      10,  2000),  # $2-$5 range: 10-2000 shares ($10K max)
+    (10,     5,   1000),  # $5-$10 range: 5-1000 shares ($10K max)
+    (25,     3,   500),   # $10-$25 range: 3-500 shares ($12.5K max)
+    (50,     2,   300),   # $25-$50 range: 2-300 shares ($15K max)
+    (150,    1,   150),   # $50-$150 (runners past scanner): 1-150 shares
     (500,    1,    50),   # High: 1-50 shares
     (99999,  1,    10),   # Ultra: 1-10 shares
 ]
@@ -53,6 +55,12 @@ class PositionSizer:
             "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
         )
 
+    def update_tier(self, tier):
+        """Update sizing parameters from scaling tier."""
+        if tier:
+            self.risk_per_trade_pct = tier.get("risk_per_trade", self.risk_per_trade_pct)
+            self.max_position_pct = tier.get("max_position_pct", self.max_position_pct)
+
     def _get_tier_limits(self, price):
         """Get min/max share limits based on stock price tier."""
         for max_price, min_shares, max_shares in PRICE_TIERS:
@@ -84,7 +92,10 @@ class PositionSizer:
             return 0
 
         # Available capital (after reserve)
-        available = balance * (1 - self.reserve_pct) * strategy_allocation
+        # NOTE: strategy_allocation controls how many positions a strategy opens,
+        # NOT the size of each position. Each position should be sized to
+        # max_position_size_pct regardless of which strategy generated it.
+        available = balance * (1 - self.reserve_pct)
 
         # Crypto gets smaller position cap (more volatile)
         position_pct = self.crypto_max_position_pct if self._is_crypto(symbol) else self.max_position_pct

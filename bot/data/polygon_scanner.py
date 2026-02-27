@@ -13,13 +13,23 @@ import time
 from datetime import datetime, timedelta
 
 import pandas as pd
-from polygon import RESTClient
-from polygon.rest.models import TickerSnapshot, Agg
-from polygon.exceptions import BadResponse
 
 from bot.utils.logger import get_logger
 
 log = get_logger("data.polygon")
+
+try:
+    from polygon import RESTClient
+    from polygon.rest.models import TickerSnapshot, Agg
+    from polygon.exceptions import BadResponse
+    HAS_POLYGON = True
+except (ImportError, KeyError, Exception) as e:
+    HAS_POLYGON = False
+    RESTClient = None
+    TickerSnapshot = None
+    Agg = None
+    BadResponse = Exception
+    log.warning(f"polygon-api-client unavailable ({type(e).__name__}): Polygon data source disabled")
 
 
 class PolygonScanner:
@@ -80,13 +90,16 @@ class PolygonScanner:
             "SKLZ": "Technology", "GSAT": "Technology",
         }
 
-        if self.enabled:
+        if self.enabled and HAS_POLYGON:
             self._client = RESTClient(
                 api_key=api_key,
                 retries=2,
                 trace=False,
             )
             log.info("Polygon.io ENABLED (v3 official client) — primary data source")
+        elif self.enabled and not HAS_POLYGON:
+            self.enabled = False
+            log.warning("Polygon.io API key set but polygon library unavailable — disabled")
         else:
             log.info("Polygon.io disabled — set POLYGON_API_KEY to enable")
 
@@ -94,11 +107,11 @@ class PolygonScanner:
     # Full-Market Snapshot (scanning + price cache)
     # =========================================================================
 
-    def scan_full_market(self, min_change_pct=2.0, min_price=0.50, max_price=100.0, min_volume=30000):
+    def scan_full_market(self, min_change_pct=5.0, min_price=1.00, max_price=100.0, min_volume=50000):
         """
-        Scan the entire US market for movers.
+        Scan the entire US market for extreme momentum movers.
         Also caches prices for ALL tickers (used by market_data for quotes).
-        Filters movers to $0.50-$50 range for maximum % gains.
+        Filters: $1-$100 range, 5%+ movers, 10%+ runners, 8%+ gaps.
 
         Returns tuple: (movers, runners, gap_ups)
         """
@@ -161,7 +174,8 @@ class PolygonScanner:
                 price_cache[sym] = {
                     "price": round(price, 2),
                     "prev_close": round(prev_close, 2),
-                    "volume": int(volume),
+                    "volume": int(volume) if volume == volume else 0,
+                    "avg_volume": int(prev_volume) if prev_volume == prev_volume else 0,
                     "change_pct": round(change_pct, 2),
                     "open": round(open_price, 2),
                 }
@@ -184,8 +198,8 @@ class PolygonScanner:
                     "name": sym,
                     "price": round(price, 2),
                     "change_pct": round(change_pct, 2),
-                    "volume": int(volume),
-                    "avg_volume": int(prev_volume),
+                    "volume": int(volume) if volume == volume else 0,
+                    "avg_volume": int(prev_volume) if prev_volume == prev_volume else 0,
                     "rvol": rvol,
                     "gap_pct": round(gap_pct, 2),
                     "prev_close": round(prev_close, 2),
@@ -196,12 +210,12 @@ class PolygonScanner:
                     "source": "polygon",
                 }
 
-                if change_pct >= 2.0:
+                if change_pct >= 5.0:
                     movers.append(entry)
                 if change_pct >= 10.0:
                     runners.append(entry)  # Runners have no price cap — catch explosive movers at any price
-                if gap_pct >= 5.0:
-                    gap_ups.append(entry)
+                if gap_pct >= 3.0:
+                    gap_ups.append(entry)  # 3%+ gaps for pre-market session scanning
 
             movers.sort(key=lambda x: x["change_pct"], reverse=True)
             runners.sort(key=lambda x: x["change_pct"], reverse=True)
@@ -215,8 +229,8 @@ class PolygonScanner:
 
             log.info(
                 f"Polygon scan: {ticker_count} tickers | "
-                f"{len(movers)} movers (2%+) | {len(runners)} runners (10%+) | "
-                f"{len(gap_ups)} gap-ups (5%+)"
+                f"{len(movers)} movers (5%+) | {len(runners)} runners (10%+) | "
+                f"{len(gap_ups)} gap-ups (3%+)"
             )
 
             return movers, runners, gap_ups
@@ -415,8 +429,8 @@ class PolygonScanner:
                     sic_desc = getattr(details, 'sic_description', '') or ''
                     sector = self._classify_sector(sic_desc)
                     self._float_cache[sym] = {
-                        "float": int(float_est),
-                        "shares_outstanding": int(shares_out),
+                        "float": int(float_est) if float_est == float_est else 0,
+                        "shares_outstanding": int(shares_out) if shares_out == shares_out else 0,
                         "sector": sector,
                         "fetched": time.time(),
                     }
@@ -475,6 +489,385 @@ class PolygonScanner:
             sector = self.get_sector(sym)
             counts[sector] = counts.get(sector, 0) + 1
         return counts
+
+    def has_earnings_soon(self, symbol, days_ahead=1):
+        """Check if a symbol has earnings within the next N days.
+        Uses news catalysts as a proxy (Polygon free tier doesn't include earnings calendar).
+        Returns True if recent news mentions earnings/results for this ticker."""
+        # Check news-based earnings detection cache
+        cache_key = f"earnings_{symbol}"
+        cached = self._float_cache.get(cache_key)
+        if cached and time.time() - cached.get("fetched", 0) < 3600:
+            return cached.get("has_earnings", False)
+
+        # Check Polygon news for earnings-related headlines in the last 24h
+        if not self._client:
+            return False
+
+        try:
+            from datetime import date
+            today = date.today()
+            count = 0
+            for n in self._client.list_ticker_news(
+                ticker=symbol,
+                order="desc",
+                limit=5,
+                sort="published_utc",
+            ):
+                title = (getattr(n, 'title', '') or '').lower()
+                desc = (getattr(n, 'description', '') or '').lower()
+                content = f"{title} {desc}"
+                earnings_keywords = [
+                    "earnings", "quarterly results", "q1 ", "q2 ", "q3 ", "q4 ",
+                    "quarterly report", "eps", "revenue report", "earnings call",
+                    "reports after", "reports before", "reports tomorrow",
+                    "fiscal quarter", "quarterly earnings",
+                ]
+                if any(kw in content for kw in earnings_keywords):
+                    self._float_cache[cache_key] = {"has_earnings": True, "fetched": time.time()}
+                    log.info(f"EARNINGS DETECTED: {symbol} has earnings-related news")
+                    return True
+                count += 1
+                if count >= 5:
+                    break
+        except Exception as e:
+            log.debug(f"Earnings check failed for {symbol}: {e}")
+
+        self._float_cache[cache_key] = {"has_earnings": False, "fetched": time.time()}
+        return False
+
+    def check_unusual_options(self, symbol):
+        """Check for unusual options activity (UOA) on a symbol.
+
+        Detects when options volume vastly exceeds open interest,
+        suggesting smart money is making new directional bets.
+
+        Returns:
+            dict with {bullish, bearish, call_vol, put_vol, uoa_score} or None
+        """
+        if not self.enabled or not self._client:
+            return None
+
+        if not self._can_make_bar_call():
+            return None
+
+        try:
+            self._bars_call_times.append(time.time())
+
+            # Get options chain snapshot for the ticker
+            from polygon.rest.models import SnapshotOption
+            options = self._client.list_snapshot_options_chain(symbol)
+
+            total_call_vol = 0
+            total_put_vol = 0
+            total_call_oi = 0
+            total_put_oi = 0
+            large_sweeps = 0
+
+            for opt in options:
+                if not hasattr(opt, 'details') or not hasattr(opt, 'day'):
+                    continue
+
+                contract_type = getattr(opt.details, 'contract_type', '') or ''
+                vol = getattr(opt.day, 'volume', 0) or 0
+                oi = getattr(opt.day, 'open_interest', 0) or 0
+
+                if contract_type.lower() == 'call':
+                    total_call_vol += vol
+                    total_call_oi += oi
+                elif contract_type.lower() == 'put':
+                    total_put_vol += vol
+                    total_put_oi += oi
+
+                # Flag large unusual contracts (vol > 5x OI)
+                if oi > 0 and vol > 5 * oi:
+                    large_sweeps += 1
+
+            # Calculate UOA score
+            uoa_score = 0
+            bullish = False
+            bearish = False
+
+            # Call/put ratio
+            total_vol = total_call_vol + total_put_vol
+            if total_vol > 0:
+                call_ratio = total_call_vol / total_vol
+                if call_ratio > 0.7:
+                    bullish = True
+                    uoa_score += 15
+                elif call_ratio < 0.3:
+                    bearish = True
+
+            # Volume vs OI (new positions being opened)
+            if total_call_oi > 0 and total_call_vol > 3 * total_call_oi:
+                uoa_score += 20  # Massive call buying
+                bullish = True
+            elif total_call_oi > 0 and total_call_vol > 2 * total_call_oi:
+                uoa_score += 10
+
+            # Large sweeps
+            if large_sweeps >= 5:
+                uoa_score += 15
+            elif large_sweeps >= 2:
+                uoa_score += 8
+
+            if uoa_score > 0:
+                log.info(
+                    f"UOA: {symbol} — Call vol: {total_call_vol:,} Put vol: {total_put_vol:,} "
+                    f"| Sweeps: {large_sweeps} | Score: {uoa_score} "
+                    f"| {'BULLISH' if bullish else 'BEARISH' if bearish else 'NEUTRAL'}"
+                )
+
+            return {
+                "bullish": bullish,
+                "bearish": bearish,
+                "call_vol": total_call_vol,
+                "put_vol": total_put_vol,
+                "call_oi": total_call_oi,
+                "put_oi": total_put_oi,
+                "large_sweeps": large_sweeps,
+                "uoa_score": uoa_score,
+            }
+
+        except Exception as e:
+            log.debug(f"UOA check failed for {symbol}: {e}")
+            return None
+
+    def estimate_short_interest(self, symbols, max_fetches=3):
+        """Estimate short interest using ticker details + volume patterns.
+
+        Polygon free tier doesn't have FINRA short interest data directly,
+        but we can use:
+        1. Ticker details: shares_outstanding vs weighted_shares_outstanding
+        2. High short volume ratio from recent trading as a proxy
+        3. Low float + high volume = squeeze candidate
+
+        Returns:
+            dict of {symbol: {short_pct (estimated), days_to_cover, avg_daily_volume}}
+        """
+        results = {}
+        if not self.enabled or not self._client:
+            return results
+
+        fetched = 0
+        for sym in symbols:
+            if fetched >= max_fetches:
+                break
+
+            # Use cached float/shares data
+            cached = self._float_cache.get(sym, {})
+            float_shares = cached.get("float", 0)
+            shares_outstanding = cached.get("shares_outstanding", 0)
+
+            # Get current volume from price cache
+            price_data = self._price_cache.get(sym, {})
+            current_volume = price_data.get("volume", 0)
+            avg_volume = price_data.get("avg_volume", 0) or current_volume
+
+            if not float_shares or not avg_volume:
+                continue
+
+            # Estimate short interest from float utilization
+            # Low float + high volume relative to float = likely high short interest
+            # This is a rough proxy — real short interest requires FINRA data
+            volume_to_float_ratio = current_volume / float_shares if float_shares > 0 else 0
+
+            # Heuristic: if daily volume is > 30% of float, shorts are likely active
+            estimated_short_pct = 0
+            if volume_to_float_ratio > 0.50:
+                estimated_short_pct = 35  # Very likely heavily shorted
+            elif volume_to_float_ratio > 0.30:
+                estimated_short_pct = 25
+            elif volume_to_float_ratio > 0.15:
+                estimated_short_pct = 18
+            elif volume_to_float_ratio > 0.08:
+                estimated_short_pct = 12
+
+            # Boost for tiny float (< 10M shares) — these are squeeze magnets
+            if float_shares < 5_000_000:
+                estimated_short_pct = min(50, estimated_short_pct + 10)
+            elif float_shares < 15_000_000:
+                estimated_short_pct = min(50, estimated_short_pct + 5)
+
+            if estimated_short_pct >= 12:
+                # Days to cover = estimated short shares / avg daily volume
+                estimated_short_shares = float_shares * (estimated_short_pct / 100)
+                days_to_cover = estimated_short_shares / avg_volume if avg_volume > 0 else 0
+
+                results[sym] = {
+                    "short_pct": estimated_short_pct,
+                    "shares_short": int(estimated_short_shares),
+                    "days_to_cover": round(days_to_cover, 1),
+                    "avg_daily_volume": int(avg_volume),
+                    "float_shares": int(float_shares),
+                }
+                log.debug(
+                    f"Short interest est: {sym} — ~{estimated_short_pct}% SI, "
+                    f"DTC {days_to_cover:.1f}, float {float_shares/1e6:.1f}M"
+                )
+
+            fetched += 1
+
+        return results
+
+    # =========================================================================
+    # Session-Aware Scanning (momentum runner spec)
+    # =========================================================================
+
+    def get_session_candidates(self, session="regular"):
+        """Get session-appropriate candidates for the momentum runner strategy.
+
+        Pre-market: Stocks gapping >3% on 2x pre-market RVOL, float <50M preferred
+        Regular: Top 5 gappers that hold gap + new intraday highs on 3x volume
+        Post-market: Stocks moving >5% on >500K volume after hours
+
+        Args:
+            session: "premarket", "regular", or "postmarket"
+
+        Returns:
+            list of candidate dicts sorted by priority
+        """
+        movers = self._cached_movers
+        runners = self._cached_runners
+        gap_ups = self._cached_gap_ups
+
+        candidates = []
+
+        if session == "premarket":
+            # Pre-market: gap-ups >3% with volume surge, prefer low float
+            for entry in movers + gap_ups:
+                gap = entry.get("gap_pct", 0)
+                rvol = entry.get("rvol", 0)
+                float_shares = entry.get("float_shares", 0)
+
+                if gap >= 3.0 and rvol >= 2.0:
+                    # Prioritize low float (higher squeeze potential)
+                    priority = gap * rvol
+                    if 0 < float_shares < 50_000_000:
+                        priority *= 2.0  # Double priority for low float
+                    entry["priority"] = round(priority, 1)
+                    entry["session_reason"] = f"Pre-market gap +{gap:.1f}% RVOL {rvol:.1f}x"
+                    candidates.append(entry)
+
+        elif session == "regular":
+            # Regular hours: top gappers that held + new intraday highs + halt candidates
+            seen = set()
+
+            # Top 5 gappers from pre-market that held their gap
+            for entry in sorted(gap_ups, key=lambda x: x.get("gap_pct", 0), reverse=True)[:5]:
+                sym = entry["symbol"]
+                change = entry.get("change_pct", 0)
+                gap = entry.get("gap_pct", 0)
+                # "Held gap" = still up at least 60% of the gap size
+                if gap > 0 and change >= gap * 0.6:
+                    entry["priority"] = gap * 2
+                    entry["session_reason"] = f"Gap held +{change:.1f}% (gap was +{gap:.1f}%)"
+                    candidates.append(entry)
+                    seen.add(sym)
+
+            # Stocks making new highs on accelerating volume (3x bar avg)
+            for entry in movers:
+                sym = entry["symbol"]
+                if sym in seen:
+                    continue
+                rvol = entry.get("rvol", 0)
+                change = entry.get("change_pct", 0)
+                if rvol >= 3.0 and change >= 5.0:
+                    entry["priority"] = change * rvol
+                    entry["session_reason"] = f"New high +{change:.1f}% RVOL {rvol:.1f}x"
+                    candidates.append(entry)
+                    seen.add(sym)
+
+            # Halt candidates: >10% movers (will potentially halt)
+            for entry in runners:
+                sym = entry["symbol"]
+                if sym in seen:
+                    continue
+                change = entry.get("change_pct", 0)
+                if change >= 10.0:
+                    entry["priority"] = change * 1.5
+                    entry["session_reason"] = f"Halt candidate +{change:.1f}%"
+                    candidates.append(entry)
+                    seen.add(sym)
+
+        elif session == "postmarket":
+            # Post-market: >5% on >500K volume
+            for entry in movers + runners:
+                change = abs(entry.get("change_pct", 0))
+                volume = entry.get("volume", 0)
+                if change >= 5.0 and volume >= 500_000:
+                    entry["priority"] = change
+                    entry["session_reason"] = f"After-hours +{change:.1f}% vol {volume/1e3:.0f}K"
+                    candidates.append(entry)
+
+        # Deduplicate and sort by priority
+        seen_syms = set()
+        unique = []
+        for c in sorted(candidates, key=lambda x: x.get("priority", 0), reverse=True):
+            sym = c["symbol"]
+            if sym not in seen_syms:
+                seen_syms.add(sym)
+                unique.append(c)
+
+        return unique
+
+    def get_sector_momentum(self):
+        """Get count of running stocks per sector.
+
+        Used for sympathy play detection: if 3+ stocks in the same sector
+        are running, the laggard is a sympathy play candidate.
+
+        Returns:
+            dict: {sector: count_of_runners}
+        """
+        sector_counts = {}
+        for entry in self._cached_runners + self._cached_movers:
+            sector = entry.get("sector", "Unknown")
+            if sector and sector != "Unknown":
+                sector_counts[sector] = sector_counts.get(sector, 0) + 1
+        return sector_counts
+
+    def get_sympathy_candidates(self):
+        """Find sympathy play candidates.
+
+        When 3+ stocks in the same sector are running, find the laggard
+        in that sector (lowest change_pct) as a sympathy play.
+
+        Returns:
+            list of entry dicts for sympathy candidates
+        """
+        sector_momentum = self.get_sector_momentum()
+        hot_sectors = {s for s, c in sector_momentum.items() if c >= 3}
+
+        if not hot_sectors:
+            return []
+
+        # Group movers by hot sector
+        sector_movers = {}
+        for entry in self._cached_movers:
+            sector = entry.get("sector", "Unknown")
+            if sector in hot_sectors:
+                if sector not in sector_movers:
+                    sector_movers[sector] = []
+                sector_movers[sector].append(entry)
+
+        # Find laggards in each hot sector
+        sympathy = []
+        for sector, movers in sector_movers.items():
+            if len(movers) >= 3:
+                sorted_movers = sorted(movers, key=lambda x: x.get("change_pct", 0))
+                # Laggard = lowest change in the sector
+                laggard = sorted_movers[0]
+                leader_change = sorted_movers[-1].get("change_pct", 0)
+                laggard["session_reason"] = (
+                    f"Sympathy: {sector} sector hot ({len(movers)} runners), "
+                    f"laggard at +{laggard.get('change_pct', 0):.1f}% "
+                    f"vs leader +{leader_change:.1f}%"
+                )
+                laggard["priority"] = leader_change - laggard.get("change_pct", 0)
+                sympathy.append(laggard)
+
+        return sympathy
 
     def get_losers(self, limit=100):
         """Get top losers from cached scan data ($0.50-$100 range)."""

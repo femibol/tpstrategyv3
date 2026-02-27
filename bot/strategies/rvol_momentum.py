@@ -342,8 +342,8 @@ class RvolMomentumStrategy(BaseStrategy):
         scan_result = {
             "price": round(current_price, 2),
             "rvol": rvol,
-            "current_vol": int(current_vol),
-            "avg_vol": int(avg_vol_20),
+            "current_vol": int(current_vol) if current_vol == current_vol else 0,
+            "avg_vol": int(avg_vol_20) if avg_vol_20 == avg_vol_20 else 0,
             "change_pct": change_pct,
             "gap_pct": gap_pct,
             "range_pct": range_pct,
@@ -361,6 +361,10 @@ class RvolMomentumStrategy(BaseStrategy):
 
         # Generate signal if score qualifies
         if verdict == "RVOL BUY SIGNAL" and direction == "UP" and atr and atr > 0:
+            # Floor: ATR must be at least 2% of price
+            min_atr = current_price * 0.02
+            if atr < min_atr:
+                atr = min_atr
             stop_loss = current_price - (self.atr_stop_mult * atr)
 
             # Breakout stocks get wider targets to capture the full move
@@ -584,8 +588,8 @@ class RvolMomentumStrategy(BaseStrategy):
         scan_result = {
             "price": round(price, 2),
             "rvol": rvol,
-            "current_vol": int(volume),
-            "avg_vol": int(avg_volume),
+            "current_vol": int(volume) if volume == volume else 0,
+            "avg_vol": int(avg_volume) if avg_volume == avg_volume else 0,
             "change_pct": round(change_pct, 2),
             "gap_pct": round(gap_pct, 2),
             "range_pct": 0,
@@ -609,8 +613,10 @@ class RvolMomentumStrategy(BaseStrategy):
             # Estimate ATR from change_pct (no bars available)
             # For a stock up X%, ATR is roughly price * X/100 * 0.7
             est_atr = price * abs(change_pct) / 100 * 0.7
-            if est_atr <= 0:
-                est_atr = price * 0.03  # Fallback: 3% of price
+            # Floor: ATR must be at least 2% of price to prevent instant stop triggers
+            min_atr = price * 0.02
+            if est_atr < min_atr:
+                est_atr = max(est_atr, min_atr) if est_atr > 0 else price * 0.03
 
             stop_loss = price - (self.atr_stop_mult * est_atr)
 

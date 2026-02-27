@@ -1,114 +1,61 @@
 # ============================================
-# STRATEGY CONFIGURATIONS - OPTIMIZED
+# STRATEGY CONFIGURATIONS - AGGRESSIVE MOMENTUM RUNNER
 # ============================================
-# Focus: $0.50-$50 high-beta runners for maximum % gains
-# Dead weight removed: pairs_trading, vwap_scalp, smc_forever disabled
-# Capital reallocated to proven runner-catching strategies
+# Momentum runner is the primary strategy: 3 entry types, 10-pt scoring,
+# session-aware scanning, 4-phase ATR trailing stop.
+# RVOL + Gap + Pre-breakout retained as secondary strategies.
 
 # --- Strategy Allocation ---
-# How capital is split across strategies
-# Total: 100% across active strategies
 allocation:
-  smc_forever: 0.00               # DISABLED
-  mean_reversion: 0.08            # 8% - dip-buying with reversal confirmation
-  momentum: 0.12                  # 12% - swing trades on trending runners (+2% from scalp cut)
-  rvol_momentum: 0.30             # 30% - Money Machine, THE core strategy (+5% from scalp cut)
-  rvol_scalp: 0.15                # 15% - tightened: fewer trades, wider targets (was 25%)
-  vwap_scalp: 0.00                # DISABLED
-  pairs_trading: 0.00             # DISABLED
-  prebreakout: 0.18               # 18% - catching breakouts before they happen (+3%)
-  premarket_gap: 0.17             # 17% - pre-market gap plays with time filter
+  smc_forever: 0.00
+  mean_reversion: 0.00
+  momentum: 0.00
+  momentum_runner: 0.60           # 60% - PRIMARY: aggressive runner catching (3 entry types)
+  rvol_momentum: 0.15             # 15% - Money machine backup (snapshot fast path)
+  rvol_scalp: 0.00
+  vwap_scalp: 0.00
+  pairs_trading: 0.00
+  prebreakout: 0.10               # 10% - enter BEFORE the breakout (accumulation detection)
+  premarket_gap: 0.15             # 15% - pre-market gap plays
+  options_momentum: 0.00
+  short_squeeze: 0.00
+  pead: 0.00
 
 # --- Mean Reversion Strategy ---
-# Dip-buying oversold small/mid caps - buy the panic, sell the recovery
 mean_reversion:
-  enabled: true
+  enabled: false
   timeframe: "5m"
-  lookback_period: 20             # 20-period lookback
-  entry_zscore: -2.0              # Back to -2.0 - only real oversold dips (small caps are noisy)
-  exit_zscore: 0.0                # Exit at mean
-  rsi_oversold: 28                # Deeper oversold for small caps (more noise = need stronger signals)
+  lookback_period: 20
+  entry_zscore: -2.0
+  exit_zscore: 0.0
+  rsi_oversold: 28
   rsi_overbought: 72
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5
-  max_holding_periods: 15         # Shorter hold - small caps revert faster or keep dropping
-  max_hold_days: 2                # 2 days max - if no revert by then, it's a trend not a dip
-  max_trades_per_day: 10          # Fewer trades - quality over quantity for mean reversion
-  symbols:
-    # $0.50-$50 stocks that dip hard but recover (high beta, liquid enough)
-    - SOFI
-    - HOOD
-    - IONQ
-    - MARA
-    - RIOT
-    - SOUN
-    - LCID
-    - RIVN
-    - AFRM
-    - UPST
-    - SNAP
-    - PLUG
-    - DNA
-    - OPEN
-    - SKLZ
-    - CLSK
-    - JOBY
-    - GSAT
+  max_holding_periods: 15
+  max_hold_days: 2
+  max_trades_per_day: 10
+  symbols: []
 
 # --- Momentum / Trend Following ---
-# Ride strong trends on small/mid cap runners
 momentum:
-  enabled: true
+  enabled: false
   timeframe: "15m"
   fast_ema: 8
   slow_ema: 21
   signal_ema: 5
-  adx_threshold: 22               # Slightly higher - small caps need confirmed trends (less noise)
-  volume_surge_multiplier: 1.5    # Higher volume requirement - confirm institutional flow
+  adx_threshold: 22
+  volume_surge_multiplier: 1.5
   atr_period: 14
-  atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR
-  atr_target_multiplier: 5.0      # Wider target: 5x ATR for runners (was 4x)
+  atr_stop_multiplier: 1.5
+  atr_target_multiplier: 5.0
   max_holding_bars: 40
-  max_hold_days: 5                # 5 days max - runners move fast
+  max_hold_days: 5
   breakout_lookback: 15
-  symbols:
-    # $0.50-$100 trending stocks with momentum potential
-    # Scanner dynamically adds more — these are the core watchlist
-    - SOFI
-    - HOOD
-    - IONQ
-    - MARA
-    - RIOT
-    - SOUN
-    - AFRM
-    - UPST
-    - RIVN
-    - LCID
-    - SNAP
-    - SKLZ
-    - AI
-    - BBAI
-    - RKLB
-    - LUNR
-    - ASTS
-    - CLSK
-    - RGTI
-    - GME
-    - AMC
-    - GSAT
-    - DNA
-    - OPEN
-    - WOLF        # Semiconductors, volatile
-    - HIMS        # Telehealth, runner potential
-    - IOVA        # Biotech, FDA catalysts
-    - VKTX        # Obesity drug play, volatile
-    - RIG         # Offshore energy, momentum
-    - DKNG        # Sports betting, volatile
+  symbols: []
 
 # --- VWAP Scalping ---
-# DISABLED - VWAP scalping requires highly liquid large caps ($100+) with tight spreads
-# Small caps have erratic VWAP and wide spreads that eat scalp profits
 vwap_scalp:
   enabled: false
   timeframe: "1m"
@@ -120,13 +67,9 @@ vwap_scalp:
   volume_confirmation: true
   max_trades_per_day: 10
   max_holding_minutes: 45
-  symbols:
-    - SPY
-    - QQQ
+  symbols: []
 
-# --- Pairs Trading (Statistical Arbitrage) ---
-# DISABLED - Requires short selling which is blocked by long_only=true
-# Also requires correlated large-cap pairs - wrong universe for $0.50-$50
+# --- Pairs Trading ---
 pairs_trading:
   enabled: false
   timeframe: "15m"
@@ -140,9 +83,7 @@ pairs_trading:
   pairs:
     - ["AAPL", "MSFT"]
 
-# --- SMC Forever Model (ICT / Smart Money Concepts) ---
-# DISABLED - Requires liquid large caps for reliable liquidity sweeps and FVGs
-# Small caps don't have clean enough order flow for SMC patterns
+# --- SMC Forever ---
 smc_forever:
   enabled: false
   timeframe: "15m"
@@ -156,217 +97,167 @@ smc_forever:
   stop_buffer_pct: 0.002
   smt_pairs:
     - ["SPY", "QQQ"]
-  symbols:
-    - SPY
+  symbols: []
+
+# --- MOMENTUM RUNNER STRATEGY (PRIMARY) ---
+# Aggressive runner catcher with 3 entry types and 10-pt scoring.
+# Session-aware: pre-market, regular hours, post-market.
+# 4-phase ATR-based trailing stop (managed by engine).
+# Unified scoring: RVOL(0-3) + Float(0-2) + Catalyst(0-2) + Technical(0-3) = 10
+# Only trades candidates scoring 6+/10.
+momentum_runner:
+  enabled: true
+  timeframe: "1m"                    # 1-minute bars for fastest detection
+  min_score: 6                       # 6/10 minimum composite score
+  min_price: 1.00                    # $1 floor
+  max_price: 100.00                  # $100 ceiling
+  min_volume: 500000                 # 500K avg daily volume — real liquidity only
+  max_daily_change_pct: 30.0         # Skip >30% unless fresh catalyst
+  max_open_positions: 5              # Max 5 momentum positions at once
+  max_trades_per_day: 10             # Focused — only the best setups
+  atr_stop_multiplier: 1.0           # 1x ATR(14) initial stop
+  spike_size_pct: 0.50               # 50% position size for spike entries
+  open_dead_zone_minutes: 2          # 2-min dead zone after open (chaos period)
+  afternoon_reduction_hour: 15       # 3:00 PM ET — reduce size
+  afternoon_size_reduction: 0.50     # 50% size after 3 PM (EOD reversals)
+  symbols: []                        # EMPTY — scanner discovers everything
 
 # --- RVOL Momentum Strategy (Money Machine) ---
-# THE CORE STRATEGY - finds stocks with unusual volume and rides the momentum
-# Dynamically discovers runners from Polygon scanner (not just static watchlist)
+# Secondary strategy — snapshot fast-path for instant signal generation
 rvol_momentum:
   enabled: true
   timeframe: "5m"
-  min_rvol: 1.5                    # Lowered to 1.5x - catch catalyst-driven movers early (was 2.0)
-  min_score: 45                    # Lowered for fast path - snapshot signals miss RSI/EMA/MACD pts (was 55)
-  min_price: 0.50                  # Match global $0.50 floor
-  max_price: 100.00                # Raised to $100 - catch mid-cap runners like VKTX, TDW (was $50)
-  min_volume: 50000                # 50K minimum - catch early movers before volume ramps (was 100K)
-  atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR (momentum = fast exit)
+  min_rvol: 2.5                    # Higher bar: 2.5x relative volume
+  min_score: 60                    # Stronger signals only
+  min_price: 1.00                  # $1 floor
+  max_price: 100.00                # $100 ceiling
+  min_volume: 500000               # 500K minimum — aligned with runner spec
+  atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR
   atr_target_multiplier: 4.0      # 4x ATR target
-  max_hold_minutes: 180            # Max 3 hours - give runners more time to develop (was 120)
-  max_trades_per_day: 25           # 25 trades/day - more aggressive (was 20)
-  symbols:
-    # $0.50-$100 high-beta runners (dynamic scanner adds more)
-    # Core watchlist — scanner discovers the rest dynamically
-    - SOFI
-    - HOOD
-    - IONQ
-    - MARA
-    - RIOT
-    - SOUN
-    - AFRM
-    - UPST
-    - AI
-    - BBAI
-    - RKLB
-    - LUNR
-    - ASTS
-    - RIVN
-    - LCID
-    - CLSK
-    - RGTI
-    - GME
-    - AMC
-    - SNAP
-    - SKLZ
-    - RBLX
-    - GSAT
-    - DNA
-    - OPEN
-    - WOLF        # Semiconductors
-    - HIMS        # Telehealth runner
-    - IOVA        # Biotech, FDA catalysts
-    - VKTX        # Obesity drug play
-    - RIG         # Offshore energy
-    - DKNG        # Sports betting
+  max_hold_minutes: 180            # Max 3 hours
+  max_trades_per_day: 8            # Reduced — momentum_runner is primary
+  symbols: []                      # EMPTY — scanner discovers everything
 
-# --- RVOL Scalp Strategy (1-Minute Quick Breakout) ---
-# Ultra-fast scalping on 1-minute bars - the volume machine
-# Catches quick RVOL breakouts, takes profit on same candle if uptick continues
+# --- RVOL Scalp Strategy ---
 rvol_scalp:
-  enabled: true
+  enabled: false
   timeframe: "1m"
-  min_rvol: 2.0                    # Lowered to catch more setups (was 2.5)
-  min_score: 50                    # Lowered - more aggressive entry (was 60)
-  min_price: 1.00                  # $1 floor — catch low-priced runners (was $2)
-  max_price: 100.00                # Raised to $100 — catch mid-cap momentum (was $50)
-  min_volume: 100000               # 100K min — more accessible (was 200K)
-  atr_stop_multiplier: 1.0        # Tight stop: 1x ATR
-  atr_target_multiplier: 2.0      # Wider target: 2x ATR (was 1.5 — too tight)
-  quick_scalp_target_pct: 0.012   # Take profit at +1.2% (was 0.6% — inside the spread)
-  runner_target_pct: 0.025        # Runners to +2.5% (was 2%)
-  max_hold_minutes: 15             # Max 15 minutes (was 10)
-  max_trades_per_day: 15           # Quality over quantity (was 35)
+  min_rvol: 2.0
+  min_score: 50
+  min_price: 1.00
+  max_price: 100.00
+  min_volume: 100000
+  atr_stop_multiplier: 1.0
+  atr_target_multiplier: 2.0
+  quick_scalp_target_pct: 0.012
+  runner_target_pct: 0.025
+  max_hold_minutes: 15
+  max_trades_per_day: 15
   same_candle_exit: true
   price_poll_seconds: 3
   breakout_confirmation_bars: 2
   momentum_acceleration: true
-  symbols:
-    # $0.50-$50 high-volume stocks for scalping
-    # COIN, SMCI, MSTR REMOVED - above $50 price range
-    - SOFI
-    - HOOD
-    - IONQ
-    - MARA
-    - RIOT
-    - SOUN
-    - AFRM
-    - UPST
-    - AI
-    - BBAI
-    - RKLB
-    - LUNR
-    - ASTS
-    - RIVN
-    - LCID
-    - CLSK
-    - RGTI
-    - GME
-    - AMC
-    - SNAP
-    - SKLZ
-    - RBLX
-    - GSAT
-    - DNA
-    - OPEN
+  symbols: []
 
-# --- Pre-Breakout Accumulation Strategy ---
-# Enters BEFORE the breakout by detecting accumulation:
-# BB squeeze + volume building + higher lows + MACD shift
-# These are the multi-bagger plays - enter during compression, ride the explosion
+# --- Pre-Breakout Accumulation ---
+# Enter BEFORE the explosion: detect BB squeeze + volume building + higher lows
+# Scanner discovers candidates dynamically — no static list
 prebreakout:
   enabled: true
   timeframe: "5m"
-  min_score: 45                    # Lowered - catch more accumulation setups (was 50)
-  min_price: 0.50                  # Match global $0.50 floor
-  max_price: 100.00                # Raised to $100 to catch mid-cap breakouts (was $50)
-  min_volume: 50000                # 50K min - catch early accumulation (was 75K)
+  min_score: 50                    # Moderate bar — catch accumulation early
+  min_price: 1.00                  # $1 floor
+  max_price: 100.00
+  min_volume: 75000                # 75K — need some liquidity
   bollinger_period: 20
   bollinger_std: 2.0
   squeeze_lookback: 50
-  squeeze_percentile: 25           # Tighter squeeze detection - stronger setups
+  squeeze_percentile: 20           # Tighter squeeze = higher conviction
   vol_build_bars: 5
-  vol_build_multiplier: 1.3        # Higher vol requirement - confirm accumulation
-  atr_stop_multiplier: 2.0
+  vol_build_multiplier: 1.4        # Stronger volume build required
+  atr_stop_multiplier: 1.5         # Tighter stop (was 2.0) — if it doesn't explode, get out
   atr_target_multiplier: 6.0       # 6x ATR first target
-  runner_atr_multiplier: 15.0      # 15x ATR runner target (multi-bagger potential)
-  max_hold_days: 5                 # 5 days max
-  max_trades_per_day: 10
-  trailing_stop_pct: 0.04          # 4% trailing stop (wider - survive small cap shakeouts)
-  symbols:
-    # $0.50-$50 high-beta stocks that make breakout moves
-    # COIN, SMCI, MSTR REMOVED - above $50 price range
-    - SOFI
-    - HOOD
-    - IONQ
-    - MARA
-    - RIOT
-    - SOUN
-    - AFRM
-    - UPST
-    - AI
-    - BBAI
-    - RKLB
-    - LUNR
-    - ASTS
-    - RIVN
-    - LCID
-    - CLSK
-    - RGTI
-    - GME
-    - AMC
-    - SNAP
-    - SKLZ
-    - DNA
-    - OPEN
-    - PLUG
-    - JOBY
-    - GSAT
+  runner_atr_multiplier: 15.0      # 15x ATR for multi-baggers
+  max_hold_days: 3                 # Shorter hold — explode or bail (was 5)
+  max_trades_per_day: 8
+  trailing_stop_pct: 0.02          # 2% trail (was 4% — tighter for aggressive system)
+  symbols: []                      # EMPTY — scanner discovers everything
 
 # --- Pre-Market Gap Scanner Strategy ---
-# Finds extreme pre-market gap-ups, waits for pullback, enters on structure break
-# This is where the biggest day 1 runners come from
+# Catches the biggest gap-ups before open — extreme gaps only
+# Scanner feeds dynamically — no static watchlist
 premarket_gap:
   enabled: true
   timeframe: "5m"
-  min_gap_pct: 0.04               # Lowered to 4% gap - catch more gaps (was 5%)
-  min_rvol: 5.0                   # Lowered from 8x - catch gaps earlier before volume builds
-  min_price: 0.50                 # Match global $0.50 floor
-  max_price: 100.00               # Raised to $100 (was $50)
-  min_volume: 30000               # 30K min pre-market volume - early gaps have thin volume (was 50K)
+  min_gap_pct: 0.08               # 8% minimum gap — extreme only (was 4% — too many weak gaps)
+  min_rvol: 8.0                   # 8x relative volume — real institutional interest (was 5)
+  min_price: 1.00                 # $1 floor
+  max_price: 100.00               # Keep $100 ceiling
+  min_volume: 50000               # 50K min pre-market volume
   pullback_min_pct: 0.02          # Min 2% pullback
   pullback_max_pct: 0.50          # Max 50% retracement
   atr_stop_multiplier: 1.2        # Tight stop: 1.2x ATR
   atr_target_multiplier: 3.0      # First target at 3x ATR
-  runner_atr_multiplier: 10.0     # Runner target at 10x ATR (bigger for gap plays)
-  max_hold_minutes: 90             # 90 min hold (was 60 - let morning momentum play out)
-  max_trades_per_day: 6
-  max_candidates: 5                # Top 5 gappers (was 3 - more opportunities)
-  trailing_stop_pct: 0.03          # 3% trailing stop (wider for volatile gap plays)
+  runner_atr_multiplier: 10.0     # Runner target at 10x ATR
+  max_hold_minutes: 90            # 90 min hold
+  max_trades_per_day: 4           # Only the best gaps (was 6)
+  max_candidates: 3               # Top 3 gappers only (was 5)
+  trailing_stop_pct: 0.03         # 3% trailing stop
   start_hour: 6
-  end_hour: 11                    # Extended to 11 AM (was 10 - catch late morning runners)
-  open_dead_zone_minutes: 5       # Skip first 5 min after 9:30 open (whipsaw/fakeout zone)
-  symbols:
-    # $0.50-$50 high-beta gap stocks
-    # COIN, SMCI, MSTR REMOVED - above $50 price range
-    - SOFI
-    - HOOD
-    - IONQ
-    - MARA
-    - RIOT
-    - SOUN
-    - AFRM
-    - UPST
-    - AI
-    - BBAI
-    - RKLB
-    - LUNR
-    - ASTS
-    - RIVN
-    - LCID
-    - CLSK
-    - RGTI
-    - GME
-    - AMC
-    - SNAP
-    - SKLZ
-    - DNA
-    - OPEN
-    - PLUG
-    - JOBY
-    - GSAT
+  end_hour: 11
+  open_dead_zone_minutes: 5       # Skip first 5 min after open
+  symbols: []                     # EMPTY — scanner discovers everything
+
+# --- Options Momentum ---
+options_momentum:
+  enabled: false
+  timeframe: "5m"
+  min_rvol: 3.0
+  min_score: 70
+  max_premium_pct: 0.02
+  target_dte_min: 10
+  target_dte_max: 21
+  stop_loss_pct: 0.50
+  take_profit_pct: 1.00
+  max_options_positions: 3
+  max_trades_per_day: 3
+  options_universe: []
+  symbols: []
+
+# --- Short Squeeze ---
+short_squeeze:
+  enabled: false
+  timeframe: "5m"
+  min_short_pct: 15.0
+  min_rvol: 2.0
+  min_score: 55
+  min_price: 1.00
+  max_price: 100.00
+  min_volume: 100000
+  max_trades_per_day: 8
+  atr_stop_multiplier: 2.0
+  atr_target_multiplier: 6.0
+  max_hold_days: 5
+  symbols: []
+
+# --- PEAD ---
+pead:
+  enabled: false
+  timeframe: "5m"
+  min_gap_pct: 5.0
+  min_rvol: 2.0
+  min_score: 55
+  min_price: 2.00
+  max_price: 100.00
+  min_volume: 200000
+  max_trades_per_day: 5
+  drift_window_days: 30
+  pullback_entry_pct: 0.03
+  atr_stop_multiplier: 2.5
+  max_hold_days: 20
+  symbols: []
 
 # --- TradingView Signal Strategy ---
-# Execute signals received from TradingView alerts
 tradingview_signals:
   enabled: true
   validate_signals: true

@@ -44,15 +44,15 @@ class Config:
 
     @property
     def max_daily_loss(self):
-        return self.settings.get("capital", {}).get("max_daily_loss", 0.02)
+        return self.settings.get("capital", {}).get("max_daily_loss", 0.04)
 
     @property
     def max_drawdown(self):
-        return self.settings.get("capital", {}).get("max_drawdown", 0.10)
+        return self.settings.get("capital", {}).get("max_drawdown", 0.12)
 
     @property
     def reserve_cash_pct(self):
-        return self.settings.get("capital", {}).get("reserve_cash_pct", 0.20)
+        return self.settings.get("capital", {}).get("reserve_cash_pct", 0.10)
 
     # --- Risk ---
     @property
@@ -61,7 +61,7 @@ class Config:
 
     @property
     def max_positions(self):
-        return self.risk_config.get("max_positions", 5)
+        return self.risk_config.get("max_positions", 12)
 
     @property
     def risk_per_trade(self):
@@ -73,7 +73,32 @@ class Config:
 
     @property
     def take_profit_pct(self):
-        return self.risk_config.get("take_profit_pct", 0.06)
+        return self.risk_config.get("take_profit_pct", 0.20)
+
+    # --- Portfolio-Level Risk Limits ---
+    @property
+    def portfolio_limits(self):
+        return self.risk_config.get("portfolio_limits", {})
+
+    @property
+    def max_single_name_pct(self):
+        return self.portfolio_limits.get("max_single_name_pct", 0.25)
+
+    @property
+    def max_gross_exposure_pct(self):
+        return self.portfolio_limits.get("max_gross_exposure_pct", 1.50)
+
+    @property
+    def max_net_exposure_pct(self):
+        return self.portfolio_limits.get("max_net_exposure_pct", 1.00)
+
+    @property
+    def max_loss_per_position_pct(self):
+        return self.portfolio_limits.get("max_loss_per_position_pct", 0.08)
+
+    @property
+    def monitor_all_broker_positions(self):
+        return self.portfolio_limits.get("monitor_all_broker_positions", True)
 
     # --- Schedule ---
     @property

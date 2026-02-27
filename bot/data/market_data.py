@@ -62,12 +62,34 @@ class MarketDataFeed:
         self._last_1m_update = {}   # symbol -> timestamp
         self._cache_ttl = config.settings.get("data", {}).get("cache_ttl", 10)
         self._cache_ttl_1m = 5      # 5-second TTL for 1-min bar cache
+        self._bars_fail_cache = {}  # symbol -> timestamp of last failed bar fetch
+        self._bars_fail_ttl = 120   # Retry failed bar fetches every 2 minutes (not every cycle)
 
         # Streaming state (IBKR only)
         self._streaming_active = False
         self._subscribed_symbols = set()
         # IBKR paper accounts allow max 100 simultaneous streams
         self._max_ibkr_streams = config.settings.get("data", {}).get("max_ibkr_streams", 95)
+
+    def prune_stale_streams(self, active_symbols):
+        """Unsubscribe IBKR streams for symbols no longer actively tracked.
+        active_symbols should include positions + current universe/watchlist."""
+        if not self.broker or not hasattr(self.broker, 'unsubscribe_market_data'):
+            return 0
+        active_set = set(s.upper() for s in active_symbols)
+        stale = self._subscribed_symbols - active_set
+        if not stale:
+            return 0
+        try:
+            self.broker.unsubscribe_market_data(list(stale))
+            self._subscribed_symbols -= stale
+            log.info(
+                f"Pruned {len(stale)} stale IBKR streams — "
+                f"now {len(self._subscribed_symbols)}/{self._max_ibkr_streams}"
+            )
+        except Exception as e:
+            log.debug(f"Stream prune error: {e}")
+        return len(stale)
 
     def start_streaming(self, symbols):
         """Start IBKR real-time streaming for symbols (capped at _max_ibkr_streams)."""
@@ -77,6 +99,11 @@ class MarketDataFeed:
             return False
 
         new_symbols = [s for s in symbols if s not in self._subscribed_symbols]
+
+        # Filter out symbols IBKR has blacklisted (delisted/invalid)
+        if hasattr(self.broker, 'is_symbol_invalid'):
+            new_symbols = [s for s in new_symbols if not self.broker.is_symbol_invalid(s)]
+
         if not new_symbols:
             return self._streaming_active
 
@@ -98,7 +125,12 @@ class MarketDataFeed:
         try:
             result = self.broker.subscribe_market_data(new_symbols)
             if result:
-                self._subscribed_symbols.update(new_symbols)
+                # Only track symbols that weren't blacklisted during subscription
+                if hasattr(self.broker, 'is_symbol_invalid'):
+                    valid = [s for s in new_symbols if not self.broker.is_symbol_invalid(s)]
+                else:
+                    valid = new_symbols
+                self._subscribed_symbols.update(valid)
                 self._streaming_active = True
                 log.info(f"IBKR streaming active for {len(self._subscribed_symbols)} symbols")
                 return True
@@ -139,6 +171,11 @@ class MarketDataFeed:
             if now - last < self._cache_ttl:
                 continue
 
+            # Skip symbols that recently failed bar fetch (avoid hammering APIs)
+            fail_time = self._bars_fail_cache.get(symbol, 0)
+            if fail_time and now - fail_time < self._bars_fail_ttl:
+                continue
+
             try:
                 bars = self._fetch_bars(symbol)
                 if bars is not None and len(bars) > 0:
@@ -147,8 +184,12 @@ class MarketDataFeed:
                         self._price_cache[symbol] = float(bars["close"].iloc[-1])
                     self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
                     self._last_update[symbol] = now
+                    self._bars_fail_cache.pop(symbol, None)  # Clear failure on success
                     log.debug(f"Updated {symbol}: ${self._price_cache.get(symbol, 0):.2f}")
+                else:
+                    self._bars_fail_cache[symbol] = now
             except Exception as e:
+                self._bars_fail_cache[symbol] = now
                 log.debug(f"Data update failed for {symbol}: {e}")
 
     def _fetch_bars(self, symbol):
