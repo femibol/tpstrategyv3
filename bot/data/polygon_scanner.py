@@ -107,11 +107,11 @@ class PolygonScanner:
     # Full-Market Snapshot (scanning + price cache)
     # =========================================================================
 
-    def scan_full_market(self, min_change_pct=5.0, min_price=1.00, max_price=100.0, min_volume=50000):
+    def scan_full_market(self, min_change_pct=2.0, min_price=1.00, max_price=100.0, min_volume=50000):
         """
-        Scan the entire US market for extreme momentum movers.
+        Scan the entire US market for momentum movers.
         Also caches prices for ALL tickers (used by market_data for quotes).
-        Filters: $1-$100 range, 5%+ movers, 10%+ runners, 8%+ gaps.
+        Filters: $1-$100 range, 2%+ movers, 5%+ runners, 3%+ gaps.
 
         Returns tuple: (movers, runners, gap_ups)
         """
@@ -210,10 +210,10 @@ class PolygonScanner:
                     "source": "polygon",
                 }
 
+                if change_pct >= 2.0:
+                    movers.append(entry)   # 2%+ movers (was 5% — too restrictive on quiet days)
                 if change_pct >= 5.0:
-                    movers.append(entry)
-                if change_pct >= 10.0:
-                    runners.append(entry)  # Runners have no price cap — catch explosive movers at any price
+                    runners.append(entry)  # 5%+ runners (was 10% — catch more explosive setups)
                 if gap_pct >= 3.0:
                     gap_ups.append(entry)  # 3%+ gaps for pre-market session scanning
 
@@ -772,30 +772,30 @@ class PolygonScanner:
                     continue
                 rvol = entry.get("rvol", 0)
                 change = entry.get("change_pct", 0)
-                if rvol >= 3.0 and change >= 5.0:
+                if rvol >= 2.0 and change >= 3.0:
                     entry["priority"] = change * rvol
                     entry["session_reason"] = f"New high +{change:.1f}% RVOL {rvol:.1f}x"
                     candidates.append(entry)
                     seen.add(sym)
 
-            # Halt candidates: >10% movers (will potentially halt)
+            # Halt candidates / explosive runners: >7% movers
             for entry in runners:
                 sym = entry["symbol"]
                 if sym in seen:
                     continue
                 change = entry.get("change_pct", 0)
-                if change >= 10.0:
+                if change >= 7.0:
                     entry["priority"] = change * 1.5
                     entry["session_reason"] = f"Halt candidate +{change:.1f}%"
                     candidates.append(entry)
                     seen.add(sym)
 
         elif session == "postmarket":
-            # Post-market: >5% on >500K volume
+            # Post-market: >3% on >300K volume
             for entry in movers + runners:
                 change = abs(entry.get("change_pct", 0))
                 volume = entry.get("volume", 0)
-                if change >= 5.0 and volume >= 500_000:
+                if change >= 3.0 and volume >= 300_000:
                     entry["priority"] = change
                     entry["session_reason"] = f"After-hours +{change:.1f}% vol {volume/1e3:.0f}K"
                     candidates.append(entry)

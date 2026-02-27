@@ -4911,12 +4911,12 @@ class TradingEngine:
                         if sym not in mr_strat.symbols:
                             mr_strat.symbols.append(sym)
 
-                # Feed big gap-ups into pre-market gap scanner (5%+ movers)
+                # Feed gap-ups into pre-market gap scanner (3%+ movers)
                 gap_symbols = []
                 for m in movers:
                     sym = m.get("symbol", "")
                     change_pct = m.get("change_pct", 0)
-                    if sym and change_pct >= 5.0:
+                    if sym and change_pct >= 3.0:
                         gap_symbols.append(sym)
 
                 if mover_symbols and rvol_strat:
