@@ -71,6 +71,26 @@ class MarketDataFeed:
         # IBKR paper accounts allow max 100 simultaneous streams
         self._max_ibkr_streams = config.settings.get("data", {}).get("max_ibkr_streams", 95)
 
+    def prune_stale_streams(self, active_symbols):
+        """Unsubscribe IBKR streams for symbols no longer actively tracked.
+        active_symbols should include positions + current universe/watchlist."""
+        if not self.broker or not hasattr(self.broker, 'unsubscribe_market_data'):
+            return 0
+        active_set = set(s.upper() for s in active_symbols)
+        stale = self._subscribed_symbols - active_set
+        if not stale:
+            return 0
+        try:
+            self.broker.unsubscribe_market_data(list(stale))
+            self._subscribed_symbols -= stale
+            log.info(
+                f"Pruned {len(stale)} stale IBKR streams — "
+                f"now {len(self._subscribed_symbols)}/{self._max_ibkr_streams}"
+            )
+        except Exception as e:
+            log.debug(f"Stream prune error: {e}")
+        return len(stale)
+
     def start_streaming(self, symbols):
         """Start IBKR real-time streaming for symbols (capped at _max_ibkr_streams)."""
         if not self.broker or not self.broker.is_connected():

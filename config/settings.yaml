@@ -20,48 +20,56 @@ capital:
 # --- Risk Management ---
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
-  max_position_size_pct: 0.15     # Max 15% of capital per position (~$7K) - bigger bets on quality (was 10%)
-  max_positions: 12               # Max 12 concurrent positions - more capacity for runners (was 8, too restrictive)
-  max_equity_positions: 12        # Max 12 equity positions
+  max_position_size_pct: 0.25     # Max 25% of capital per position (~$11.7K) - fewer, bigger bets
+  max_positions: 6                # Max 6 concurrent positions - focused firepower (was 12, spread too thin)
+  max_equity_positions: 6         # Max 6 equity positions
   max_crypto_positions: 0         # Crypto paused
-  risk_per_trade_pct: 0.02        # Risk 2% per trade (~$940) - bigger size with fewer positions (was 1.5%)
-  max_correlated_positions: 3     # Max 3 in same sector - allow more if sector is hot (was 2)
+  risk_per_trade_pct: 0.03        # Risk 3% per trade (~$1,410) - fewer trades, bigger conviction (was 2%)
+  max_correlated_positions: 2     # Max 2 in same sector - stay diversified across runners
   stop_loss_pct: 0.03             # 3% stop loss - small caps need slightly wider stops (was 2.5%)
-  trailing_stop_pct: 0.02         # 2% trailing stop - wider for volatile small caps (was 1.4%)
-  take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners. Runners ride to 50-400%+
-  max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads (was 0.5%)
+  trailing_stop_pct: 0.015        # 1.5% trailing stop — aggressive, ratchets up every 3 seconds
+  take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners
+  max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads
 
-  # --- Profit Taking (Partial Exits) ---
-  # Optimized: let winners run LONGER, take smaller partials, wider trails
-  # Problem before: closing 25% at +3% leaves money on the table for 20%+ runners
+  # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
+  # Checked every 3 seconds (not per candle). Start locking in gains early.
+  # 7 tiers: take small bites often, let ~25% of position ride forever.
+  # Trailing stop ratchets up on every price tick for the remaining shares.
   profit_taking:
     enabled: true
-    # NO HARD CEILING — partials lock in gains, trailing stop rides the rest forever
-    # After all partials: ~40% of original position still riding with trail protection
     targets:
-      - pct_from_entry: 0.05      # At +5% profit - first partial
-        close_pct: 0.15           # Close 15% - keep 85% riding
-        move_stop: "breakeven"    # Move stop to break even (risk-free from here)
-      - pct_from_entry: 0.10      # At +10% profit
-        close_pct: 0.15           # Close 15% of remaining (~13% of original)
-        tighten_trail: 0.03       # 3% trail
-      - pct_from_entry: 0.25      # At +25% profit
-        close_pct: 0.15           # Close 15% of remaining
-        tighten_trail: 0.035      # 3.5% trail — wider for volatile runners
-      - pct_from_entry: 0.50      # At +50% profit - confirmed monster runner
-        close_pct: 0.20           # Close 20% of remaining — lock in big gains
-        tighten_trail: 0.05       # 5% trail — give monster room to breathe
-      # Remaining ~40% of shares ride with dynamic trailing stop (no ceiling)
+      - pct_from_entry: 0.015     # At +1.5% — immediate breakeven lock
+        close_pct: 0.10           # Close 10%
+        move_stop: "breakeven"    # Risk-free from here
+      - pct_from_entry: 0.03      # At +3% — first real profit
+        close_pct: 0.10           # Close 10%
+        tighten_trail: 0.015      # 1.5% trail
+      - pct_from_entry: 0.05      # At +5%
+        close_pct: 0.10           # Close 10%
+        tighten_trail: 0.02       # 2% trail
+      - pct_from_entry: 0.10      # At +10% — strong move confirmed
+        close_pct: 0.15           # Close 15%
+        tighten_trail: 0.025      # 2.5% trail
+      - pct_from_entry: 0.20      # At +20% — runner confirmed
+        close_pct: 0.10           # Close 10%
+        tighten_trail: 0.035      # 3.5% trail — give runner room
+      - pct_from_entry: 0.35      # At +35% — big runner
+        close_pct: 0.10           # Close 10%
+        tighten_trail: 0.04       # 4% trail
+      - pct_from_entry: 0.50      # At +50% — monster
+        close_pct: 0.10           # Close 10%
+        tighten_trail: 0.05       # 5% trail — ride it forever
+      # Remaining ~25% rides with dynamic trailing stop (no ceiling)
       # Trail widens at extreme levels: 6% at 100%+, 8% at 200%+
 
   # --- Break Even Stop ---
   breakeven:
     enabled: true
-    trigger_pct: 0.015            # Move stop to BE after 1.5% profit (wider for volatile small caps)
-    buffer_pct: 0.002             # 0.2% buffer above entry (wider for small cap spreads)
-  min_volume: 50000               # 50K volume threshold - catch early movers before volume ramps (was 100K)
-  min_price: 0.50                 # Floor: $0.50 — no sub-penny junk
-  scanner_max_price: 100.00       # Scanner discovers movers under $100 - catch mid-cap runners too (was $50)
+    trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
+    buffer_pct: 0.001             # 0.1% buffer above entry — tight
+  min_volume: 100000              # 100K volume threshold - need real liquidity for extreme momentum
+  min_price: 1.00                 # Floor: $1.00 — no sub-dollar junk
+  scanner_max_price: 100.00       # Scanner discovers movers under $100
   # No hard ceiling — bot rides runners past $100 if uptrend is confirmed
 
   # --- Portfolio-Level Risk Limits ---
@@ -87,14 +95,14 @@ schedule:
   premarket:
     enabled: true                  # Pre-market trading enabled (catches gap plays)
     start_time: "06:00"           # Start earlier at 6 AM (was 7 AM - catch early movers)
-    allowed_strategies: ["momentum", "news_sentiment", "rvol_momentum", "rvol_scalp", "prebreakout", "premarket_gap"]
-    reduce_size_pct: 0.70         # Use 70% of normal size (was 60% - be bolder)
+    allowed_strategies: ["rvol_momentum", "premarket_gap", "prebreakout"]
+    reduce_size_pct: 0.70         # Use 70% of normal size
 
   postmarket:
     enabled: true                  # Post-market trading enabled (catch after-hours moves)
     end_time: "20:00"             # Trade until 8 PM ET (was 6 PM - catch earnings reactions)
-    allowed_strategies: ["momentum", "news_sentiment", "mean_reversion", "rvol_momentum"]
-    reduce_size_pct: 0.60         # Use 60% size (was 50% - more conviction)
+    allowed_strategies: ["rvol_momentum"]
+    reduce_size_pct: 0.60         # Use 60% size
 
   # --- Overnight Holding ---
   overnight:
@@ -114,29 +122,29 @@ scaling:
   # Position % stays high at all tiers so the bot actually deploys money
   tiers:
     - min_balance: 5000
+      max_positions: 3
+      risk_per_trade: 0.03
+      max_position_pct: 0.35       # ~$1,750 max per position
+    - min_balance: 10000
+      max_positions: 4
+      risk_per_trade: 0.03
+      max_position_pct: 0.30       # ~$3,000 max per position
+    - min_balance: 25000
       max_positions: 5
       risk_per_trade: 0.03
-      max_position_pct: 0.30       # $1,500 max per position
-    - min_balance: 10000
-      max_positions: 6
-      risk_per_trade: 0.025
-      max_position_pct: 0.25       # $2,500 max per position
-    - min_balance: 25000
-      max_positions: 10
-      risk_per_trade: 0.02
-      max_position_pct: 0.18       # $4,500 max per position
+      max_position_pct: 0.25       # ~$6,250 max per position
     - min_balance: 50000
-      max_positions: 12
-      risk_per_trade: 0.02
-      max_position_pct: 0.15       # $7,500 max per position
+      max_positions: 6
+      risk_per_trade: 0.03
+      max_position_pct: 0.25       # ~$12,500 max per position
     - min_balance: 100000
-      max_positions: 15
-      risk_per_trade: 0.02
-      max_position_pct: 0.15       # $15K max per position — matches global config
+      max_positions: 8
+      risk_per_trade: 0.03
+      max_position_pct: 0.20       # ~$20K max per position
     - min_balance: 250000
-      max_positions: 18
-      risk_per_trade: 0.02
-      max_position_pct: 0.15       # $37.5K max per position — deploy capital aggressively
+      max_positions: 10
+      risk_per_trade: 0.03
+      max_position_pct: 0.20       # ~$50K max per position
 
 # --- Hedging ---
 # Automatic portfolio protection via inverse ETFs during bearish regimes
@@ -149,28 +157,9 @@ hedging:
 # --- Weekly Watchlist ---
 # Symbols actively monitored each week. Auto-includes politician picks.
 watchlist:
-  # Focus: $2-$50 high-beta names that move 10-100%+ on catalysts
-  # Mega-caps (GOOGL, AAPL, SPY) removed — too slow for small accounts
-  # Polygon scanner dynamically adds ALL movers anyway
-  symbols:
-    - SOFI        # Fintech, volatile, $5-15 range
-    - HOOD        # Retail favorite, big swings
-    - RGTI        # Quantum computing, volatile runner
-    - IONQ        # Quantum computing, explosive moves
-    - MARA        # Crypto miner proxy, huge % swings
-    - RIOT        # Crypto miner proxy
-    - SOUN        # AI small cap, runner
-    - GSAT        # Low float satellite play
-    - DNA         # Biotech, big catalyst moves
-    - OPEN        # Real estate tech, volatile
-    - PLUG        # Clean energy, volatile
-    - LCID        # EV, big % moves
-    - RIVN        # EV, volatile
-    - JOBY        # Air taxi, speculative
-    - CLSK        # Crypto miner, volatile
-    - AFRM        # BNPL fintech
-    - UPST        # AI lending, big earnings moves
-  auto_add_politician_picks: true   # Auto-add symbols from politician tracker
+  # NO static watchlist — scanner discovers extreme momentum dynamically
+  symbols: []
+  auto_add_politician_picks: false  # Disabled — pure scanner-driven
   track_weekly_performance: true    # Track weekly P&L per symbol
 
 # --- Crypto Configuration ---
