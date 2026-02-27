@@ -356,10 +356,10 @@ class TradersPostBroker(BaseBroker):
         if "price" in signal:
             payload["price"] = signal["price"]
 
-        # Send to secondary webhook if available (safer — usually paper mode),
-        # otherwise use primary webhook
-        target_url = self.webhook_url_secondary or self.webhook_url
-        target_label = "secondary" if self.webhook_url_secondary else "primary"
+        # Mirror to primary webhook so trades appear in TradersPost dashboard.
+        # Secondary webhook is for dual-mode live signal execution, not mirroring.
+        target_url = self.webhook_url
+        target_label = "primary"
 
         try:
             headers = {"Content-Type": "application/json"}
