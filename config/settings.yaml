@@ -23,8 +23,8 @@ capital:
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
   max_position_size_pct: 0.20     # Max 20% of capital per position — spec: concentrated but controlled
-  max_positions: 5                # Max 5 concurrent momentum positions (spec requirement)
-  max_equity_positions: 5         # Max 5 equity positions
+  max_positions: 10               # Max 10 concurrent positions
+  max_equity_positions: 10        # Max 10 equity positions
   max_crypto_positions: 0         # Crypto paused
   risk_per_trade_pct: 0.01        # Risk 1% per trade (~$470) — spec: never risk more than 1%
   max_correlated_positions: 2     # Max 2 in same sector - stay diversified across runners
@@ -125,29 +125,29 @@ scaling:
   # Tiers aligned with spec: 1% risk, max 5 momentum positions
   tiers:
     - min_balance: 5000
-      max_positions: 3
+      max_positions: 5
       risk_per_trade: 0.01
-      max_position_pct: 0.30       # ~$1,500 max per position
+      max_position_pct: 0.20       # ~$1,000 max per position
     - min_balance: 10000
-      max_positions: 4
+      max_positions: 7
       risk_per_trade: 0.01
-      max_position_pct: 0.25       # ~$2,500 max per position
+      max_position_pct: 0.15       # ~$1,500 max per position
     - min_balance: 25000
-      max_positions: 5
+      max_positions: 10
       risk_per_trade: 0.01
-      max_position_pct: 0.20       # ~$5,000 max per position
+      max_position_pct: 0.10       # ~$2,500 max per position
     - min_balance: 50000
-      max_positions: 5
+      max_positions: 10
       risk_per_trade: 0.01
-      max_position_pct: 0.20       # ~$10,000 max per position
+      max_position_pct: 0.10       # ~$5,000 max per position
     - min_balance: 100000
-      max_positions: 5
+      max_positions: 10
       risk_per_trade: 0.01
-      max_position_pct: 0.20       # ~$20K max per position
+      max_position_pct: 0.10       # ~$10K max per position
     - min_balance: 250000
-      max_positions: 5
+      max_positions: 10
       risk_per_trade: 0.01
-      max_position_pct: 0.20       # ~$50K max per position
+      max_position_pct: 0.10       # ~$25K max per position
 
 # --- Hedging ---
 # Automatic portfolio protection via inverse ETFs during bearish regimes
