@@ -2091,16 +2091,14 @@ class TradingEngine:
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
 
-            # Use MIDPRICE for entries during RTH (free price improvement)
-            # Falls back to LIMIT during extended hours (MIDPRICE not supported)
+            # Use MARKET for entries — MIDPRICE sits unfilled on fast-moving
+            # momentum stocks, then MKT sells create accidental short positions
             if action == "buy":
-                entry_order_type = "MIDPRICE" if not outside_rth else "LIMIT"
                 order = self.broker.place_order(
                     symbol=symbol,
                     action="BUY",
                     quantity=qty,
-                    order_type=entry_order_type,
-                    limit_price=current_price,
+                    order_type="MARKET",
                     outside_rth=outside_rth,
                     stop_loss=stop_loss_price,
                     take_profit=take_profit_price,
