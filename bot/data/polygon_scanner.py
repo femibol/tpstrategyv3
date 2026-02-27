@@ -214,8 +214,8 @@ class PolygonScanner:
                     movers.append(entry)
                 if change_pct >= 10.0:
                     runners.append(entry)  # Runners have no price cap — catch explosive movers at any price
-                if gap_pct >= 8.0:
-                    gap_ups.append(entry)
+                if gap_pct >= 3.0:
+                    gap_ups.append(entry)  # 3%+ gaps for pre-market session scanning
 
             movers.sort(key=lambda x: x["change_pct"], reverse=True)
             runners.sort(key=lambda x: x["change_pct"], reverse=True)
@@ -230,7 +230,7 @@ class PolygonScanner:
             log.info(
                 f"Polygon scan: {ticker_count} tickers | "
                 f"{len(movers)} movers (5%+) | {len(runners)} runners (10%+) | "
-                f"{len(gap_ups)} gap-ups (8%+)"
+                f"{len(gap_ups)} gap-ups (3%+)"
             )
 
             return movers, runners, gap_ups
@@ -709,6 +709,165 @@ class PolygonScanner:
             fetched += 1
 
         return results
+
+    # =========================================================================
+    # Session-Aware Scanning (momentum runner spec)
+    # =========================================================================
+
+    def get_session_candidates(self, session="regular"):
+        """Get session-appropriate candidates for the momentum runner strategy.
+
+        Pre-market: Stocks gapping >3% on 2x pre-market RVOL, float <50M preferred
+        Regular: Top 5 gappers that hold gap + new intraday highs on 3x volume
+        Post-market: Stocks moving >5% on >500K volume after hours
+
+        Args:
+            session: "premarket", "regular", or "postmarket"
+
+        Returns:
+            list of candidate dicts sorted by priority
+        """
+        movers = self._cached_movers
+        runners = self._cached_runners
+        gap_ups = self._cached_gap_ups
+
+        candidates = []
+
+        if session == "premarket":
+            # Pre-market: gap-ups >3% with volume surge, prefer low float
+            for entry in movers + gap_ups:
+                gap = entry.get("gap_pct", 0)
+                rvol = entry.get("rvol", 0)
+                float_shares = entry.get("float_shares", 0)
+
+                if gap >= 3.0 and rvol >= 2.0:
+                    # Prioritize low float (higher squeeze potential)
+                    priority = gap * rvol
+                    if 0 < float_shares < 50_000_000:
+                        priority *= 2.0  # Double priority for low float
+                    entry["priority"] = round(priority, 1)
+                    entry["session_reason"] = f"Pre-market gap +{gap:.1f}% RVOL {rvol:.1f}x"
+                    candidates.append(entry)
+
+        elif session == "regular":
+            # Regular hours: top gappers that held + new intraday highs + halt candidates
+            seen = set()
+
+            # Top 5 gappers from pre-market that held their gap
+            for entry in sorted(gap_ups, key=lambda x: x.get("gap_pct", 0), reverse=True)[:5]:
+                sym = entry["symbol"]
+                change = entry.get("change_pct", 0)
+                gap = entry.get("gap_pct", 0)
+                # "Held gap" = still up at least 60% of the gap size
+                if gap > 0 and change >= gap * 0.6:
+                    entry["priority"] = gap * 2
+                    entry["session_reason"] = f"Gap held +{change:.1f}% (gap was +{gap:.1f}%)"
+                    candidates.append(entry)
+                    seen.add(sym)
+
+            # Stocks making new highs on accelerating volume (3x bar avg)
+            for entry in movers:
+                sym = entry["symbol"]
+                if sym in seen:
+                    continue
+                rvol = entry.get("rvol", 0)
+                change = entry.get("change_pct", 0)
+                if rvol >= 3.0 and change >= 5.0:
+                    entry["priority"] = change * rvol
+                    entry["session_reason"] = f"New high +{change:.1f}% RVOL {rvol:.1f}x"
+                    candidates.append(entry)
+                    seen.add(sym)
+
+            # Halt candidates: >10% movers (will potentially halt)
+            for entry in runners:
+                sym = entry["symbol"]
+                if sym in seen:
+                    continue
+                change = entry.get("change_pct", 0)
+                if change >= 10.0:
+                    entry["priority"] = change * 1.5
+                    entry["session_reason"] = f"Halt candidate +{change:.1f}%"
+                    candidates.append(entry)
+                    seen.add(sym)
+
+        elif session == "postmarket":
+            # Post-market: >5% on >500K volume
+            for entry in movers + runners:
+                change = abs(entry.get("change_pct", 0))
+                volume = entry.get("volume", 0)
+                if change >= 5.0 and volume >= 500_000:
+                    entry["priority"] = change
+                    entry["session_reason"] = f"After-hours +{change:.1f}% vol {volume/1e3:.0f}K"
+                    candidates.append(entry)
+
+        # Deduplicate and sort by priority
+        seen_syms = set()
+        unique = []
+        for c in sorted(candidates, key=lambda x: x.get("priority", 0), reverse=True):
+            sym = c["symbol"]
+            if sym not in seen_syms:
+                seen_syms.add(sym)
+                unique.append(c)
+
+        return unique
+
+    def get_sector_momentum(self):
+        """Get count of running stocks per sector.
+
+        Used for sympathy play detection: if 3+ stocks in the same sector
+        are running, the laggard is a sympathy play candidate.
+
+        Returns:
+            dict: {sector: count_of_runners}
+        """
+        sector_counts = {}
+        for entry in self._cached_runners + self._cached_movers:
+            sector = entry.get("sector", "Unknown")
+            if sector and sector != "Unknown":
+                sector_counts[sector] = sector_counts.get(sector, 0) + 1
+        return sector_counts
+
+    def get_sympathy_candidates(self):
+        """Find sympathy play candidates.
+
+        When 3+ stocks in the same sector are running, find the laggard
+        in that sector (lowest change_pct) as a sympathy play.
+
+        Returns:
+            list of entry dicts for sympathy candidates
+        """
+        sector_momentum = self.get_sector_momentum()
+        hot_sectors = {s for s, c in sector_momentum.items() if c >= 3}
+
+        if not hot_sectors:
+            return []
+
+        # Group movers by hot sector
+        sector_movers = {}
+        for entry in self._cached_movers:
+            sector = entry.get("sector", "Unknown")
+            if sector in hot_sectors:
+                if sector not in sector_movers:
+                    sector_movers[sector] = []
+                sector_movers[sector].append(entry)
+
+        # Find laggards in each hot sector
+        sympathy = []
+        for sector, movers in sector_movers.items():
+            if len(movers) >= 3:
+                sorted_movers = sorted(movers, key=lambda x: x.get("change_pct", 0))
+                # Laggard = lowest change in the sector
+                laggard = sorted_movers[0]
+                leader_change = sorted_movers[-1].get("change_pct", 0)
+                laggard["session_reason"] = (
+                    f"Sympathy: {sector} sector hot ({len(movers)} runners), "
+                    f"laggard at +{laggard.get('change_pct', 0):.1f}% "
+                    f"vs leader +{leader_change:.1f}%"
+                )
+                laggard["priority"] = leader_change - laggard.get("change_pct", 0)
+                sympathy.append(laggard)
+
+        return sympathy
 
     def get_losers(self, limit=100):
         """Get top losers from cached scan data ($0.50-$100 range)."""

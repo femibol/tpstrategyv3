@@ -1,21 +1,22 @@
 # ============================================
-# STRATEGY CONFIGURATIONS - EXTREME MOMENTUM
+# STRATEGY CONFIGURATIONS - AGGRESSIVE MOMENTUM RUNNER
 # ============================================
-# Three strategies. Scanner discovers everything dynamically.
-# No static symbol lists — let the market tell you what's running.
-# Pre-breakout enters BEFORE the explosion. RVOL + Gap catch it live.
+# Momentum runner is the primary strategy: 3 entry types, 10-pt scoring,
+# session-aware scanning, 4-phase ATR trailing stop.
+# RVOL + Gap + Pre-breakout retained as secondary strategies.
 
 # --- Strategy Allocation ---
 allocation:
   smc_forever: 0.00
   mean_reversion: 0.00
   momentum: 0.00
-  rvol_momentum: 0.50             # 50% - THE money machine (react to live momentum)
+  momentum_runner: 0.60           # 60% - PRIMARY: aggressive runner catching (3 entry types)
+  rvol_momentum: 0.15             # 15% - Money machine backup (snapshot fast path)
   rvol_scalp: 0.00
   vwap_scalp: 0.00
   pairs_trading: 0.00
-  prebreakout: 0.20               # 20% - enter BEFORE the breakout (accumulation detection)
-  premarket_gap: 0.30             # 30% - biggest day-1 runners come from gaps
+  prebreakout: 0.10               # 10% - enter BEFORE the breakout (accumulation detection)
+  premarket_gap: 0.15             # 15% - pre-market gap plays
   options_momentum: 0.00
   short_squeeze: 0.00
   pead: 0.00
@@ -98,21 +99,43 @@ smc_forever:
     - ["SPY", "QQQ"]
   symbols: []
 
+# --- MOMENTUM RUNNER STRATEGY (PRIMARY) ---
+# Aggressive runner catcher with 3 entry types and 10-pt scoring.
+# Session-aware: pre-market, regular hours, post-market.
+# 4-phase ATR-based trailing stop (managed by engine).
+# Unified scoring: RVOL(0-3) + Float(0-2) + Catalyst(0-2) + Technical(0-3) = 10
+# Only trades candidates scoring 6+/10.
+momentum_runner:
+  enabled: true
+  timeframe: "1m"                    # 1-minute bars for fastest detection
+  min_score: 6                       # 6/10 minimum composite score
+  min_price: 1.00                    # $1 floor
+  max_price: 100.00                  # $100 ceiling
+  min_volume: 500000                 # 500K avg daily volume — real liquidity only
+  max_daily_change_pct: 30.0         # Skip >30% unless fresh catalyst
+  max_open_positions: 5              # Max 5 momentum positions at once
+  max_trades_per_day: 10             # Focused — only the best setups
+  atr_stop_multiplier: 1.0           # 1x ATR(14) initial stop
+  spike_size_pct: 0.50               # 50% position size for spike entries
+  open_dead_zone_minutes: 2          # 2-min dead zone after open (chaos period)
+  afternoon_reduction_hour: 15       # 3:00 PM ET — reduce size
+  afternoon_size_reduction: 0.50     # 50% size after 3 PM (EOD reversals)
+  symbols: []                        # EMPTY — scanner discovers everything
+
 # --- RVOL Momentum Strategy (Money Machine) ---
-# THE CORE STRATEGY - extreme volume + price explosion
-# Scanner feeds ALL discovered runners directly — no static watchlist
+# Secondary strategy — snapshot fast-path for instant signal generation
 rvol_momentum:
   enabled: true
   timeframe: "5m"
-  min_rvol: 2.5                    # Higher bar: 2.5x relative volume (was 1.5 — too noisy)
-  min_score: 60                    # Stronger signals only (was 45 — let too much junk through)
-  min_price: 1.00                  # $1 floor — avoid sub-dollar garbage
-  max_price: 100.00                # Keep $100 ceiling for mid-cap runners
-  min_volume: 100000               # 100K minimum — need real liquidity (was 50K)
+  min_rvol: 2.5                    # Higher bar: 2.5x relative volume
+  min_score: 60                    # Stronger signals only
+  min_price: 1.00                  # $1 floor
+  max_price: 100.00                # $100 ceiling
+  min_volume: 500000               # 500K minimum — aligned with runner spec
   atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR
   atr_target_multiplier: 4.0      # 4x ATR target
   max_hold_minutes: 180            # Max 3 hours
-  max_trades_per_day: 15           # Fewer, higher quality (was 25)
+  max_trades_per_day: 8            # Reduced — momentum_runner is primary
   symbols: []                      # EMPTY — scanner discovers everything
 
 # --- RVOL Scalp Strategy ---
