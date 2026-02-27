@@ -2017,6 +2017,16 @@ class TradingEngine:
                 stop_pct = self.config.stop_loss_pct
             stop_loss_price = current_price * (1 - stop_pct)  # Long-only: stop is always below
 
+        # STOP VALIDATION: Reject signals where stop is too close to entry
+        # This prevents instant stop triggers from near-zero ATR estimates
+        stop_distance_pct = (current_price - stop_loss_price) / current_price if current_price > 0 else 0
+        if stop_distance_pct < 0.01:  # Stop must be at least 1% below entry
+            log.warning(
+                f"STOP TOO CLOSE: {symbol} entry=${current_price:.2f} stop=${stop_loss_price:.2f} "
+                f"({stop_distance_pct:.2%} gap). Forcing 2% minimum stop."
+            )
+            stop_loss_price = current_price * 0.98  # Force 2% stop minimum
+
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
