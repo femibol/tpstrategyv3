@@ -394,7 +394,7 @@ class TradersPostBroker(BaseBroker):
             return result
 
         except Exception as e:
-            log.debug(f"TradersPost mirror notification failed: {e}")
+            log.warning(f"TradersPost mirror notification FAILED for {symbol}: {e}")
             return None
 
     def place_order(self, symbol, action, quantity, order_type="LIMIT",

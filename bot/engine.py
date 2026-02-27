@@ -1964,13 +1964,23 @@ class TradingEngine:
                     )
                 # Mirror to TradersPost for dashboard visibility
                 if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
-                    self.tp_broker.notify_trade({
-                        "symbol": symbol,
-                        "action": action,
-                        "quantity": qty,
-                        "price": current_price,
-                        "strategy": strategy,
-                    })
+                    try:
+                        mirror_result = self.tp_broker.notify_trade({
+                            "symbol": symbol,
+                            "action": action,
+                            "quantity": qty,
+                            "price": current_price,
+                            "strategy": strategy,
+                        })
+                        if mirror_result and mirror_result.get("success"):
+                            log.info(f"TP MIRROR OK: {action.upper()} {symbol} mirrored to TradersPost")
+                        else:
+                            log.warning(
+                                f"TP MIRROR FAILED: {action.upper()} {symbol} — "
+                                f"result: {mirror_result}"
+                            )
+                    except Exception as e:
+                        log.warning(f"TP MIRROR EXCEPTION: {action.upper()} {symbol} — {e}")
             else:
                 log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
         else:
@@ -2258,13 +2268,20 @@ class TradingEngine:
                 close_broker = "IBKR"
                 # Mirror exit to TradersPost for dashboard visibility
                 if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
-                    self.tp_broker.notify_trade({
-                        "symbol": symbol,
-                        "action": "exit",
-                        "quantity": close_qty,
-                        "price": current_price,
-                        "source": "exit",
-                    })
+                    try:
+                        mirror_result = self.tp_broker.notify_trade({
+                            "symbol": symbol,
+                            "action": "exit",
+                            "quantity": close_qty,
+                            "price": current_price,
+                            "source": "exit",
+                        })
+                        if mirror_result and mirror_result.get("success"):
+                            log.info(f"TP MIRROR OK: EXIT {symbol} mirrored to TradersPost")
+                        else:
+                            log.warning(f"TP MIRROR FAILED: EXIT {symbol} — result: {mirror_result}")
+                    except Exception as e:
+                        log.warning(f"TP MIRROR EXCEPTION: EXIT {symbol} — {e}")
 
         if not order:
             # Always try Alpaca direct close FIRST — Alpaca is the actual broker

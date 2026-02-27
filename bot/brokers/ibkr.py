@@ -216,6 +216,15 @@ class IBKRBroker(BaseBroker):
 
             self.ib.qualifyContracts(contract)
 
+            # Check if contract resolution failed (e.g. delisted, bad symbol)
+            if contract.conId == 0:
+                self._invalid_symbols.add(symbol)
+                log.warning(
+                    f"No security definition for '{symbol}' — added to invalid list. "
+                    f"Order cannot be placed."
+                )
+                return None
+
             # Outside regular trading hours support
             outside_rth = kwargs.get("outside_rth", False)
 
@@ -223,7 +232,7 @@ class IBKRBroker(BaseBroker):
             bracket_tp = kwargs.get("take_profit")
             bracket_sl = kwargs.get("stop_loss")
 
-            if bracket_tp and bracket_sl and order_type.upper() == "LIMIT" and limit_price:
+            if bracket_tp and bracket_sl and order_type.upper() in ("LIMIT", "MIDPRICE") and limit_price:
                 return self._place_bracket_order(
                     contract, symbol, action, quantity,
                     limit_price, bracket_sl, bracket_tp, outside_rth
