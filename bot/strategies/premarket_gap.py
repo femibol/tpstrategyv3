@@ -13,6 +13,7 @@ Core Logic:
 Best window: 8:00-9:30 AM ET (pre-market momentum peaks here)
 Works on: Low-to-mid float stocks with catalyst (earnings, news, upgrades)
 """
+import time
 import numpy as np
 from datetime import datetime
 try:
@@ -61,9 +62,12 @@ class PreMarketGapStrategy(BaseStrategy):
 
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols from universe scanner."""
+        now = time.time()
         for sym in symbols:
             if sym and isinstance(sym, str):
-                self._dynamic_symbols.add(sym.upper())
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
 
     def get_symbols(self):
         """Return combined static + dynamic symbol list."""

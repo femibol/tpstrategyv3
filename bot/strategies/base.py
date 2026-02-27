@@ -1,6 +1,7 @@
 """
 Base strategy class - all strategies inherit from this.
 """
+import time
 from abc import ABC, abstractmethod
 from bot.utils.logger import get_logger
 
@@ -23,6 +24,9 @@ class BaseStrategy(ABC):
         # Scanner: stores latest indicator values for EVERY symbol each cycle
         # This is what makes the analysis visible in the dashboard
         self.scan_results = {}  # symbol -> {indicators + verdict}
+
+        # Dynamic symbol TTL tracking — prevents unbounded symbol accumulation
+        self._dynamic_symbol_timestamps = {}  # symbol -> time.time() when last added/refreshed
 
     @abstractmethod
     def generate_signals(self, market_data):
@@ -55,6 +59,35 @@ class BaseStrategy(ABC):
     def update_capital(self, new_capital):
         """Update allocated capital (called when account balance changes)."""
         self.allocated_capital = new_capital
+
+    def prune_dynamic_symbols(self, max_age_seconds=1800):
+        """Remove dynamic symbols not re-discovered within max_age_seconds (default 30 min).
+
+        Symbols that are still actively moving get re-added every scan cycle,
+        which refreshes their timestamp. Stale symbols that stopped moving
+        are pruned to prevent unbounded accumulation.
+
+        Returns number of symbols pruned.
+        """
+        if not hasattr(self, '_dynamic_symbols'):
+            return 0
+        now = time.time()
+        stale = {
+            sym for sym, ts in self._dynamic_symbol_timestamps.items()
+            if now - ts > max_age_seconds
+        }
+        if not stale:
+            return 0
+        self._dynamic_symbols -= stale
+        for sym in stale:
+            self._dynamic_symbol_timestamps.pop(sym, None)
+        return len(stale)
+
+    def reset_dynamic_symbols(self):
+        """Clear all dynamic symbols (called at start of each trading day)."""
+        if hasattr(self, '_dynamic_symbols'):
+            self._dynamic_symbols.clear()
+        self._dynamic_symbol_timestamps.clear()
 
     def _check_volume_filter(self, market_data, symbol, min_volume=None):
         """Check if symbol meets minimum volume requirement."""

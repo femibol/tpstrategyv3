@@ -17,6 +17,7 @@ Key features:
   (early morning volume is naturally lower, so raw RVOL is inflated)
 - Long-only
 """
+import time
 import numpy as np
 from datetime import datetime
 from bot.strategies.base import BaseStrategy
@@ -78,9 +79,12 @@ class RvolMomentumStrategy(BaseStrategy):
 
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols (from top movers, screeners)."""
+        now = time.time()
         for sym in symbols:
             if sym and isinstance(sym, str):
-                self._dynamic_symbols.add(sym.upper())
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
 
     def feed_snapshot_data(self, snapshot_entries):
         """Feed Polygon snapshot data for fast-path analysis.

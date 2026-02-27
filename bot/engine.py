@@ -711,6 +711,11 @@ class TradingEngine:
                     # 0a. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
 
+                    # 0a2. Prune stale dynamic symbols (30 min TTL)
+                    # Symbols still actively moving get refreshed each cycle;
+                    # dead symbols that stopped appearing as movers get pruned
+                    self._prune_stale_dynamic_symbols()
+
                     # 0b. Update news feed watchlist with held + active symbols
                     if self.news_feed:
                         news_watch = list(set(
@@ -3907,6 +3912,23 @@ class TradingEngine:
             if hasattr(strategy, "reset_daily"):
                 strategy.reset_daily()
 
+        # Reset dynamic symbol lists — start fresh each day
+        total_cleared = 0
+        for name, strategy in self.strategies.items():
+            if hasattr(strategy, 'reset_dynamic_symbols'):
+                if hasattr(strategy, '_dynamic_symbols'):
+                    total_cleared += len(strategy._dynamic_symbols)
+                strategy.reset_dynamic_symbols()
+        if total_cleared:
+            log.info(f"DAILY RESET: Cleared {total_cleared} dynamic symbols across all strategies")
+
+        # Also trim mean_reversion's static symbol list (gets appended to by engine)
+        mr_strat = self.strategies.get("mean_reversion")
+        if mr_strat and len(mr_strat.symbols) > 10:
+            original = mr_strat.symbols[:10] if mr_strat.config.get("symbols") else []
+            mr_strat.symbols = original
+            log.info(f"DAILY RESET: Trimmed mean_reversion symbols to {len(mr_strat.symbols)}")
+
         # Refresh strategy capital allocations
         for name, strategy in self.strategies.items():
             alloc = adjusted_alloc.get(name, 0.25)
@@ -4889,12 +4911,12 @@ class TradingEngine:
                         if sym not in mr_strat.symbols:
                             mr_strat.symbols.append(sym)
 
-                # Feed big gap-ups into pre-market gap scanner (5%+ movers)
+                # Feed gap-ups into pre-market gap scanner (3%+ movers)
                 gap_symbols = []
                 for m in movers:
                     sym = m.get("symbol", "")
                     change_pct = m.get("change_pct", 0)
-                    if sym and change_pct >= 5.0:
+                    if sym and change_pct >= 3.0:
                         gap_symbols.append(sym)
 
                 if mover_symbols and rvol_strat:
@@ -4968,6 +4990,44 @@ class TradingEngine:
 
         except Exception as e:
             log.debug(f"Dynamic discovery error: {e}")
+
+    def _prune_stale_dynamic_symbols(self):
+        """Prune dynamic symbols that haven't been re-discovered in 30 minutes.
+
+        Runs every cycle. Symbols that are still actively moving get their
+        timestamps refreshed by _discover_dynamic_symbols(). Dead symbols
+        that stopped appearing as movers are removed to prevent unbounded
+        accumulation across all strategies.
+        """
+        # Only prune every 60 seconds to avoid overhead
+        if not hasattr(self, '_last_symbol_prune'):
+            self._last_symbol_prune = 0
+        import time
+        now = time.time()
+        if now - self._last_symbol_prune < 60:
+            return
+        self._last_symbol_prune = now
+
+        total_pruned = 0
+        for name, strategy in self.strategies.items():
+            if hasattr(strategy, 'prune_dynamic_symbols'):
+                pruned = strategy.prune_dynamic_symbols(max_age_seconds=1800)
+                if pruned:
+                    total_pruned += pruned
+                    remaining = len(strategy._dynamic_symbols) if hasattr(strategy, '_dynamic_symbols') else 0
+                    log.debug(f"Pruned {pruned} stale symbols from {name} ({remaining} remaining)")
+
+        # Also cap mean_reversion's symbol list (it gets appended to directly)
+        mr_strat = self.strategies.get("mean_reversion")
+        if mr_strat and len(mr_strat.symbols) > 50:
+            original_count = len(mr_strat.config.get("symbols", []))
+            # Keep config symbols + most recent 40 dynamic ones
+            mr_strat.symbols = mr_strat.symbols[:original_count] + mr_strat.symbols[-(50 - original_count):]
+            total_pruned += len(mr_strat.symbols) - 50
+            log.debug(f"Capped mean_reversion symbols at 50 (was {len(mr_strat.symbols)})")
+
+        if total_pruned:
+            log.info(f"SYMBOL PRUNE: removed {total_pruned} stale symbols across strategies")
 
     # =========================================================================
     # Stock Split Detection - Avoid overnight holds on split candidates
