@@ -1078,19 +1078,29 @@ class TradingEngine:
         positions_to_close = []
         partial_exits = []
 
+        now_ts = datetime.now(self.tz)
+
         for symbol, pos in positions_snapshot.items():
             current_price = self.market_data.get_price(symbol) if self.market_data else None
             if current_price is None:
                 continue
 
+            # --- ENTRY GRACE PERIOD ---
+            # Don't allow exits within 30 seconds of entry. This prevents:
+            # 1. Sell-before-fill race conditions (order just placed)
+            # 2. Immediate scalp trail triggers from stale prices
+            # 3. False stops from bid/ask spread noise right after entry
+            entry_time = pos.get("entry_time")
+            if entry_time:
+                seconds_held = (now_ts - entry_time).total_seconds()
+                if seconds_held < 30:
+                    continue  # Skip — position too fresh for exit evaluation
+
             entry_price = pos["entry_price"]
             direction = pos.get("direction", "long")
 
-            # Calculate current P&L
-            if direction == "long":
-                pnl_pct = (current_price - entry_price) / entry_price
-            else:
-                pnl_pct = (entry_price - current_price) / entry_price
+            # Calculate current P&L (long-only)
+            pnl_pct = (current_price - entry_price) / entry_price if entry_price > 0 else 0
 
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
@@ -1334,12 +1344,15 @@ class TradingEngine:
             if pos:
                 entry = pos["entry_price"]
                 pos["current_price"] = price
-
-                if pos["direction"] == "long":
-                    pnl_pct = (price - entry) / entry
-                else:
-                    pnl_pct = (entry - price) / entry
+                pnl_pct = (price - entry) / entry if entry > 0 else 0
                 pos["unrealized_pnl_pct"] = pnl_pct
+
+                # Entry grace period — don't trigger exits within 30s of entry
+                entry_time = pos.get("entry_time")
+                if entry_time:
+                    seconds_held = (datetime.now(self.tz) - entry_time).total_seconds()
+                    if seconds_held < 30:
+                        return  # Still update price/pnl but don't exit
 
                 # --- INSTANT TRAILING STOP CHECK ---
                 # Don't wait for the 3-second poll — exit immediately on IBKR data
@@ -1426,12 +1439,15 @@ class TradingEngine:
 
             entry = pos["entry_price"]
             pos["current_price"] = price
-
-            if pos["direction"] == "long":
-                pnl_pct = (price - entry) / entry
-            else:
-                pnl_pct = (entry - price) / entry
+            pnl_pct = (price - entry) / entry if entry > 0 else 0
             pos["unrealized_pnl_pct"] = pnl_pct
+
+            # Entry grace period — don't trigger exits within 30s of entry
+            entry_time = pos.get("entry_time")
+            if entry_time:
+                seconds_held = (datetime.now(self.tz) - entry_time).total_seconds()
+                if seconds_held < 30:
+                    return  # Still update price/pnl but don't exit
 
             # --- INSTANT TRAILING STOP CHECK ---
             trailing_stop = pos.get("trailing_stop")
@@ -1493,19 +1509,25 @@ class TradingEngine:
         with self._positions_lock:
             positions_snapshot = dict(self.positions)
 
+        now_ts = datetime.now(self.tz)
+
         for symbol, pos in positions_snapshot.items():
             current_price = self.market_data.get_price(symbol)
             if current_price is None:
                 continue
 
+            # Entry grace period — don't evaluate exits within 30s of entry
+            entry_time = pos.get("entry_time")
+            if entry_time:
+                seconds_held = (now_ts - entry_time).total_seconds()
+                if seconds_held < 30:
+                    continue
+
             entry_price = pos["entry_price"]
             direction = pos.get("direction", "long")
 
-            # Calculate unrealized P&L
-            if direction == "long":
-                pnl_pct = (current_price - entry_price) / entry_price
-            else:
-                pnl_pct = (entry_price - current_price) / entry_price
+            # Calculate unrealized P&L (long-only)
+            pnl_pct = (current_price - entry_price) / entry_price if entry_price > 0 else 0
 
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
@@ -2195,6 +2217,22 @@ class TradingEngine:
             )
             self._pending_orders.discard(symbol)
             return
+
+        # Use actual filled qty and price from broker (prevents partial fill mismatches)
+        actual_qty = order.get("quantity", qty)  # Broker returns actual filled qty
+        actual_price = order.get("avg_fill_price") or current_price  # Use fill price if available
+        if actual_qty != qty:
+            log.info(
+                f"FILL QTY ADJUSTED: {symbol} requested {qty} but filled {actual_qty} "
+                f"(partial fill). Tracking actual qty."
+            )
+            qty = actual_qty
+        if order.get("avg_fill_price") and abs(actual_price - current_price) > 0.01:
+            log.info(
+                f"FILL PRICE ADJUSTED: {symbol} expected ${current_price:.2f} "
+                f"but filled @ ${actual_price:.2f}"
+            )
+            current_price = actual_price
 
         risk_amount = abs(current_price - stop_loss_price) * qty
         reward_amount = abs(take_profit_price - current_price) * qty
