@@ -1860,8 +1860,13 @@ class TradingEngine:
         strategy = signal.get("strategy", "unknown")
         now = datetime.now(self.tz)
 
-        # LONG-ONLY MODE: Block all short signals
-        if action in ("short",):
+        # LONG-ONLY MODE: Only BUY entries allowed. Block everything else.
+        # This is the last-resort guard — strategies, risk manager, and webhooks
+        # should all filter before reaching here, but defense-in-depth matters.
+        if action not in ("buy", "sell", "cover", "close", "exit"):
+            log.warning(f"LONG-ONLY: Blocking unknown action '{action}' for {symbol}")
+            return
+        if action == "short":
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
 
@@ -1891,7 +1896,7 @@ class TradingEngine:
 
         # --- LEARNING AVOIDANCE GUARD ---
         # Skip symbols the trade analyzer flagged as consistent losers
-        if action in ("buy", "short") and self.trade_analyzer:
+        if action == "buy" and self.trade_analyzer:
             if self.trade_analyzer.should_avoid_symbol(symbol):
                 log.warning(
                     f"LEARNING BLOCK: {symbol} avoided — consistent loser "
@@ -1901,7 +1906,7 @@ class TradingEngine:
 
         # --- DUPLICATE ENTRY GUARD ---
         # Prevent same symbol from being entered twice within cooldown window
-        if action in ("buy", "short"):
+        if action == "buy":
             if symbol in self.positions:
                 log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
                 return
@@ -1961,8 +1966,7 @@ class TradingEngine:
                 stop_pct = crypto_risk.get("stop_loss_pct", 0.05)
             else:
                 stop_pct = self.config.stop_loss_pct
-            stop_loss_price = current_price * (1 - stop_pct) if action == "buy" \
-                else current_price * (1 + stop_pct)
+            stop_loss_price = current_price * (1 - stop_pct)  # Long-only: stop is always below
 
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
@@ -2010,8 +2014,7 @@ class TradingEngine:
         take_profit_price = signal.get("take_profit")
         if not take_profit_price:
             tp_pct = self.config.take_profit_pct
-            take_profit_price = current_price * (1 + tp_pct) if action == "buy" \
-                else current_price * (1 - tp_pct)
+            take_profit_price = current_price * (1 + tp_pct)  # Long-only: target is always above
 
         # --- Broker Execution Chain ---
         # Priority: IBKR -> TradersPost -> Alpaca Direct
@@ -2019,7 +2022,7 @@ class TradingEngine:
         executed_via = None
 
         # Mark symbol as pending to block concurrent orders from webhooks/other threads
-        if action in ("buy", "short"):
+        if action == "buy":
             self._pending_orders.add(symbol)
 
         # Outside-RTH flag: allow pre/post market orders
@@ -2031,11 +2034,11 @@ class TradingEngine:
 
             # Use MIDPRICE for entries during RTH (free price improvement)
             # Falls back to LIMIT during extended hours (MIDPRICE not supported)
-            if action in ("buy", "short"):
+            if action == "buy":
                 entry_order_type = "MIDPRICE" if not outside_rth else "LIMIT"
                 order = self.broker.place_order(
                     symbol=symbol,
-                    action=action.upper(),
+                    action="BUY",
                     quantity=qty,
                     order_type=entry_order_type,
                     limit_price=current_price,
@@ -2044,14 +2047,11 @@ class TradingEngine:
                     take_profit=take_profit_price,
                 )
             else:
-                # Exits use simple market orders
-                order = self.broker.place_order(
-                    symbol=symbol,
-                    action=action.upper(),
-                    quantity=qty,
-                    order_type="MARKET",
-                    outside_rth=outside_rth,
-                )
+                # This path should never be reached in long-only mode
+                # (sell/short blocked above, exits routed to _close_position)
+                log.error(f"UNEXPECTED: Non-buy action '{action}' reached IBKR execution for {symbol}")
+                self._pending_orders.discard(symbol)
+                return
 
             if order:
                 executed_via = "IBKR"
@@ -2087,7 +2087,7 @@ class TradingEngine:
 
         # 2. TradersPost webhook (fallback when IBKR unavailable)
         # Alpaca pre-checks only needed for non-IBKR brokers (TradersPost routes to Alpaca)
-        if not order and action in ("buy", "short") and (self.tp_broker or self.config.alpaca_api_key):
+        if not order and action == "buy" and (self.tp_broker or self.config.alpaca_api_key):
             try:
                 broker_positions = self._alpaca_api_call("/v2/positions")
                 if isinstance(broker_positions, list):
@@ -2149,10 +2149,17 @@ class TradingEngine:
 
         # 3. Alpaca direct order (fallback when TradersPost rejects/unavailable)
         if not order and self.config.alpaca_api_key:
+            # LONG-ONLY GUARD: Only buy entries via Alpaca. Never send sell-to-open.
+            if action != "buy":
+                log.error(
+                    f"LONG-ONLY BLOCKED: Refusing to send '{action}' {symbol} "
+                    f"to Alpaca as entry order — would create short position"
+                )
+                self._pending_orders.discard(symbol)
+                return
             log.info(f"Trying Alpaca direct order for {action.upper()} {symbol}...")
-            alpaca_side = "buy" if action in ("buy",) else "sell"
             alpaca_result = self._place_order_via_alpaca(
-                symbol=symbol, qty=qty, side=alpaca_side,
+                symbol=symbol, qty=qty, side="buy",
                 stop_loss=stop_loss_price, take_profit=take_profit_price,
             )
             if alpaca_result and alpaca_result.get("success"):
@@ -2206,7 +2213,7 @@ class TradingEngine:
         with self._positions_lock:
             self.positions[symbol] = {
                 "symbol": symbol,
-                "direction": "long" if action in ("buy",) else "short",
+                "direction": "long",  # LONG-ONLY: all positions are long (shorts blocked above)
                 "quantity": qty,
                 "entry_price": current_price,
                 "entry_time": datetime.now(self.tz),
@@ -2322,13 +2329,22 @@ class TradingEngine:
         if current_price is None:
             current_price = pos.get("current_price", pos["entry_price"])
 
-        action = "SELL" if pos["direction"] == "long" else "BUY"
+        # LONG-ONLY: Only sell to close long positions
+        if pos["direction"] != "long":
+            log.warning(
+                f"CLOSE BLOCKED: {symbol} direction='{pos['direction']}' — "
+                f"long-only bot won't manage short positions. Cover manually."
+            )
+            with self._positions_lock:
+                self.positions.pop(symbol, None)
+            return
+        action = "SELL"
         close_qty = pos["quantity"]
         original_broker = pos.get("executed_via", "Simulated")
         close_broker = None  # Track which broker ACTUALLY closed it (None = nothing worked)
 
         # Verify actual broker quantity before closing to prevent accidental shorts
-        if self.broker and self.broker.is_connected() and action == "SELL":
+        if self.broker and self.broker.is_connected():
             try:
                 broker_positions = self.broker.get_positions()
                 broker_pos = broker_positions.get(symbol) if broker_positions else None
@@ -2358,6 +2374,40 @@ class TradingEngine:
                     return
             except Exception as e:
                 log.warning(f"Could not verify broker position for {symbol}: {e}")
+
+        # Alpaca qty verification (when IBKR is not connected)
+        if not (self.broker and self.broker.is_connected()) and self.config.alpaca_api_key:
+            try:
+                pos_data = self._alpaca_api_call(f"/v2/positions/{symbol}")
+                if pos_data and isinstance(pos_data, dict):
+                    alpaca_qty = abs(int(float(pos_data.get("qty", 0))))
+                    alpaca_side_long = float(pos_data.get("qty", 0)) > 0
+                    if not alpaca_side_long:
+                        log.error(
+                            f"CLOSE BLOCKED: {symbol} is SHORT at Alpaca — "
+                            f"long-only bot won't touch. Cover manually."
+                        )
+                        with self._positions_lock:
+                            self.positions.pop(symbol, None)
+                        return
+                    if alpaca_qty <= 0:
+                        log.warning(f"CLOSE BLOCKED: {symbol} 0 shares at Alpaca. Removing phantom.")
+                        with self._positions_lock:
+                            self.positions.pop(symbol, None)
+                        return
+                    if close_qty > alpaca_qty:
+                        log.warning(
+                            f"CLOSE QTY ADJUSTED: {symbol} bot has {close_qty} but Alpaca "
+                            f"holds {alpaca_qty}. Capping to prevent short."
+                        )
+                        close_qty = alpaca_qty
+                elif pos_data == self._ALPACA_NOT_FOUND:
+                    log.warning(f"CLOSE BLOCKED: {symbol} not found at Alpaca. Removing phantom.")
+                    with self._positions_lock:
+                        self.positions.pop(symbol, None)
+                    return
+            except Exception as e:
+                log.warning(f"Could not verify Alpaca position for {symbol}: {e}")
 
         # Try to close via broker chain
         order = None
@@ -2588,8 +2638,31 @@ class TradingEngine:
         if current_price is None:
             current_price = pos.get("current_price", pos["entry_price"])
 
-        action = "SELL" if pos["direction"] == "long" else "BUY"
+        # LONG-ONLY: Only sell to close long positions
+        if pos["direction"] != "long":
+            log.warning(f"PARTIAL CLOSE BLOCKED: {symbol} direction='{pos['direction']}' — long-only bot won't manage shorts")
+            return
+        action = "SELL"
         close_broker = None  # Track which broker ACTUALLY closed it
+
+        # Verify actual broker qty before partial close to prevent overselling
+        actual_broker_qty = None
+        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
+            try:
+                pos_data = self._alpaca_api_call(f"/v2/positions/{symbol}")
+                if isinstance(pos_data, dict):
+                    actual_broker_qty = abs(int(float(pos_data.get("qty", 0))))
+                    if actual_broker_qty <= 0:
+                        log.warning(f"PARTIAL CLOSE BLOCKED: {symbol} not held at Alpaca (0 shares)")
+                        return
+                    if qty_to_close > actual_broker_qty:
+                        log.warning(
+                            f"PARTIAL CLOSE QTY CAPPED: {symbol} requested {qty_to_close} "
+                            f"but Alpaca holds {actual_broker_qty}. Capping to prevent short."
+                        )
+                        qty_to_close = actual_broker_qty
+            except Exception as e:
+                log.debug(f"Could not verify Alpaca position for partial close {symbol}: {e}")
 
         # Execute via broker chain
         order = None
@@ -2888,6 +2961,14 @@ class TradingEngine:
                                 stop_loss=None, take_profit=None):
         """Place an entry order directly via Alpaca API.
         Uses market order by default, limit order if limit_price provided."""
+        # LONG-ONLY GUARD: This function is for ENTRIES only.
+        # Never allow sell-side entries (would create short positions).
+        if side != "buy":
+            log.error(
+                f"SHORT-SELL BLOCKED: _place_order_via_alpaca called with side='{side}' "
+                f"for {symbol}. Long-only bot refuses to create short position."
+            )
+            return None
         api_key = self.config.alpaca_api_key
         secret_key = self.config.alpaca_secret_key
         if not api_key or not secret_key:
@@ -3031,8 +3112,31 @@ class TradingEngine:
             )
             if pos_resp.status_code == 200:
                 pos_data = pos_resp.json()
-                sell_qty = str(qty) if qty else str(abs(int(float(pos_data.get("qty", 0)))))
-                sell_side = "sell" if float(pos_data.get("qty", 0)) > 0 else "buy"
+                broker_qty = abs(int(float(pos_data.get("qty", 0))))
+                broker_side_long = float(pos_data.get("qty", 0)) > 0
+
+                # LONG-ONLY GUARD: Refuse to close short positions at Alpaca
+                # (they shouldn't exist — if they do, manual intervention needed)
+                if not broker_side_long:
+                    log.error(
+                        f"SHORT POSITION DETECTED at Alpaca: {symbol} qty={pos_data.get('qty')}. "
+                        f"Long-only bot will NOT touch this. Cover manually."
+                    )
+                    return {"success": False, "reason": "short_position_at_broker"}
+
+                # Cap requested qty to actual broker position to prevent overselling
+                if qty and qty > broker_qty:
+                    log.warning(
+                        f"SELL QTY CAPPED: {symbol} requested {qty} but Alpaca "
+                        f"holds {broker_qty}. Capping to prevent short."
+                    )
+                    qty = broker_qty
+                if broker_qty <= 0:
+                    log.warning(f"ALPACA CLOSE: {symbol} has 0 shares at broker — nothing to close")
+                    return {"success": False, "reason": "no_position"}
+
+                sell_qty = str(qty) if qty else str(broker_qty)
+                sell_side = "sell"
                 extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
                 sell_order = {
                     "symbol": symbol,
@@ -3405,10 +3509,10 @@ class TradingEngine:
         signal["source"] = "manual"
 
         # Provide default stop loss if missing (3% for buys)
-        if signal["action"] in ("buy", "short") and not signal.get("stop_loss"):
+        if signal["action"] == "buy" and not signal.get("stop_loss"):
             price = signal.get("price", 0)
             if price > 0:
-                signal["stop_loss"] = price * 0.97 if signal["action"] == "buy" else price * 1.03
+                signal["stop_loss"] = price * 0.97
 
         # Run through risk manager
         approved = self.risk_manager.filter_signals(
