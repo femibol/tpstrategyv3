@@ -283,16 +283,59 @@ class IBKRBroker(BaseBroker):
                 f"| Order ID: {order_id}"
             )
 
+            # Wait for fill (up to 15 seconds for entries, 10 for exits)
+            # This prevents position tracking before the order actually fills,
+            # which avoids sell-before-fill race conditions.
+            is_entry = action.upper() == "BUY"
+            fill_timeout = 15 if is_entry else 10
+            filled_qty = 0
+            avg_fill_price = 0
+            fill_status = trade.orderStatus.status
+
+            for _ in range(fill_timeout * 2):  # Check every 0.5s
+                self.ib.sleep(0.5)
+                fill_status = trade.orderStatus.status
+                filled_qty = int(trade.orderStatus.filled or 0)
+                avg_fill_price = float(trade.orderStatus.avgFillPrice or 0)
+
+                if fill_status == "Filled":
+                    log.info(
+                        f"Order FILLED: {action} {filled_qty}/{quantity} {symbol} "
+                        f"@ ${avg_fill_price:.2f} | Order ID: {order_id}"
+                    )
+                    break
+                elif fill_status in ("Cancelled", "ApiCancelled", "Inactive"):
+                    log.warning(f"Order {fill_status}: {symbol} | Order ID: {order_id}")
+                    return None
+
+            # If not fully filled after timeout, use what we got
+            if fill_status != "Filled" and filled_qty == 0:
+                log.warning(
+                    f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
+                    f"(status={fill_status}). Cancelling unfilled order."
+                )
+                try:
+                    self.ib.cancelOrder(trade.order)
+                    self.ib.sleep(1)
+                except Exception:
+                    pass
+                return None
+
+            # Use actual filled quantity (handles partial fills)
+            actual_qty = filled_qty if filled_qty > 0 else quantity
+
             return {
                 "order_id": order_id,
                 "symbol": symbol,
                 "action": action,
-                "quantity": quantity,
+                "quantity": actual_qty,
+                "requested_quantity": quantity,
                 "order_type": order_type,
                 "asset_type": kwargs.get("asset_type", "stock"),
                 "limit_price": limit_price,
                 "stop_price": stop_price,
-                "status": trade.orderStatus.status,
+                "status": fill_status,
+                "avg_fill_price": avg_fill_price if avg_fill_price > 0 else None,
                 "time": datetime.now().isoformat(),
             }
 
@@ -347,11 +390,45 @@ class IBKRBroker(BaseBroker):
                 f"Parent ID: {parent_id}"
             )
 
+            # Wait for parent order fill (up to 15 seconds)
+            filled_qty = 0
+            avg_fill_price = 0
+            fill_status = parent_trade.orderStatus.status
+            for _ in range(30):  # 15 seconds at 0.5s intervals
+                self.ib.sleep(0.5)
+                fill_status = parent_trade.orderStatus.status
+                filled_qty = int(parent_trade.orderStatus.filled or 0)
+                avg_fill_price = float(parent_trade.orderStatus.avgFillPrice or 0)
+                if fill_status == "Filled":
+                    log.info(
+                        f"BRACKET FILLED: {action} {filled_qty}/{quantity} {symbol} "
+                        f"@ ${avg_fill_price:.2f}"
+                    )
+                    break
+                elif fill_status in ("Cancelled", "ApiCancelled", "Inactive"):
+                    log.warning(f"Bracket order {fill_status}: {symbol}")
+                    return None
+
+            if fill_status != "Filled" and filled_qty == 0:
+                log.warning(
+                    f"Bracket NOT FILLED after 15s: {symbol} (status={fill_status}). "
+                    f"Cancelling all bracket orders."
+                )
+                try:
+                    self.ib.cancelOrder(parent_order)
+                    self.ib.sleep(1)
+                except Exception:
+                    pass
+                return None
+
+            actual_qty = filled_qty if filled_qty > 0 else quantity
+
             return {
                 "order_id": parent_id,
                 "symbol": symbol,
                 "action": action,
-                "quantity": quantity,
+                "quantity": actual_qty,
+                "requested_quantity": quantity,
                 "order_type": "BRACKET",
                 "asset_type": "stock",
                 "limit_price": entry_price,
@@ -360,7 +437,8 @@ class IBKRBroker(BaseBroker):
                 "bracket": True,
                 "tp_order_id": tp_order.orderId,
                 "sl_order_id": sl_order.orderId,
-                "status": parent_trade.orderStatus.status,
+                "status": fill_status,
+                "avg_fill_price": avg_fill_price if avg_fill_price > 0 else None,
                 "time": datetime.now().isoformat(),
             }
 
