@@ -36,6 +36,7 @@ from bot.strategies.premarket_gap import PreMarketGapStrategy
 from bot.strategies.options_momentum import OptionsMomentumStrategy
 from bot.strategies.short_squeeze import ShortSqueezeStrategy
 from bot.strategies.pead import PEADStrategy
+from bot.strategies.momentum_runner import MomentumRunnerStrategy
 from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
@@ -395,6 +396,7 @@ class TradingEngine:
             "options_momentum": OptionsMomentumStrategy,
             "short_squeeze": ShortSqueezeStrategy,
             "pead": PEADStrategy,
+            "momentum_runner": MomentumRunnerStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -455,6 +457,11 @@ class TradingEngine:
         if pead_strat and hasattr(pead_strat, "add_dynamic_symbols"):
             pead_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into PEAD")
+
+        runner_strat = self.strategies.get("momentum_runner")
+        if runner_strat and hasattr(runner_strat, "add_dynamic_symbols"):
+            runner_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into momentum runner")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
@@ -1155,50 +1162,131 @@ class TradingEngine:
 
             # --- AGGRESSIVE TRAILING STOP RATCHET (every 3 seconds) ---
             # Moves the trailing stop UP on every price tick, not just every 10 seconds
-            base_trail = pos.get("trailing_stop_pct",
-                                 self.config.risk_config.get("trailing_stop_pct", 0.02))
 
-            # Momentum-aware trail: consecutive up-ticks = sustained move = give more room
-            upticks = pos.get("_uptick_count", 0)
-            momentum_buffer = 0.0
-            if upticks >= 5:
-                momentum_buffer = 0.005   # Sustained momentum: add 0.5% buffer to not get shaken
-            elif upticks >= 3:
-                momentum_buffer = 0.003   # Building momentum: add 0.3% buffer
+            # === 4-PHASE ATR-BASED TRAILING for momentum_runner positions ===
+            is_momentum_runner = pos.get("momentum_runner", False)
+            if is_momentum_runner and direction == "long":
+                atr_value = pos.get("atr_value", current_price * 0.03)
+                entry_type = pos.get("entry_type", "breakout")
 
-            # Dynamic trailing based on profit level
-            if pnl_pct >= 2.00:
-                trailing_pct = 0.08       # 8% trail at 200%+ — ride the monster
-            elif pnl_pct >= 1.00:
-                trailing_pct = 0.06       # 6% trail at 100%+
-            elif pnl_pct >= 0.50:
-                trailing_pct = 0.05       # 5% trail at 50%+
-            elif pnl_pct >= 0.25:
-                trailing_pct = 0.035      # 3.5% trail at 25%+
-            elif pnl_pct >= 0.10:
-                trailing_pct = 0.025      # 2.5% trail at 10%+ — lock it in
-            elif pnl_pct >= 0.05:
-                trailing_pct = 0.02       # 2% trail at 5%+
-            elif pnl_pct >= 0.02:
-                trailing_pct = 0.015      # 1.5% trail at 2%+ — aggressive protection
+                if pnl_pct >= 0.15:
+                    # PHASE 4: Parabolic protection (15%+) — trail 5 EMA equivalent
+                    # Use tight % trail as proxy for 5 EMA on 1-min
+                    trailing_pct = 0.015
+                    pos["_trail_phase"] = 4
+                    # Extra exit: if any tick drops >2% from high water mark, exit
+                    hwm = pos.get("_high_water_mark", entry_price)
+                    if hwm > 0 and (hwm - current_price) / hwm > 0.02:
+                        positions_to_close.append(
+                            (symbol, "trailing_stop",
+                             f"Phase 4 parabolic exit at ${current_price:.2f} | "
+                             f"HWM: ${hwm:.2f} | P&L: {pnl_pct:+.1%}")
+                        )
+                        continue
+
+                elif pnl_pct >= 0.05:
+                    # PHASE 3: Let it run (5%+) — trail 5-candle low or 9 EMA (tighter)
+                    trailing_pct = 0.025  # ~5-candle low equivalent on 1-min
+                    pos["_trail_phase"] = 3
+
+                elif pnl_pct >= 0.02:
+                    # PHASE 2: Lock in gains (2-5%) — breakeven + 0.5%, 3-candle trail
+                    be_level = entry_price * 1.005
+                    if pos.get("stop_loss", 0) < be_level:
+                        pos["stop_loss"] = be_level
+                    trailing_pct = 0.02  # ~3-candle low equivalent
+                    pos["_trail_phase"] = 2
+
+                else:
+                    # PHASE 1: Initial protection (0-2%) — hard stop at entry - 1x ATR
+                    # Stop already set at signal time; just enforce it
+                    trailing_pct = 0  # No trailing yet, use hard stop only
+                    pos["_trail_phase"] = 1
+                    # If price drops back to entry, exit immediately (failed breakout)
+                    if current_price <= entry_price and pnl_pct <= 0:
+                        # Only exit on failed breakout if we've been in for >60 seconds
+                        entry_time = pos.get("entry_time")
+                        if entry_time:
+                            from datetime import datetime as dt_cls
+                            elapsed = (dt_cls.now(self.tz) - entry_time).total_seconds()
+                            if elapsed > 60:
+                                positions_to_close.append(
+                                    (symbol, "stop_loss",
+                                     f"Failed breakout: price back at entry ${current_price:.2f}")
+                                )
+                                continue
+
+                # Spike entry special handling: take 50% when momentum stalls
+                if entry_type == "spike" and pnl_pct >= 0.05:
+                    prev_price = pos.get("_last_tick_price", entry_price)
+                    if current_price < prev_price and not pos.get("_spike_partial_taken"):
+                        # Next tick lower after spike = momentum stalling
+                        qty_to_close = max(1, int(pos["quantity"] * 0.5))
+                        if qty_to_close < pos["quantity"]:
+                            partial_exits.append((symbol, qty_to_close, -1,
+                                                  {"pct_from_entry": 0.05, "close_pct": 0.5}))
+                            pos["_spike_partial_taken"] = True
+
+                # Apply trailing stop for phases 2-4
+                if trailing_pct > 0 and direction == "long":
+                    new_trail = current_price * (1 - trailing_pct)
+                    if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+                        pos["trailing_stop"] = new_trail
+                    if current_price <= pos.get("trailing_stop", 0):
+                        phase = pos.get("_trail_phase", 0)
+                        positions_to_close.append(
+                            (symbol, "trailing_stop",
+                             f"Phase {phase} trail stop at ${current_price:.2f} | "
+                             f"P&L: {pnl_pct:+.1%} | trail: {trailing_pct:.1%}")
+                        )
+                        continue
+
             else:
-                trailing_pct = base_trail
+                # === ORIGINAL TRAILING LOGIC for non-momentum-runner positions ===
+                base_trail = pos.get("trailing_stop_pct",
+                                     self.config.risk_config.get("trailing_stop_pct", 0.02))
 
-            # Add momentum buffer for sustained moves
-            trailing_pct += momentum_buffer
+                # Momentum-aware trail: consecutive up-ticks = sustained move = give more room
+                upticks = pos.get("_uptick_count", 0)
+                momentum_buffer = 0.0
+                if upticks >= 5:
+                    momentum_buffer = 0.005   # Sustained momentum: add 0.5% buffer to not get shaken
+                elif upticks >= 3:
+                    momentum_buffer = 0.003   # Building momentum: add 0.3% buffer
 
-            if direction == "long":
-                new_trail = current_price * (1 - trailing_pct)
-                # Only move stop UP, never down
-                if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
-                    pos["trailing_stop"] = new_trail
-                if current_price <= pos.get("trailing_stop", 0):
-                    positions_to_close.append(
-                        (symbol, "trailing_stop",
-                         f"Trail stop at ${current_price:.2f} | "
-                         f"P&L: {pnl_pct:+.1%} | trail: {trailing_pct:.1%}")
-                    )
-                    continue
+                # Dynamic trailing based on profit level
+                if pnl_pct >= 2.00:
+                    trailing_pct = 0.08       # 8% trail at 200%+ — ride the monster
+                elif pnl_pct >= 1.00:
+                    trailing_pct = 0.06       # 6% trail at 100%+
+                elif pnl_pct >= 0.50:
+                    trailing_pct = 0.05       # 5% trail at 50%+
+                elif pnl_pct >= 0.25:
+                    trailing_pct = 0.035      # 3.5% trail at 25%+
+                elif pnl_pct >= 0.10:
+                    trailing_pct = 0.025      # 2.5% trail at 10%+ — lock it in
+                elif pnl_pct >= 0.05:
+                    trailing_pct = 0.02       # 2% trail at 5%+
+                elif pnl_pct >= 0.02:
+                    trailing_pct = 0.015      # 1.5% trail at 2%+ — aggressive protection
+                else:
+                    trailing_pct = base_trail
+
+                # Add momentum buffer for sustained moves
+                trailing_pct += momentum_buffer
+
+                if direction == "long":
+                    new_trail = current_price * (1 - trailing_pct)
+                    # Only move stop UP, never down
+                    if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+                        pos["trailing_stop"] = new_trail
+                    if current_price <= pos.get("trailing_stop", 0):
+                        positions_to_close.append(
+                            (symbol, "trailing_stop",
+                             f"Trail stop at ${current_price:.2f} | "
+                             f"P&L: {pnl_pct:+.1%} | trail: {trailing_pct:.1%}")
+                        )
+                        continue
 
             # --- TAKE PROFIT TRAIL TRIGGER ---
             # When TP target hit, activate runner mode with tighter trail
@@ -1888,6 +1976,17 @@ class TradingEngine:
             log.debug(f"Position size 0 for {symbol} - skipping")
             return
 
+        # Momentum runner size multiplier (spike entries = 50%, afternoon = 50%)
+        size_multiplier = signal.get("size_multiplier", 1.0)
+        if size_multiplier < 1.0 and qty > 1:
+            old_qty = qty
+            qty = max(1, int(qty * size_multiplier))
+            log.info(
+                f"RUNNER SIZING: {symbol} size_mult={size_multiplier:.0%} — "
+                f"reduced from {old_qty} to {qty} shares "
+                f"(entry_type={signal.get('entry_type', 'n/a')})"
+            )
+
         # Low-float guard: reduce position size for low-float stocks (< 20M shares)
         # These are more volatile and can gap violently
         if action == "buy" and self.polygon and self.polygon.enabled:
@@ -2131,6 +2230,11 @@ class TradingEngine:
                 # Breakout play metadata (pre-breakout / rvol breakout signals)
                 "source": signal.get("source", ""),
                 "breakout_play": signal.get("breakout_play", False),
+                # Momentum runner metadata (4-phase trailing stop)
+                "momentum_runner": signal.get("momentum_runner", False),
+                "entry_type": signal.get("entry_type", ""),
+                "atr_value": signal.get("atr_value", 0),
+                "size_multiplier": signal.get("size_multiplier", 1.0),
             }
 
         # Rich notification with full trade details
@@ -4408,7 +4512,8 @@ class TradingEngine:
         gap_strat = self.strategies.get("premarket_gap")
         squeeze_strat = self.strategies.get("short_squeeze")
         pead_strat = self.strategies.get("pead")
-        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat]):
+        runner_strat = self.strategies.get("momentum_runner")
+        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat]):
             return
 
         try:
@@ -4448,6 +4553,40 @@ class TradingEngine:
                     if snapshot_entries and rvol_strat and hasattr(rvol_strat, "feed_snapshot_data"):
                         rvol_strat.feed_snapshot_data(snapshot_entries)
                         log.debug(f"Polygon: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
+
+                    # Feed momentum runner strategy — session-aware candidates + snapshot
+                    if runner_strat:
+                        # Determine session for session-aware scanning
+                        now_et = datetime.now(self.tz)
+                        _h, _m = now_et.hour, now_et.minute
+                        _time_val = _h * 100 + _m
+                        if _time_val < 930:
+                            _session = "premarket"
+                        elif _time_val < 1600:
+                            _session = "regular"
+                        else:
+                            _session = "postmarket"
+
+                        # Get session-appropriate candidates from scanner
+                        session_candidates = self.polygon.get_session_candidates(_session)
+                        if session_candidates:
+                            runner_syms_session = [c["symbol"] for c in session_candidates if c.get("symbol")]
+                            runner_strat.add_dynamic_symbols(runner_syms_session)
+                            runner_strat.feed_snapshot_data(session_candidates)
+
+                        # Also feed all movers as snapshot data
+                        if snapshot_entries:
+                            runner_strat.feed_snapshot_data(snapshot_entries)
+                        runner_strat.add_dynamic_symbols(poly_mover_syms)
+
+                        # Feed sector momentum for sympathy play detection
+                        sector_momentum = self.polygon.get_sector_momentum()
+                        runner_strat.feed_sector_momentum(sector_momentum)
+
+                        log.debug(
+                            f"Polygon: fed {len(session_candidates) if session_candidates else 0} "
+                            f"session candidates + {len(poly_mover_syms)} movers into momentum_runner"
+                        )
 
                     log.debug(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
 
@@ -4489,6 +4628,9 @@ class TradingEngine:
                             squeeze_strat.add_dynamic_symbols(runner_syms)
                         if pead_strat:
                             pead_strat.add_dynamic_symbols(runner_syms)
+                        if runner_strat:
+                            runner_strat.add_dynamic_symbols(runner_syms)
+                            runner_strat.feed_snapshot_data(poly_runners)
                         log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
             # Get top movers from Polygon (filtered to $0.50-$50 range)
             movers = self.get_top_movers()

@@ -18,15 +18,17 @@ capital:
   reserve_cash_pct: 0.10          # 10% cash reserve (~$4,700) - always have dry powder for runners
 
 # --- Risk Management ---
+# Aligned with aggressive momentum runner spec:
+# 1% risk per trade, max 5 momentum positions, 500K volume floor
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
-  max_position_size_pct: 0.25     # Max 25% of capital per position (~$11.7K) - fewer, bigger bets
-  max_positions: 6                # Max 6 concurrent positions - focused firepower (was 12, spread too thin)
-  max_equity_positions: 6         # Max 6 equity positions
+  max_position_size_pct: 0.20     # Max 20% of capital per position — spec: concentrated but controlled
+  max_positions: 5                # Max 5 concurrent momentum positions (spec requirement)
+  max_equity_positions: 5         # Max 5 equity positions
   max_crypto_positions: 0         # Crypto paused
-  risk_per_trade_pct: 0.03        # Risk 3% per trade (~$1,410) - fewer trades, bigger conviction (was 2%)
+  risk_per_trade_pct: 0.01        # Risk 1% per trade (~$470) — spec: never risk more than 1%
   max_correlated_positions: 2     # Max 2 in same sector - stay diversified across runners
-  stop_loss_pct: 0.03             # 3% stop loss - small caps need slightly wider stops (was 2.5%)
+  stop_loss_pct: 0.03             # 3% stop loss fallback
   trailing_stop_pct: 0.015        # 1.5% trailing stop — aggressive, ratchets up every 3 seconds
   take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners
   max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads
@@ -67,7 +69,7 @@ risk:
     enabled: true
     trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
     buffer_pct: 0.001             # 0.1% buffer above entry — tight
-  min_volume: 100000              # 100K volume threshold - need real liquidity for extreme momentum
+  min_volume: 500000              # 500K volume threshold — spec: avoid stocks with avg daily <500K
   min_price: 1.00                 # Floor: $1.00 — no sub-dollar junk
   scanner_max_price: 100.00       # Scanner discovers movers under $100
   # No hard ceiling — bot rides runners past $100 if uptrend is confirmed
@@ -86,22 +88,22 @@ schedule:
   market_open: "09:30"
   market_close: "16:00"
   timezone: "US/Eastern"
-  pre_market_scan: "09:15"       # Scan 15 min before open
-  avoid_first_minutes: 5          # 5 min buffer - let opening volatility settle, avoid fakeouts (was 2)
+  pre_market_scan: "04:00"       # Scan at 4 AM ET — full pre-market coverage
+  avoid_first_minutes: 2          # 2-min dead zone — spec: no entries within 2 min of open
   avoid_last_minutes: 10          # 10 min before close - exit positions, avoid EOD dump
   trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
   # --- Pre-market / Extended Hours ---
   premarket:
     enabled: true                  # Pre-market trading enabled (catches gap plays)
-    start_time: "06:00"           # Start earlier at 6 AM (was 7 AM - catch early movers)
-    allowed_strategies: ["rvol_momentum", "premarket_gap", "prebreakout"]
+    start_time: "04:00"           # 4 AM ET — full pre-market coverage per spec
+    allowed_strategies: ["momentum_runner", "rvol_momentum", "premarket_gap", "prebreakout"]
     reduce_size_pct: 0.70         # Use 70% of normal size
 
   postmarket:
     enabled: true                  # Post-market trading enabled (catch after-hours moves)
-    end_time: "20:00"             # Trade until 8 PM ET (was 6 PM - catch earnings reactions)
-    allowed_strategies: ["rvol_momentum"]
+    end_time: "20:00"             # Trade until 8 PM ET — spec: scan until 8 PM
+    allowed_strategies: ["momentum_runner", "rvol_momentum"]
     reduce_size_pct: 0.60         # Use 60% size
 
   # --- Overnight Holding ---
@@ -120,30 +122,31 @@ scaling:
   enabled: true
   # Aggressive deployment — use available capital, don't sit on cash
   # Position % stays high at all tiers so the bot actually deploys money
+  # Tiers aligned with spec: 1% risk, max 5 momentum positions
   tiers:
     - min_balance: 5000
       max_positions: 3
-      risk_per_trade: 0.03
-      max_position_pct: 0.35       # ~$1,750 max per position
+      risk_per_trade: 0.01
+      max_position_pct: 0.30       # ~$1,500 max per position
     - min_balance: 10000
       max_positions: 4
-      risk_per_trade: 0.03
-      max_position_pct: 0.30       # ~$3,000 max per position
+      risk_per_trade: 0.01
+      max_position_pct: 0.25       # ~$2,500 max per position
     - min_balance: 25000
       max_positions: 5
-      risk_per_trade: 0.03
-      max_position_pct: 0.25       # ~$6,250 max per position
+      risk_per_trade: 0.01
+      max_position_pct: 0.20       # ~$5,000 max per position
     - min_balance: 50000
-      max_positions: 6
-      risk_per_trade: 0.03
-      max_position_pct: 0.25       # ~$12,500 max per position
+      max_positions: 5
+      risk_per_trade: 0.01
+      max_position_pct: 0.20       # ~$10,000 max per position
     - min_balance: 100000
-      max_positions: 8
-      risk_per_trade: 0.03
+      max_positions: 5
+      risk_per_trade: 0.01
       max_position_pct: 0.20       # ~$20K max per position
     - min_balance: 250000
-      max_positions: 10
-      risk_per_trade: 0.03
+      max_positions: 5
+      risk_per_trade: 0.01
       max_position_pct: 0.20       # ~$50K max per position
 
 # --- Hedging ---
