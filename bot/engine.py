@@ -2211,11 +2211,13 @@ class TradingEngine:
                 "entry_price": current_price,
                 "entry_time": datetime.now(self.tz),
                 "stop_loss": stop_loss_price,
+                "initial_stop_loss": stop_loss_price,
                 "take_profit": take_profit_price,
                 "trailing_stop_pct": signal.get(
                     "trailing_stop_pct",
                     self.config.risk_config.get("trailing_stop_pct", 0.02)
                 ),
+                "confidence": signal.get("confidence", 0),
                 "strategy": strategy,
                 "order_id": order.get("order_id"),
                 "executed_via": executed_via,
@@ -2518,9 +2520,18 @@ class TradingEngine:
             "pnl_pct": pnl_pct,
             "strategy": pos.get("strategy", "unknown"),
             "reason": reason_type,
+            "reason_detail": reason_msg,
             "executed_via": executed_via,
             "entry_time": pos["entry_time"].isoformat() if "entry_time" in pos else datetime.now(self.tz).isoformat(),
             "exit_time": datetime.now(self.tz).isoformat(),
+            "hold_time_mins": round(hold_time.total_seconds() / 60, 1) if hold_time else None,
+            "regime": getattr(self, "current_regime", "unknown"),
+            "entry_confidence": pos.get("confidence", 0),
+            "initial_stop": pos.get("initial_stop_loss"),
+            "final_stop": pos.get("stop_loss"),
+            "overnight_hold": pos.get("overnight_hold", False),
+            "afterhours_hold": pos.get("afterhours_hold", False),
+            "source": pos.get("source", ""),
         })
 
         # Update win/loss stats
