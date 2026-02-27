@@ -286,8 +286,10 @@ class MomentumRunnerStrategy(BaseStrategy):
 
         # --- ATR ---
         atr = self.indicators.atr(highs, lows, closes, period=14)
-        if not atr or atr <= 0:
-            atr = current_price * 0.03  # Fallback 3%
+        # Floor: ATR must be at least 2% of price to avoid near-zero stops
+        min_atr = current_price * 0.02
+        if not atr or atr < min_atr:
+            atr = max(atr or 0, min_atr) if atr and atr > 0 else current_price * 0.03
 
         # --- Float ---
         snap_data = self._snapshot_data.get(symbol, {})
@@ -555,8 +557,11 @@ class MomentumRunnerStrategy(BaseStrategy):
 
         if entry_type and score >= self.min_score:
             est_atr = price * abs(change_pct) / 100 * 0.7
-            if est_atr <= 0:
-                est_atr = price * 0.03
+            # Floor: ATR must be at least 2% of price to prevent instant stop triggers
+            # For a $1.59 stock, minimum ATR = $0.032 → stop at least $0.032 below entry
+            min_atr = price * 0.02
+            if est_atr < min_atr:
+                est_atr = max(est_atr, min_atr) if est_atr > 0 else price * 0.03
 
             stop_loss = price - (self.atr_stop_mult * est_atr)
             targets = [

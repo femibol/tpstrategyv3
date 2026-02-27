@@ -361,6 +361,10 @@ class RvolMomentumStrategy(BaseStrategy):
 
         # Generate signal if score qualifies
         if verdict == "RVOL BUY SIGNAL" and direction == "UP" and atr and atr > 0:
+            # Floor: ATR must be at least 2% of price
+            min_atr = current_price * 0.02
+            if atr < min_atr:
+                atr = min_atr
             stop_loss = current_price - (self.atr_stop_mult * atr)
 
             # Breakout stocks get wider targets to capture the full move
@@ -609,8 +613,10 @@ class RvolMomentumStrategy(BaseStrategy):
             # Estimate ATR from change_pct (no bars available)
             # For a stock up X%, ATR is roughly price * X/100 * 0.7
             est_atr = price * abs(change_pct) / 100 * 0.7
-            if est_atr <= 0:
-                est_atr = price * 0.03  # Fallback: 3% of price
+            # Floor: ATR must be at least 2% of price to prevent instant stop triggers
+            min_atr = price * 0.02
+            if est_atr < min_atr:
+                est_atr = max(est_atr, min_atr) if est_atr > 0 else price * 0.03
 
             stop_loss = price - (self.atr_stop_mult * est_atr)
 

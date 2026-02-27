@@ -340,15 +340,47 @@ class TradingEngine:
             raw_positions = self.broker.get_positions()
             if raw_positions:
                 now = datetime.now(self.tz)
-                skipped_shorts = []
+                # Check for pending sell orders at IBKR to avoid syncing
+                # positions that are in the process of being closed
+                pending_sell_symbols = set()
+                try:
+                    open_trades = self.broker.ib.openTrades()
+                    for t in open_trades:
+                        if (t.order.action.upper() == "SELL" and
+                                t.orderStatus.status in ("PreSubmitted", "Submitted")):
+                            pending_sell_symbols.add(t.contract.symbol)
+                    if pending_sell_symbols:
+                        log.info(
+                            f"IBKR SYNC: Found pending SELL orders for: "
+                            f"{', '.join(pending_sell_symbols)} — will skip these"
+                        )
+                except Exception as e:
+                    log.debug(f"Could not check IBKR pending orders: {e}")
+
                 for sym, pos in raw_positions.items():
                     entry = pos.get("entry_price", pos.get("avg_cost", 0))
                     side = pos.get("direction", "long")
                     qty = pos.get("quantity", 0)
 
-                    # Skip short positions — long-only bot should not manage shorts
+                    # Auto-close short positions at IBKR — long-only bot should NEVER have shorts
                     if side == "short":
-                        skipped_shorts.append(sym)
+                        log.error(
+                            f"SHORT DETECTED at IBKR: {sym} ({qty} shares). "
+                            f"Auto-covering — long-only bot must not hold shorts."
+                        )
+                        try:
+                            self.broker.place_order(sym, "BUY", qty, "MARKET")
+                            log.info(f"AUTO-COVERED IBKR short: {sym}")
+                        except Exception as e:
+                            log.error(f"Failed to auto-cover IBKR short {sym}: {e}")
+                        continue
+
+                    # Skip positions with pending sell orders — they're being closed
+                    if sym in pending_sell_symbols:
+                        log.info(
+                            f"IBKR SYNC: Skipping {sym} — has pending SELL order "
+                            f"(position is being closed from previous session)"
+                        )
                         continue
 
                     stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
@@ -356,8 +388,8 @@ class TradingEngine:
                     self.positions[sym] = {
                         **pos,
                         "entry_time": now,
-                        "stop_loss": pos.get("stop_loss", entry * (1 - stop_pct) if side == "long" else entry * (1 + stop_pct)),
-                        "take_profit": pos.get("take_profit", entry * (1 + tp_pct) if side == "long" else entry * (1 - tp_pct)),
+                        "stop_loss": pos.get("stop_loss", entry * (1 - stop_pct)),
+                        "take_profit": pos.get("take_profit", entry * (1 + tp_pct)),
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                         "strategy": pos.get("strategy", "synced_from_ibkr"),
                         "executed_via": pos.get("executed_via", "IBKR"),
@@ -365,11 +397,6 @@ class TradingEngine:
                         "bar_seconds": 300,
                         "max_hold_days": 5,
                     }
-                if skipped_shorts:
-                    log.warning(
-                        f"IBKR SYNC: Skipped {len(skipped_shorts)} short positions "
-                        f"(long-only mode): {', '.join(skipped_shorts)}"
-                    )
                 log.info(f"Synced {len(self.positions)} LONG positions from IBKR")
         else:
             log.warning(
@@ -1990,6 +2017,16 @@ class TradingEngine:
                 stop_pct = self.config.stop_loss_pct
             stop_loss_price = current_price * (1 - stop_pct)  # Long-only: stop is always below
 
+        # STOP VALIDATION: Reject signals where stop is too close to entry
+        # This prevents instant stop triggers from near-zero ATR estimates
+        stop_distance_pct = (current_price - stop_loss_price) / current_price if current_price > 0 else 0
+        if stop_distance_pct < 0.01:  # Stop must be at least 1% below entry
+            log.warning(
+                f"STOP TOO CLOSE: {symbol} entry=${current_price:.2f} stop=${stop_loss_price:.2f} "
+                f"({stop_distance_pct:.2%} gap). Forcing 2% minimum stop."
+            )
+            stop_loss_price = current_price * 0.98  # Force 2% stop minimum
+
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
@@ -3298,19 +3335,48 @@ class TradingEngine:
             max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
             over_limit_positions = []
 
+            # Pre-fetch pending orders to avoid syncing positions that are being sold
+            pending_sell_symbols = set()
+            try:
+                open_orders = self._alpaca_api_call("/v2/orders?status=open")
+                if isinstance(open_orders, list):
+                    for o in open_orders:
+                        if o.get("side") == "sell" and o.get("status") in ("new", "accepted", "pending_new"):
+                            pending_sell_symbols.add(o.get("symbol", "").upper())
+                    if pending_sell_symbols:
+                        log.info(f"Startup sync: found pending SELL orders for: {', '.join(pending_sell_symbols)}")
+            except Exception as e:
+                log.debug(f"Could not check pending orders during sync: {e}")
+
             for p in broker_positions:
                 symbol = p.get("symbol", "").upper()
                 qty = abs(float(p.get("qty", 0)))
                 entry = float(p.get("avg_entry_price", 0))
                 side = "long" if float(p.get("qty", 0)) > 0 else "short"
 
-                # Skip short positions — long-only bot must not manage shorts.
-                # Managing shorts causes the monitor to send exit orders that create
-                # more problems (covering shorts, then opening unwanted longs).
+                # AUTO-CLOSE short positions — long-only bot should NEVER have shorts.
+                # Instead of just skipping (which leaves the short open), cover it.
                 if side == "short":
-                    log.warning(
-                        f"SYNC: Skipping SHORT position {symbol} ({int(qty)} shares) from Alpaca "
-                        f"(long-only mode — cover manually in broker)"
+                    log.error(
+                        f"SHORT DETECTED at Alpaca: {symbol} ({int(qty)} shares). "
+                        f"Auto-covering — long-only bot must not hold shorts."
+                    )
+                    try:
+                        self._close_via_alpaca(symbol)
+                        log.info(f"AUTO-COVERED short: {symbol}")
+                        self.notifier.risk_alert(
+                            f"AUTO-COVERED short position: {symbol} ({int(qty)} shares) "
+                            f"at Alpaca. Long-only bot should never have shorts."
+                        )
+                    except Exception as e:
+                        log.error(f"Failed to auto-cover short {symbol}: {e}")
+                    continue
+
+                # Skip positions with pending sell orders — they're being closed
+                if symbol in pending_sell_symbols:
+                    log.info(
+                        f"SYNC: Skipping {symbol} — has pending SELL order "
+                        f"(position is being closed)"
                     )
                     continue
 
@@ -3437,9 +3503,17 @@ class TradingEngine:
                     entry = float(p.get("avg_entry_price", 0))
                     side = "long" if float(p.get("qty", 0)) > 0 else "short"
 
-                    # Skip short positions — long-only bot should not manage shorts
+                    # Auto-close short positions found during continuous sync
                     if side == "short":
-                        log.info(f"SYNC: Ignoring SHORT {sym} from continuous sync (long-only mode)")
+                        log.error(
+                            f"SHORT DETECTED during sync: {sym} ({int(qty)} shares). "
+                            f"Auto-covering immediately."
+                        )
+                        try:
+                            self._close_via_alpaca(sym)
+                            log.info(f"AUTO-COVERED short during sync: {sym}")
+                        except Exception as e:
+                            log.error(f"Failed to auto-cover short {sym}: {e}")
                         continue
 
                     self.positions[sym] = {
