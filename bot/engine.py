@@ -103,7 +103,7 @@ class TradingEngine:
 
         # Signal deduplication - prevent duplicate entries
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
-        self._signal_cooldown_secs = 60  # Min seconds between signals for same symbol (was 120)
+        self._signal_cooldown_secs = 30  # Min seconds between signals for same symbol (was 60, too tight for ~60s scan cycle)
         self._pending_orders = set()  # Symbols with orders currently in-flight
 
         # Exit cooldown - prevent re-closing recently closed positions
@@ -998,6 +998,11 @@ class TradingEngine:
         # 3. Everything else
         remaining = [s for s in all_symbols if s not in priority_symbols]
         ordered_symbols = priority_symbols + remaining
+
+        # Prune IBKR streams for symbols no longer being tracked
+        # This frees slots for newly discovered movers
+        if self.market_data and hasattr(self.market_data, 'prune_stale_streams'):
+            self.market_data.prune_stale_streams(all_symbols)
 
         self.market_data.update(ordered_symbols)
 
