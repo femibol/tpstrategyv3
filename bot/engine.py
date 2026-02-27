@@ -1348,11 +1348,17 @@ class TradingEngine:
                         f"tightened to {pos['trailing_stop_pct']:.1%}, NO hard exit"
                     )
 
-        # Execute exits
+        # Execute exits — track which symbols had partial close attempted
+        # so we don't also fire a full close for the same symbol in the same cycle
+        partial_attempted = set()
         for symbol, qty, target_idx, target in partial_exits:
+            partial_attempted.add(symbol)
             self._partial_close(symbol, qty, target_idx, target)
 
         for symbol, reason_type, reason_msg in positions_to_close:
+            if symbol in partial_attempted:
+                log.debug(f"Skipping full close for {symbol} — partial close already attempted this cycle")
+                continue
             self._close_position(symbol, reason_type, reason_msg)
 
     def _on_5sec_bar(self, symbol, bar):
@@ -1780,12 +1786,17 @@ class TradingEngine:
                          f"Stale position: {pnl_pct:+.2%} after {elapsed_min:.0f}min")
                     )
 
-        # Execute partial exits first
+        # Execute partial exits first — track symbols to prevent double-send
+        partial_attempted = set()
         for symbol, qty, target_idx, target in partial_exits:
+            partial_attempted.add(symbol)
             self._partial_close(symbol, qty, target_idx, target)
 
-        # Execute full closes
+        # Execute full closes (skip symbols that already had a partial close this cycle)
         for symbol, reason_type, reason_msg in positions_to_close:
+            if symbol in partial_attempted:
+                log.debug(f"Skipping full close for {symbol} — partial close already attempted this cycle")
+                continue
             self._close_position(symbol, reason_type, reason_msg)
 
     def _run_strategies(self):
@@ -2712,6 +2723,20 @@ class TradingEngine:
         pos = self.positions.get(symbol)
         if not pos or qty_to_close <= 0:
             return
+
+        # Double-close guard: prevent concurrent close attempts (same guard as _close_position)
+        if symbol in self._closing_in_progress:
+            log.debug(f"Close already in progress for {symbol} — skipping partial close")
+            return
+        self._closing_in_progress.add(symbol)
+
+        try:
+            self._partial_close_inner(symbol, qty_to_close, target_idx, target, pos)
+        finally:
+            self._closing_in_progress.discard(symbol)
+
+    def _partial_close_inner(self, symbol, qty_to_close, target_idx, target, pos):
+        """Inner partial close logic — called with double-close guard held."""
 
         current_price = self.market_data.get_price(symbol)
         if current_price is None:
