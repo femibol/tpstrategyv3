@@ -240,7 +240,35 @@ class IBKRBroker(BaseBroker):
 
             # --- Single Order ---
             if order_type.upper() == "MARKET":
-                order = MarketOrder(action.upper(), quantity)
+                if outside_rth:
+                    # MARKET orders cannot execute outside RTH — IBKR defers them
+                    # to the next regular session (Warning 2109/399).
+                    # Convert to aggressive LIMIT order that will fill immediately.
+                    snap_price = self._get_snap_price(contract, action.upper())
+                    if snap_price and snap_price > 0:
+                        # Add 1% slippage buffer to ensure fill
+                        if action.upper() == "BUY":
+                            aggressive_price = round(snap_price * 1.01, 2)
+                        else:
+                            aggressive_price = round(snap_price * 0.99, 2)
+                        order = LimitOrder(action.upper(), quantity, aggressive_price)
+                        order.outsideRth = True
+                        order.tif = "DAY"
+                        log.info(
+                            f"OUTSIDE RTH: Converted MARKET → aggressive LIMIT "
+                            f"${aggressive_price:.2f} for {action} {quantity} {symbol}"
+                        )
+                    else:
+                        # No price available — fall back to MARKET without outsideRth
+                        # so IBKR doesn't defer the order
+                        order = MarketOrder(action.upper(), quantity)
+                        outside_rth = False
+                        log.warning(
+                            f"OUTSIDE RTH: No snap price for {symbol} — "
+                            f"using MARKET without outsideRth flag"
+                        )
+                else:
+                    order = MarketOrder(action.upper(), quantity)
             elif order_type.upper() == "MIDPRICE":
                 # MIDPRICE: fills at the midpoint between bid/ask or better
                 # Free price improvement on every trade vs chasing the ask
@@ -283,11 +311,10 @@ class IBKRBroker(BaseBroker):
                 f"| Order ID: {order_id}"
             )
 
-            # Wait for fill (up to 15 seconds for entries, 10 for exits)
-            # This prevents position tracking before the order actually fills,
-            # which avoids sell-before-fill race conditions.
+            # Wait for fill — exits get longer timeout because failing to close
+            # a position is worse than waiting. Entries: 15s, Exits: 30s.
             is_entry = action.upper() == "BUY"
-            fill_timeout = 15 if is_entry else 10
+            fill_timeout = 15 if is_entry else 30
             filled_qty = 0
             avg_fill_price = 0
             fill_status = trade.orderStatus.status
@@ -297,6 +324,13 @@ class IBKRBroker(BaseBroker):
                 fill_status = trade.orderStatus.status
                 filled_qty = int(trade.orderStatus.filled or 0)
                 avg_fill_price = float(trade.orderStatus.avgFillPrice or 0)
+
+                # Detect deferred orders early — IBKR sets PreSubmitted when
+                # an order won't route until next session (Warning 399)
+                if fill_status == "PreSubmitted" and not is_entry:
+                    # Check if IBKR gave us a warning about deferred execution
+                    # If so, cancel and retry without outsideRth
+                    pass  # Let the timeout handle it, but log below
 
                 if fill_status == "Filled":
                     log.info(
@@ -308,7 +342,7 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Order {fill_status}: {symbol} | Order ID: {order_id}")
                     return None
 
-            # If not fully filled after timeout, use what we got
+            # If not fully filled after timeout, cancel and return what we got
             if fill_status != "Filled" and filled_qty == 0:
                 log.warning(
                     f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
@@ -445,6 +479,27 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.error(f"Bracket order failed for {symbol}: {e}")
             return None
+
+    def _get_snap_price(self, contract, action):
+        """Get a snapshot price for aggressive LIMIT order pricing.
+        Returns the best available price (last, bid/ask, or close)."""
+        try:
+            tickers = self.ib.reqTickers(contract)
+            if tickers:
+                t = tickers[0]
+                # For SELL: use bid (what buyers will pay); for BUY: use ask
+                if action == "SELL" and t.bid and t.bid > 0:
+                    return t.bid
+                if action == "BUY" and t.ask and t.ask > 0:
+                    return t.ask
+                # Fallback to last price
+                if t.last and t.last > 0:
+                    return t.last
+                if t.close and t.close > 0:
+                    return t.close
+        except Exception as e:
+            log.debug(f"Snap price request failed for {contract.symbol}: {e}")
+        return None
 
     def _create_option_contract(self, symbol, expiry, strike, right="C"):
         """
@@ -1310,12 +1365,25 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Cannot qualify {symbol} for closing - try manually")
                     continue
 
-                order = MarketOrder(action, qty)
-                order.outsideRth = True
+                # Use aggressive LIMIT for extended hours (MARKET orders get
+                # deferred by IBKR outside RTH). During RTH, use MARKET.
+                snap_price = self._get_snap_price(contract, action)
+                if snap_price and snap_price > 0:
+                    # 1.5% slippage for emergency flatten — fill is priority
+                    if action == "BUY":
+                        aggressive_price = round(snap_price * 1.015, 2)
+                    else:
+                        aggressive_price = round(snap_price * 0.985, 2)
+                    order = LimitOrder(action, qty, aggressive_price)
+                    order.outsideRth = True
+                    order.tif = "DAY"
+                else:
+                    order = MarketOrder(action, qty)
                 trade = self.ib.placeOrder(contract, order)
                 self.ib.sleep(1)
                 log.info(
-                    f"FLATTEN: {action} {qty} {symbol} | "
+                    f"FLATTEN: {action} {qty} {symbol} @ "
+                    f"{'LIMIT $' + str(order.lmtPrice) if hasattr(order, 'lmtPrice') and order.lmtPrice else 'MKT'} | "
                     f"Status: {trade.orderStatus.status}"
                 )
                 closed += 1

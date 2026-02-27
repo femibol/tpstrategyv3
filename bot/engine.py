@@ -950,6 +950,7 @@ class TradingEngine:
         if day_name not in trading_days:
             # On weekends, only run if crypto symbols exist (crypto trades 24/7)
             self._in_premarket = False
+            self._in_postmarket = False
             self._equity_market_open = False
             return has_crypto
 
