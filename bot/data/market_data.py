@@ -205,7 +205,11 @@ class MarketDataFeed:
         bars = None
 
         # 1. IBKR (real-time, highest quality)
-        if self.broker and self.broker.is_connected():
+        # Skip IBKR entirely for symbols already blacklisted (delisted/invalid)
+        # to avoid wasting time on qualifyContracts calls that will fail.
+        ibkr_available = (self.broker and self.broker.is_connected()
+                          and not getattr(self.broker, 'is_symbol_invalid', lambda s: False)(symbol))
+        if ibkr_available:
             try:
                 bars = self.broker.get_historical_bars(
                     symbol,
@@ -376,8 +380,10 @@ class MarketDataFeed:
 
     def _fetch_bars_1m(self, symbol):
         """Fetch 1-minute bars from available sources."""
-        # 1. IBKR
-        if self.broker and self.broker.is_connected():
+        # 1. IBKR (skip if symbol is blacklisted)
+        ibkr_available = (self.broker and self.broker.is_connected()
+                          and not getattr(self.broker, 'is_symbol_invalid', lambda s: False)(symbol))
+        if ibkr_available:
             try:
                 bars = self.broker.get_historical_bars(
                     symbol, duration="2 D", bar_size="1 min"
