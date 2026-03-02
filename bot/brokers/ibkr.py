@@ -58,7 +58,7 @@ class IBKRBroker(BaseBroker):
         # Reset every 30 minutes to retry transiently-failed symbols
         self._invalid_symbols = set()
         self._invalid_symbols_reset_time = time.time()
-        self._invalid_symbols_ttl = 1800  # 30 minutes
+        self._invalid_symbols_ttl = 7200  # 2 hours (avoid retrying delisted symbols too often)
 
         # News callback (set by subscribe_news)
         self._news_callback = None
@@ -675,7 +675,7 @@ class IBKRBroker(BaseBroker):
 
             if contract.conId == 0:
                 self._invalid_symbols.add(symbol)
-                log.warning(f"No security definition for '{symbol}' — skipping historical bars")
+                log.info(f"No security definition for '{symbol}' — blacklisted, skipping bars")
                 return None
 
             bars = self.ib.reqHistoricalData(
@@ -729,7 +729,7 @@ class IBKRBroker(BaseBroker):
                 # conId == 0 means IBKR couldn't resolve the contract
                 if contract.conId == 0:
                     self._invalid_symbols.add(symbol)
-                    log.warning(f"No security definition for '{symbol}' — skipping streaming")
+                    log.info(f"No security definition for '{symbol}' — skipping streaming")
                     continue
 
                 self._streaming_contracts[symbol] = contract
@@ -796,11 +796,15 @@ class IBKRBroker(BaseBroker):
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
-                self.ib.qualifyContracts(contract)
+                try:
+                    self.ib.qualifyContracts(contract)
+                except Exception as qe:
+                    log.debug(f"qualifyContracts failed for {symbol}: {qe}")
+                    continue
 
                 if contract.conId == 0:
                     self._invalid_symbols.add(symbol)
-                    log.warning(f"Unknown contract: {contract} - skipping real-time bars")
+                    log.info(f"No security definition for '{symbol}' — skipping real-time bars")
                     continue
 
                 bars = self.ib.reqRealTimeBars(
@@ -918,14 +922,15 @@ class IBKRBroker(BaseBroker):
 
         # Error 200 = "No security definition" (delisted or invalid symbol)
         # Suppress entirely — calling code (qualifyContracts + conId==0 check)
-        # already handles blacklisting in _invalid_symbols
+        # already handles blacklisting in _invalid_symbols.
+        # Use debug level to avoid duplicate warnings (calling code already logs).
         if errorCode == 200:
             symbol = None
             if contract and hasattr(contract, 'symbol'):
                 symbol = contract.symbol
             if symbol and symbol not in self._invalid_symbols:
                 self._invalid_symbols.add(symbol)
-                log.warning(f"Blacklisting '{symbol}' - no security definition (likely delisted)")
+                log.debug(f"Error 200 blacklisted '{symbol}' (no security definition)")
             return
 
         # Error 201 = "Order rejected - 15 orders limit on same side for this contract"
@@ -1098,10 +1103,15 @@ class IBKRBroker(BaseBroker):
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
-                self.ib.qualifyContracts(contract)
+                try:
+                    self.ib.qualifyContracts(contract)
+                except Exception as qe:
+                    log.debug(f"qualifyContracts failed for {symbol}: {qe}")
+                    continue
 
                 if contract.conId == 0:
                     self._invalid_symbols.add(symbol)
+                    log.debug(f"No security definition for '{symbol}' — skipping live bars v2")
                     continue
 
                 bars = self.ib.reqRealTimeBars(
