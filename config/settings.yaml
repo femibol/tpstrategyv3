@@ -97,13 +97,13 @@ schedule:
   premarket:
     enabled: true                  # Pre-market trading enabled (catches gap plays)
     start_time: "04:00"           # 4 AM ET — full pre-market coverage per spec
-    allowed_strategies: ["momentum_runner", "rvol_momentum", "premarket_gap", "prebreakout"]
+    allowed_strategies: ["momentum_runner", "rvol_momentum", "premarket_gap", "prebreakout", "rvol_scalp"]
     reduce_size_pct: 0.70         # Use 70% of normal size
 
   postmarket:
     enabled: true                  # Post-market trading enabled (catch after-hours moves)
     end_time: "20:00"             # Trade until 8 PM ET — spec: scan until 8 PM
-    allowed_strategies: ["momentum_runner", "rvol_momentum"]
+    allowed_strategies: ["momentum_runner", "rvol_momentum", "rvol_scalp"]
     reduce_size_pct: 0.60         # Use 60% size
 
   # --- Overnight Holding ---
