@@ -901,6 +901,47 @@ class TradingEngine:
                                 0  # P&L recorded at close
                             )
 
+                    # 8b. No-signal diagnostic: alert when no signals for extended period
+                    if not hasattr(self, '_no_signal_cycles'):
+                        self._no_signal_cycles = 0
+                    if not signals:
+                        self._no_signal_cycles += 1
+                        # Log diagnostic every 60 cycles (~10 min of silence)
+                        if self._no_signal_cycles % 60 == 0:
+                            symbols_scanned = sum(len(s.get_symbols()) for s in self.strategies.values())
+                            ibkr_connected = self.broker.is_connected() if self.broker else False
+                            polygon_ok = self.polygon.enabled if self.polygon else False
+                            bars_failed = len(self.market_data._bars_fail_cache) if self.market_data else 0
+                            with_data = sum(
+                                1 for s in self.strategies.values()
+                                for sym in s.get_symbols()
+                                if self.market_data and self.market_data.get_data(sym) is not None
+                            ) if self.market_data else 0
+                            log.warning(
+                                f"NO SIGNALS for {self._no_signal_cycles} cycles (~{self._no_signal_cycles * 10 // 60}min) | "
+                                f"Symbols: {symbols_scanned} | Bars: {with_data} | "
+                                f"IBKR: {'OK' if ibkr_connected else 'DOWN'} | "
+                                f"Polygon: {'OK' if polygon_ok else 'OFF'} | "
+                                f"Bars-fail-cache: {bars_failed}"
+                            )
+                            if symbols_scanned == 0:
+                                log.error(
+                                    "ZERO SYMBOLS in strategies — check Polygon scanner or add static watchlist"
+                                )
+                            elif with_data == 0 and symbols_scanned > 0:
+                                log.error(
+                                    "ZERO BAR DATA for all symbols — IBKR down + Polygon bars failing + Yahoo blocked. "
+                                    "Snapshot fast-path may have insufficient RVOL for scoring."
+                                )
+                    else:
+                        if self._no_signal_cycles > 10:
+                            log.info(
+                                f"Signal drought ended after {self._no_signal_cycles} cycles "
+                                f"(~{self._no_signal_cycles * 10 // 60}min) — "
+                                f"{len(signals)} signals generated"
+                            )
+                        self._no_signal_cycles = 0
+
                     # 9. Update account state
                     self._update_account()
 

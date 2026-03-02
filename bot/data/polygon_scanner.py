@@ -12,6 +12,7 @@ Free tier: 5 calls/min — 1 snapshot + 4 bar fetches per cycle.
 import time
 from datetime import datetime, timedelta
 
+import pytz
 import pandas as pd
 
 from bot.utils.logger import get_logger
@@ -103,6 +104,42 @@ class PolygonScanner:
         else:
             log.info("Polygon.io disabled — set POLYGON_API_KEY to enable")
 
+    def _get_trading_day_fraction(self):
+        """Return the fraction of the regular trading day elapsed (0.0 to 1.0).
+
+        Used to normalize cumulative daily volume into a per-hour RVOL pace.
+        Regular hours: 9:30-16:00 ET = 6.5 hours = 390 minutes.
+        Pre-market (4:00-9:30): returns fraction based on pre-market elapsed.
+        Post-market: returns 1.0 (full day).
+        """
+        try:
+            et = pytz.timezone("US/Eastern")
+            now = datetime.now(et)
+            hour, minute = now.hour, now.minute
+            time_val = hour * 60 + minute
+
+            market_open = 9 * 60 + 30   # 9:30 AM = 570 min
+            market_close = 16 * 60       # 4:00 PM = 960 min
+            premarket_open = 4 * 60      # 4:00 AM = 240 min
+            total_rth_minutes = 390.0    # 6.5 hours
+
+            if time_val >= market_close:
+                return 1.0  # Post-market: full day elapsed
+            elif time_val >= market_open:
+                # Regular hours: fraction of RTH elapsed
+                elapsed = time_val - market_open
+                return max(0.05, elapsed / total_rth_minutes)
+            elif time_val >= premarket_open:
+                # Pre-market: use pre-market fraction (scaled to ~15% of day)
+                # Pre-market volume is typically ~15% of RTH volume
+                elapsed = time_val - premarket_open
+                premarket_total = market_open - premarket_open  # 330 min
+                return max(0.05, 0.15 * elapsed / premarket_total)
+            else:
+                return 0.05  # Before pre-market: minimal fraction
+        except Exception:
+            return 0.5  # Safe default: assume half day
+
     # =========================================================================
     # Full-Market Snapshot (scanning + price cache)
     # =========================================================================
@@ -132,6 +169,12 @@ class PolygonScanner:
             gap_ups = []
             price_cache = {}
             ticker_count = 0
+
+            # Normalize RVOL by trading day fraction — cumulative volume
+            # divided by prev_day volume gives a fraction early in the day.
+            # Dividing by the fraction of the day elapsed gives the actual
+            # volume PACE (e.g., 3x normal pace shows as 3.0 at any time).
+            day_fraction = self._get_trading_day_fraction()
 
             for t in tickers:
                 if not isinstance(t, TickerSnapshot):
@@ -190,7 +233,10 @@ class PolygonScanner:
                 if abs(change_pct) < min_change_pct:
                     continue
 
-                rvol = round(volume / prev_volume, 1) if prev_volume > 0 else 0
+                # Normalize RVOL by day fraction — gives volume PACE, not cumulative ratio
+                # At 10:00 AM (day_fraction ~0.08), raw RVOL of 0.24 → pace RVOL of 3.0
+                raw_rvol = volume / prev_volume if prev_volume > 0 else 0
+                rvol = round(raw_rvol / day_fraction, 1) if day_fraction > 0 else 0
                 gap_pct = ((open_price - prev_close) / prev_close * 100) if prev_close > 0 and open_price > 0 else 0
 
                 entry = {
@@ -229,8 +275,8 @@ class PolygonScanner:
 
             log.info(
                 f"Polygon scan: {ticker_count} tickers | "
-                f"{len(movers)} movers (5%+) | {len(runners)} runners (10%+) | "
-                f"{len(gap_ups)} gap-ups (3%+)"
+                f"{len(movers)} movers (2%+) | {len(runners)} runners (5%+) | "
+                f"{len(gap_ups)} gap-ups (3%+) | day_frac={day_fraction:.2f}"
             )
 
             return movers, runners, gap_ups
