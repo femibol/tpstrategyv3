@@ -62,6 +62,7 @@ class MarketDataFeed:
         self._last_1m_update = {}   # symbol -> timestamp
         self._cache_ttl = config.settings.get("data", {}).get("cache_ttl", 10)
         self._cache_ttl_1m = 5      # 5-second TTL for 1-min bar cache
+        self._bars_last_fetch = {}  # symbol -> timestamp of last bar fetch attempt (separate from price updates)
         self._bars_fail_cache = {}  # symbol -> timestamp of last failed bar fetch
         self._bars_fail_ttl = 120   # Retry failed bar fetches every 2 minutes (not every cycle)
 
@@ -167,8 +168,12 @@ class MarketDataFeed:
                         self._volume_cache[symbol] = live["volume"]
                     self._last_update[symbol] = now
 
-            last = self._last_update.get(symbol, 0)
-            if now - last < self._cache_ttl:
+            # Use separate bar-fetch timer so price-only updates (Polygon/IBKR streaming)
+            # don't prevent bars from being fetched.  Previously, Polygon bulk price
+            # updates set _last_update, causing the cache_ttl gate below to skip bar
+            # fetches indefinitely (now - now = 0 < 10 → always skip).
+            bars_last = self._bars_last_fetch.get(symbol, 0)
+            if now - bars_last < self._cache_ttl:
                 continue
 
             # Skip symbols that recently failed bar fetch (avoid hammering APIs)
@@ -184,12 +189,15 @@ class MarketDataFeed:
                         self._price_cache[symbol] = float(bars["close"].iloc[-1])
                     self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
                     self._last_update[symbol] = now
+                    self._bars_last_fetch[symbol] = now
                     self._bars_fail_cache.pop(symbol, None)  # Clear failure on success
                     log.debug(f"Updated {symbol}: ${self._price_cache.get(symbol, 0):.2f}")
                 else:
                     self._bars_fail_cache[symbol] = now
+                    self._bars_last_fetch[symbol] = now
             except Exception as e:
                 self._bars_fail_cache[symbol] = now
+                self._bars_last_fetch[symbol] = now
                 log.debug(f"Data update failed for {symbol}: {e}")
 
     def _fetch_bars(self, symbol):

@@ -214,7 +214,11 @@ class IBKRBroker(BaseBroker):
             else:
                 contract = Stock(symbol, "SMART", "USD")
 
-            self.ib.qualifyContracts(contract)
+            try:
+                self.ib.qualifyContracts(contract)
+            except Exception as qe:
+                log.error(f"Contract qualification failed for {symbol}: {qe}")
+                return None
 
             # Check if contract resolution failed (e.g. delisted, bad symbol)
             if contract.conId == 0:
@@ -660,11 +664,18 @@ class IBKRBroker(BaseBroker):
 
         try:
             contract = Stock(symbol, "SMART", "USD")
-            self.ib.qualifyContracts(contract)
+            try:
+                self.ib.qualifyContracts(contract)
+            except Exception as e:
+                # qualifyContracts can raise on network errors or if IBKR
+                # returns error 200 synchronously.  Don't blacklist — could
+                # be a transient failure.  Let caller fall through to Polygon.
+                log.debug(f"qualifyContracts failed for {symbol}: {e}")
+                return None
 
             if contract.conId == 0:
                 self._invalid_symbols.add(symbol)
-                log.warning(f"Unknown contract: {contract} - skipping historical bars")
+                log.warning(f"No security definition for '{symbol}' — skipping historical bars")
                 return None
 
             bars = self.ib.reqHistoricalData(
@@ -709,12 +720,16 @@ class IBKRBroker(BaseBroker):
 
             try:
                 contract = Stock(symbol, "SMART", "USD")
-                self.ib.qualifyContracts(contract)
+                try:
+                    self.ib.qualifyContracts(contract)
+                except Exception as qe:
+                    log.debug(f"qualifyContracts failed for {symbol}: {qe}")
+                    continue
 
                 # conId == 0 means IBKR couldn't resolve the contract
                 if contract.conId == 0:
                     self._invalid_symbols.add(symbol)
-                    log.warning(f"Unknown contract: {contract} - skipping")
+                    log.warning(f"No security definition for '{symbol}' — skipping streaming")
                     continue
 
                 self._streaming_contracts[symbol] = contract
@@ -893,8 +908,10 @@ class IBKRBroker(BaseBroker):
             f"Filled: {trade.orderStatus.filled}/{trade.order.totalQuantity}"
         )
 
-    def _on_error(self, reqId, errorCode, errorString, contract):
-        """Handle errors from IBKR."""
+    def _on_error(self, reqId, errorCode, errorString, contract=None):
+        """Handle errors from IBKR.
+        Note: contract parameter is optional — older ib_insync versions
+        don't pass it.  Using a default of None for compatibility."""
         # Filter out common non-critical messages
         if errorCode in (162, 2104, 2106, 2158):
             return
