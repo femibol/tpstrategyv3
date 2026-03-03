@@ -5084,6 +5084,78 @@ class TradingEngine:
                             runner_strat.add_dynamic_symbols(runner_syms)
                             runner_strat.feed_snapshot_data(poly_runners)
                         log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
+
+                # --- Top Gainers Scanner (no price cap, all sessions) ---
+                # Catches big movers that scan_full_market misses due to $100 cap.
+                # Uses the already-cached price data — no extra API calls.
+                if hasattr(self.polygon, 'scan_top_gainers'):
+                    now_et = datetime.now(self.tz)
+                    _h2, _m2 = now_et.hour, now_et.minute
+                    _tv2 = _h2 * 100 + _m2
+                    if _tv2 < 930:
+                        _gainer_session = "premarket"
+                    elif _tv2 < 1600:
+                        _gainer_session = "regular"
+                    else:
+                        _gainer_session = "postmarket"
+
+                    # Load config overrides from settings.yaml if available
+                    _tg_config = None
+                    if hasattr(self, 'config') and hasattr(self.config, 'settings'):
+                        _tg_config = self.config.settings.get("top_gainers")
+                    _tg_limit = _tg_config.get("limit", 50) if _tg_config else 50
+                    _tg_enabled = _tg_config.get("enabled", True) if _tg_config else True
+
+                    if not _tg_enabled:
+                        top_gainers = []
+                    else:
+                        top_gainers = self.polygon.scan_top_gainers(
+                            session=_gainer_session, limit=_tg_limit, config=_tg_config
+                        )
+                    if top_gainers:
+                        gainer_syms = []
+                        gainer_snapshots = []
+                        for g in top_gainers:
+                            sym = g.get("symbol", "")
+                            if not sym:
+                                continue
+                            if self._is_crypto_symbol(sym) and not self._is_crypto_enabled():
+                                continue
+                            gainer_syms.append(sym)
+                            gainer_snapshots.append(g)
+
+                        if gainer_syms:
+                            # Feed into ALL scanning strategies — these are the day's biggest movers
+                            if rvol_strat:
+                                rvol_strat.add_dynamic_symbols(gainer_syms)
+                                if hasattr(rvol_strat, "feed_snapshot_data"):
+                                    rvol_strat.feed_snapshot_data(gainer_snapshots)
+                            if scalp_strat:
+                                scalp_strat.add_dynamic_symbols(gainer_syms)
+                            if pb_strat:
+                                pb_strat.add_dynamic_symbols(gainer_syms)
+                            if gap_strat:
+                                gap_strat.add_dynamic_symbols(gainer_syms)
+                            if squeeze_strat:
+                                squeeze_strat.add_dynamic_symbols(gainer_syms)
+                            if pead_strat:
+                                pead_strat.add_dynamic_symbols(gainer_syms)
+                            if runner_strat:
+                                runner_strat.add_dynamic_symbols(gainer_syms)
+                                runner_strat.feed_snapshot_data(gainer_snapshots)
+                            if mr_strat:
+                                # Top gainers that have pulled back could be mean reversion
+                                for g in top_gainers:
+                                    if g.get("change_pct", 0) <= -3.0:
+                                        s = g.get("symbol", "")
+                                        if s and s not in mr_strat.symbols:
+                                            mr_strat.symbols.append(s)
+
+                            log.info(
+                                f"Top gainers: injected {len(gainer_syms)} stocks (no price cap) "
+                                f"into all strategies [{_gainer_session}]"
+                            )
+
             # Get top movers from Polygon (filtered to $0.50-$50 range)
             movers = self.get_top_movers()
             if movers:
