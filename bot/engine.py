@@ -2044,9 +2044,9 @@ class TradingEngine:
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} below ${min_price} floor")
             return
 
-        # Price ceiling filter — only buy stocks in our target range
-        # Scanner discovers movers under $100; don't let strategies buy $200+ stocks
-        max_buy_price = self.config.settings.get("risk", {}).get("scanner_max_price", 100.0)
+        # Price ceiling filter — safety net for extreme-priced stocks
+        # Top gainers scanner has no cap; this is the last safeguard
+        max_buy_price = self.config.settings.get("risk", {}).get("scanner_max_price", 500.0)
         if action == "buy" and current_price > max_buy_price:
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} above ${max_buy_price} ceiling — skipping")
             return
@@ -5156,7 +5156,7 @@ class TradingEngine:
                                 f"into all strategies [{_gainer_session}]"
                             )
 
-            # Get top movers from Polygon (filtered to $0.50-$50 range)
+            # Get top movers from Polygon (filtered to $0.50-$500 range)
             movers = self.get_top_movers()
             if movers:
                 mover_symbols = []
@@ -5167,7 +5167,8 @@ class TradingEngine:
                     change_pct = m.get("change_pct", 0)
                     rvol = m.get("rvol", 0)
 
-                    if not sym or price < 0.50 or price > 100.0:
+                    _mover_max = self.config.settings.get("risk", {}).get("scanner_max_price", 500.0)
+                    if not sym or price < 0.50 or price > _mover_max:
                         continue
 
                     # Skip crypto symbols when crypto is disabled
