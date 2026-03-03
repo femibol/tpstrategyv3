@@ -171,13 +171,16 @@ class MomentumRunnerStrategy(BaseStrategy):
     def _score_candidate(self, symbol, rvol, float_shares, change_pct, session,
                          has_consolidation, near_resistance, breaking_out,
                          confirmed_breakout):
-        """Score a candidate on a 0-10 scale.
+        """Score a candidate on a 0-12 scale (extended from 10).
 
         Components:
         - RVOL (0-3): <2x=0, 2-5x=1, 5-10x=2, >10x=3
-        - Float (0-2): >100M=0, 50-100M=1, <50M=2
-        - Catalyst (0-2): none=0, sympathy=1, direct=2
+        - Float (0-3): >100M=0, 50-100M=1, <50M=2, <10M in premarket=3
+        - Catalyst (0-3): none=0, sympathy=1, direct=2, sector_heat=3
         - Technical (0-3): none=0, near resistance=1, forming=2, confirmed=3
+
+        Min score threshold (self.min_score) still applies — higher ceiling
+        rewards truly exceptional setups with higher confidence/sizing.
 
         Returns (score, breakdown_dict)
         """
@@ -185,20 +188,31 @@ class MomentumRunnerStrategy(BaseStrategy):
         breakdown = {}
 
         # --- RVOL Score (0-3) ---
-        if rvol >= 10.0:
+        # In premarket, RVOL is inflated (thin volume vs full-day avg).
+        # Normalize: if premarket, use change_pct as a proxy when RVOL > 20x
+        effective_rvol = rvol
+        if session == "premarket" and rvol > 20.0 and change_pct < 5.0:
+            # Extreme RVOL but modest move = premarket volume distortion
+            effective_rvol = min(rvol, 10.0)
+
+        if effective_rvol >= 10.0:
             rvol_pts = 3
-        elif rvol >= 5.0:
+        elif effective_rvol >= 5.0:
             rvol_pts = 2
-        elif rvol >= 2.0:
+        elif effective_rvol >= 2.0:
             rvol_pts = 1
         else:
             rvol_pts = 0
         score += rvol_pts
         breakdown["rvol"] = rvol_pts
 
-        # --- Float Score (0-2) ---
+        # --- Float Score (0-3) ---
+        # Premarket boost: micro-float stocks (<10M) are the multi-baggers
+        # (e.g., BATL +113%, INDO +47% — all micro-float)
         if float_shares > 0:
-            if float_shares < 50_000_000:
+            if float_shares < 10_000_000 and session == "premarket":
+                float_pts = 3  # Micro-float in premarket = explosive potential
+            elif float_shares < 50_000_000:
                 float_pts = 2
             elif float_shares < 100_000_000:
                 float_pts = 1
@@ -209,13 +223,23 @@ class MomentumRunnerStrategy(BaseStrategy):
         score += float_pts
         breakdown["float"] = float_pts
 
-        # --- Catalyst Score (0-2) ---
+        # --- Catalyst Score (0-3) ---
         catalyst = self._catalyst_cache.get(symbol)
         sector = self._snapshot_data.get(symbol, {}).get("sector", "Unknown")
+        sector_count = self._sector_runners.get(sector, 0) if sector != "Unknown" else 0
 
-        if catalyst and catalyst.get("type") in ("earnings", "news", "upgrade", "fda"):
+        if catalyst and catalyst.get("type") in ("earnings", "news", "upgrade", "fda", "geopolitical"):
             catalyst_pts = 2
-        elif sector in self._sector_runners and self._sector_runners.get(sector, 0) >= 3:
+            # Sector-wide heat bonus: when 5+ stocks in sector are running,
+            # the theme is confirmed (e.g., energy during oil crisis)
+            if sector_count >= 5:
+                catalyst_pts = 3
+                breakdown["sector_heat"] = True
+        elif sector_count >= 5:
+            # Massive sector rotation (5+ runners) = high-conviction theme
+            catalyst_pts = 2
+            breakdown["sector_heat"] = True
+        elif sector_count >= 3:
             catalyst_pts = 1  # Sympathy play — 3+ in same sector running
         else:
             catalyst_pts = 0
@@ -427,6 +451,11 @@ class MomentumRunnerStrategy(BaseStrategy):
             if rr_ratio >= 1.5 and risk > 0:
                 confidence = min(1.0, score / 10)
 
+                # Macro-driven themes (sector_heat=True) get extended hold time
+                # e.g., oil stocks during Hormuz crisis run for weeks, not hours
+                is_sector_heat = breakdown.get("sector_heat", False)
+                hold_days = 5 if is_sector_heat else 2
+
                 result["signal"] = {
                     "symbol": symbol,
                     "action": "buy",
@@ -437,7 +466,7 @@ class MomentumRunnerStrategy(BaseStrategy):
                     "confidence": round(confidence, 2),
                     "reason": self._build_reason(entry_type, score, breakdown, rvol, change_pct),
                     "max_hold_bars": 0,  # Trailing stop manages exit
-                    "max_hold_days": 2,
+                    "max_hold_days": hold_days,
                     "bar_seconds": 300,
                     "rvol": rvol,
                     "rr_ratio": rr_ratio,
@@ -449,14 +478,16 @@ class MomentumRunnerStrategy(BaseStrategy):
                     "trailing_stop_pct": 0.015,  # Initial trail, engine will use 4-phase
                     "runner_mode": True,
                     "momentum_runner": True,  # Flag for engine's 4-phase trail
+                    "sector_heat": is_sector_heat,
                 }
 
                 self.signals_generated += 1
                 log.info(
                     f"RUNNER SIGNAL [{entry_type.upper()}]: {symbol} | "
-                    f"Score: {score}/10 ({breakdown}) | RVOL: {rvol:.1f}x | "
+                    f"Score: {score}/12 ({breakdown}) | RVOL: {rvol:.1f}x | "
                     f"Change: {change_pct:+.1f}% | R:R {rr_ratio:.1f} | "
                     f"Size: {size_multiplier:.0%}"
+                    f"{' | SECTOR HEAT' if is_sector_heat else ''}"
                 )
 
         return result
@@ -582,6 +613,9 @@ class MomentumRunnerStrategy(BaseStrategy):
             if rr_ratio >= 1.5 and risk > 0:
                 confidence = min(1.0, score / 10)
 
+                is_sector_heat = breakdown.get("sector_heat", False)
+                hold_days = 5 if is_sector_heat else 2
+
                 result["signal"] = {
                     "symbol": symbol,
                     "action": "buy",
@@ -592,7 +626,7 @@ class MomentumRunnerStrategy(BaseStrategy):
                     "confidence": round(confidence, 2),
                     "reason": self._build_reason(entry_type, score, breakdown, rvol, change_pct),
                     "max_hold_bars": 0,
-                    "max_hold_days": 2,
+                    "max_hold_days": hold_days,
                     "bar_seconds": 300,
                     "rvol": rvol,
                     "rr_ratio": rr_ratio,
@@ -605,13 +639,15 @@ class MomentumRunnerStrategy(BaseStrategy):
                     "runner_mode": True,
                     "momentum_runner": True,
                     "fast_path": True,
+                    "sector_heat": is_sector_heat,
                 }
 
                 self.signals_generated += 1
                 log.info(
                     f"RUNNER FAST SIGNAL [{entry_type.upper()}]: {symbol} | "
-                    f"Score: {score}/10 | RVOL: {rvol:.1f}x | "
+                    f"Score: {score}/12 | RVOL: {rvol:.1f}x | "
                     f"Change: {change_pct:+.1f}% | R:R {rr_ratio:.1f} [SNAPSHOT]"
+                    f"{' | SECTOR HEAT' if is_sector_heat else ''}"
                 )
 
         return result
@@ -802,15 +838,19 @@ class MomentumRunnerStrategy(BaseStrategy):
     def _build_reason(self, entry_type, score, breakdown, rvol, change_pct):
         """Build human-readable signal reason."""
         parts = [f"[{entry_type.upper()}]"]
-        parts.append(f"Score:{score}/10")
+        parts.append(f"Score:{score}/12")
 
         detail_parts = []
         if breakdown.get("rvol", 0) > 0:
             detail_parts.append(f"RVOL:{rvol:.1f}x")
         if breakdown.get("float", 0) > 0:
-            detail_parts.append(f"Float:{breakdown['float']}pt")
-        if breakdown.get("catalyst", 0) > 0:
-            detail_parts.append("Catalyst" if breakdown["catalyst"] == 2 else "Sympathy")
+            label = "MicroFloat" if breakdown["float"] >= 3 else f"Float:{breakdown['float']}pt"
+            detail_parts.append(label)
+        if breakdown.get("sector_heat"):
+            detail_parts.append("SectorHeat")
+        elif breakdown.get("catalyst", 0) > 0:
+            catalyst_labels = {3: "SectorHeat", 2: "Catalyst", 1: "Sympathy"}
+            detail_parts.append(catalyst_labels.get(breakdown["catalyst"], "Catalyst"))
         if breakdown.get("technical", 0) > 0:
             tech_labels = {1: "NearRes", 2: "Forming", 3: "Confirmed"}
             detail_parts.append(tech_labels.get(breakdown["technical"], "Tech"))
