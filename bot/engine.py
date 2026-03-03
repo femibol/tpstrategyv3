@@ -623,6 +623,9 @@ class TradingEngine:
     def _run_scanner_cycle(self):
         """Run data update + strategy scan (no trading). Populates scanner dashboard."""
         try:
+            # Discover symbols even outside market hours so strategies have symbols
+            # to scan when premarket opens (otherwise 0 symbols after daily reset)
+            self._discover_dynamic_symbols()
             self._update_data()
             self._run_strategies()
             log.info(f"Scanner cycle complete - {sum(len(s.scan_results) for s in self.strategies.values())} symbols scanned")
@@ -4793,7 +4796,14 @@ class TradingEngine:
             # --- Polygon.io full-market scan (if configured) ---
             # One call returns ALL ~10,000 stocks — catches everything Alpaca misses
             if self.polygon and self.polygon.enabled:
-                poly_movers, poly_runners, poly_gap_ups = self.polygon.scan_full_market()
+                # During premarket, volume is thin (1K-20K typical) — lower threshold
+                # so the scanner actually finds movers instead of filtering everything out
+                if getattr(self, '_in_premarket', False):
+                    poly_movers, poly_runners, poly_gap_ups = self.polygon.scan_full_market(
+                        min_volume=5000, min_change_pct=1.5
+                    )
+                else:
+                    poly_movers, poly_runners, poly_gap_ups = self.polygon.scan_full_market()
 
                 if poly_movers:
                     poly_mover_syms = []
