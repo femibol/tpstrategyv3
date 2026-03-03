@@ -734,19 +734,22 @@ class PolygonScanner:
         candidates = []
 
         if session == "premarket":
-            # Pre-market: gap-ups >3% with volume surge, prefer low float
+            # Pre-market: gap-ups with real movement, prefer low float
+            # NOTE: RVOL during premarket is meaningless (premarket vol / full-day vol ≈ 0)
+            # so we use change% and gap% as primary filters instead of RVOL
             for entry in movers + gap_ups:
                 gap = entry.get("gap_pct", 0)
-                rvol = entry.get("rvol", 0)
+                change = abs(entry.get("change_pct", 0))
+                volume = entry.get("volume", 0)
                 float_shares = entry.get("float_shares", 0)
 
-                if gap >= 3.0 and rvol >= 2.0:
-                    # Prioritize low float (higher squeeze potential)
-                    priority = gap * rvol
+                # Accept: 3%+ gap OR 5%+ change (premarket RVOL is unreliable)
+                if gap >= 3.0 or change >= 5.0:
+                    priority = max(gap, change) * (1 + volume / 100000)
                     if 0 < float_shares < 50_000_000:
                         priority *= 2.0  # Double priority for low float
                     entry["priority"] = round(priority, 1)
-                    entry["session_reason"] = f"Pre-market gap +{gap:.1f}% RVOL {rvol:.1f}x"
+                    entry["session_reason"] = f"Pre-market gap +{gap:.1f}% chg +{change:.1f}%"
                     candidates.append(entry)
 
         elif session == "regular":
