@@ -1,0 +1,92 @@
+# Docker Compose: Trading Bot + IB Gateway
+#
+# Runs both IB Gateway (headless IBKR connection) and the trading bot
+# on a single cloud VPS. IB Gateway auto-logs in and stays connected.
+#
+# Usage:
+#   1. Copy .env.example to .env and fill in values
+#   2. docker compose up -d
+#   3. Dashboard at http://YOUR_IP:5000
+#
+# IB Gateway ports:
+#   - 4001 = Live trading
+#   - 4002 = Paper trading
+#   - 5900 = VNC viewer (for debugging IB Gateway GUI)
+
+services:
+  ib-gateway:
+    image: ghcr.io/unusualalpha/ib-gateway:stable
+    restart: unless-stopped
+    environment:
+      TWS_USERID: ${IB_USERNAME}
+      TWS_PASSWORD: ${IB_PASSWORD}
+      TRADING_MODE: ${IB_TRADING_MODE:-paper}  # paper or live
+      TWS_ACCEPT_INCOMING: "yes"
+      READ_ONLY_API: "no"
+      VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
+      TWS_SETTINGS_PATH: /root/Jts
+    ports:
+      - "4001:4001"   # Live API
+      - "4002:4002"   # Paper API
+      - "5900:5900"   # VNC (optional, for debugging)
+    volumes:
+      - ib-gateway-data:/root/Jts
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4002"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s  # IB Gateway takes ~45s to start
+
+  trading-bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      ib-gateway:
+        condition: service_healthy
+    environment:
+      # Mode
+      TRADING_MODE: ${TRADING_MODE:-paper}
+
+      # IBKR — connects to ib-gateway container
+      IBKR_HOST: ib-gateway
+      IBKR_PORT: ${IBKR_PORT:-4002}  # 4002=paper, 4001=live
+      IBKR_CLIENT_ID: ${IBKR_CLIENT_ID:-1}
+
+      # Market data
+      POLYGON_API_KEY: ${POLYGON_API_KEY}
+      ALPACA_API_KEY: ${ALPACA_API_KEY}
+      ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
+      ALPACA_BASE_URL: ${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
+
+      # Execution
+      TRADERSPOST_WEBHOOK_URL: ${TRADERSPOST_WEBHOOK_URL}
+      TRADERSPOST_WEBHOOK_URL_SECONDARY: ${TRADERSPOST_WEBHOOK_URL_SECONDARY}
+      TRADERSPOST_API_KEY: ${TRADERSPOST_API_KEY}
+      TRADINGVIEW_WEBHOOK_SECRET: ${TRADINGVIEW_WEBHOOK_SECRET}
+
+      # Notifications
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+
+      # AI
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # Google Sheets trade logging
+      GOOGLE_SHEETS_CREDENTIALS: ${GOOGLE_SHEETS_CREDENTIALS}
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID}
+
+      # Dashboard
+      DASHBOARD_HOST: 0.0.0.0
+      DASHBOARD_PORT: 5000
+      DASHBOARD_SECRET_KEY: ${DASHBOARD_SECRET_KEY:-change-me}
+    ports:
+      - "5000:5000"   # Dashboard
+      - "8080:8080"   # TradingView webhook receiver
+    volumes:
+      - bot-data:/app/data
+      - bot-logs:/app/logs
+
+volumes:
+  ib-gateway-data:
+  bot-data:
+  bot-logs:
