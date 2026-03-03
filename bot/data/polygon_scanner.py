@@ -127,11 +127,11 @@ class PolygonScanner:
     # Full-Market Snapshot (scanning + price cache)
     # =========================================================================
 
-    def scan_full_market(self, min_change_pct=2.0, min_price=1.00, max_price=100.0, min_volume=50000):
+    def scan_full_market(self, min_change_pct=2.0, min_price=1.00, max_price=500.0, min_volume=50000):
         """
         Scan the entire US market for momentum movers.
         Also caches prices for ALL tickers (used by market_data for quotes).
-        Filters: $1-$100 range, 2%+ movers, 5%+ runners, 3%+ gaps.
+        Filters: $1-$500 range, 2%+ movers, 5%+ runners, 3%+ gaps.
 
         Returns tuple: (movers, runners, gap_ups)
         """
@@ -1047,10 +1047,10 @@ class PolygonScanner:
         return sympathy
 
     def get_losers(self, limit=100):
-        """Get top losers from cached scan data ($0.50-$100 range)."""
+        """Get top losers from cached scan data ($0.50-$500 range)."""
         losers = []
         for sym, data in self._price_cache.items():
-            if data["change_pct"] <= -2.0 and data["price"] >= 0.50 and data["price"] <= 100.0 and data["volume"] >= 30000:
+            if data["change_pct"] <= -2.0 and data["price"] >= 0.50 and data["price"] <= 500.0 and data["volume"] >= 30000:
                 losers.append({
                     "symbol": sym,
                     "name": sym,

@@ -71,8 +71,8 @@ risk:
     buffer_pct: 0.001             # 0.1% buffer above entry — tight
   min_volume: 500000              # 500K volume threshold — spec: avoid stocks with avg daily <500K
   min_price: 1.00                 # Floor: $1.00 — no sub-dollar junk
-  scanner_max_price: 100.00       # Scanner discovers movers under $100
-  # No hard ceiling — bot rides runners past $100 if uptrend is confirmed
+  scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
+  # Bot rides runners past $500 if uptrend is confirmed
 
   # --- Portfolio-Level Risk Limits ---
   # Prevents concentrated bets, runaway exposure, and unmanaged positions
