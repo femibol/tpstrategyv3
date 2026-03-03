@@ -1981,6 +1981,22 @@ class TradingEngine:
                 )
                 return
 
+        # --- BEARISH NEWS CIRCUIT BREAKER ---
+        # Prevent buying stocks with recent strong negative catalysts
+        # (e.g., store closures, impairment charges, SEC investigation)
+        # High RVOL on BAD news is a trap, not a setup
+        if action == "buy" and self.news_feed:
+            try:
+                is_bearish, bear_reason = self.news_feed.has_bearish_news(symbol, lookback_minutes=30)
+                if is_bearish:
+                    log.warning(
+                        f"NEWS BLOCK: {symbol} rejected — bearish catalyst detected | "
+                        f"{bear_reason} | Strategy: {strategy}"
+                    )
+                    return
+            except Exception as e:
+                log.debug(f"News check failed for {symbol}: {e}")
+
         # --- DUPLICATE ENTRY GUARD ---
         # Prevent same symbol from being entered twice within cooldown window
         if action == "buy":
@@ -2295,7 +2311,33 @@ class TradingEngine:
                 f"FILL PRICE ADJUSTED: {symbol} expected ${current_price:.2f} "
                 f"but filled @ ${actual_price:.2f}"
             )
+            # Slippage protection: if fill is significantly worse than expected,
+            # reject the trade and close immediately (R:R is ruined)
+            expected_price = current_price
             current_price = actual_price
+            if expected_price > 0:
+                slippage_pct = abs(actual_price - expected_price) / expected_price
+                max_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
+                if slippage_pct > max_slippage and action == "buy":
+                    log.warning(
+                        f"SLIPPAGE REJECT: {symbol} slippage {slippage_pct:.1%} exceeds "
+                        f"max {max_slippage:.1%} — closing position immediately | "
+                        f"Expected ${expected_price:.2f} filled ${actual_price:.2f}"
+                    )
+                    self.notifier.risk_alert(
+                        f"Slippage reject: {symbol} filled ${actual_price:.2f} "
+                        f"(expected ${expected_price:.2f}, slippage {slippage_pct:.1%}). "
+                        f"Closing immediately."
+                    )
+                    # Schedule immediate close (can't close inline, position not yet tracked)
+                    if not hasattr(self, '_slippage_close_queue'):
+                        self._slippage_close_queue = []
+                    self._slippage_close_queue.append(symbol)
+                elif slippage_pct > max_slippage * 0.5:
+                    log.warning(
+                        f"SLIPPAGE WARNING: {symbol} slippage {slippage_pct:.1%} "
+                        f"(threshold {max_slippage:.1%}) — monitoring closely"
+                    )
 
         risk_amount = abs(current_price - stop_loss_price) * qty
         reward_amount = abs(take_profit_price - current_price) * qty
@@ -2345,6 +2387,8 @@ class TradingEngine:
                 "entry_type": signal.get("entry_type", ""),
                 "atr_value": signal.get("atr_value", 0),
                 "size_multiplier": signal.get("size_multiplier", 1.0),
+                # Sector heat: macro-driven theme play (multi-day hold, wider stops)
+                "sector_heat": signal.get("sector_heat", False),
             }
 
         # Rich notification with full trade details
@@ -2392,6 +2436,17 @@ class TradingEngine:
 
         # Clear pending flag now that position is recorded
         self._pending_orders.discard(symbol)
+
+        # Process slippage close queue — close positions where fill slippage
+        # exceeded max_slippage_pct (R:R is ruined, better to exit immediately)
+        if hasattr(self, '_slippage_close_queue') and self._slippage_close_queue:
+            close_syms = list(self._slippage_close_queue)
+            self._slippage_close_queue.clear()
+            for close_sym in close_syms:
+                if close_sym in self.positions:
+                    log.warning(f"SLIPPAGE CLOSE: Closing {close_sym} — excessive entry slippage")
+                    self._close_position(close_sym, "slippage_reject",
+                                         "Excessive slippage on entry — R:R invalid")
 
     def _close_position(self, symbol, reason_type, reason_msg):
         """Close a position through broker chain. Thread-safe with double-close guard."""

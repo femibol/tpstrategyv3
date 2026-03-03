@@ -420,6 +420,71 @@ class NewsFeed:
         """Get generated signals."""
         return self.signals_generated[-limit:]
 
+    def has_bearish_news(self, symbol, lookback_minutes=30):
+        """Check if a symbol has recent bearish news that should block entry.
+
+        Returns (is_bearish, reason_str) tuple.
+        Used by engine to prevent buying stocks with negative catalysts
+        (e.g., store closures, impairment charges, bankruptcy, downgrades).
+
+        Args:
+            symbol: Ticker to check
+            lookback_minutes: How far back to check (default 30 min)
+
+        Returns:
+            (bool, str): (True if bearish news found, description of bearish catalyst)
+        """
+        if not self.signals_generated:
+            return False, ""
+
+        from datetime import datetime, timedelta
+        cutoff = datetime.now() - timedelta(minutes=lookback_minutes)
+
+        for sig in reversed(self.signals_generated):
+            sig_sym = sig.get("symbol", "")
+            if sig_sym.upper() != symbol.upper():
+                continue
+            # Check if signal is recent enough
+            sig_time = sig.get("published", "")
+            if sig_time:
+                try:
+                    from dateutil.parser import parse as parse_dt
+                    if parse_dt(sig_time).replace(tzinfo=None) < cutoff:
+                        continue
+                except Exception:
+                    pass  # If we can't parse time, still check the signal
+
+            if sig.get("action") == "sell" and sig.get("source") == "exit":
+                reason = sig.get("reason", "bearish news")
+                catalyst_score = sig.get("catalyst_score", 0)
+                if catalyst_score >= 3:
+                    return True, reason
+
+        # Also check recent_news directly for strong bearish keywords
+        # (catches cases where news was scored but didn't generate a signal)
+        for article in reversed(self.recent_news[-50:]):
+            tickers = article.get("tickers", [])
+            if symbol.upper() not in [t.upper() for t in tickers]:
+                continue
+
+            title = (article.get("title") or "").lower()
+            desc = (article.get("description") or "").lower()
+            content = f"{title} {desc}"
+
+            # Strong bearish keywords that should block entry
+            strong_bearish = [
+                "bankruptcy", "impairment", "store closure", "closing stores",
+                "sec investigation", "fraud", "delisted", "going concern",
+                "cut guidance", "miss estimates", "earnings miss",
+                "downgrade to sell", "warns of losses", "withdrawal",
+            ]
+            found = [kw for kw in strong_bearish if kw in content]
+            if found:
+                headline = (article.get("title") or "")[:80]
+                return True, f"Bearish news: [{', '.join(found[:2])}] {headline}"
+
+        return False, ""
+
     def get_status(self):
         sources = []
         if self._client:

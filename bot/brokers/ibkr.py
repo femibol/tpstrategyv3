@@ -20,6 +20,17 @@ from bot.utils.logger import get_logger
 
 log = get_logger("broker.ibkr")
 
+# nest_asyncio allows ib_insync's synchronous wrappers (qualifyContracts, etc.)
+# to work from threads that already have a running event loop (APScheduler,
+# callbacks, fast_scalp_monitor, etc.). Without this, calls from background
+# threads raise "This event loop is already running".
+try:
+    import nest_asyncio
+    nest_asyncio.apply()
+except ImportError:
+    log.warning("nest_asyncio not installed — IBKR may fail from background threads. "
+                "Run: pip install nest_asyncio")
+
 try:
     from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
     HAS_IB = True
