@@ -122,8 +122,25 @@ class RvolMomentumStrategy(BaseStrategy):
         now = datetime.now()
         current_time = now.hour * 100 + now.minute
 
-        # Pre-market: no normalization (different volume profile)
+        # Pre-market: normalize by expected cumulative premarket volume fraction.
+        # Without this, raw_rvol = premarket_vol / full_day_avg ≈ 0.01x which
+        # always scores as "QUIET" and kills all premarket signal generation.
+        #
+        # Premarket volume curve (fraction of daily volume traded by this time):
+        #   4 AM: 0.3%   5 AM: 0.8%   6 AM: 1.5%   7 AM: 2.5%
+        #   8 AM: 4%     9 AM: 6%     9:30 AM: 8%
         if current_time < 930:
+            pm_curve = {
+                400: 0.003, 500: 0.008, 600: 0.015, 700: 0.025,
+                800: 0.04, 900: 0.06, 930: 0.08,
+            }
+            pm_expected = 0.08  # default
+            for time_key in sorted(pm_curve.keys()):
+                if current_time <= time_key:
+                    pm_expected = pm_curve[time_key]
+                    break
+            if avg_volume > 0 and pm_expected > 0:
+                return round((volume / avg_volume) / pm_expected, 2)
             return raw_rvol
 
         # Find the expected cumulative volume fraction for current time
@@ -451,8 +468,14 @@ class RvolMomentumStrategy(BaseStrategy):
         rvol = snap.get("rvol", 0)
         gap_pct = snap.get("gap_pct", 0)
 
-        # Volume filter (daily volume)
-        if volume < self.min_volume:
+        # Volume filter — during premarket, snapshot volume is premarket-only
+        # (e.g. 20K at 6 AM even for a stock that trades 5M/day).
+        # Use a fraction of min_volume to avoid filtering out every premarket mover.
+        now = datetime.now()
+        effective_min_vol = self.min_volume
+        if now.hour * 100 + now.minute < 930:
+            effective_min_vol = max(5000, self.min_volume // 50)  # ~10K for 500K config
+        if volume < effective_min_vol:
             return None
 
         # Float filter — low float stocks move harder
