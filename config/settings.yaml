@@ -189,6 +189,26 @@ data:
   price_poll_interval: 3          # Poll prices every 3 seconds for scalp exits
   cache_ttl: 10                   # 10-second cache TTL (was 30s, too slow for scalps)
 
+# --- Top Gainers Scanner ---
+# Catches the biggest % movers with NO price cap — finds runners at any price.
+# Session-aware: adjusts volume/change thresholds for premarket, regular, and after-hours.
+# Uses cached Polygon snapshot data — zero extra API calls.
+top_gainers:
+  enabled: true
+  limit: 50                          # Max gainers to track per scan
+  premarket:
+    min_volume: 10000                # 10K — premarket liquidity is thin
+    min_change_pct: 3.0              # 3%+ gap/move to qualify
+    min_price: 1.00                  # Floor out sub-dollar
+  regular:
+    min_volume: 100000               # 100K — standard liquidity
+    min_change_pct: 5.0              # 5%+ intraday move (the real runners)
+    min_price: 2.00                  # Floor out penny stocks
+  postmarket:
+    min_volume: 50000                # 50K — AH has less volume
+    min_change_pct: 3.0              # 3%+ after-hours move
+    min_price: 2.00                  # Floor out penny stocks
+
 # --- Execution ---
 execution:
   order_type: "limit"             # limit orders only (no market orders)

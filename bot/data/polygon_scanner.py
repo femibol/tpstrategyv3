@@ -266,6 +266,116 @@ class PolygonScanner:
             return self._cached_movers, self._cached_runners, self._cached_gap_ups
 
     # =========================================================================
+    # Top Gainers Scanner — No Price Cap, All Sessions
+    # =========================================================================
+
+    def scan_top_gainers(self, session="regular", limit=50, config=None):
+        """
+        Scan for the biggest percentage gainers across ALL price ranges.
+        Unlike scan_full_market(), this has NO $100 price cap — catches
+        mid/large-cap runners like SMCI, MSTR, RCKT, etc.
+
+        Session-aware volume thresholds (defaults, overridden by config):
+          - premarket:  10K volume (thin premarket liquidity)
+          - regular:    100K volume (standard liquidity)
+          - postmarket: 50K volume (reduced AH liquidity)
+
+        Args:
+            session: "premarket", "regular", or "postmarket"
+            limit: max number of gainers to return
+            config: optional dict from settings.yaml top_gainers section
+
+        Returns: list of gainer dicts sorted by change_pct descending,
+                 each with a "gainer_rank" field (1 = top gainer).
+        """
+        if not self.enabled or not self._client:
+            return []
+
+        # Use the price cache from the last scan_full_market() call — no extra API calls.
+        # scan_full_market() caches ALL tickers including those it filters out by price.
+        if not self._price_cache:
+            log.debug("Top gainers: no price cache yet, skipping")
+            return []
+
+        # Session-aware thresholds (defaults)
+        session_defaults = {
+            "premarket":  {"min_volume": 10_000,  "min_change": 3.0, "min_price": 1.00},
+            "regular":    {"min_volume": 100_000, "min_change": 5.0, "min_price": 2.00},
+            "postmarket": {"min_volume": 50_000,  "min_change": 3.0, "min_price": 2.00},
+        }
+        defaults = session_defaults.get(session, session_defaults["regular"])
+
+        # Override with config values if provided (from settings.yaml top_gainers section)
+        if config and session in config:
+            scfg = config[session]
+            min_vol = scfg.get("min_volume", defaults["min_volume"])
+            min_change = scfg.get("min_change_pct", defaults["min_change"])
+            min_price = scfg.get("min_price", defaults["min_price"])
+        else:
+            min_vol = defaults["min_volume"]
+            min_change = defaults["min_change"]
+            min_price = defaults["min_price"]
+
+        gainers = []
+        for sym, data in self._price_cache.items():
+            # Basic validity
+            if not sym or "." in sym or len(sym) > 5:
+                continue
+
+            price = data.get("price", 0)
+            change_pct = data.get("change_pct", 0)
+            volume = data.get("volume", 0)
+
+            if price < min_price:
+                continue
+            if volume < min_vol:
+                continue
+            if change_pct < min_change:
+                continue
+
+            # Calculate gap % and RVOL from cached data
+            prev_close = data.get("prev_close", 0)
+            avg_volume = data.get("avg_volume", 1)
+            open_price = data.get("open", 0)
+
+            rvol = round(volume / avg_volume, 1) if avg_volume > 0 else 0
+            gap_pct = round((open_price - prev_close) / prev_close * 100, 2) if prev_close > 0 and open_price > 0 else 0
+
+            gainers.append({
+                "symbol": sym,
+                "name": sym,
+                "price": round(price, 2),
+                "change_pct": round(change_pct, 2),
+                "volume": int(volume),
+                "avg_volume": int(avg_volume),
+                "rvol": rvol,
+                "gap_pct": gap_pct,
+                "prev_close": round(prev_close, 2),
+                "open": round(open_price, 2),
+                "market_cap": 0,
+                "float_shares": self._float_cache.get(sym, {}).get("float", 0),
+                "sector": self.get_sector(sym),
+                "source": "polygon_top_gainers",
+            })
+
+        # Sort by change_pct descending — biggest movers first
+        gainers.sort(key=lambda x: x["change_pct"], reverse=True)
+        gainers = gainers[:limit]
+
+        # Tag with rank
+        for i, g in enumerate(gainers):
+            g["gainer_rank"] = i + 1
+
+        if gainers:
+            top3 = ", ".join(f"{g['symbol']} +{g['change_pct']:.1f}% ${g['price']:.2f}" for g in gainers[:3])
+            log.info(
+                f"Top gainers ({session}): {len(gainers)} stocks above +{min_change}% | "
+                f"Top 3: {top3}"
+            )
+
+        return gainers
+
+    # =========================================================================
     # Real-Time Prices (from cached snapshot data — no extra API calls)
     # =========================================================================
 
