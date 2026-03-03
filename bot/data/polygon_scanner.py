@@ -84,6 +84,26 @@ class PolygonScanner:
             # Space / Defense
             "RKLB": "Aerospace", "LUNR": "Aerospace", "ASTS": "Aerospace",
             "JOBY": "Aerospace", "SPCE": "Aerospace",
+            "LMT": "Aerospace", "NOC": "Aerospace", "RTX": "Aerospace",
+            "GD": "Aerospace", "BA": "Aerospace", "LHX": "Aerospace",
+            "AVAV": "Aerospace", "KTOS": "Aerospace",
+            # Energy / Oil & Gas
+            "XOM": "Energy", "CVX": "Energy", "COP": "Energy",
+            "OXY": "Energy", "APA": "Energy", "DVN": "Energy",
+            "MRO": "Energy", "FANG": "Energy", "EOG": "Energy",
+            "SLB": "Energy", "HAL": "Energy", "BKR": "Energy",
+            "VLO": "Energy", "PSX": "Energy", "MPC": "Energy",
+            "BATL": "Energy", "INDO": "Energy",
+            # Shipping / Tankers
+            "FRO": "Energy", "DHT": "Energy", "INSW": "Energy",
+            "ZIM": "Industrials", "STNG": "Energy", "TNK": "Energy",
+            "EURN": "Energy", "ASC": "Energy",
+            # Airlines / Travel
+            "UAL": "Travel", "AAL": "Travel", "DAL": "Travel",
+            "LUV": "Travel", "JBLU": "Travel", "ALK": "Travel",
+            "MAR": "Travel", "HLT": "Travel", "H": "Travel",
+            "BKNG": "Travel", "EXPE": "Travel", "ABNB": "Travel",
+            "RCL": "Travel", "CCL": "Travel", "NCLH": "Travel",
             # Meme / High vol
             "GME": "Consumer", "AMC": "Consumer",
             "OPEN": "Real Estate", "SNAP": "Technology", "RBLX": "Technology",
@@ -455,11 +475,17 @@ class PolygonScanner:
             return "Financials"
         if any(k in desc for k in ["pharma", "biolog", "medic", "health", "hospital"]):
             return "Healthcare"
-        if any(k in desc for k in ["oil", "gas", "petrol", "energy", "mining", "coal"]):
+        if any(k in desc for k in ["oil", "gas", "petrol", "energy", "mining", "coal", "crude"]):
             return "Energy"
+        if any(k in desc for k in ["airline", "air transport", "hotel", "lodging", "travel",
+                                     "cruise", "booking", "rental"]):
+            return "Travel"
+        if any(k in desc for k in ["aircraft", "aerospace", "guided missile", "defense",
+                                     "ordnance", "tank"]):
+            return "Aerospace"
         if any(k in desc for k in ["retail", "food", "restaurant", "apparel", "consumer"]):
             return "Consumer"
-        if any(k in desc for k in ["motor", "vehicle", "auto", "aircraft", "aerospace"]):
+        if any(k in desc for k in ["motor", "vehicle", "auto", "ship", "marine", "freight"]):
             return "Industrials"
         if any(k in desc for k in ["real estate", "reit", "property"]):
             return "Real Estate"
@@ -829,6 +855,44 @@ class PolygonScanner:
             if sector and sector != "Unknown":
                 sector_counts[sector] = sector_counts.get(sector, 0) + 1
         return sector_counts
+
+    def get_sector_performance(self):
+        """Get average change % per sector from all scanned stocks.
+
+        Used by regime detector for geopolitical rotation detection:
+        when Energy is +5% and Travel is -5%, that's a geopolitical regime.
+
+        Returns:
+            dict: {sector: avg_change_pct}
+        """
+        sector_changes = {}  # {sector: [change1, change2, ...]}
+        for entry in self._cached_movers + self._cached_runners:
+            sector = entry.get("sector", "Unknown")
+            if sector and sector != "Unknown":
+                change = entry.get("change_pct", 0)
+                if sector not in sector_changes:
+                    sector_changes[sector] = []
+                sector_changes[sector].append(change)
+
+        # Also include losers from price cache for a fuller picture
+        for sym, data in self._price_cache.items():
+            sector = self.get_sector(sym)
+            if sector and sector != "Unknown" and data.get("change_pct", 0) != 0:
+                change = data["change_pct"]
+                # Only include stocks with meaningful moves
+                if abs(change) >= 1.0 and data.get("volume", 0) >= 50000:
+                    if sector not in sector_changes:
+                        sector_changes[sector] = []
+                    sector_changes[sector].append(change)
+
+        # Calculate averages
+        result = {}
+        for sector, changes in sector_changes.items():
+            if len(changes) >= 2:  # Need at least 2 stocks for a meaningful average
+                import numpy as np
+                result[sector] = round(float(np.mean(changes)), 2)
+
+        return result
 
     def get_sympathy_candidates(self):
         """Find sympathy play candidates.

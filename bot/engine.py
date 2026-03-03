@@ -731,6 +731,14 @@ class TradingEngine:
                     self._update_scalp_data()
 
                     # 2. Detect market regime (every cycle, uses cached data)
+                    # Feed sector performance data for geopolitical regime detection
+                    if self.polygon and self.polygon.enabled and self.regime_detector:
+                        try:
+                            sector_perf = self.polygon.get_sector_performance()
+                            if sector_perf:
+                                self.regime_detector.feed_sector_data(sector_perf)
+                        except Exception as e:
+                            log.debug(f"Sector performance feed failed: {e}")
                     regime_result = self.regime_detector.detect(self.market_data)
 
                     # 3. Monitor existing positions (stops, targets, trailing)
@@ -3963,12 +3971,107 @@ class TradingEngine:
             alloc = adjusted_alloc.get(name, 0.25)
             strategy.update_capital(self.current_balance * alloc)
 
+        # --- Pre-Open Futures Gap Risk Check ---
+        # If holding overnight positions and SPY futures indicate a gap down,
+        # tighten stops on non-favored sectors to protect against opening gap losses
+        self._preopen_gap_risk_check()
+
         regime_str = self.regime_detector.current_regime.upper() if self.regime_detector else "N/A"
         self.notifier.system_alert(
             f"Pre-market scan complete. Balance: ${self.current_balance:,.2f} | "
             f"Regime: {regime_str}",
             level="info"
         )
+
+    def _preopen_gap_risk_check(self):
+        """Pre-open risk check: tighten stops on overnight holds when futures signal a gap.
+
+        Runs at pre-market scan time. Checks SPY snapshot for overnight gap direction.
+        If SPY is gapping down significantly (>1%), tightens stops on long positions
+        UNLESS they're in a favored sector (e.g., energy during geopolitical regime).
+
+        This prevents overnight holds from losing gains to a morning gap-down.
+        """
+        if not self.positions:
+            return
+
+        overnight_positions = [
+            (sym, pos) for sym, pos in self.positions.items()
+            if pos.get("overnight_hold", False)
+        ]
+        if not overnight_positions:
+            return
+
+        # Get SPY gap from Polygon snapshot
+        spy_gap_pct = 0
+        if self.polygon and self.polygon.enabled:
+            spy_snap = self.polygon.get_snapshot("SPY")
+            if spy_snap:
+                spy_gap_pct = spy_snap.get("change_pct", 0)
+
+        if spy_gap_pct >= -0.5:
+            # No significant gap down — no action needed
+            log.info(
+                f"PRE-OPEN CHECK: SPY gap {spy_gap_pct:+.1f}% — "
+                f"no tightening needed for {len(overnight_positions)} overnight positions"
+            )
+            return
+
+        # Determine favored sectors (from geopolitical regime or sector heat)
+        favored_sectors = set()
+        if self.regime_detector:
+            hedge_rec = self.regime_detector.get_status().get("hedge_recommendation", {})
+            if isinstance(hedge_rec, dict):
+                hot = hedge_rec.get("hot_sectors", [])
+                if hot:
+                    favored_sectors = set(hot)
+
+        tightened = 0
+        for symbol, pos in overnight_positions:
+            entry_price = pos["entry_price"]
+            current_price = pos.get("current_price", entry_price)
+            old_stop = pos.get("stop_loss", 0)
+
+            # Check if this position is in a favored sector
+            sector = "Unknown"
+            if self.polygon:
+                sector = self.polygon.get_sector(symbol)
+
+            if sector in favored_sectors:
+                log.info(
+                    f"PRE-OPEN SKIP: {symbol} in hot sector {sector} — keeping wide stop "
+                    f"despite SPY gap {spy_gap_pct:+.1f}%"
+                )
+                continue
+
+            # Tighten stop based on gap severity
+            if spy_gap_pct <= -2.0:
+                # Severe gap: tighten to breakeven or 1% above entry
+                new_stop = entry_price * 1.005
+                reason = f"severe gap (SPY {spy_gap_pct:+.1f}%)"
+            elif spy_gap_pct <= -1.0:
+                # Moderate gap: tighten to 1.5% trail from current price
+                new_stop = current_price * 0.985
+                reason = f"moderate gap (SPY {spy_gap_pct:+.1f}%)"
+            else:
+                # Small gap: tighten to 2% trail
+                new_stop = current_price * 0.98
+                reason = f"mild gap (SPY {spy_gap_pct:+.1f}%)"
+
+            if new_stop > old_stop:
+                pos["stop_loss"] = round(new_stop, 2)
+                tightened += 1
+                log.info(
+                    f"PRE-OPEN TIGHTEN: {symbol} ({sector}) stop "
+                    f"${old_stop:.2f} -> ${new_stop:.2f} — {reason}"
+                )
+
+        if tightened > 0:
+            self.notifier.system_alert(
+                f"Pre-open gap risk: SPY {spy_gap_pct:+.1f}% — tightened stops on "
+                f"{tightened}/{len(overnight_positions)} overnight positions",
+                level="warning"
+            )
 
     def _momentum_rotation_check(self, rejected_signals):
         """Money Machine position rotation: replace weakest position with stronger signal.
@@ -4254,6 +4357,13 @@ class TradingEngine:
             bullish_score += 5
             reasons.append("Price above entry")
 
+        # 5. Sector heat bonus (max 15 pts)
+        # Macro-driven sector plays (e.g., energy during Hormuz crisis) persist
+        # for days/weeks — holding overnight is the right move
+        if pos.get("sector_heat", False):
+            bullish_score += 15
+            reasons.append("Sector heat — macro-driven, multi-day theme")
+
         # Verdict: 50+ = bullish enough for after-hours
         should_hold = bullish_score >= 50
         reason_str = " | ".join(reasons[:5])
@@ -4363,7 +4473,11 @@ class TradingEngine:
                     # Determine: after-hours only vs overnight hold
                     is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
                     is_momentum = pos.get("strategy") == "rvol_momentum"
-                    is_multi_day = pos.get("strategy") in ("momentum", "prebreakout", "smc_forever")
+                    is_sector_heat = pos.get("sector_heat", False)
+                    is_multi_day = (
+                        pos.get("strategy") in ("momentum", "prebreakout", "smc_forever")
+                        or is_sector_heat  # Macro-driven sector plays are multi-day by nature
+                    )
 
                     if is_multi_day and bullish_score >= 60:
                         # Strong multi-day play — hold overnight
