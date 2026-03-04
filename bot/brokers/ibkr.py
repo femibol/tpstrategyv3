@@ -405,18 +405,35 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Order {fill_status}: {symbol} | Order ID: {order_id}")
                     return None
 
-            # If not fully filled after timeout, cancel and return what we got
-            if fill_status != "Filled" and filled_qty == 0:
-                log.warning(
-                    f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
-                    f"(status={fill_status}). Cancelling unfilled order."
-                )
+            # If not fully filled after timeout, ALWAYS cancel the remainder.
+            # Critical: without this, unfilled shares keep working at IBKR
+            # but the bot only tracks the partial fill — creating ghost positions.
+            if fill_status != "Filled":
+                remaining = int(quantity) - filled_qty
+                if filled_qty == 0:
+                    log.warning(
+                        f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
+                        f"(status={fill_status}). Cancelling unfilled order."
+                    )
+                else:
+                    log.warning(
+                        f"PARTIAL FILL TIMEOUT: {action} {symbol} filled {filled_qty}/{quantity} "
+                        f"after {fill_timeout}s. Cancelling remaining {remaining} shares."
+                    )
                 try:
                     self.ib.cancelOrder(trade.order)
                     self.ib.sleep(1)
                 except Exception:
                     pass
-                return None
+                if filled_qty == 0:
+                    return None
+                # Recompute avg from fills for the partial
+                if trade.fills:
+                    total_qty = sum(f.execution.shares for f in trade.fills)
+                    total_cost = sum(f.execution.shares * f.execution.price for f in trade.fills)
+                    if total_qty > 0:
+                        avg_fill_price = total_cost / total_qty
+                        filled_qty = int(total_qty)
 
             # Use actual filled quantity (handles partial fills)
             actual_qty = filled_qty if filled_qty > 0 else quantity
@@ -513,17 +530,31 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Bracket order {fill_status}: {symbol}")
                     return None
 
-            if fill_status != "Filled" and filled_qty == 0:
-                log.warning(
-                    f"Bracket NOT FILLED after 15s: {symbol} (status={fill_status}). "
-                    f"Cancelling all bracket orders."
-                )
+            if fill_status != "Filled":
+                remaining = int(quantity) - filled_qty
+                if filled_qty == 0:
+                    log.warning(
+                        f"Bracket NOT FILLED after 15s: {symbol} (status={fill_status}). "
+                        f"Cancelling all bracket orders."
+                    )
+                else:
+                    log.warning(
+                        f"BRACKET PARTIAL TIMEOUT: {symbol} filled {filled_qty}/{quantity} "
+                        f"after 15s. Cancelling remaining {remaining} shares."
+                    )
                 try:
                     self.ib.cancelOrder(parent_order)
                     self.ib.sleep(1)
                 except Exception:
                     pass
-                return None
+                if filled_qty == 0:
+                    return None
+                if parent_trade.fills:
+                    total_qty = sum(f.execution.shares for f in parent_trade.fills)
+                    total_cost = sum(f.execution.shares * f.execution.price for f in parent_trade.fills)
+                    if total_qty > 0:
+                        avg_fill_price = total_cost / total_qty
+                        filled_qty = int(total_qty)
 
             actual_qty = filled_qty if filled_qty > 0 else quantity
 
