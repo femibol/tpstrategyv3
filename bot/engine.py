@@ -4962,6 +4962,11 @@ class TradingEngine:
             return
 
         try:
+            # --- Diagnostic: log scanner state each cycle ---
+            _poly_status = f"polygon.enabled={self.polygon.enabled}" if self.polygon else "polygon=None"
+            _pm_flag = getattr(self, '_in_premarket', False)
+            log.info(f"Discovery scan: {_poly_status}, premarket={_pm_flag}")
+
             # --- Polygon.io full-market scan (if configured) ---
             # One call returns ALL ~10,000 stocks — catches everything Alpaca misses
             if self.polygon and self.polygon.enabled:
@@ -4973,6 +4978,9 @@ class TradingEngine:
                     )
                 else:
                     poly_movers, poly_runners, poly_gap_ups = self.polygon.scan_full_market()
+
+                if not poly_movers and not poly_runners and not poly_gap_ups:
+                    log.info("Polygon scan returned 0 movers, 0 runners, 0 gap-ups — check API tier/key")
 
                 if poly_movers:
                     poly_mover_syms = []
@@ -5004,7 +5012,7 @@ class TradingEngine:
                     # top gainers without waiting for historical bars
                     if snapshot_entries and rvol_strat and hasattr(rvol_strat, "feed_snapshot_data"):
                         rvol_strat.feed_snapshot_data(snapshot_entries)
-                        log.debug(f"Polygon: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
+                        log.info(f"Polygon: fed {len(snapshot_entries)} snapshot entries to RVOL fast path")
 
                     # Feed momentum runner strategy — session-aware candidates + snapshot
                     if runner_strat:
@@ -5035,17 +5043,17 @@ class TradingEngine:
                         sector_momentum = self.polygon.get_sector_momentum()
                         runner_strat.feed_sector_momentum(sector_momentum)
 
-                        log.debug(
+                        log.info(
                             f"Polygon: fed {len(session_candidates) if session_candidates else 0} "
                             f"session candidates + {len(poly_mover_syms)} movers into momentum_runner"
                         )
 
-                    log.debug(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
+                    log.info(f"Polygon: injected {len(poly_mover_syms)} movers, {len(poly_scalp_syms)} scalp candidates")
 
                 if poly_gap_ups and gap_strat:
                     gap_syms = [g["symbol"] for g in poly_gap_ups if g.get("symbol")]
                     gap_strat.add_dynamic_symbols(gap_syms)
-                    log.debug(f"Polygon: injected {len(gap_syms)} gap-ups into pre-market gap")
+                    log.info(f"Polygon: injected {len(gap_syms)} gap-ups into pre-market gap")
 
                 # Feed gap-ups into PEAD — earnings gaps are drift candidates
                 if poly_gap_ups and pead_strat:
@@ -5060,7 +5068,7 @@ class TradingEngine:
                         if sym and gap_pct >= 5.0 and rvol >= 2.0 and price > 0:
                             from datetime import datetime as dt
                             pead_strat.feed_earnings_data(sym, gap_pct, rvol, dt.now().date(), price)
-                    log.debug(f"Polygon: fed {len(poly_gap_ups)} gap-ups into PEAD strategy")
+                    log.info(f"Polygon: fed {len(poly_gap_ups)} gap-ups into PEAD strategy")
 
                 if poly_runners:
                     runner_syms = [r["symbol"] for r in poly_runners if r.get("symbol")]
@@ -5083,7 +5091,7 @@ class TradingEngine:
                         if runner_strat:
                             runner_strat.add_dynamic_symbols(runner_syms)
                             runner_strat.feed_snapshot_data(poly_runners)
-                        log.debug(f"Polygon: injected {len(runner_syms)} runners into all strategies")
+                        log.info(f"Polygon: injected {len(runner_syms)} runners into all strategies")
 
                 # --- Top Gainers Scanner (no price cap, all sessions) ---
                 # Catches big movers that scan_full_market misses due to $100 cap.
@@ -5264,10 +5272,10 @@ class TradingEngine:
                         squeeze_strat.add_dynamic_symbols(runner_symbols)
                     if pead_strat:
                         pead_strat.add_dynamic_symbols(runner_symbols)
-                    log.debug(f"Injected {len(runner_symbols)} runners into all strategies")
+                    log.info(f"Injected {len(runner_symbols)} runners into all strategies")
 
         except Exception as e:
-            log.debug(f"Dynamic discovery error: {e}")
+            log.error(f"Dynamic discovery error: {e}", exc_info=True)
 
     def _prune_stale_dynamic_symbols(self):
         """Prune dynamic symbols that haven't been re-discovered in 30 minutes.
