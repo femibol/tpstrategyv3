@@ -35,6 +35,34 @@ try:
     from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
     from ib_insync import ScannerSubscription
     HAS_IB = True
+
+    # Python 3.14 fix: asyncio.wait_for() now uses asyncio.timeout() internally,
+    # which requires running inside a proper asyncio Task. nest_asyncio's patched
+    # run_until_complete doesn't expose current_task(), so asyncio.timeout raises
+    # "Timeout should be used inside a task".
+    # Fix: replace asyncio.wait_for with a call_later-based implementation that
+    # doesn't use asyncio.timeout at all. This fixes ALL ib_insync sync calls.
+    import sys
+    if sys.version_info >= (3, 14):
+        _orig_wait_for = asyncio.wait_for
+
+        async def _compat_wait_for(fut, timeout, **kwargs):
+            """wait_for replacement that avoids asyncio.timeout (Python 3.14+)."""
+            if timeout is None:
+                return await fut
+            loop = asyncio.get_running_loop()
+            fut = asyncio.ensure_future(fut, loop=loop)
+            timeout_handle = loop.call_later(timeout, fut.cancel)
+            try:
+                return await fut
+            except asyncio.CancelledError:
+                raise asyncio.TimeoutError()
+            finally:
+                timeout_handle.cancel()
+
+        asyncio.wait_for = _compat_wait_for
+        log.info("Applied Python 3.14 asyncio.wait_for fix for ib_insync")
+
 except ImportError:
     HAS_IB = False
     ScannerSubscription = None
@@ -91,6 +119,15 @@ class IBKRBroker(BaseBroker):
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+
+        # Re-apply nest_asyncio to this thread's loop (module-level apply()
+        # only patches the loop that existed at import time, which may differ
+        # from the loop in the current thread).
+        try:
+            import nest_asyncio
+            nest_asyncio.apply(loop)
+        except Exception:
+            pass
 
         try:
             self.ib = IB()
@@ -350,6 +387,15 @@ class IBKRBroker(BaseBroker):
                     pass  # Let the timeout handle it, but log below
 
                 if fill_status == "Filled":
+                    # Compute weighted average from actual execution reports
+                    # instead of relying on orderStatus.avgFillPrice which can
+                    # reflect intermediate state during partial fills
+                    if trade.fills:
+                        total_qty = sum(f.execution.shares for f in trade.fills)
+                        total_cost = sum(f.execution.shares * f.execution.price for f in trade.fills)
+                        if total_qty > 0:
+                            avg_fill_price = total_cost / total_qty
+                            filled_qty = int(total_qty)
                     log.info(
                         f"Order FILLED: {action} {filled_qty}/{quantity} {symbol} "
                         f"@ ${avg_fill_price:.2f} | Order ID: {order_id}"
@@ -359,18 +405,35 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Order {fill_status}: {symbol} | Order ID: {order_id}")
                     return None
 
-            # If not fully filled after timeout, cancel and return what we got
-            if fill_status != "Filled" and filled_qty == 0:
-                log.warning(
-                    f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
-                    f"(status={fill_status}). Cancelling unfilled order."
-                )
+            # If not fully filled after timeout, ALWAYS cancel the remainder.
+            # Critical: without this, unfilled shares keep working at IBKR
+            # but the bot only tracks the partial fill — creating ghost positions.
+            if fill_status != "Filled":
+                remaining = int(quantity) - filled_qty
+                if filled_qty == 0:
+                    log.warning(
+                        f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
+                        f"(status={fill_status}). Cancelling unfilled order."
+                    )
+                else:
+                    log.warning(
+                        f"PARTIAL FILL TIMEOUT: {action} {symbol} filled {filled_qty}/{quantity} "
+                        f"after {fill_timeout}s. Cancelling remaining {remaining} shares."
+                    )
                 try:
                     self.ib.cancelOrder(trade.order)
                     self.ib.sleep(1)
                 except Exception:
                     pass
-                return None
+                if filled_qty == 0:
+                    return None
+                # Recompute avg from fills for the partial
+                if trade.fills:
+                    total_qty = sum(f.execution.shares for f in trade.fills)
+                    total_cost = sum(f.execution.shares * f.execution.price for f in trade.fills)
+                    if total_qty > 0:
+                        avg_fill_price = total_cost / total_qty
+                        filled_qty = int(total_qty)
 
             # Use actual filled quantity (handles partial fills)
             actual_qty = filled_qty if filled_qty > 0 else quantity
@@ -451,6 +514,13 @@ class IBKRBroker(BaseBroker):
                 filled_qty = int(parent_trade.orderStatus.filled or 0)
                 avg_fill_price = float(parent_trade.orderStatus.avgFillPrice or 0)
                 if fill_status == "Filled":
+                    # Compute weighted average from actual execution reports
+                    if parent_trade.fills:
+                        total_qty = sum(f.execution.shares for f in parent_trade.fills)
+                        total_cost = sum(f.execution.shares * f.execution.price for f in parent_trade.fills)
+                        if total_qty > 0:
+                            avg_fill_price = total_cost / total_qty
+                            filled_qty = int(total_qty)
                     log.info(
                         f"BRACKET FILLED: {action} {filled_qty}/{quantity} {symbol} "
                         f"@ ${avg_fill_price:.2f}"
@@ -460,17 +530,31 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Bracket order {fill_status}: {symbol}")
                     return None
 
-            if fill_status != "Filled" and filled_qty == 0:
-                log.warning(
-                    f"Bracket NOT FILLED after 15s: {symbol} (status={fill_status}). "
-                    f"Cancelling all bracket orders."
-                )
+            if fill_status != "Filled":
+                remaining = int(quantity) - filled_qty
+                if filled_qty == 0:
+                    log.warning(
+                        f"Bracket NOT FILLED after 15s: {symbol} (status={fill_status}). "
+                        f"Cancelling all bracket orders."
+                    )
+                else:
+                    log.warning(
+                        f"BRACKET PARTIAL TIMEOUT: {symbol} filled {filled_qty}/{quantity} "
+                        f"after 15s. Cancelling remaining {remaining} shares."
+                    )
                 try:
                     self.ib.cancelOrder(parent_order)
                     self.ib.sleep(1)
                 except Exception:
                     pass
-                return None
+                if filled_qty == 0:
+                    return None
+                if parent_trade.fills:
+                    total_qty = sum(f.execution.shares for f in parent_trade.fills)
+                    total_cost = sum(f.execution.shares * f.execution.price for f in parent_trade.fills)
+                    if total_qty > 0:
+                        avg_fill_price = total_cost / total_qty
+                        filled_qty = int(total_qty)
 
             actual_qty = filled_qty if filled_qty > 0 else quantity
 
@@ -919,10 +1003,13 @@ class IBKRBroker(BaseBroker):
     # --- Event Callbacks ---
     def _on_order_status(self, trade):
         """Handle order status updates."""
+        avg_price = trade.orderStatus.avgFillPrice or 0
+        price_str = f" | AvgPrice: ${avg_price:.2f}" if avg_price > 0 else ""
         log.info(
             f"Order update: {trade.contract.symbol} | "
             f"Status: {trade.orderStatus.status} | "
             f"Filled: {trade.orderStatus.filled}/{trade.order.totalQuantity}"
+            f"{price_str}"
         )
 
     def _on_error(self, reqId, errorCode, errorString, contract=None):

@@ -2166,6 +2166,22 @@ class TradingEngine:
         # Outside-RTH flag: allow pre/post market orders
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
+        # PRE-ORDER SLIPPAGE CHECK: reject stale signals BEFORE placing the order.
+        # Catches cases like signal at $21.21 but market already at $24.00 in premarket.
+        if action == "buy":
+            signal_price = signal.get("price", 0)
+            max_pre_slippage = self.config.risk_config.get("max_slippage_pct", 0.008) * 2  # 2x normal slippage
+            if signal_price > 0 and current_price > 0:
+                pre_slippage = abs(current_price - signal_price) / signal_price
+                if pre_slippage > max_pre_slippage:
+                    log.warning(
+                        f"PRE-ORDER REJECT: {symbol} live ${current_price:.2f} vs "
+                        f"signal ${signal_price:.2f} = {pre_slippage:.1%} slippage "
+                        f"(max {max_pre_slippage:.1%}). Skipping order."
+                    )
+                    self._pending_orders.discard(symbol)
+                    return
+
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
