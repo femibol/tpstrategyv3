@@ -32,6 +32,7 @@ risk:
   trailing_stop_pct: 0.015        # 1.5% trailing stop — aggressive, ratchets up every 3 seconds
   take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners
   max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads
+  max_spread_pct: 0.02            # Max 2% bid-ask spread — reject illiquid names BEFORE placing order
   max_signal_deviation_pct: 0.03  # Max 3% price drift from signal to live — reject if stale (prevents upside-down trades)
 
   # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
