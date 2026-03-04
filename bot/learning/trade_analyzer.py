@@ -59,11 +59,15 @@ class TradeAnalyzer:
         # Keep last 500 trades
         self._persisted_trades = self._persisted_trades[-500:]
         try:
+            self.data_dir.mkdir(parents=True, exist_ok=True)
             with open(self._trades_file, "w") as f:
                 json.dump(self._persisted_trades, f, indent=2)
-            log.debug(f"Trade persisted: {trade.get('symbol')} {trade.get('pnl', 0):+.2f}")
+            log.info(
+                f"Trade persisted: {trade.get('symbol')} {trade.get('pnl', 0):+.2f} "
+                f"({len(self._persisted_trades)} total in history)"
+            )
         except Exception as e:
-            log.debug(f"Could not persist trade: {e}")
+            log.error(f"FAILED to persist trade: {e} — trade history will be lost on restart!")
 
     def get_persisted_trades(self):
         """Get all persisted trades (for AI analysis across restarts)."""
@@ -78,7 +82,9 @@ class TradeAnalyzer:
                 log.info(f"Loaded {len(trades)} persisted trades from disk")
                 return trades
             except Exception as e:
-                log.debug(f"Could not load trade history: {e}")
+                log.warning(f"Could not load trade history: {e}")
+        else:
+            log.info(f"No trade history file found at {self._trades_file} — starting fresh")
         return []
 
     def analyze(self, trade_history, current_regime=None):
@@ -398,7 +404,7 @@ class TradeAnalyzer:
             with open(filepath, "w") as f:
                 json.dump(state, f, indent=2)
         except Exception as e:
-            log.debug(f"Could not save learning state: {e}")
+            log.warning(f"Could not save learning state: {e}")
 
     def _load_state(self):
         """Load saved learning state from disk."""
@@ -418,4 +424,4 @@ class TradeAnalyzer:
                     self.regime_performance[regime][strat] = perf
             log.info("Loaded learning state from disk")
         except Exception as e:
-            log.debug(f"Could not load learning state: {e}")
+            log.warning(f"Could not load learning state: {e}")
