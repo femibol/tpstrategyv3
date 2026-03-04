@@ -36,26 +36,32 @@ try:
     from ib_insync import ScannerSubscription
     HAS_IB = True
 
-    # Python 3.14 fix: asyncio.timeout() now requires running inside a task.
-    # ib_insync's util.run() calls loop.run_until_complete(coro) directly,
-    # which means asyncio.wait_for() inside connectAsync (and other methods)
-    # fails with "Timeout should be used inside a task".
-    # Fix: monkey-patch util.run to wrap awaitables in loop.create_task().
+    # Python 3.14 fix: asyncio.wait_for() now uses asyncio.timeout() internally,
+    # which requires running inside a proper asyncio Task. nest_asyncio's patched
+    # run_until_complete doesn't expose current_task(), so asyncio.timeout raises
+    # "Timeout should be used inside a task".
+    # Fix: replace asyncio.wait_for with a call_later-based implementation that
+    # doesn't use asyncio.timeout at all. This fixes ALL ib_insync sync calls.
     import sys
     if sys.version_info >= (3, 14):
-        _orig_util_run = util.run
+        _orig_wait_for = asyncio.wait_for
 
-        def _patched_run(*awaitables, timeout=None):
-            loop = asyncio.get_event_loop()
-            if not awaitables:
-                return _orig_util_run(timeout=timeout)
-            # Wrap each awaitable in a task so asyncio.timeout works
-            tasks = [loop.create_task(a) if asyncio.iscoroutine(a) else a
-                     for a in awaitables]
-            return _orig_util_run(*tasks, timeout=timeout)
+        async def _compat_wait_for(fut, timeout, **kwargs):
+            """wait_for replacement that avoids asyncio.timeout (Python 3.14+)."""
+            if timeout is None:
+                return await fut
+            loop = asyncio.get_running_loop()
+            fut = asyncio.ensure_future(fut, loop=loop)
+            timeout_handle = loop.call_later(timeout, fut.cancel)
+            try:
+                return await fut
+            except asyncio.CancelledError:
+                raise asyncio.TimeoutError()
+            finally:
+                timeout_handle.cancel()
 
-        util.run = _patched_run
-        log.info("Applied Python 3.14 asyncio.timeout fix for ib_insync")
+        asyncio.wait_for = _compat_wait_for
+        log.info("Applied Python 3.14 asyncio.wait_for fix for ib_insync")
 
 except ImportError:
     HAS_IB = False
