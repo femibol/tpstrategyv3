@@ -407,6 +407,10 @@ class TradingEngine:
                         "bar_seconds": 300,
                         "max_hold_days": 5,
                     }
+                # Add signal cooldown for all synced symbols to prevent re-entry
+                # if a strategy generates a signal before the next cycle
+                for sym in self.positions:
+                    self._signal_cooldowns[sym] = now
                 log.info(f"Synced {len(self.positions)} LONG positions from IBKR")
         else:
             log.warning(
@@ -1137,7 +1141,16 @@ class TradingEngine:
         for symbol, pos in positions_snapshot.items():
             current_price = self.market_data.get_price(symbol) if self.market_data else None
             if current_price is None:
+                # CRITICAL: Can't monitor stops without a price. Log it so we know.
+                stale_count = pos.get("_no_price_count", 0) + 1
+                pos["_no_price_count"] = stale_count
+                if stale_count % 20 == 1:  # Log every ~60 seconds (20 * 3s)
+                    log.warning(
+                        f"NO PRICE for {symbol} — stops NOT monitored! "
+                        f"({stale_count} consecutive misses)"
+                    )
                 continue
+            pos["_no_price_count"] = 0
 
             # --- ENTRY GRACE PERIOD ---
             # Don't allow exits within 30 seconds of entry. This prevents:
@@ -1158,6 +1171,22 @@ class TradingEngine:
 
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
+
+            # --- BREAK-EVEN CHECK (every 3 seconds, not just slow monitor) ---
+            be_cfg = self.config.risk_config.get("breakeven", {})
+            if (be_cfg.get("enabled", True) and
+                    not pos.get("breakeven_hit") and
+                    pnl_pct >= be_cfg.get("trigger_pct", 0.01)):
+                be_buf = be_cfg.get("buffer_pct", 0.001)
+                be_stop = entry_price * (1 + be_buf) if direction == "long" else entry_price * (1 - be_buf)
+                old_stop = pos.get("stop_loss", 0)
+                if direction == "long" and be_stop > old_stop:
+                    pos["stop_loss"] = be_stop
+                    pos["breakeven_hit"] = True
+                    log.info(
+                        f"BREAK-EVEN: {symbol} stop → ${be_stop:.2f} "
+                        f"(was ${old_stop:.2f}, P&L: {pnl_pct:.1%})"
+                    )
 
             # --- MOMENTUM TRACKING (consecutive up-ticks) ---
             prev_price = pos.get("_last_tick_price", entry_price)
@@ -2019,6 +2048,38 @@ class TradingEngine:
             if symbol in self.positions:
                 log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
                 return
+
+            # Broker-level duplicate check — catches cases where bot positions
+            # dict is out of sync with actual broker holdings (e.g., after restart)
+            if self.broker and self.broker.is_connected():
+                try:
+                    broker_positions = self.broker.get_positions()
+                    if broker_positions and symbol in broker_positions:
+                        broker_qty = broker_positions[symbol].get("quantity", 0)
+                        if broker_qty > 0:
+                            log.warning(
+                                f"BROKER DUPLICATE BLOCKED: {symbol} already held at IBKR "
+                                f"({broker_qty} shares) but not in bot positions. "
+                                f"Re-syncing position."
+                            )
+                            # Re-sync this position into the bot
+                            pos_data = broker_positions[symbol]
+                            entry = pos_data.get("entry_price", pos_data.get("avg_cost", 0))
+                            stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
+                            tp_pct = self.config.risk_config.get("take_profit_pct", 0.20)
+                            with self._positions_lock:
+                                self.positions[symbol] = {
+                                    **pos_data,
+                                    "entry_time": datetime.now(self.tz),
+                                    "stop_loss": entry * (1 - stop_pct),
+                                    "take_profit": entry * (1 + tp_pct),
+                                    "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
+                                    "strategy": "synced_from_ibkr",
+                                    "executed_via": "IBKR",
+                                }
+                            return
+                except Exception as e:
+                    log.debug(f"Broker duplicate check failed: {e}")
 
             # Pending order guard: block if an order for this symbol is already in-flight
             if symbol in self._pending_orders:

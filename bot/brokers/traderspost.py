@@ -57,6 +57,7 @@ class TradersPostBroker(BaseBroker):
         self.webhook_url_secondary = config.traderspost_webhook_url_secondary
         self.webhook_url_crypto = getattr(config, 'traderspost_webhook_url_crypto', '') or ''
         self.api_key = config.traderspost_api_key
+        self.webhook_password = getattr(config, 'traderspost_webhook_password', '') or ''
         self._connected = bool(self.webhook_url)
         self.signal_history = []
         self.dual_mode = bool(self.webhook_url and self.webhook_url_secondary)
@@ -207,6 +208,10 @@ class TradersPostBroker(BaseBroker):
             "action": tp_action,
         }
 
+        # Add webhook password if configured (TradersPost "Invalid Password" fix)
+        if self.webhook_password:
+            payload["password"] = self.webhook_password
+
         # Sentiment: ONLY add for "buy" entries (bullish)
         # NEVER add sentiment for exits — TradersPost rejects bearish sentiment
         if tp_action == "buy":
@@ -242,6 +247,12 @@ class TradersPostBroker(BaseBroker):
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
 
+            import json as _json
+            log.info(
+                f"TradersPost SENDING: URL=...{target_url[-30:]} | "
+                f"Payload={_json.dumps(payload)}"
+            )
+
             response = requests.post(
                 target_url,
                 json=payload,
@@ -255,6 +266,12 @@ class TradersPostBroker(BaseBroker):
             # HTTP 200 but still reject the signal (no matching position, etc.)
             resp_text = response.text[:500]
             resp_lower = resp_text.lower()
+
+            # Log full response for debugging
+            log.info(
+                f"TradersPost RESPONSE: HTTP {response.status_code} | "
+                f"Body={resp_text[:300]}"
+            )
             rejected = "rejected" in resp_lower or "no open position" in resp_lower
             success = http_ok and not rejected
 
@@ -349,6 +366,8 @@ class TradersPostBroker(BaseBroker):
             "ticker": symbol,
             "action": tp_action,
         }
+        if self.webhook_password:
+            payload["password"] = self.webhook_password
         if tp_action == "buy":
             payload["sentiment"] = "bullish"
         if "quantity" in signal:
