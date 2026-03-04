@@ -153,6 +153,10 @@ class Config:
     def traderspost_api_key(self):
         return os.getenv("TRADERSPOST_API_KEY", "")
 
+    @property
+    def traderspost_webhook_password(self):
+        return os.getenv("TRADERSPOST_WEBHOOK_PASSWORD", "")
+
     # --- TradingView ---
     @property
     def tradingview_webhook_secret(self):
