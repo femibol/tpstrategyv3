@@ -1819,6 +1819,12 @@ class TradingEngine:
                 signals = strategy.generate_signals(self.market_data)
                 for sig in signals:
                     sig["strategy"] = name
+                    # Stamp timestamp + live market price so risk manager checks work
+                    # (5% price deviation and 60s staleness guards need these fields)
+                    sig["timestamp"] = datetime.now(self.tz)
+                    sym = sig.get("symbol")
+                    if sym and self.market_data:
+                        sig["market_price"] = self.market_data.get_price(sym)
                 all_signals.extend(signals)
             except Exception as e:
                 log.error(f"Strategy {name} error: {e}", exc_info=True)
@@ -2037,6 +2043,35 @@ class TradingEngine:
         if current_price is None:
             log.warning(f"No price for {symbol} - skipping signal")
             return
+
+        # STALE PRICE GUARD — reject if live price has moved too far from signal price.
+        # Prevents entering with outdated stops/targets (e.g. signal at $46 but price now $49).
+        signal_price = signal.get("price", 0)
+        if signal_price > 0 and action == "buy":
+            price_deviation = abs(current_price - signal_price) / signal_price
+            max_deviation = self.config.risk_config.get("max_signal_deviation_pct", 0.03)
+            if price_deviation > max_deviation:
+                log.warning(
+                    f"STALE PRICE REJECT: {symbol} signal @ ${signal_price:.2f} but "
+                    f"live price ${current_price:.2f} ({price_deviation:.1%} deviation > "
+                    f"{max_deviation:.0%} max) — stops/targets would be invalid"
+                )
+                return
+            elif price_deviation > max_deviation * 0.5:
+                # Price moved significantly — recalculate stops and targets from live price
+                old_stop = signal.get("stop_loss", 0)
+                old_target = signal.get("take_profit", 0)
+                if old_stop and signal_price > 0:
+                    stop_pct = (signal_price - old_stop) / signal_price
+                    signal["stop_loss"] = current_price * (1 - stop_pct)
+                if old_target and signal_price > 0:
+                    target_pct = (old_target - signal_price) / signal_price
+                    signal["take_profit"] = current_price * (1 + target_pct)
+                log.info(
+                    f"PRICE DRIFT: {symbol} signal ${signal_price:.2f} → live ${current_price:.2f} "
+                    f"({price_deviation:.1%}) — recalculated stop=${signal.get('stop_loss', 0):.2f} "
+                    f"target=${signal.get('take_profit', 0):.2f}"
+                )
 
         # Price floor filter — no sub-$0.50 junk
         min_price = self.config.settings.get("risk", {}).get("min_price", 0.50)
@@ -2311,33 +2346,61 @@ class TradingEngine:
                 f"FILL PRICE ADJUSTED: {symbol} expected ${current_price:.2f} "
                 f"but filled @ ${actual_price:.2f}"
             )
-            # Slippage protection: if fill is significantly worse than expected,
-            # reject the trade and close immediately (R:R is ruined)
-            expected_price = current_price
+
+        # Slippage protection: compare fill price against BOTH live price AND signal price.
+        # The old check only compared fill vs live (both ~same), missing the real problem:
+        # signal at $46.82 → live at $49.55 → fill at $49.55 = no "slippage" detected.
+        # Now we also check fill vs original signal price to catch stale-signal entries.
+        if order.get("avg_fill_price") and action == "buy":
+            max_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
+            # Check 1: fill vs live price (traditional slippage)
+            live_slippage = abs(actual_price - current_price) / current_price if current_price > 0 else 0
+            # Check 2: fill vs original signal price (stale signal detection)
+            signal_price = signal.get("price", 0)
+            signal_slippage = abs(actual_price - signal_price) / signal_price if signal_price > 0 else 0
+            worst_slippage = max(live_slippage, signal_slippage)
+
+            if worst_slippage > max_slippage:
+                slippage_source = "signal" if signal_slippage > live_slippage else "market"
+                reference_price = signal_price if signal_slippage > live_slippage else current_price
+                log.warning(
+                    f"SLIPPAGE REJECT: {symbol} slippage {worst_slippage:.1%} exceeds "
+                    f"max {max_slippage:.1%} — closing position immediately | "
+                    f"Signal ${signal_price:.2f} → Live ${current_price:.2f} → Fill ${actual_price:.2f} "
+                    f"(worst vs {slippage_source}: {worst_slippage:.1%})"
+                )
+                self.notifier.risk_alert(
+                    f"Slippage reject: {symbol} filled ${actual_price:.2f} "
+                    f"(signal ${signal_price:.2f}, slippage {worst_slippage:.1%}). "
+                    f"Closing immediately."
+                )
+                # Schedule immediate close (can't close inline, position not yet tracked)
+                if not hasattr(self, '_slippage_close_queue'):
+                    self._slippage_close_queue = []
+                self._slippage_close_queue.append(symbol)
+            elif worst_slippage > max_slippage * 0.5:
+                log.warning(
+                    f"SLIPPAGE WARNING: {symbol} slippage {worst_slippage:.1%} "
+                    f"(threshold {max_slippage:.1%}) | Signal ${signal_price:.2f} → Fill ${actual_price:.2f}"
+                )
+
+        # Update current_price to actual fill price for position tracking
+        if order.get("avg_fill_price"):
             current_price = actual_price
-            if expected_price > 0:
-                slippage_pct = abs(actual_price - expected_price) / expected_price
-                max_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
-                if slippage_pct > max_slippage and action == "buy":
-                    log.warning(
-                        f"SLIPPAGE REJECT: {symbol} slippage {slippage_pct:.1%} exceeds "
-                        f"max {max_slippage:.1%} — closing position immediately | "
-                        f"Expected ${expected_price:.2f} filled ${actual_price:.2f}"
-                    )
-                    self.notifier.risk_alert(
-                        f"Slippage reject: {symbol} filled ${actual_price:.2f} "
-                        f"(expected ${expected_price:.2f}, slippage {slippage_pct:.1%}). "
-                        f"Closing immediately."
-                    )
-                    # Schedule immediate close (can't close inline, position not yet tracked)
-                    if not hasattr(self, '_slippage_close_queue'):
-                        self._slippage_close_queue = []
-                    self._slippage_close_queue.append(symbol)
-                elif slippage_pct > max_slippage * 0.5:
-                    log.warning(
-                        f"SLIPPAGE WARNING: {symbol} slippage {slippage_pct:.1%} "
-                        f"(threshold {max_slippage:.1%}) — monitoring closely"
-                    )
+
+        # SAFETY NET: Recalculate stops/targets if fill price makes them invalid.
+        # e.g. signal at $46.82 → target $47.08, but filled at $49.55 → target is BELOW entry.
+        if action == "buy" and take_profit_price <= current_price:
+            signal_price = signal.get("price", 0)
+            if signal_price > 0:
+                target_pct = (take_profit_price - signal_price) / signal_price if signal_price > 0 else 0.03
+                take_profit_price = round(current_price * (1 + max(target_pct, 0.015)), 2)
+                stop_pct = (signal_price - stop_loss_price) / signal_price if signal_price > 0 else 0.03
+                stop_loss_price = round(current_price * (1 - max(stop_pct, 0.01)), 2)
+                log.warning(
+                    f"RECALCULATED TARGETS: {symbol} fill ${current_price:.2f} made targets invalid — "
+                    f"new stop=${stop_loss_price:.2f} target=${take_profit_price:.2f}"
+                )
 
         risk_amount = abs(current_price - stop_loss_price) * qty
         reward_amount = abs(take_profit_price - current_price) * qty
