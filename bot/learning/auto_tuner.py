@@ -57,6 +57,12 @@ PARAM_BOUNDS = {
     "smc_fvg_min_size_pct": (0.0005, 0.003, 0.0003),   # FVG size threshold
     "smc_displacement_mult": (1.0, 2.5, 0.2),          # Displacement ATR mult
 
+    # RVOL Scalp
+    "rvol_scalp_min_rvol": (1.5, 5.0, 0.3),              # Min relative volume
+    "rvol_scalp_min_score": (40, 80, 5),                   # Min money machine score
+    "rvol_scalp_atr_stop_mult": (0.5, 2.5, 0.2),          # ATR stop multiplier
+    "rvol_scalp_atr_target_mult": (1.0, 4.0, 0.3),        # ATR target multiplier
+
     # VWAP Scalp
     "vwap_min_distance": (0.001, 0.008, 0.001),        # Min distance from VWAP
     "vwap_max_distance": (0.008, 0.025, 0.002),        # Max distance from VWAP
@@ -67,6 +73,7 @@ PARAM_BOUNDS = {
     "alloc_momentum": (0.05, 0.35, 0.05),
     "alloc_rvol_momentum": (0.05, 0.35, 0.05),
     "alloc_vwap_scalp": (0.03, 0.25, 0.03),
+    "alloc_rvol_scalp": (0.05, 0.35, 0.05),
     "alloc_pairs_trading": (0.05, 0.30, 0.05),
 }
 
@@ -91,6 +98,10 @@ PARAM_TO_CONFIG = {
     "smc_risk_reward_min": ("strategies", "smc_forever", "risk_reward_min"),
     "smc_fvg_min_size_pct": ("strategies", "smc_forever", "fvg_min_size_pct"),
     "smc_displacement_mult": ("strategies", "smc_forever", "displacement_atr_mult"),
+    "rvol_scalp_min_rvol": ("strategies", "rvol_scalp", "min_rvol"),
+    "rvol_scalp_min_score": ("strategies", "rvol_scalp", "min_score"),
+    "rvol_scalp_atr_stop_mult": ("strategies", "rvol_scalp", "atr_stop_multiplier"),
+    "rvol_scalp_atr_target_mult": ("strategies", "rvol_scalp", "atr_target_multiplier"),
     "vwap_min_distance": ("strategies", "vwap_scalp", "min_distance_from_vwap"),
     "vwap_max_distance": ("strategies", "vwap_scalp", "max_distance_from_vwap"),
     "alloc_smc_forever": ("strategies", "allocation", "smc_forever"),
@@ -98,6 +109,7 @@ PARAM_TO_CONFIG = {
     "alloc_momentum": ("strategies", "allocation", "momentum"),
     "alloc_rvol_momentum": ("strategies", "allocation", "rvol_momentum"),
     "alloc_vwap_scalp": ("strategies", "allocation", "vwap_scalp"),
+    "alloc_rvol_scalp": ("strategies", "allocation", "rvol_scalp"),
     "alloc_pairs_trading": ("strategies", "allocation", "pairs_trading"),
 }
 
@@ -280,6 +292,13 @@ class AutoTuner:
         params["smc_fvg_min_size_pct"] = smc.get("fvg_min_size_pct", 0.001)
         params["smc_displacement_mult"] = smc.get("displacement_atr_mult", 1.5)
 
+        # RVOL Scalp
+        rvol_scalp = self.config.strategies.get("rvol_scalp", {})
+        params["rvol_scalp_min_rvol"] = rvol_scalp.get("min_rvol", 2.5)
+        params["rvol_scalp_min_score"] = rvol_scalp.get("min_score", 60)
+        params["rvol_scalp_atr_stop_mult"] = rvol_scalp.get("atr_stop_multiplier", 1.0)
+        params["rvol_scalp_atr_target_mult"] = rvol_scalp.get("atr_target_multiplier", 2.0)
+
         # VWAP Scalp
         vwap = self.config.strategies.get("vwap_scalp", {})
         params["vwap_min_distance"] = vwap.get("min_distance_from_vwap", 0.003)
@@ -292,6 +311,7 @@ class AutoTuner:
         params["alloc_momentum"] = alloc.get("momentum", 0.15)
         params["alloc_rvol_momentum"] = alloc.get("rvol_momentum", 0.20)
         params["alloc_vwap_scalp"] = alloc.get("vwap_scalp", 0.10)
+        params["alloc_rvol_scalp"] = alloc.get("rvol_scalp", 0.15)
         params["alloc_pairs_trading"] = alloc.get("pairs_trading", 0.15)
 
         return params

@@ -295,7 +295,17 @@ class TradingEngine:
             persisted = self.trade_analyzer.get_persisted_trades()
             if persisted:
                 self.trade_history = list(persisted)
-                log.info(f"Restored {len(persisted)} trades from previous sessions")
+                wins = sum(1 for t in persisted if t.get("pnl", 0) > 0)
+                total_pnl = sum(t.get("pnl", 0) for t in persisted)
+                strategies_seen = set(t.get("strategy", "?") for t in persisted)
+                log.info(
+                    f"TRADE HISTORY: Restored {len(persisted)} trades | "
+                    f"{wins}W/{len(persisted)-wins}L | "
+                    f"Net P&L: ${total_pnl:+,.2f} | "
+                    f"Strategies: {', '.join(strategies_seen)}"
+                )
+            else:
+                log.info("TRADE HISTORY: No previous trades found — starting fresh")
 
         # Market regime detector
         self.regime_detector = RegimeDetector(self.indicators)
