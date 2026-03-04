@@ -35,6 +35,28 @@ try:
     from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
     from ib_insync import ScannerSubscription
     HAS_IB = True
+
+    # Python 3.14 fix: asyncio.timeout() now requires running inside a task.
+    # ib_insync's util.run() calls loop.run_until_complete(coro) directly,
+    # which means asyncio.wait_for() inside connectAsync (and other methods)
+    # fails with "Timeout should be used inside a task".
+    # Fix: monkey-patch util.run to wrap awaitables in loop.create_task().
+    import sys
+    if sys.version_info >= (3, 14):
+        _orig_util_run = util.run
+
+        def _patched_run(*awaitables, timeout=None):
+            loop = asyncio.get_event_loop()
+            if not awaitables:
+                return _orig_util_run(timeout=timeout)
+            # Wrap each awaitable in a task so asyncio.timeout works
+            tasks = [loop.create_task(a) if asyncio.iscoroutine(a) else a
+                     for a in awaitables]
+            return _orig_util_run(*tasks, timeout=timeout)
+
+        util.run = _patched_run
+        log.info("Applied Python 3.14 asyncio.timeout fix for ib_insync")
+
 except ImportError:
     HAS_IB = False
     ScannerSubscription = None
