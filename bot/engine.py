@@ -2253,6 +2253,28 @@ class TradingEngine:
                     self._pending_orders.discard(symbol)
                     return
 
+        # PRE-ORDER SPREAD CHECK: reject illiquid names BEFORE placing the order.
+        # Catches wide bid-ask spreads (e.g. $1.40 bid / $1.60 ask = 13% spread)
+        # that guarantee slippage on MARKET orders. Prevents the costly
+        # enter-then-immediately-exit loop that lost ~$2,500 on 2024-03-04.
+        if action == "buy" and self.broker and self.broker.is_connected():
+            max_spread_pct = self.config.risk_config.get("max_spread_pct", 0.02)
+            quote = self.broker.get_live_price(symbol) if hasattr(self.broker, 'get_live_price') else None
+            if quote and quote.get("bid") and quote.get("ask"):
+                bid = quote["bid"]
+                ask = quote["ask"]
+                if bid > 0 and ask > 0 and ask > bid:
+                    mid = (bid + ask) / 2
+                    spread_pct = (ask - bid) / mid
+                    if spread_pct > max_spread_pct:
+                        log.warning(
+                            f"SPREAD REJECT: {symbol} bid=${bid:.2f} ask=${ask:.2f} "
+                            f"spread={spread_pct:.1%} exceeds max {max_spread_pct:.1%}. "
+                            f"Skipping order — illiquid."
+                        )
+                        self._pending_orders.discard(symbol)
+                        return
+
         # 1. Try IBKR (primary broker)
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
