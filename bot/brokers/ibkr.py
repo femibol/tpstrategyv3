@@ -92,6 +92,15 @@ class IBKRBroker(BaseBroker):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
+        # Re-apply nest_asyncio to this thread's loop (module-level apply()
+        # only patches the loop that existed at import time, which may differ
+        # from the loop in the current thread).
+        try:
+            import nest_asyncio
+            nest_asyncio.apply(loop)
+        except Exception:
+            pass
+
         try:
             self.ib = IB()
             self.ib.connect(
