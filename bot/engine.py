@@ -5027,8 +5027,95 @@ class TradingEngine:
         try:
             # --- Diagnostic: log scanner state each cycle ---
             _poly_status = f"polygon.enabled={self.polygon.enabled}" if self.polygon else "polygon=None"
+            _ibkr_status = "ibkr=connected" if (self.broker and hasattr(self.broker, 'scan_market') and self.broker.is_connected()) else "ibkr=no_scanner"
             _pm_flag = getattr(self, '_in_premarket', False)
-            log.info(f"Discovery scan: {_poly_status}, premarket={_pm_flag}")
+            log.info(f"Discovery scan: {_poly_status}, {_ibkr_status}, premarket={_pm_flag}")
+
+            # --- IBKR Market Scanner (fallback when Polygon is disabled) ---
+            # Uses IBKR's built-in scanner: TOP_PERC_GAIN, MOST_ACTIVE, HOT_BY_VOLUME, HIGH_OPEN_GAP
+            # Works with your existing IBKR market data subscription — no extra cost.
+            _polygon_available = self.polygon and self.polygon.enabled
+            if not _polygon_available and self.broker and hasattr(self.broker, 'scan_market') and self.broker.is_connected():
+                # Rate limit IBKR scanner: once per 30 seconds (scanner is heavier than snapshot)
+                _now = time.time()
+                _last_ibkr_scan = getattr(self, '_last_ibkr_scan_time', 0)
+                if _now - _last_ibkr_scan >= 30:
+                    self._last_ibkr_scan_time = _now
+
+                    # Run multiple scan types for comprehensive discovery
+                    ibkr_gainers = self.broker.scan_premarket_gainers(num_rows=50)
+                    ibkr_active = self.broker.scan_most_active(num_rows=30)
+                    ibkr_hot = self.broker.scan_hot_by_volume(num_rows=30)
+                    ibkr_gaps = self.broker.scan_high_gap(num_rows=30)
+                    ibkr_losers = self.broker.scan_premarket_losers(num_rows=20)
+
+                    # Collect all unique symbols
+                    _ibkr_all_syms = set()
+                    _ibkr_gainer_syms = []
+                    _ibkr_loser_syms = []
+                    _ibkr_gap_syms = []
+
+                    for g in ibkr_gainers:
+                        sym = g.get("symbol", "")
+                        if sym and sym not in _ibkr_all_syms:
+                            _ibkr_gainer_syms.append(sym)
+                            _ibkr_all_syms.add(sym)
+
+                    for a in ibkr_active + ibkr_hot:
+                        sym = a.get("symbol", "")
+                        if sym:
+                            _ibkr_all_syms.add(sym)
+
+                    for gap in ibkr_gaps:
+                        sym = gap.get("symbol", "")
+                        if sym and sym not in _ibkr_all_syms:
+                            _ibkr_gap_syms.append(sym)
+                            _ibkr_all_syms.add(sym)
+
+                    for l in ibkr_losers:
+                        sym = l.get("symbol", "")
+                        if sym:
+                            _ibkr_loser_syms.append(sym)
+                            _ibkr_all_syms.add(sym)
+
+                    _ibkr_all_list = list(_ibkr_all_syms)
+
+                    # Feed gainers + active into momentum strategies
+                    if _ibkr_gainer_syms:
+                        if rvol_strat:
+                            rvol_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                        if scalp_strat:
+                            scalp_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                        if runner_strat:
+                            runner_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                        if pb_strat:
+                            pb_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                        if squeeze_strat:
+                            squeeze_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                        if pead_strat:
+                            pead_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+
+                    # Feed gap-ups into gap strategy
+                    if _ibkr_gap_syms and gap_strat:
+                        gap_strat.add_dynamic_symbols(_ibkr_gap_syms)
+
+                    # Feed losers into mean reversion
+                    if _ibkr_loser_syms and mr_strat:
+                        existing = set(mr_strat.symbols)
+                        new_losers = [s for s in _ibkr_loser_syms if s not in existing]
+                        mr_strat.symbols.extend(new_losers)
+                        if scalp_strat:
+                            scalp_strat.add_dynamic_symbols(_ibkr_loser_syms)
+
+                    # Feed all active symbols into scalp (broad net)
+                    if _ibkr_all_list and scalp_strat:
+                        scalp_strat.add_dynamic_symbols(_ibkr_all_list)
+
+                    log.info(
+                        f"IBKR scanner: {len(_ibkr_all_syms)} unique symbols discovered | "
+                        f"{len(_ibkr_gainer_syms)} gainers, {len(_ibkr_gap_syms)} gaps, "
+                        f"{len(_ibkr_loser_syms)} losers"
+                    )
 
             # --- Polygon.io full-market scan (if configured) ---
             # One call returns ALL ~10,000 stocks — catches everything Alpaca misses
