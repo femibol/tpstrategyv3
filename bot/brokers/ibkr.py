@@ -33,9 +33,11 @@ except ImportError:
 
 try:
     from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
+    from ib_insync import ScannerSubscription
     HAS_IB = True
 except ImportError:
     HAS_IB = False
+    ScannerSubscription = None
     log.warning("ib_insync not installed - IBKR broker unavailable")
 
 
@@ -1430,3 +1432,135 @@ class IBKRBroker(BaseBroker):
 
         log.info(f"Flatten complete: {closed}/{len(positions)} positions closed")
         return closed == len(positions)
+
+    # =========================================================================
+    # Market Scanner — Uses IBKR's built-in scanner (no Polygon needed)
+    # =========================================================================
+
+    def scan_market(self, scan_code="TOP_PERC_GAIN", instrument="STK",
+                    location="STK.US.MAJOR", num_rows=50,
+                    price_above=1.0, price_below=500.0,
+                    volume_above=0, market_cap_above=0):
+        """
+        Run an IBKR market scanner to discover stocks.
+
+        Scan codes: TOP_PERC_GAIN, TOP_PERC_LOSE, MOST_ACTIVE,
+                    HOT_BY_VOLUME, HIGH_OPEN_GAP, LOW_OPEN_GAP
+
+        Returns list of dicts: [{symbol, price, change_pct, volume, ...}]
+        """
+        if not self.is_connected() or not ScannerSubscription:
+            return []
+
+        try:
+            sub = ScannerSubscription(
+                instrument=instrument,
+                locationCode=location,
+                scanCode=scan_code,
+                numberOfRows=num_rows,
+                abovePrice=price_above,
+                belowPrice=price_below,
+                aboveVolume=volume_above,
+                marketCapAbove=market_cap_above,
+            )
+
+            # IBKR returns scanner results synchronously via ib_insync
+            results = self.ib.reqScannerData(sub)
+            self.ib.sleep(0.5)
+
+            movers = []
+            for rank_data in results:
+                contract = rank_data.contractDetails.contract
+                sym = contract.symbol or ""
+                if not sym or "." in sym or len(sym) > 5:
+                    continue
+                # Extract what IBKR gives us from scanner
+                # rank_data has: rank, contractDetails, distance, benchmark, projection, legsStr
+                movers.append({
+                    "symbol": sym,
+                    "name": sym,
+                    "rank": rank_data.rank,
+                    "source": "ibkr_scanner",
+                })
+
+            log.info(f"IBKR scanner [{scan_code}]: {len(movers)} results")
+            return movers
+
+        except Exception as e:
+            log.warning(f"IBKR scanner error [{scan_code}]: {e}")
+            return []
+
+    def scan_premarket_gainers(self, num_rows=50, min_price=1.0, max_price=500.0):
+        """Scan for top premarket percentage gainers via IBKR."""
+        return self.scan_market(
+            scan_code="TOP_PERC_GAIN",
+            num_rows=num_rows,
+            price_above=min_price,
+            price_below=max_price,
+        )
+
+    def scan_premarket_losers(self, num_rows=30, min_price=2.0, max_price=500.0):
+        """Scan for top premarket percentage losers via IBKR (mean reversion)."""
+        return self.scan_market(
+            scan_code="TOP_PERC_LOSE",
+            num_rows=num_rows,
+            price_above=min_price,
+            price_below=max_price,
+        )
+
+    def scan_most_active(self, num_rows=50, min_price=1.0, max_price=500.0):
+        """Scan for most active stocks by volume via IBKR."""
+        return self.scan_market(
+            scan_code="MOST_ACTIVE",
+            num_rows=num_rows,
+            price_above=min_price,
+            price_below=max_price,
+        )
+
+    def scan_hot_by_volume(self, num_rows=50, min_price=1.0, max_price=500.0):
+        """Scan for stocks with unusual volume spikes via IBKR."""
+        return self.scan_market(
+            scan_code="HOT_BY_VOLUME",
+            num_rows=num_rows,
+            price_above=min_price,
+            price_below=max_price,
+        )
+
+    def scan_high_gap(self, num_rows=50, min_price=1.0, max_price=500.0):
+        """Scan for stocks gapping up from previous close via IBKR."""
+        return self.scan_market(
+            scan_code="HIGH_OPEN_GAP",
+            num_rows=num_rows,
+            price_above=min_price,
+            price_below=max_price,
+        )
+
+    def scan_all_premarket(self):
+        """
+        Run multiple IBKR scans to build a comprehensive premarket watchlist.
+        Returns dict with categorized results: {gainers, losers, active, hot_volume, gap_ups}
+        """
+        gainers = self.scan_premarket_gainers()
+        losers = self.scan_premarket_losers()
+        active = self.scan_most_active()
+        hot_vol = self.scan_hot_by_volume()
+        gap_ups = self.scan_high_gap()
+
+        total = len(gainers) + len(losers) + len(active) + len(hot_vol) + len(gap_ups)
+        unique_syms = set()
+        for lst in [gainers, losers, active, hot_vol, gap_ups]:
+            unique_syms.update(m["symbol"] for m in lst)
+
+        log.info(
+            f"IBKR full scan: {len(unique_syms)} unique symbols | "
+            f"{len(gainers)} gainers, {len(losers)} losers, "
+            f"{len(active)} active, {len(hot_vol)} hot vol, {len(gap_ups)} gaps"
+        )
+
+        return {
+            "gainers": gainers,
+            "losers": losers,
+            "active": active,
+            "hot_volume": hot_vol,
+            "gap_ups": gap_ups,
+        }
