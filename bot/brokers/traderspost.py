@@ -247,6 +247,12 @@ class TradersPostBroker(BaseBroker):
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
 
+            import json as _json
+            log.info(
+                f"TradersPost SENDING: URL=...{target_url[-30:]} | "
+                f"Payload={_json.dumps(payload)}"
+            )
+
             response = requests.post(
                 target_url,
                 json=payload,
@@ -260,6 +266,12 @@ class TradersPostBroker(BaseBroker):
             # HTTP 200 but still reject the signal (no matching position, etc.)
             resp_text = response.text[:500]
             resp_lower = resp_text.lower()
+
+            # Log full response for debugging
+            log.info(
+                f"TradersPost RESPONSE: HTTP {response.status_code} | "
+                f"Body={resp_text[:300]}"
+            )
             rejected = "rejected" in resp_lower or "no open position" in resp_lower
             success = http_ok and not rejected
 
