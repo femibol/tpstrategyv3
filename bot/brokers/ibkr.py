@@ -387,6 +387,15 @@ class IBKRBroker(BaseBroker):
                     pass  # Let the timeout handle it, but log below
 
                 if fill_status == "Filled":
+                    # Compute weighted average from actual execution reports
+                    # instead of relying on orderStatus.avgFillPrice which can
+                    # reflect intermediate state during partial fills
+                    if trade.fills:
+                        total_qty = sum(f.execution.shares for f in trade.fills)
+                        total_cost = sum(f.execution.shares * f.execution.price for f in trade.fills)
+                        if total_qty > 0:
+                            avg_fill_price = total_cost / total_qty
+                            filled_qty = int(total_qty)
                     log.info(
                         f"Order FILLED: {action} {filled_qty}/{quantity} {symbol} "
                         f"@ ${avg_fill_price:.2f} | Order ID: {order_id}"
@@ -488,6 +497,13 @@ class IBKRBroker(BaseBroker):
                 filled_qty = int(parent_trade.orderStatus.filled or 0)
                 avg_fill_price = float(parent_trade.orderStatus.avgFillPrice or 0)
                 if fill_status == "Filled":
+                    # Compute weighted average from actual execution reports
+                    if parent_trade.fills:
+                        total_qty = sum(f.execution.shares for f in parent_trade.fills)
+                        total_cost = sum(f.execution.shares * f.execution.price for f in parent_trade.fills)
+                        if total_qty > 0:
+                            avg_fill_price = total_cost / total_qty
+                            filled_qty = int(total_qty)
                     log.info(
                         f"BRACKET FILLED: {action} {filled_qty}/{quantity} {symbol} "
                         f"@ ${avg_fill_price:.2f}"
@@ -956,10 +972,13 @@ class IBKRBroker(BaseBroker):
     # --- Event Callbacks ---
     def _on_order_status(self, trade):
         """Handle order status updates."""
+        avg_price = trade.orderStatus.avgFillPrice or 0
+        price_str = f" | AvgPrice: ${avg_price:.2f}" if avg_price > 0 else ""
         log.info(
             f"Order update: {trade.contract.symbol} | "
             f"Status: {trade.orderStatus.status} | "
             f"Filled: {trade.orderStatus.filled}/{trade.order.totalQuantity}"
+            f"{price_str}"
         )
 
     def _on_error(self, reqId, errorCode, errorString, contract=None):
