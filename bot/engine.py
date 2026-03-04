@@ -4591,8 +4591,8 @@ class TradingEngine:
             bullish_score += 15
             reasons.append("Sector heat — macro-driven, multi-day theme")
 
-        # Verdict: 50+ = bullish enough for after-hours
-        should_hold = bullish_score >= 50
+        # Verdict: 60+ = bullish enough for after-hours (raised from 50 — be selective)
+        should_hold = bullish_score >= 60
         reason_str = " | ".join(reasons[:5])
 
         log.info(
@@ -4720,7 +4720,7 @@ class TradingEngine:
                             f"Bullish: {bullish_score}/100 | Stop: ${pos['stop_loss']:.2f} | "
                             f"{eval_reason}"
                         )
-                    elif is_momentum and bullish_score >= 50:
+                    elif is_momentum and bullish_score >= 60:
                         # RVOL momentum runner — hold into after-hours with tight stop
                         new_stop = current_price * 0.97  # 3% stop for AH
                         if new_stop > pos.get("stop_loss", 0):
@@ -4732,8 +4732,8 @@ class TradingEngine:
                             f"Bullish: {bullish_score}/100 | AH Stop: ${pos['stop_loss']:.2f} | "
                             f"{eval_reason}"
                         )
-                    elif bullish_score >= 50:
-                        # Other strategy with decent bullish score
+                    elif bullish_score >= 60:
+                        # Other strategy with strong bullish score
                         tighten = overnight_cfg.get("tighten_stop_pct", 0.025)
                         if pos["direction"] == "long":
                             new_stop = current_price * (1 - tighten)

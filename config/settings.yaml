@@ -112,10 +112,10 @@ schedule:
   overnight:
     enabled: true                  # Allow holding overnight
     require_profit: true           # Only hold if position is in profit
-    min_profit_pct: 0.02           # Min 2% profit to hold overnight (small caps gap down hard)
+    min_profit_pct: 0.03           # Min 3% profit to hold overnight (small caps gap down hard)
     require_uptrend: true          # Only hold if in uptrend (EMA fast > slow)
-    tighten_stop_pct: 0.025       # 2.5% tight stop for overnight (small caps gap)
-    max_overnight_positions: 3    # Max 3 overnight - small caps are risky overnight
+    tighten_stop_pct: 0.04        # 4% stop for overnight (small caps need room, 2.5% was too tight)
+    max_overnight_positions: 2    # Max 2 overnight - be selective, small caps are risky overnight
     close_losers: true            # Always close losing positions at EOD
 
 # --- Scaling Plan ---
