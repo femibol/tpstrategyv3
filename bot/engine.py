@@ -5551,6 +5551,26 @@ class TradingEngine:
                         pb_strat.add_dynamic_symbols(loser_syms)
                     log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp + pre-breakout")
 
+            # --- EARLY BIRD SCANNER: Catch accumulation BEFORE the breakout ---
+            # Detects volume ramping while price stays flat — smart money loading
+            # before retail scanners catch the move. Feeds into prebreakout strategy.
+            if self.polygon and hasattr(self.polygon, 'scan_early_birds'):
+                early_birds = self.polygon.scan_early_birds(limit=15)
+                if early_birds:
+                    eb_syms = [e["symbol"] for e in early_birds if e.get("symbol")]
+                    if eb_syms and pb_strat:
+                        pb_strat.add_dynamic_symbols(eb_syms)
+                    # Also feed into RVOL and runner — if they break out, these catch it
+                    if eb_syms and rvol_strat:
+                        rvol_strat.add_dynamic_symbols(eb_syms)
+                    if eb_syms and runner_strat:
+                        runner_strat.add_dynamic_symbols(eb_syms)
+                    eb_top = ", ".join(e["symbol"] + "(" + str(e["score"]) + ")" for e in early_birds[:3])
+                    log.info(
+                        f"EARLY BIRD: fed {len(eb_syms)} accumulation candidates into "
+                        f"prebreakout + rvol + runner | Top: {eb_top}"
+                    )
+
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
             if runners:

@@ -57,6 +57,12 @@ class PolygonScanner:
         # Bars rate limiting
         self._bars_call_times = []
 
+        # Early-bird tracker: tracks volume accumulation across snapshots
+        # {symbol: [{"time": ts, "volume": vol, "price": price, "change_pct": chg}, ...]}
+        self._volume_history = {}
+        self._early_bird_cache = []
+        self._early_bird_cache_time = 0
+
         # Float data cache — {symbol: {"float": int, "shares_outstanding": int, "fetched": timestamp}}
         self._float_cache = {}
         self._float_fetch_times = []  # Rate limit tracking
@@ -1061,3 +1067,217 @@ class PolygonScanner:
                 })
         losers.sort(key=lambda x: x["change_pct"])
         return losers[:limit]
+
+    # =========================================================================
+    # Early-Bird Scanner — Catch accumulation BEFORE the breakout
+    # =========================================================================
+
+    def _update_volume_history(self):
+        """Track volume snapshots over time to detect accumulation patterns.
+
+        Called every scan cycle. Builds a time-series of volume/price per symbol
+        so we can detect volume ramping while price stays flat — the classic
+        accumulation signal that precedes breakouts.
+        """
+        now = time.time()
+
+        for sym, data in self._price_cache.items():
+            price = data.get("price", 0)
+            volume = data.get("volume", 0)
+            change_pct = data.get("change_pct", 0)
+
+            if price <= 0 or volume <= 0:
+                continue
+
+            if sym not in self._volume_history:
+                self._volume_history[sym] = []
+
+            self._volume_history[sym].append({
+                "time": now,
+                "volume": volume,
+                "price": price,
+                "change_pct": change_pct,
+            })
+
+            # Keep last 20 snapshots (~5 minutes at 15s intervals)
+            if len(self._volume_history[sym]) > 20:
+                self._volume_history[sym] = self._volume_history[sym][-20:]
+
+        # Purge symbols not seen in 10 minutes
+        stale_cutoff = now - 600
+        stale_syms = [s for s, hist in self._volume_history.items()
+                      if hist and hist[-1]["time"] < stale_cutoff]
+        for s in stale_syms:
+            del self._volume_history[s]
+
+    def scan_early_birds(self, limit=20):
+        """Detect premarket accumulation — volume building while price is quiet.
+
+        Catches stocks BEFORE they hit top gainers scanners by identifying:
+        1. Volume ramping across snapshots (each snapshot shows higher cumulative volume)
+        2. Price still relatively flat (< 3% move — hasn't alerted retail scanners yet)
+        3. Volume already significant vs yesterday's full-day average
+        4. Prefer low float stocks (bigger moves when they break)
+
+        Returns candidates sorted by accumulation score (volume ramp strength).
+        """
+        now = time.time()
+
+        # Cache for 30 seconds
+        if now - self._early_bird_cache_time < 30 and self._early_bird_cache:
+            return self._early_bird_cache
+
+        # Update volume tracking from latest snapshot
+        self._update_volume_history()
+
+        candidates = []
+
+        for sym, history in self._volume_history.items():
+            # Need at least 3 snapshots to detect a ramp (45+ seconds of data)
+            if len(history) < 3:
+                continue
+
+            latest = history[-1]
+            price = latest["price"]
+            change_pct = abs(latest["change_pct"])
+            current_vol = latest["volume"]
+
+            # Skip if already a big mover — every scanner already has it
+            if change_pct >= 3.0:
+                continue
+
+            # Skip low-price junk and high-price low-% movers
+            if price < 2.0 or price > 50.0:
+                continue
+
+            # Get cached data for avg_volume comparison
+            cached = self._price_cache.get(sym, {})
+            avg_volume = cached.get("avg_volume", 0)
+
+            # Need meaningful volume vs yesterday
+            if avg_volume <= 0:
+                continue
+
+            # Premarket volume ratio vs yesterday's FULL day
+            # Even 5% of yesterday's full-day volume in premarket is significant
+            pm_vol_ratio = current_vol / avg_volume
+
+            # Skip if volume is too low to matter
+            if current_vol < 10000 or pm_vol_ratio < 0.03:
+                continue
+
+            # --- VOLUME RAMP DETECTION ---
+            # Check if volume is consistently increasing across snapshots
+            volumes = [h["volume"] for h in history]
+            prices = [h["price"] for h in history]
+
+            # Volume ramp: each snapshot should show more cumulative volume
+            ramp_count = 0
+            for i in range(1, len(volumes)):
+                if volumes[i] > volumes[i - 1]:
+                    ramp_count += 1
+            ramp_pct = ramp_count / (len(volumes) - 1) if len(volumes) > 1 else 0
+
+            # Need at least 60% of snapshots showing volume increase
+            if ramp_pct < 0.6:
+                continue
+
+            # Volume acceleration: is the rate of volume increase accelerating?
+            vol_deltas = [volumes[i] - volumes[i - 1] for i in range(1, len(volumes)) if volumes[i] > volumes[i - 1]]
+            accelerating = False
+            if len(vol_deltas) >= 2:
+                # Recent deltas should be bigger than earlier ones
+                mid = len(vol_deltas) // 2
+                early_avg = sum(vol_deltas[:mid]) / max(mid, 1)
+                late_avg = sum(vol_deltas[mid:]) / max(len(vol_deltas) - mid, 1)
+                accelerating = late_avg > early_avg * 1.2  # 20% acceleration
+
+            # --- PRICE STABILITY CHECK ---
+            # Price should be relatively flat (accumulation, not already breaking out)
+            price_range = (max(prices) - min(prices)) / min(prices) if min(prices) > 0 else 0
+            price_stable = price_range < 0.03  # Less than 3% range across snapshots
+
+            if not price_stable:
+                continue
+
+            # --- COMPOSITE ACCUMULATION SCORE ---
+            score = 0
+            reasons = []
+
+            # Volume ramp quality (max 30 pts)
+            if ramp_pct >= 0.9:
+                score += 30
+                reasons.append(f"Strong vol ramp ({ramp_pct:.0%})")
+            elif ramp_pct >= 0.75:
+                score += 20
+                reasons.append(f"Vol ramping ({ramp_pct:.0%})")
+            else:
+                score += 10
+                reasons.append(f"Vol building ({ramp_pct:.0%})")
+
+            # Premarket volume significance (max 30 pts)
+            if pm_vol_ratio >= 0.20:
+                score += 30
+                reasons.append(f"Heavy PM vol ({pm_vol_ratio:.0%} of avg day)")
+            elif pm_vol_ratio >= 0.10:
+                score += 20
+                reasons.append(f"PM vol building ({pm_vol_ratio:.0%} of avg day)")
+            elif pm_vol_ratio >= 0.05:
+                score += 10
+                reasons.append(f"PM vol notable ({pm_vol_ratio:.0%} of avg day)")
+
+            # Volume acceleration (max 15 pts)
+            if accelerating:
+                score += 15
+                reasons.append("Volume ACCELERATING")
+
+            # Price compression during volume build (max 15 pts)
+            if price_range < 0.01:
+                score += 15
+                reasons.append(f"Tight compression ({price_range:.1%} range)")
+            elif price_range < 0.02:
+                score += 10
+                reasons.append(f"Compressing ({price_range:.1%} range)")
+
+            # Float preference (max 10 pts)
+            float_shares = self._float_cache.get(sym, {}).get("float", 0)
+            if 0 < float_shares < 20_000_000:
+                score += 10
+                reasons.append(f"Low float ({float_shares / 1e6:.1f}M)")
+            elif 0 < float_shares < 50_000_000:
+                score += 5
+                reasons.append(f"Med float ({float_shares / 1e6:.1f}M)")
+
+            # Minimum score threshold
+            if score < 40:
+                continue
+
+            candidates.append({
+                "symbol": sym,
+                "price": round(price, 2),
+                "change_pct": round(latest["change_pct"], 2),
+                "volume": current_vol,
+                "avg_volume": avg_volume,
+                "pm_vol_ratio": round(pm_vol_ratio, 3),
+                "ramp_pct": round(ramp_pct, 2),
+                "accelerating": accelerating,
+                "price_range": round(price_range * 100, 2),
+                "float_shares": float_shares,
+                "score": score,
+                "reasons": reasons,
+                "source": "early_bird",
+            })
+
+        candidates.sort(key=lambda x: x["score"], reverse=True)
+        result = candidates[:limit]
+
+        self._early_bird_cache = result
+        self._early_bird_cache_time = now
+
+        if result:
+            top_str = ", ".join(c["symbol"] + "(" + str(c["score"]) + "pts)" for c in result[:5])
+            log.info(
+                f"EARLY BIRD: {len(result)} accumulation candidates | Top: {top_str}"
+            )
+
+        return result
