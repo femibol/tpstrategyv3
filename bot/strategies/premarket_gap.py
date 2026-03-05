@@ -35,19 +35,19 @@ class PreMarketGapStrategy(BaseStrategy):
 
     def __init__(self, config, indicators, capital):
         super().__init__(config, indicators, capital)
-        self.min_gap_pct = config.get("min_gap_pct", 0.05)         # 5% minimum gap
+        self.min_gap_pct = config.get("min_gap_pct", 0.08)         # 8% minimum gap (raised from 5% — skip weak gaps that fade)
         self.min_rvol = config.get("min_rvol", 10.0)               # 10x relative volume
-        self.min_price = config.get("min_price", 1.00)
+        self.min_price = config.get("min_price", 2.00)             # $2 floor (raised from $1 — sub-$2 gaps are untradeable)
         self.max_price = config.get("max_price", 50.00)            # Focus on cheaper stocks (big % moves)
-        self.min_volume = config.get("min_volume", 50000)          # Pre-market vol filter
-        self.pullback_min_pct = config.get("pullback_min_pct", 0.02)  # Min 2% pullback
-        self.pullback_max_pct = config.get("pullback_max_pct", 0.50)  # Max 50% retracement
-        self.atr_stop_mult = config.get("atr_stop_multiplier", 1.2)   # Tight stop
+        self.min_volume = config.get("min_volume", 75000)          # 75K pre-market vol (raised from 50K — need exit liquidity)
+        self.pullback_min_pct = config.get("pullback_min_pct", 0.03)  # Min 3% pullback (raised from 2% — need real pullback)
+        self.pullback_max_pct = config.get("pullback_max_pct", 0.45)  # Max 45% retracement (tightened from 50%)
+        self.atr_stop_mult = config.get("atr_stop_multiplier", 1.5)   # 1.5x ATR stop (widened from 1.2 — gaps need room)
         self.atr_target_mult = config.get("atr_target_multiplier", 3.0)
         self.runner_atr_mult = config.get("runner_atr_multiplier", 8.0)
-        self.max_hold_minutes = config.get("max_hold_minutes", 60)    # 1 hour max
-        self.max_trades_per_day = config.get("max_trades_per_day", 6)
-        self.max_candidates = config.get("max_candidates", 3)        # Top 3 only
+        self.max_hold_minutes = config.get("max_hold_minutes", 45)    # 45 min max (tightened from 60 — gaps resolve fast)
+        self.max_trades_per_day = config.get("max_trades_per_day", 3) # Max 3 gap plays/day (cut from 6 — be selective)
+        self.max_candidates = config.get("max_candidates", 2)        # Top 2 only (cut from 3)
         self.start_hour = config.get("start_hour", 6)               # 6 AM ET
         self.end_hour = config.get("end_hour", 10)                  # 10 AM ET (catch open push)
         self.trailing_stop_pct = config.get("trailing_stop_pct", 0.025)  # 2.5% trail
@@ -259,7 +259,7 @@ class PreMarketGapStrategy(BaseStrategy):
         now_h = now_et.hour
         now_m = now_et.minute
         in_fakeout_zone = (now_h == 9 and 30 + self.open_dead_zone_minutes <= now_m <= 45)
-        min_score_for_signal = 70 if in_fakeout_zone else 60
+        min_score_for_signal = 75 if in_fakeout_zone else 65  # Raised from 70/60 — only A+ setups
 
         if is_qualified_gap and has_pullback and has_structure_break and score >= min_score_for_signal:
             verdict = "BUY SIGNAL"
@@ -299,7 +299,7 @@ class PreMarketGapStrategy(BaseStrategy):
             reward = take_profit - current_price
             rr_ratio = round(reward / risk, 2) if risk > 0 else 0
 
-            if rr_ratio >= 1.5 and risk > 0:
+            if rr_ratio >= 2.0 and risk > 0:  # Raised from 1.5 — demand 2:1 R:R for gap plays
                 confidence = min(1.0, score / 100)
 
                 result["signal"] = {

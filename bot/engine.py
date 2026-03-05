@@ -781,13 +781,32 @@ class TradingEngine:
                     if rejected_for_rotation and len(self.positions) >= self.risk_manager.max_positions - 1:
                         self._momentum_rotation_check(rejected_for_rotation)
 
-                    # 7a. Pre-market / Post-market filtering: limit strategies and reduce size
+                    # 7a. Pre-market / Post-market filtering: limit strategies, reduce size,
+                    #     and enforce quality gate (RVOL + score minimums)
                     if getattr(self, "_in_premarket", False):
                         pm_config = self.config.schedule_config.get("premarket", {})
                         allowed = pm_config.get("allowed_strategies", [])
                         size_mult = pm_config.get("reduce_size_pct", 0.5)
+                        min_rvol = pm_config.get("min_rvol", 3.0)
+                        min_score = pm_config.get("min_score", 60)
                         if allowed:
                             approved = [s for s in approved if s.get("strategy") in allowed]
+                        # Quality gate: reject weak signals in thin premarket liquidity
+                        pre_filtered = []
+                        for sig in approved:
+                            if sig.get("action") != "buy":
+                                pre_filtered.append(sig)
+                                continue
+                            sig_rvol = sig.get("rvol", 0)
+                            sig_score = sig.get("score", 0)
+                            if sig_rvol < min_rvol or sig_score < min_score:
+                                log.info(
+                                    f"PREMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
+                                    f"score={sig_score} (need RVOL>={min_rvol} score>={min_score})"
+                                )
+                                continue
+                            pre_filtered.append(sig)
+                        approved = pre_filtered
                         for sig in approved:
                             if sig.get("quantity"):
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
@@ -796,8 +815,26 @@ class TradingEngine:
                         pm_config = self.config.schedule_config.get("postmarket", {})
                         allowed = pm_config.get("allowed_strategies", [])
                         size_mult = pm_config.get("reduce_size_pct", 0.5)
+                        min_rvol = pm_config.get("min_rvol", 3.0)
+                        min_score = pm_config.get("min_score", 60)
                         if allowed:
                             approved = [s for s in approved if s.get("strategy") in allowed]
+                        # Quality gate: reject weak signals in thin postmarket liquidity
+                        post_filtered = []
+                        for sig in approved:
+                            if sig.get("action") != "buy":
+                                post_filtered.append(sig)
+                                continue
+                            sig_rvol = sig.get("rvol", 0)
+                            sig_score = sig.get("score", 0)
+                            if sig_rvol < min_rvol or sig_score < min_score:
+                                log.info(
+                                    f"POSTMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
+                                    f"score={sig_score} (need RVOL>={min_rvol} score>={min_score})"
+                                )
+                                continue
+                            post_filtered.append(sig)
+                        approved = post_filtered
                         for sig in approved:
                             if sig.get("quantity"):
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))

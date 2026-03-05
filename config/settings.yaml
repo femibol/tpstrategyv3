@@ -99,14 +99,18 @@ schedule:
   premarket:
     enabled: true                  # Pre-market trading enabled (catches gap plays)
     start_time: "04:00"           # 4 AM ET — full pre-market coverage per spec
-    allowed_strategies: ["momentum_runner", "rvol_momentum", "premarket_gap", "prebreakout", "rvol_scalp"]
-    reduce_size_pct: 0.70         # Use 70% of normal size
+    allowed_strategies: ["momentum_runner", "rvol_momentum", "premarket_gap"]
+    reduce_size_pct: 0.50         # Use 50% of normal size — thin liquidity, wide spreads
+    min_rvol: 3.0                 # Require 3x RVOL minimum for premarket entries
+    min_score: 60                 # Require score 60+ (higher bar for thin liquidity)
 
   postmarket:
     enabled: true                  # Post-market trading enabled (catch after-hours moves)
     end_time: "20:00"             # Trade until 8 PM ET — spec: scan until 8 PM
-    allowed_strategies: ["momentum_runner", "rvol_momentum", "rvol_scalp"]
-    reduce_size_pct: 0.60         # Use 60% size
+    allowed_strategies: ["momentum_runner", "rvol_momentum"]
+    reduce_size_pct: 0.40         # Use 40% size — AH liquidity is worst, be small
+    min_rvol: 3.0                 # Require 3x RVOL minimum for postmarket entries
+    min_score: 60                 # Require score 60+ for postmarket
 
   # --- Overnight Holding ---
   overnight:
@@ -199,16 +203,16 @@ top_gainers:
   enabled: true
   limit: 50                          # Max gainers to track per scan
   premarket:
-    min_volume: 10000                # 10K — premarket liquidity is thin
-    min_change_pct: 3.0              # 3%+ gap/move to qualify
-    min_price: 1.00                  # Floor out sub-dollar
+    min_volume: 25000                # 25K — raised from 10K, need enough liquidity to exit
+    min_change_pct: 5.0              # 5%+ gap to qualify (raised from 3% — skip weak gaps)
+    min_price: 2.00                  # Floor out sub-$2 junk in premarket
   regular:
     min_volume: 100000               # 100K — standard liquidity
     min_change_pct: 5.0              # 5%+ intraday move (the real runners)
     min_price: 2.00                  # Floor out penny stocks
   postmarket:
-    min_volume: 50000                # 50K — AH has less volume
-    min_change_pct: 3.0              # 3%+ after-hours move
+    min_volume: 75000                # 75K — raised from 50K, need real volume not ghosts
+    min_change_pct: 5.0              # 5%+ after-hours move (raised from 3% — skip noise)
     min_price: 2.00                  # Floor out penny stocks
 
 # --- Execution ---
