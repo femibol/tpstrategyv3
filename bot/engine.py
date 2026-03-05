@@ -781,13 +781,32 @@ class TradingEngine:
                     if rejected_for_rotation and len(self.positions) >= self.risk_manager.max_positions - 1:
                         self._momentum_rotation_check(rejected_for_rotation)
 
-                    # 7a. Pre-market / Post-market filtering: limit strategies and reduce size
+                    # 7a. Pre-market / Post-market filtering: limit strategies, reduce size,
+                    #     and enforce quality gate (RVOL + score minimums)
                     if getattr(self, "_in_premarket", False):
                         pm_config = self.config.schedule_config.get("premarket", {})
                         allowed = pm_config.get("allowed_strategies", [])
                         size_mult = pm_config.get("reduce_size_pct", 0.5)
+                        min_rvol = pm_config.get("min_rvol", 3.0)
+                        min_score = pm_config.get("min_score", 60)
                         if allowed:
                             approved = [s for s in approved if s.get("strategy") in allowed]
+                        # Quality gate: reject weak signals in thin premarket liquidity
+                        pre_filtered = []
+                        for sig in approved:
+                            if sig.get("action") != "buy":
+                                pre_filtered.append(sig)
+                                continue
+                            sig_rvol = sig.get("rvol", 0)
+                            sig_score = sig.get("score", 0)
+                            if sig_rvol < min_rvol or sig_score < min_score:
+                                log.info(
+                                    f"PREMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
+                                    f"score={sig_score} (need RVOL>={min_rvol} score>={min_score})"
+                                )
+                                continue
+                            pre_filtered.append(sig)
+                        approved = pre_filtered
                         for sig in approved:
                             if sig.get("quantity"):
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
@@ -796,8 +815,26 @@ class TradingEngine:
                         pm_config = self.config.schedule_config.get("postmarket", {})
                         allowed = pm_config.get("allowed_strategies", [])
                         size_mult = pm_config.get("reduce_size_pct", 0.5)
+                        min_rvol = pm_config.get("min_rvol", 3.0)
+                        min_score = pm_config.get("min_score", 60)
                         if allowed:
                             approved = [s for s in approved if s.get("strategy") in allowed]
+                        # Quality gate: reject weak signals in thin postmarket liquidity
+                        post_filtered = []
+                        for sig in approved:
+                            if sig.get("action") != "buy":
+                                post_filtered.append(sig)
+                                continue
+                            sig_rvol = sig.get("rvol", 0)
+                            sig_score = sig.get("score", 0)
+                            if sig_rvol < min_rvol or sig_score < min_score:
+                                log.info(
+                                    f"POSTMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
+                                    f"score={sig_score} (need RVOL>={min_rvol} score>={min_score})"
+                                )
+                                continue
+                            post_filtered.append(sig)
+                        approved = post_filtered
                         for sig in approved:
                             if sig.get("quantity"):
                                 sig["quantity"] = max(1, int(sig["quantity"] * size_mult))
@@ -4591,8 +4628,8 @@ class TradingEngine:
             bullish_score += 15
             reasons.append("Sector heat — macro-driven, multi-day theme")
 
-        # Verdict: 50+ = bullish enough for after-hours
-        should_hold = bullish_score >= 50
+        # Verdict: 60+ = bullish enough for after-hours (raised from 50 — be selective)
+        should_hold = bullish_score >= 60
         reason_str = " | ".join(reasons[:5])
 
         log.info(
@@ -4720,7 +4757,7 @@ class TradingEngine:
                             f"Bullish: {bullish_score}/100 | Stop: ${pos['stop_loss']:.2f} | "
                             f"{eval_reason}"
                         )
-                    elif is_momentum and bullish_score >= 50:
+                    elif is_momentum and bullish_score >= 60:
                         # RVOL momentum runner — hold into after-hours with tight stop
                         new_stop = current_price * 0.97  # 3% stop for AH
                         if new_stop > pos.get("stop_loss", 0):
@@ -4732,8 +4769,8 @@ class TradingEngine:
                             f"Bullish: {bullish_score}/100 | AH Stop: ${pos['stop_loss']:.2f} | "
                             f"{eval_reason}"
                         )
-                    elif bullish_score >= 50:
-                        # Other strategy with decent bullish score
+                    elif bullish_score >= 60:
+                        # Other strategy with strong bullish score
                         tighten = overnight_cfg.get("tighten_stop_pct", 0.025)
                         if pos["direction"] == "long":
                             new_stop = current_price * (1 - tighten)
@@ -5513,6 +5550,26 @@ class TradingEngine:
                     if pb_strat:
                         pb_strat.add_dynamic_symbols(loser_syms)
                     log.debug(f"Injected {len(loser_syms)} losers into mean reversion + scalp + pre-breakout")
+
+            # --- EARLY BIRD SCANNER: Catch accumulation BEFORE the breakout ---
+            # Detects volume ramping while price stays flat — smart money loading
+            # before retail scanners catch the move. Feeds into prebreakout strategy.
+            if self.polygon and hasattr(self.polygon, 'scan_early_birds'):
+                early_birds = self.polygon.scan_early_birds(limit=15)
+                if early_birds:
+                    eb_syms = [e["symbol"] for e in early_birds if e.get("symbol")]
+                    if eb_syms and pb_strat:
+                        pb_strat.add_dynamic_symbols(eb_syms)
+                    # Also feed into RVOL and runner — if they break out, these catch it
+                    if eb_syms and rvol_strat:
+                        rvol_strat.add_dynamic_symbols(eb_syms)
+                    if eb_syms and runner_strat:
+                        runner_strat.add_dynamic_symbols(eb_syms)
+                    eb_top = ", ".join(e["symbol"] + "(" + str(e["score"]) + ")" for e in early_birds[:3])
+                    log.info(
+                        f"EARLY BIRD: fed {len(eb_syms)} accumulation candidates into "
+                        f"prebreakout + rvol + runner | Top: {eb_top}"
+                    )
 
             # Also check for low-float post-split runners
             runners = self.get_low_float_runners()
