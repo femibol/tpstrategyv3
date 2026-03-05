@@ -755,7 +755,11 @@ class TradingEngine:
                             log.debug(f"Sector performance feed failed: {e}")
                     regime_result = self.regime_detector.detect(self.market_data)
 
-                    # 2b. Opening fade check (9:30-9:40): evaluate premarket positions
+                    # 2b. Premarket news reversal: exit if bearish news drops on held positions
+                    # OLPX pattern: entered on "beats estimates", "guidance concerns" drops later
+                    self._check_premarket_news_reversal()
+
+                    # 2c. Opening fade check (9:30-9:40): evaluate premarket positions
                     # Catches "sell the news" fades where gap stocks reverse at open
                     self._check_opening_fade()
 
@@ -1620,6 +1624,100 @@ class TradingEngine:
 
         except Exception as e:
             log.debug(f"Tick callback error for {symbol}: {e}")
+
+    def _check_premarket_news_reversal(self):
+        """Premarket News Reversal — exit positions when bearish news drops mid-premarket.
+
+        OLPX pattern: Bot enters at 6 AM on "beats estimates" (+0.97 sentiment),
+        but at 8:23 AM "guidance concerns" headline drops (-0.98 sentiment).
+        Without this check, bot holds through open and eats the -20% fade.
+
+        This method:
+        1. Scans all premarket positions for new bearish news (last 60 min)
+        2. Compares entry catalyst (bullish) vs new catalyst (bearish)
+        3. If strong bearish news contradicts original entry thesis → EXIT
+        4. If moderate bearish news → tighten stop to 1% (prepare to exit)
+
+        Only runs during premarket (before 9:30).
+        """
+        if not getattr(self, "_in_premarket", False):
+            return
+        if not self.news_feed:
+            return
+        if not self.positions:
+            return
+
+        # Run at most once per 2 minutes
+        now_et = datetime.now(self.tz)
+        reversal_key = f"reversal_{now_et.strftime('%H%M')}"
+        last_check = getattr(self, '_last_reversal_check', '')
+        # Only run on even minutes to avoid spamming
+        if now_et.minute % 2 != 0 or last_check == reversal_key:
+            return
+        self._last_reversal_check = reversal_key
+
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
+        for symbol, pos in positions_snapshot.items():
+            entry_time = pos.get("entry_time")
+            if not entry_time:
+                continue
+
+            # Only check premarket positions
+            entry_h = entry_time.hour if hasattr(entry_time, 'hour') else 0
+            if entry_h >= 10:  # Not a premarket entry
+                continue
+
+            try:
+                is_bearish, reason = self.news_feed.has_bearish_news(
+                    symbol, lookback_minutes=60
+                )
+            except Exception as e:
+                log.debug(f"News reversal check failed for {symbol}: {e}")
+                continue
+
+            if not is_bearish:
+                continue
+
+            current_price = self.market_data.get_price(symbol) if self.market_data else None
+            entry_price = pos.get("entry_price", 0)
+            if not current_price or entry_price <= 0:
+                continue
+
+            pnl_pct = (current_price - entry_price) / entry_price
+            strategy = pos.get("strategy", "unknown")
+
+            # Strong bearish reversal keywords — immediate exit
+            reason_lower = reason.lower()
+            critical_reversals = [
+                "guidance concerns", "guidance disappoints", "lowers outlook",
+                "cuts forecast", "weak outlook", "below guidance",
+                "investigation", "class action", "securities fraud",
+                "slides more than", "plunges", "tumbles",
+            ]
+            is_critical = any(kw in reason_lower for kw in critical_reversals)
+
+            if is_critical:
+                log.warning(
+                    f"NEWS REVERSAL EXIT: {symbol} — bearish news contradicts "
+                    f"entry thesis | {reason} | P&L: {pnl_pct:.1%} | "
+                    f"Strategy: {strategy} | Exiting before open"
+                )
+                self._close_position(symbol, "news_reversal",
+                    f"Premarket news reversal: {reason}")
+            else:
+                # Moderate bearish — tighten stop to 1% below current
+                if symbol in self.positions:
+                    tight_stop = current_price * 0.99
+                    old_stop = self.positions[symbol].get("stop_loss", 0)
+                    if tight_stop > old_stop:
+                        self.positions[symbol]["stop_loss"] = tight_stop
+                        log.warning(
+                            f"NEWS REVERSAL TIGHTEN: {symbol} — bearish news detected | "
+                            f"{reason} | Stop ${old_stop:.2f} → ${tight_stop:.2f} | "
+                            f"P&L: {pnl_pct:.1%}"
+                        )
 
     def _check_opening_fade(self):
         """Gap Fade Detector — evaluate premarket positions at market open.

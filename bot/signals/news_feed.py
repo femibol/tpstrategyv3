@@ -71,17 +71,22 @@ BEARISH_CATALYSTS = {
     "fda rejection": 3, "fda denied": 3, "clinical trial failed": 3,
     "earnings miss": 3, "misses estimates": 3, "revenue miss": 3,
     "cut guidance": 3, "lowers guidance": 3, "withdrawn guidance": 3,
+    "guidance concerns": 3, "guidance disappoints": 3, "weak outlook": 3,
+    "lowers outlook": 3, "cuts forecast": 3, "below guidance": 3,
     "downgraded to sell": 3, "downgrade to sell": 3, "downgraded to underperform": 3,
     "massive layoffs": 3, "major recall": 3,
     "accounting irregularities": 3, "restatement": 3,
+    "investigation against": 3, "announces investigation": 3,
+    "class action": 3, "securities fraud": 3,
 
     # Score 2 — Moderate bearish
     "miss": 2, "below expectations": 2, "disappointing": 2,
     "weak guidance": 2, "cautious outlook": 2, "headwinds": 2,
+    "slides more than": 2, "trading lower": 2, "plunges": 2, "tumbles": 2,
     "sell rating": 2, "underperform": 2, "underweight": 2,
     "price target cut": 2, "price target lowered": 2,
     "layoffs": 2, "restructuring": 2, "cost cutting": 2,
-    "recall": 2, "lawsuit": 2, "litigation": 2,
+    "recall": 2, "lawsuit": 2, "litigation": 2, "investigation": 2,
     "debt concern": 2, "downgrade": 2,
     "insider selling": 2, "insider sale": 2,
 
@@ -477,6 +482,14 @@ class NewsFeed:
                 "sec investigation", "fraud", "delisted", "going concern",
                 "cut guidance", "miss estimates", "earnings miss",
                 "downgrade to sell", "warns of losses", "withdrawal",
+                # Guidance-specific (OLPX pattern: beat earnings, cut guidance)
+                "guidance concerns", "guidance disappoints", "weak outlook",
+                "lowers outlook", "cuts forecast", "below guidance",
+                # Investigation/lawsuit (GEMI pattern)
+                "investigation against", "announces investigation",
+                "class action", "securities fraud",
+                # Price action bearish headlines
+                "slides more than", "plunges", "tumbles",
             ]
             found = [kw for kw in strong_bearish if kw in content]
             if found:
