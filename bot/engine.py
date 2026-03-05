@@ -755,6 +755,10 @@ class TradingEngine:
                             log.debug(f"Sector performance feed failed: {e}")
                     regime_result = self.regime_detector.detect(self.market_data)
 
+                    # 2b. Opening fade check (9:30-9:40): evaluate premarket positions
+                    # Catches "sell the news" fades where gap stocks reverse at open
+                    self._check_opening_fade()
+
                     # 3. Monitor existing positions (stops, targets, trailing)
                     self._monitor_positions()
 
@@ -1616,6 +1620,147 @@ class TradingEngine:
 
         except Exception as e:
             log.debug(f"Tick callback error for {symbol}: {e}")
+
+    def _check_opening_fade(self):
+        """Gap Fade Detector — evaluate premarket positions at market open.
+
+        Runs during the 9:30-9:40 transition window. Catches the OLPX pattern:
+        stock gaps on catalyst/earnings, bot enters premarket, but price fades
+        when regular session opens (sell the news, profit taking, etc.).
+
+        Checks:
+        1. Is the stock below its premarket high? (gap giving back)
+        2. Is volume surging on the sell side? (distribution, not accumulation)
+        3. Has the first opening candle closed red? (bearish confirmation)
+        4. Is the stock already below our entry? (underwater immediately)
+
+        Actions:
+        - Tighten stop aggressively for fading positions
+        - Exit immediately if stock has given back >50% of premarket gap
+        - Log fade alerts for positions that are weakening
+        """
+        now_et = datetime.now(self.tz)
+        h, m = now_et.hour, now_et.minute
+
+        # Only run 9:30-9:40 window
+        if not (h == 9 and 30 <= m <= 40):
+            return
+
+        # Only run once per minute (not every 10s cycle)
+        fade_key = f"fade_check_{now_et.strftime('%H%M')}"
+        if getattr(self, '_last_fade_check', '') == fade_key:
+            return
+        self._last_fade_check = fade_key
+
+        if not self.positions:
+            return
+
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
+        positions_to_close = []
+        positions_to_tighten = []
+
+        for symbol, pos in positions_snapshot.items():
+            entry_time = pos.get("entry_time")
+            if not entry_time:
+                continue
+
+            # Only check positions entered during premarket (before 9:30)
+            entry_h = entry_time.hour if hasattr(entry_time, 'hour') else 0
+            entry_m = entry_time.minute if hasattr(entry_time, 'minute') else 0
+            if entry_h > 9 or (entry_h == 9 and entry_m >= 30):
+                continue  # Entered during regular session, not a premarket position
+
+            entry_price = pos.get("entry_price", 0)
+            current_price = self.market_data.get_price(symbol) if self.market_data else None
+            if not current_price or entry_price <= 0:
+                continue
+
+            pnl_pct = (current_price - entry_price) / entry_price
+            strategy = pos.get("strategy", "unknown")
+
+            # Get premarket high from cached data (Polygon snapshot or IBKR)
+            pm_high = pos.get("premarket_high", 0)
+            if pm_high <= 0:
+                # Estimate from entry — assume they entered near the move
+                pm_high = entry_price * 1.02  # Conservative estimate
+
+            # How much of the premarket gap has been given back?
+            prev_close = pos.get("prev_close", 0)
+            if prev_close > 0 and pm_high > prev_close:
+                gap_size = pm_high - prev_close
+                gap_remaining = current_price - prev_close
+                gap_retained_pct = gap_remaining / gap_size if gap_size > 0 else 0
+            else:
+                gap_retained_pct = 1.0  # Can't calculate, assume holding
+
+            # Check volume character — is selling accelerating?
+            bars = self.market_data.get_bars(symbol, 5) if self.market_data else None
+            opening_red = False
+            sell_volume_surge = False
+            if bars is not None and len(bars) >= 2:
+                last_close = float(bars["close"].iloc[-1])
+                last_open = float(bars["open"].iloc[-1])
+                opening_red = last_close < last_open
+
+                # Check if volume is spiking on red candles (distribution)
+                recent_vol = float(bars["volume"].iloc[-1])
+                prev_vol = float(bars["volume"].iloc[-2]) if len(bars) >= 2 else recent_vol
+                if opening_red and recent_vol > prev_vol * 2.0:
+                    sell_volume_surge = True
+
+            # --- FADE DECISION LOGIC ---
+
+            # CRITICAL FADE: Given back >50% of gap AND underwater
+            if gap_retained_pct < 0.50 and pnl_pct < -0.01:
+                positions_to_close.append((symbol, "gap_fade_critical",
+                    f"GAP FADE: {symbol} gave back {(1 - gap_retained_pct):.0%} of premarket gap | "
+                    f"P&L: {pnl_pct:.1%} | Strategy: {strategy}"))
+                continue
+
+            # STRONG FADE: Red opening candle + underwater + sell volume surge
+            if opening_red and pnl_pct < 0 and sell_volume_surge:
+                positions_to_close.append((symbol, "opening_fade",
+                    f"OPENING FADE: {symbol} red candle + sell volume surge at open | "
+                    f"P&L: {pnl_pct:.1%} | Strategy: {strategy}"))
+                continue
+
+            # MODERATE FADE: Below entry after 9:35, tighten stop aggressively
+            if m >= 35 and pnl_pct < -0.005:
+                # Tighten stop to 1.5% below current price (vs normal 3%)
+                tight_stop = current_price * 0.985
+                current_stop = pos.get("stop_loss", 0)
+                if tight_stop > current_stop:
+                    positions_to_tighten.append((symbol, tight_stop, pnl_pct))
+
+            # WEAK FADE: Gap giving back >30%, warn and tighten
+            elif gap_retained_pct < 0.70 and pnl_pct < 0.005:
+                tight_stop = current_price * 0.98
+                current_stop = pos.get("stop_loss", 0)
+                if tight_stop > current_stop:
+                    positions_to_tighten.append((symbol, tight_stop, pnl_pct))
+
+        # Execute fade exits
+        for symbol, reason_code, msg in positions_to_close:
+            log.warning(msg)
+            self._close_position(symbol, reason_code, msg)
+
+        # Execute stop tightening
+        for symbol, new_stop, pnl_pct in positions_to_tighten:
+            if symbol in self.positions:
+                old_stop = self.positions[symbol].get("stop_loss", 0)
+                self.positions[symbol]["stop_loss"] = new_stop
+                log.warning(
+                    f"FADE TIGHTEN: {symbol} stop ${old_stop:.2f} → ${new_stop:.2f} | "
+                    f"P&L: {pnl_pct:.1%} | Opening fade protection"
+                )
+
+        if positions_to_close or positions_to_tighten:
+            log.info(
+                f"Opening fade check: {len(positions_to_close)} exits, "
+                f"{len(positions_to_tighten)} stops tightened"
+            )
 
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
@@ -2561,6 +2706,12 @@ class TradingEngine:
             f"R:R {rr}:1 | Strategy: {strategy}"
         )
 
+        # Enrich signal with prev_close from Polygon cache (for gap fade detection)
+        if not signal.get("prev_close") and self.polygon and self.polygon.enabled:
+            _pc = self.polygon._price_cache.get(symbol, {})
+            if _pc.get("prev_close"):
+                signal["prev_close"] = _pc["prev_close"]
+
         # Track position (thread-safe)
         with self._positions_lock:
             self.positions[symbol] = {
@@ -2598,6 +2749,9 @@ class TradingEngine:
                 "size_multiplier": signal.get("size_multiplier", 1.0),
                 # Sector heat: macro-driven theme play (multi-day hold, wider stops)
                 "sector_heat": signal.get("sector_heat", False),
+                # Gap fade detection data (premarket→open transition)
+                "prev_close": signal.get("prev_close", 0),
+                "premarket_high": signal.get("premarket_high", current_price),
             }
 
         # Rich notification with full trade details
