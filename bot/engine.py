@@ -864,25 +864,19 @@ class TradingEngine:
                             self._power_hour_trim()
                             self._ph_trimmed = True
 
-                        # --- POWER HOUR PHASE 2: Moon hour (3:30-3:50) ---
-                        # Aggressive entries on late-day runners with surging volume
-                        # These are the "moon" plays — stocks ripping into the close
-                        if 30 <= now_time.minute <= 50:
-                            for sig in approved:
-                                if sig.get("action") == "buy":
-                                    snap_rvol = sig.get("rvol", 0)
-                                    reason = sig.get("reason", "")
-                                    # Moon hour: high RVOL late-day runners get boosted
-                                    if snap_rvol >= 3.0:
-                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.20)
-                                        sig["reason"] = reason + " | MOON HOUR RUNNER"
-                                        log.info(
-                                            f"MOON HOUR BOOST: {sig['symbol']} RVOL={snap_rvol:.1f}x "
-                                            f"— confidence boosted to {sig['confidence']:.2f}"
-                                        )
-                                    elif snap_rvol >= 2.0:
-                                        sig["confidence"] = min(1.0, sig.get("confidence", 0.5) + 0.10)
-                                        sig["reason"] = reason + " | POWER HOUR"
+                        # --- POWER HOUR PHASE 2: Block new entries after 3:30 PM ---
+                        # Last 30 min should be for EXITS ONLY, not opening new positions.
+                        # Buying at 3:31 PM gives only minutes of price history before EOD
+                        # evaluation, creating positions with no thesis for overnight holds.
+                        if 30 <= now_time.minute <= 59:
+                            pre_filter = len(approved)
+                            approved = [sig for sig in approved if sig.get("action") != "buy"]
+                            blocked = pre_filter - len(approved)
+                            if blocked > 0:
+                                log.info(
+                                    f"LATE-DAY ENTRY BLOCK: Blocked {blocked} buy signals "
+                                    f"after 3:30 PM — exits only in final 30 min"
+                                )
 
                         # --- POWER HOUR PHASE 3: Tighten all stops (3:50+) ---
                         # Protect profits before EOD volatility
@@ -1891,7 +1885,9 @@ class TradingEngine:
         Stock is +7.5% but has investigation news → tighten trail to 0.8%
 
         MODE 2 - Dead Money Exit (OLPX pattern):
-        Stock is flat (±1%) for 2+ hours with bearish catalysts → exit to free capital.
+        Stock is flat (±2%) for 90+ minutes with bearish catalysts → exit to free capital.
+        Also exits positions flat (±2%) for 2+ hours even WITHOUT bearish news —
+        dead money is dead money regardless of news.
         OLPX: 4,700 shares at breakeven, "slides 20% on guidance concerns" —
         that capital is trapped doing nothing while bearish news hangs over it.
 
@@ -1965,18 +1961,18 @@ class TradingEngine:
 
             # ========================================================
             # MODE 2: DEAD MONEY EXIT — flat position + bearish news
-            # OLPX pattern: 4,700 shares at 0.0% for 6 hours with
+            # OLPX pattern: 4,700 shares at 0.0% for hours with
             # "slides 20% on guidance concerns" headlines.
             # Free the capital for better opportunities.
             # ========================================================
-            is_flat = abs(pnl_pct) < 0.01  # Within ±1% of entry
+            is_flat = abs(pnl_pct) < 0.02  # Within ±2% of entry (widened from ±1%)
             entry_time = pos.get("entry_time")
             held_minutes = 0
             if entry_time:
                 held_minutes = (now_et - entry_time).total_seconds() / 60
 
-            if is_flat and held_minutes >= 120 and bearish_severity >= 2:
-                # Flat for 2+ hours with bearish news → exit
+            if is_flat and held_minutes >= 90 and bearish_severity >= 2:
+                # Flat for 90+ min with bearish news → exit (was 120 min)
                 strategy = pos.get("strategy", "unknown")
                 news_exits.append((symbol,
                     f"NEWS DEAD MONEY: {symbol} flat ({pnl_pct:+.1%}) for "
@@ -1984,14 +1980,26 @@ class TradingEngine:
                     f"Strategy: {strategy} | Freeing capital"))
                 continue
 
-            # Also exit slightly underwater positions (< -0.5%) with critical news after 90 min
-            if pnl_pct < -0.005 and pnl_pct > -0.03 and held_minutes >= 90 and bearish_severity >= 3:
+            # Also exit slightly underwater positions (< -0.5%) with critical news after 60 min
+            if pnl_pct < -0.005 and pnl_pct > -0.03 and held_minutes >= 60 and bearish_severity >= 3:
                 strategy = pos.get("strategy", "unknown")
                 news_exits.append((symbol,
                     f"NEWS WEAK EXIT: {symbol} underwater ({pnl_pct:+.1%}) for "
                     f"{held_minutes:.0f}min with critical news: {reason[:60]} | "
                     f"Strategy: {strategy} | Cutting before worse"))
                 continue
+
+            # MODE 2b: DEAD MONEY (no news) — flat ±2% for 2+ hours
+            # Dead money is dead money regardless of news — free the capital
+            if is_flat and held_minutes >= 120 and not is_bearish:
+                strategy = pos.get("strategy", "unknown")
+                # Skip breakout plays — consolidation before breakout is normal
+                if not (pos.get("breakout_play") or pos.get("source") == "prebreakout"):
+                    news_exits.append((symbol,
+                        f"DEAD MONEY EXIT: {symbol} flat ({pnl_pct:+.1%}) for "
+                        f"{held_minutes:.0f}min with no catalyst | "
+                        f"Strategy: {strategy} | Freeing capital"))
+                    continue
 
             # ========================================================
             # MODE 1: PROFIT PROTECTION — profitable + bearish news
@@ -5068,6 +5076,31 @@ class TradingEngine:
             bullish_score += 15
             reasons.append("Sector heat — macro-driven, multi-day theme")
 
+        # 6. Hold duration penalty (up to -20 pts)
+        # Positions held < 1 hour have insufficient price history for overnight thesis
+        entry_time = pos.get("entry_time")
+        if entry_time:
+            held_minutes = (datetime.now(self.tz) - entry_time).total_seconds() / 60
+            if held_minutes < 30:
+                bullish_score -= 20
+                reasons.append(f"Held only {held_minutes:.0f}min — no overnight thesis")
+            elif held_minutes < 60:
+                bullish_score -= 10
+                reasons.append(f"Held only {held_minutes:.0f}min — limited price history")
+
+        # 7. Bearish news penalty (up to -15 pts)
+        # Holding overnight with active bearish catalysts is risky
+        if self.news_feed:
+            try:
+                has_bearish, news_reason = self.news_feed.has_bearish_news(
+                    symbol, lookback_minutes=120
+                )
+                if has_bearish:
+                    bullish_score -= 15
+                    reasons.append(f"Bearish news: {news_reason[:40]}")
+            except Exception:
+                pass
+
         # Verdict: 60+ = bullish enough for after-hours (raised from 50 — be selective)
         should_hold = bullish_score >= 60
         reason_str = " | ".join(reasons[:5])
@@ -5156,6 +5189,20 @@ class TradingEngine:
                     log.info(f"CRYPTO HOLD: {symbol} trades 24/7 - skipping EOD close | P&L: {pnl_pct:.1%}")
                     overnight_holds.append(symbol)
                     continue
+
+                # --- MINIMUM HOLD TIME CHECK ---
+                # Never hold overnight a position entered in the last 30 min.
+                # These have no price history to evaluate and are pure overnight gap gambles.
+                entry_time = pos.get("entry_time")
+                if entry_time:
+                    held_minutes = (datetime.now(self.tz) - entry_time).total_seconds() / 60
+                    if held_minutes < 30:
+                        positions_to_close.append(symbol)
+                        log.info(
+                            f"EOD CLOSE (too new): {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"Held only {held_minutes:.0f}min — need 30+ min for overnight"
+                        )
+                        continue
 
                 # --- SMART BULLISH EVALUATION ---
                 # Evaluate each position technically to decide hold vs close
