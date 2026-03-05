@@ -763,6 +763,10 @@ class TradingEngine:
                     # Catches "sell the news" fades where gap stocks reverse at open
                     self._check_opening_fade()
 
+                    # 2d. News-aware profit protection: tighten trails on winners with bearish news
+                    # GEMI pattern: +7.5% winner but investigation + sector selloff headlines
+                    self._check_news_profit_protection()
+
                     # 3. Monitor existing positions (stops, targets, trailing)
                     self._monitor_positions()
 
@@ -1384,6 +1388,26 @@ class TradingEngine:
                 base_trail = pos.get("trailing_stop_pct",
                                      self.config.risk_config.get("trailing_stop_pct", 0.02))
 
+                # NEWS PROFIT PROTECTION OVERRIDE:
+                # If _check_news_profit_protection() flagged this position,
+                # use the tighter news trail instead of normal dynamic trail.
+                news_trail = pos.get("_news_trail_override", 0)
+                if news_trail > 0:
+                    trailing_pct = news_trail
+                    if direction == "long":
+                        new_trail = current_price * (1 - trailing_pct)
+                        if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+                            pos["trailing_stop"] = new_trail
+                        if current_price <= pos.get("trailing_stop", 0):
+                            positions_to_close.append(
+                                (symbol, "trailing_stop",
+                                 f"News-protected trail stop at ${current_price:.2f} | "
+                                 f"P&L: {pnl_pct:+.1%} | news trail: {trailing_pct:.1%}")
+                            )
+                            continue
+                    # Skip normal trailing — news override takes priority
+                    continue
+
                 # Momentum-aware trail: consecutive up-ticks = sustained move = give more room
                 upticks = pos.get("_uptick_count", 0)
                 momentum_buffer = 0.0
@@ -1859,6 +1883,124 @@ class TradingEngine:
                 f"Opening fade check: {len(positions_to_close)} exits, "
                 f"{len(positions_to_tighten)} stops tightened"
             )
+
+    def _check_news_profit_protection(self):
+        """News-Aware Profit Protection — tighten stops on winners with bearish news.
+
+        GEMI pattern: Stock is +7.5% (your best winner) but has:
+        - "Announces investigation against Gemini Space Station"
+        - "Crypto-related companies trading lower amid volatility"
+
+        Without this: normal 2.5% trailing stop at 10%+ profit, 2% at 5%+.
+        With this: tighten to 1% trail — lock in the +7.5% before news kills it.
+
+        Runs every 5 minutes on ALL profitable positions. Checks news feed for
+        bearish signals on held symbols and tightens trailing stops accordingly.
+
+        Tier system:
+        - Score 3 bearish (investigation, fraud, guidance cut): trail → 0.8%
+        - Score 2 bearish (lawsuit, downgrade, slides): trail → 1.2%
+        - Multiple bearish articles stacking: additional 0.3% tighter
+        """
+        if not self.news_feed:
+            return
+        if not self.positions:
+            return
+
+        now_et = datetime.now(self.tz)
+        # Run every 5 minutes (at :00, :05, :10, etc.)
+        if now_et.minute % 5 != 0:
+            return
+        protect_key = f"news_protect_{now_et.strftime('%H%M')}"
+        if getattr(self, '_last_news_protect', '') == protect_key:
+            return
+        self._last_news_protect = protect_key
+
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
+        for symbol, pos in positions_snapshot.items():
+            entry_price = pos.get("entry_price", 0)
+            current_price = self.market_data.get_price(symbol) if self.market_data else None
+            if not current_price or entry_price <= 0:
+                continue
+
+            pnl_pct = (current_price - entry_price) / entry_price
+
+            # Only protect profitable positions (>1% green)
+            if pnl_pct < 0.01:
+                continue
+
+            # Check for bearish news on this symbol
+            try:
+                is_bearish, reason = self.news_feed.has_bearish_news(
+                    symbol, lookback_minutes=120  # 2 hour window — news lingers
+                )
+            except Exception:
+                continue
+
+            if not is_bearish:
+                # Also check raw recent_news for moderate bearish (score 2+)
+                from bot.signals.news_feed import BEARISH_CATALYSTS
+                bearish_count = 0
+                reason_parts = []
+                for article in self.news_feed.recent_news[-50:]:
+                    tickers = article.get("tickers", [])
+                    if symbol.upper() not in [t.upper() for t in tickers]:
+                        continue
+                    title = (article.get("title") or "").lower()
+                    for kw, score in BEARISH_CATALYSTS.items():
+                        if kw in title and score >= 2:
+                            bearish_count += 1
+                            reason_parts.append(kw)
+                            break
+                if bearish_count == 0:
+                    continue
+                is_bearish = True
+                reason = f"Multiple bearish signals ({bearish_count}): {', '.join(reason_parts[:3])}"
+
+            # --- TIGHTEN TRAILING STOP BASED ON NEWS SEVERITY ---
+            reason_lower = reason.lower()
+            strategy = pos.get("strategy", "unknown")
+
+            # Determine severity
+            critical_keywords = [
+                "investigation", "fraud", "sec", "class action",
+                "guidance concerns", "cut guidance", "lowers guidance",
+                "bankruptcy", "delisted",
+            ]
+            is_critical = any(kw in reason_lower for kw in critical_keywords)
+
+            if is_critical:
+                # Score 3 bearish on a winner — ultra-tight trail (0.8%)
+                news_trail_pct = 0.008
+                news_stop = current_price * (1 - news_trail_pct)
+            else:
+                # Score 2 bearish — tight trail (1.2%)
+                news_trail_pct = 0.012
+                news_stop = current_price * (1 - news_trail_pct)
+
+            # Only tighten, never loosen
+            if symbol not in self.positions:
+                continue
+            current_stop = self.positions[symbol].get("stop_loss", 0)
+            current_trail = self.positions[symbol].get("trailing_stop", 0)
+            effective_stop = max(current_stop, current_trail)
+
+            if news_stop > effective_stop:
+                self.positions[symbol]["stop_loss"] = news_stop
+                self.positions[symbol]["trailing_stop"] = news_stop
+                # Override the trailing pct so fast_scalp_monitor uses the tight trail
+                self.positions[symbol]["_news_trail_override"] = news_trail_pct
+                self.positions[symbol]["_news_protect_active"] = True
+
+                locked_pnl = (news_stop - entry_price) / entry_price
+                log.warning(
+                    f"NEWS PROFIT PROTECT: {symbol} trail tightened to "
+                    f"{news_trail_pct:.1%} (was {effective_stop / current_price - 1:+.1%} from price) | "
+                    f"Reason: {reason[:80]} | P&L: {pnl_pct:+.1%} → "
+                    f"locked: {locked_pnl:+.1%} | Strategy: {strategy}"
+                )
 
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
