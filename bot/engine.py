@@ -1885,22 +1885,17 @@ class TradingEngine:
             )
 
     def _check_news_profit_protection(self):
-        """News-Aware Profit Protection — tighten stops on winners with bearish news.
+        """News-Aware Position Protection — two modes:
 
-        GEMI pattern: Stock is +7.5% (your best winner) but has:
-        - "Announces investigation against Gemini Space Station"
-        - "Crypto-related companies trading lower amid volatility"
+        MODE 1 - Profit Protection (GEMI pattern):
+        Stock is +7.5% but has investigation news → tighten trail to 0.8%
 
-        Without this: normal 2.5% trailing stop at 10%+ profit, 2% at 5%+.
-        With this: tighten to 1% trail — lock in the +7.5% before news kills it.
+        MODE 2 - Dead Money Exit (OLPX pattern):
+        Stock is flat (±1%) for 2+ hours with bearish catalysts → exit to free capital.
+        OLPX: 4,700 shares at breakeven, "slides 20% on guidance concerns" —
+        that capital is trapped doing nothing while bearish news hangs over it.
 
-        Runs every 5 minutes on ALL profitable positions. Checks news feed for
-        bearish signals on held symbols and tightens trailing stops accordingly.
-
-        Tier system:
-        - Score 3 bearish (investigation, fraud, guidance cut): trail → 0.8%
-        - Score 2 bearish (lawsuit, downgrade, slides): trail → 1.2%
-        - Multiple bearish articles stacking: additional 0.3% tighter
+        Runs every 5 minutes on ALL positions.
         """
         if not self.news_feed:
             return
@@ -1919,6 +1914,8 @@ class TradingEngine:
         with self._positions_lock:
             positions_snapshot = dict(self.positions)
 
+        news_exits = []  # (symbol, reason) for dead money exits
+
         for symbol, pos in positions_snapshot.items():
             entry_price = pos.get("entry_price", 0)
             current_price = self.market_data.get_price(symbol) if self.market_data else None
@@ -1927,23 +1924,26 @@ class TradingEngine:
 
             pnl_pct = (current_price - entry_price) / entry_price
 
-            # Only protect profitable positions (>1% green)
-            if pnl_pct < 0.01:
-                continue
+            # --- Gather bearish news for this symbol ---
+            is_bearish = False
+            reason = ""
+            bearish_severity = 0  # 0=none, 2=moderate, 3=critical
 
-            # Check for bearish news on this symbol
             try:
                 is_bearish, reason = self.news_feed.has_bearish_news(
                     symbol, lookback_minutes=120  # 2 hour window — news lingers
                 )
+                if is_bearish:
+                    bearish_severity = 3  # has_bearish_news only fires on strong signals
             except Exception:
-                continue
+                pass
 
             if not is_bearish:
                 # Also check raw recent_news for moderate bearish (score 2+)
                 from bot.signals.news_feed import BEARISH_CATALYSTS
                 bearish_count = 0
                 reason_parts = []
+                max_score = 0
                 for article in self.news_feed.recent_news[-50:]:
                     tickers = article.get("tickers", [])
                     if symbol.upper() not in [t.upper() for t in tickers]:
@@ -1953,17 +1953,58 @@ class TradingEngine:
                         if kw in title and score >= 2:
                             bearish_count += 1
                             reason_parts.append(kw)
+                            max_score = max(max_score, score)
                             break
-                if bearish_count == 0:
-                    continue
-                is_bearish = True
-                reason = f"Multiple bearish signals ({bearish_count}): {', '.join(reason_parts[:3])}"
+                if bearish_count > 0:
+                    is_bearish = True
+                    bearish_severity = max_score
+                    reason = f"Bearish signals ({bearish_count}): {', '.join(reason_parts[:3])}"
 
-            # --- TIGHTEN TRAILING STOP BASED ON NEWS SEVERITY ---
+            if not is_bearish:
+                continue
+
+            # ========================================================
+            # MODE 2: DEAD MONEY EXIT — flat position + bearish news
+            # OLPX pattern: 4,700 shares at 0.0% for 6 hours with
+            # "slides 20% on guidance concerns" headlines.
+            # Free the capital for better opportunities.
+            # ========================================================
+            is_flat = abs(pnl_pct) < 0.01  # Within ±1% of entry
+            entry_time = pos.get("entry_time")
+            held_minutes = 0
+            if entry_time:
+                held_minutes = (now_et - entry_time).total_seconds() / 60
+
+            if is_flat and held_minutes >= 120 and bearish_severity >= 2:
+                # Flat for 2+ hours with bearish news → exit
+                strategy = pos.get("strategy", "unknown")
+                news_exits.append((symbol,
+                    f"NEWS DEAD MONEY: {symbol} flat ({pnl_pct:+.1%}) for "
+                    f"{held_minutes:.0f}min with bearish news: {reason[:60]} | "
+                    f"Strategy: {strategy} | Freeing capital"))
+                continue
+
+            # Also exit slightly underwater positions (< -0.5%) with critical news after 90 min
+            if pnl_pct < -0.005 and pnl_pct > -0.03 and held_minutes >= 90 and bearish_severity >= 3:
+                strategy = pos.get("strategy", "unknown")
+                news_exits.append((symbol,
+                    f"NEWS WEAK EXIT: {symbol} underwater ({pnl_pct:+.1%}) for "
+                    f"{held_minutes:.0f}min with critical news: {reason[:60]} | "
+                    f"Strategy: {strategy} | Cutting before worse"))
+                continue
+
+            # ========================================================
+            # MODE 1: PROFIT PROTECTION — profitable + bearish news
+            # GEMI pattern: +7.5% with investigation headlines.
+            # Tighten trail to lock in gains.
+            # ========================================================
+            if pnl_pct < 0.01:
+                continue  # Not profitable enough for trail tightening
+
             reason_lower = reason.lower()
             strategy = pos.get("strategy", "unknown")
 
-            # Determine severity
+            # Determine severity for trail tightening
             critical_keywords = [
                 "investigation", "fraud", "sec", "class action",
                 "guidance concerns", "cut guidance", "lowers guidance",
@@ -2001,6 +2042,11 @@ class TradingEngine:
                     f"Reason: {reason[:80]} | P&L: {pnl_pct:+.1%} → "
                     f"locked: {locked_pnl:+.1%} | Strategy: {strategy}"
                 )
+
+        # Execute dead money exits
+        for symbol, msg in news_exits:
+            log.warning(msg)
+            self._close_position(symbol, "news_dead_money", msg)
 
     def _monitor_positions(self):
         """Check stops, trailing stops, take profit, break-even, and partial exits."""
