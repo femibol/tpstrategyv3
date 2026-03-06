@@ -130,14 +130,39 @@ class IBKRBroker(BaseBroker):
             pass
 
         try:
-            self.ib = IB()
-            self.ib.connect(
-                host=self.host,
-                port=self.port,
-                clientId=self.client_id,
-                timeout=20,
-                readonly=False
-            )
+            # Try connecting; if client ID is in use, auto-increment and retry
+            max_attempts = 5
+            for attempt in range(max_attempts):
+                try:
+                    self.ib = IB()
+                    self.ib.connect(
+                        host=self.host,
+                        port=self.port,
+                        clientId=self.client_id,
+                        timeout=20,
+                        readonly=False
+                    )
+                    # Verify we're actually connected (error 326 can disconnect us)
+                    time.sleep(0.5)
+                    if self.ib.isConnected():
+                        break  # Connected successfully
+                    else:
+                        raise ConnectionError(f"Client id {self.client_id} already in use")
+                except Exception as e:
+                    err_msg = str(e).lower()
+                    if "client id" in err_msg or "already in use" in err_msg or "peer closed" in err_msg:
+                        old_id = self.client_id
+                        self.client_id += 1
+                        log.warning(f"Client ID {old_id} in use, retrying with clientId={self.client_id} (attempt {attempt + 2}/{max_attempts})")
+                        try:
+                            self.ib.disconnect()
+                        except Exception:
+                            pass
+                        time.sleep(1)  # Give TWS time to release
+                        if attempt == max_attempts - 1:
+                            raise
+                    else:
+                        raise
             self._connected = True
 
             # Quiet ib_insync's own noisy logger (Error 200, Unknown contract, etc.)
