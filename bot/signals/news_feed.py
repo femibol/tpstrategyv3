@@ -69,6 +69,7 @@ BEARISH_CATALYSTS = {
     "sec investigation": 3, "sec charges": 3, "fraud": 3,
     "bankruptcy": 3, "chapter 11": 3, "delisted": 3, "delisting": 3,
     "fda rejection": 3, "fda denied": 3, "clinical trial failed": 3,
+    "complete response letter": 3, "crl": 3,
     "earnings miss": 3, "misses estimates": 3, "revenue miss": 3,
     "cut guidance": 3, "lowers guidance": 3, "withdrawn guidance": 3,
     "guidance concerns": 3, "guidance disappoints": 3, "weak outlook": 3,
@@ -78,6 +79,21 @@ BEARISH_CATALYSTS = {
     "accounting irregularities": 3, "restatement": 3,
     "investigation against": 3, "announces investigation": 3,
     "class action": 3, "securities fraud": 3,
+    # Dilution / Offerings — small-cap killers (SHMD pattern: convertible notes = instant -10%+)
+    "convertible notes": 3, "convertible senior notes": 3,
+    "secondary offering": 3, "stock offering": 3, "share offering": 3,
+    "public offering": 3, "direct offering": 3, "registered direct": 3,
+    "shelf registration": 3, "shelf offering": 3,
+    "at-the-market offering": 3, "atm offering": 3, "atm program": 3,
+    "equity offering": 3, "mixed shelf": 3,
+    "private placement": 3, "pipe offering": 3,
+    # Lawsuits / Legal (WAL pattern: sues Jefferies)
+    "lawsuit": 3, "sues": 3, "sued": 3,
+    "loan charge": 3, "charge-off": 3, "loan dispute": 3,
+    # Short seller reports — usually devastating for small caps
+    "short report": 3, "short seller": 3,
+    "hindenburg": 3, "muddy waters": 3, "citron research": 3,
+    "iceberg research": 3, "grizzly research": 3,
 
     # Score 2 — Moderate bearish
     "miss": 2, "below expectations": 2, "disappointing": 2,
@@ -86,13 +102,25 @@ BEARISH_CATALYSTS = {
     "sell rating": 2, "underperform": 2, "underweight": 2,
     "price target cut": 2, "price target lowered": 2,
     "layoffs": 2, "restructuring": 2, "cost cutting": 2,
-    "recall": 2, "lawsuit": 2, "litigation": 2, "investigation": 2,
+    "recall": 2, "litigation": 2, "investigation": 2,
     "debt concern": 2, "downgrade": 2,
     "insider selling": 2, "insider sale": 2,
+    # Dilution-adjacent
+    "dilution": 2, "dilutive": 2, "warrant exercise": 2,
+    "reverse split": 2, "reverse stock split": 2,
+    "debt offering": 2, "notes offering": 2,
+    "raises capital": 2, "capital raise": 2,
+    # Operational
+    "contract terminated": 2, "contract lost": 2,
+    "plant closure": 2, "facility closure": 2,
+    "going concern": 2, "default": 2, "covenant breach": 2,
+    "credit downgrade": 2, "import ban": 2, "sanctions": 2,
+    "subpoena": 2, "fda warning": 2,
 
     # Score 1 — Minor bearish
     "decline": 1, "bearish": 1, "weakness": 1, "slowing": 1,
     "competition": 1, "market share loss": 1, "pressure": 1,
+    "priced offering": 1, "offering priced": 1,
 }
 
 
@@ -490,6 +518,23 @@ class NewsFeed:
                 "class action", "securities fraud",
                 "lawsuit", "sues", "sued", "litigation",
                 "loan charge", "charge-off", "loan dispute",
+                "subpoena",
+                # Dilution / Offerings (SHMD pattern: convertible notes financing = dilution trap)
+                "convertible notes", "convertible senior notes",
+                "secondary offering", "stock offering", "share offering",
+                "public offering", "direct offering", "registered direct",
+                "shelf registration", "shelf offering", "mixed shelf",
+                "at-the-market offering", "atm offering", "atm program",
+                "equity offering", "private placement", "pipe offering",
+                "dilution", "reverse split", "reverse stock split",
+                "notes offering", "capital raise",
+                # Short seller reports
+                "short report", "short seller",
+                "hindenburg", "muddy waters", "citron research",
+                "iceberg research", "grizzly research",
+                # FDA / Biotech
+                "fda rejection", "fda denied", "fda warning",
+                "clinical trial failed", "complete response letter",
                 # Analyst downgrades
                 "shares fall", "falls after", "drops after",
                 # Price action bearish headlines
