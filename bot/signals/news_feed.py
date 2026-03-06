@@ -485,9 +485,13 @@ class NewsFeed:
                 # Guidance-specific (OLPX pattern: beat earnings, cut guidance)
                 "guidance concerns", "guidance disappoints", "weak outlook",
                 "lowers outlook", "cuts forecast", "below guidance",
-                # Investigation/lawsuit (GEMI pattern)
+                # Investigation/lawsuit (GEMI pattern, WAL pattern)
                 "investigation against", "announces investigation",
                 "class action", "securities fraud",
+                "lawsuit", "sues", "sued", "litigation",
+                "loan charge", "charge-off", "loan dispute",
+                # Analyst downgrades
+                "shares fall", "falls after", "drops after",
                 # Price action bearish headlines
                 "slides more than", "plunges", "tumbles",
             ]

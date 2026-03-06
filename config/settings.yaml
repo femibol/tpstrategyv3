@@ -75,6 +75,7 @@ risk:
   min_price: 1.00                 # Floor: $1.00 — no sub-dollar junk
   scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
   # Bot rides runners past $500 if uptrend is confirmed
+  falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
 
   # --- Portfolio-Level Risk Limits ---
   # Prevents concentrated bets, runaway exposure, and unmanaged positions

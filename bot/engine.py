@@ -2502,6 +2502,25 @@ class TradingEngine:
                 )
                 return
 
+        # --- FALLING KNIFE GUARD ---
+        # Prevent buying stocks that are down significantly on the day.
+        # High RVOL on a -5%+ drop is usually bad news, not a dip-buy opportunity.
+        # (WAL pattern: stock down 13% on lawsuit news, bot saw volume spike and bought the bounce)
+        if action == "buy":
+            falling_knife_pct = self.config.settings.get("risk", {}).get("falling_knife_pct", -5.0)
+            try:
+                quote = self.market_data.get_quote(symbol) if self.market_data else None
+                if quote:
+                    day_change_pct = quote.get("change_pct", 0)
+                    if day_change_pct <= falling_knife_pct:
+                        log.warning(
+                            f"FALLING KNIFE BLOCK: {symbol} down {day_change_pct:.1f}% today — "
+                            f"skipping long entry (threshold: {falling_knife_pct}%) | Strategy: {strategy}"
+                        )
+                        return
+            except Exception as e:
+                log.debug(f"Falling knife check failed for {symbol}: {e}")
+
         # --- BEARISH NEWS CIRCUIT BREAKER ---
         # Prevent buying stocks with recent strong negative catalysts
         # (e.g., store closures, impairment charges, SEC investigation)
