@@ -375,6 +375,12 @@ class IBKRBroker(BaseBroker):
             if outside_rth:
                 order.outsideRth = True
 
+            # Override IBKR precautionary size limits for penny stocks.
+            # Without this, orders exceeding IBKR's per-symbol size limit
+            # (e.g., 500 shares for low-cap names) get stuck waiting for
+            # manual "Override and Transmit" in TWS — the API can't click that.
+            order.overridePercentageConstraints = True
+
             # Place the order
             trade = self.ib.placeOrder(contract, order)
             self.ib.sleep(1)  # Wait for order acknowledgement
@@ -514,6 +520,11 @@ class IBKRBroker(BaseBroker):
             parent_order.tif = "DAY"
             tp_order.tif = "GTC"  # Stop & target stay active until cancelled
             sl_order.tif = "GTC"
+
+            # Override IBKR precautionary size limits on all bracket legs
+            parent_order.overridePercentageConstraints = True
+            tp_order.overridePercentageConstraints = True
+            sl_order.overridePercentageConstraints = True
 
             # Place all three orders
             parent_trade = self.ib.placeOrder(contract, parent_order)
@@ -1531,6 +1542,7 @@ class IBKRBroker(BaseBroker):
                     order.tif = "DAY"
                 else:
                     order = MarketOrder(action, qty)
+                order.overridePercentageConstraints = True
                 trade = self.ib.placeOrder(contract, order)
                 self.ib.sleep(1)
                 log.info(

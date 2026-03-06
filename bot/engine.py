@@ -3243,6 +3243,7 @@ class TradingEngine:
 
         # Try to close via broker chain
         order = None
+        partial_fill_remaining = 0  # Track unfilled shares from partial fills
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
         if self.broker and self.broker.is_connected():
             order = self.broker.place_order(
@@ -3254,13 +3255,22 @@ class TradingEngine:
             )
             if order:
                 close_broker = "IBKR"
+                # Detect partial fill: IBKR may fill only some shares before timeout
+                filled = order.get("quantity", close_qty)
+                requested = order.get("requested_quantity", close_qty)
+                if filled < requested:
+                    partial_fill_remaining = requested - filled
+                    log.warning(
+                        f"PARTIAL FILL ON CLOSE: {symbol} filled {filled}/{requested} — "
+                        f"{partial_fill_remaining} shares still held. Will retry next cycle."
+                    )
                 # Mirror exit to TradersPost for dashboard visibility
                 if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
                     try:
                         mirror_result = self.tp_broker.notify_trade({
                             "symbol": symbol,
                             "action": "exit",
-                            "quantity": close_qty,
+                            "quantity": filled,
                             "price": current_price,
                             "source": "exit",
                         })
@@ -3358,30 +3368,42 @@ class TradingEngine:
 
         executed_via = close_broker
 
-        # Calculate P&L
+        # Determine actual closed quantity (may differ from pos["quantity"] on partial fills)
+        closed_qty = pos["quantity"]  # Default: full close
+        if partial_fill_remaining > 0:
+            closed_qty = pos["quantity"] - partial_fill_remaining
+
+        # Calculate P&L only on the shares actually closed
         if pos["direction"] == "long":
-            pnl = (current_price - pos["entry_price"]) * pos["quantity"]
+            pnl = (current_price - pos["entry_price"]) * closed_qty
         else:
-            pnl = (pos["entry_price"] - current_price) * pos["quantity"]
+            pnl = (pos["entry_price"] - current_price) * closed_qty
 
         self.daily_pnl += pnl
         # Update internal balance tracking
         self.current_balance += pnl
         self.peak_balance = max(self.peak_balance, self.current_balance)
 
-        log.info(
-            f"CLOSED {symbol} via {executed_via} | {reason_type} | "
-            f"P&L: ${pnl:+.2f} | {reason_msg}"
-        )
+        if partial_fill_remaining > 0:
+            log.info(
+                f"PARTIAL CLOSED {symbol} via {executed_via} | {reason_type} | "
+                f"Closed {closed_qty}/{pos['quantity']} shares | "
+                f"P&L: ${pnl:+.2f} | {partial_fill_remaining} shares remain | {reason_msg}"
+            )
+        else:
+            log.info(
+                f"CLOSED {symbol} via {executed_via} | {reason_type} | "
+                f"P&L: ${pnl:+.2f} | {reason_msg}"
+            )
 
-        pnl_pct = pnl / (pos["entry_price"] * pos["quantity"]) if pos["entry_price"] * pos["quantity"] > 0 else 0
+        pnl_pct = pnl / (pos["entry_price"] * closed_qty) if pos["entry_price"] * closed_qty > 0 else 0
         hold_time = (datetime.now(self.tz) - pos["entry_time"]) if "entry_time" in pos else None
 
         # Rich exit notification
         self.notifier.trade_exit(
             symbol=symbol,
             direction=pos["direction"],
-            qty=pos["quantity"],
+            qty=closed_qty,
             entry_price=pos["entry_price"],
             exit_price=current_price,
             pnl=pnl,
@@ -3397,7 +3419,7 @@ class TradingEngine:
             "direction": pos["direction"],
             "entry_price": pos["entry_price"],
             "exit_price": current_price,
-            "quantity": pos["quantity"],
+            "quantity": closed_qty,
             "pnl": pnl,
             "pnl_pct": pnl_pct,
             "strategy": pos.get("strategy", "unknown"),
@@ -3447,10 +3469,21 @@ class TradingEngine:
             self._update_watchlist_performance(symbol, pnl, pnl_pct)
 
         with self._positions_lock:
-            self.positions.pop(symbol, None)
+            if partial_fill_remaining > 0:
+                # Partial fill: keep position with reduced quantity for retry next cycle
+                if symbol in self.positions:
+                    self.positions[symbol]["quantity"] = partial_fill_remaining
+                    self.positions[symbol]["_partial_close_pending"] = True
+                    log.warning(
+                        f"POSITION KEPT (partial fill): {symbol} reduced to "
+                        f"{partial_fill_remaining} shares — will retry close next cycle"
+                    )
+            else:
+                # Full close: remove position entirely
+                self.positions.pop(symbol, None)
 
-        # Clean up tick-by-tick subscription for closed position
-        if self.broker and hasattr(self.broker, 'unsubscribe_tick_by_tick'):
+        # Clean up tick-by-tick subscription for closed position (only on full close)
+        if partial_fill_remaining == 0 and self.broker and hasattr(self.broker, 'unsubscribe_tick_by_tick'):
             try:
                 self.broker.unsubscribe_tick_by_tick([symbol])
             except Exception:
@@ -3458,7 +3491,8 @@ class TradingEngine:
 
         # Record exit cooldown — prevents Alpaca sync from re-adding this
         # position during settlement delay (causes duplicate exit rejections)
-        self._recently_closed[symbol] = datetime.now(self.tz)
+        if partial_fill_remaining == 0:
+            self._recently_closed[symbol] = datetime.now(self.tz)
 
     def _partial_close(self, symbol, qty_to_close, target_idx, target):
         """Close part of a position (profit taking)."""
