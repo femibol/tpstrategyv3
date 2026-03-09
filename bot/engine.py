@@ -434,6 +434,18 @@ class TradingEngine:
                         use_strategy = pos.get("strategy", "synced_from_ibkr")
                         is_overnight = False
 
+                    # Validate non-overnight positions against safety guards
+                    # (overnight holds were intentionally kept — trust the EOD decision)
+                    sync_flagged = ""
+                    if not is_overnight:
+                        blocked = self.config.risk_config.get("blocked_symbols", [])
+                        if sym.upper() in {s.upper() for s in blocked}:
+                            sync_flagged = f"blocked symbol ({sym} is on exclusion list)"
+                            log.warning(
+                                f"IBKR SYNC FLAGGED: {sym} is a blocked symbol — "
+                                f"will close on first cycle"
+                            )
+
                     self.positions[sym] = {
                         **pos,
                         "entry_time": now,
@@ -443,6 +455,7 @@ class TradingEngine:
                         "strategy": use_strategy,
                         "executed_via": pos.get("executed_via", "IBKR"),
                         "overnight_hold": is_overnight,
+                        "sync_flagged": sync_flagged,
                         "max_hold_bars": 40,
                         "bar_seconds": 300,
                         "max_hold_days": 5,
@@ -459,6 +472,18 @@ class TradingEngine:
                             f"max_overnight_positions={max_overnight}. "
                             f"Unexpected (not in overnight state): {unexpected}"
                         )
+
+                # Queue flagged positions for close on first cycle
+                flagged = [s for s, p in self.positions.items() if p.get("sync_flagged")]
+                if flagged:
+                    if not hasattr(self, '_slippage_close_queue'):
+                        self._slippage_close_queue = []
+                    self._slippage_close_queue.extend(flagged)
+                    details = [f"{s} ({self.positions[s].get('sync_flagged', '')})" for s in flagged]
+                    log.warning(
+                        f"IBKR SYNC: {len(flagged)} positions queued for close: "
+                        f"{', '.join(details)}"
+                    )
 
                 # Clean up overnight state file after successful restore
                 self._clear_overnight_state()
@@ -2562,6 +2587,42 @@ class TradingEngine:
                 f"{', '.join(sorted(force_close_symbols))}"
             )
 
+    def _validate_synced_position(self, symbol):
+        """Validate a synced position against safety guards (blocked symbols, falling knife, bearish news).
+
+        Called during broker position sync (IBKR/Alpaca startup + continuous) to ensure
+        positions that exist at the broker but were NOT entered through _execute_signal
+        still get checked. Returns (is_valid, reason) tuple.
+
+        Does NOT close invalid positions — callers decide whether to close or just flag.
+        """
+        # Blocked symbols (inverse/leveraged ETFs etc.)
+        blocked = self.config.risk_config.get("blocked_symbols", [])
+        if symbol.upper() in {s.upper() for s in blocked}:
+            return False, f"blocked symbol ({symbol} is on exclusion list)"
+
+        # Falling knife check
+        falling_knife_pct = self.config.settings.get("risk", {}).get("falling_knife_pct", -5.0)
+        try:
+            quote = self.market_data.get_quote(symbol) if self.market_data else None
+            if quote:
+                day_change_pct = quote.get("change_pct", 0)
+                if day_change_pct <= falling_knife_pct:
+                    return False, f"falling knife (down {day_change_pct:.1f}% today)"
+        except Exception:
+            pass  # Don't block syncs on quote failure — position already exists at broker
+
+        # Bearish news check
+        if self.news_feed:
+            try:
+                is_bearish, bear_reason = self.news_feed.has_bearish_news(symbol, lookback_minutes=240)
+                if is_bearish:
+                    return False, f"bearish news ({bear_reason})"
+            except Exception:
+                pass
+
+        return True, ""
+
     def _execute_signal(self, signal):
         """Execute a trading signal through broker chain (IBKR -> TradersPost fallback)."""
         symbol = signal["symbol"]
@@ -2682,11 +2743,21 @@ class TradingEngine:
                     if broker_positions and symbol in broker_positions:
                         broker_qty = broker_positions[symbol].get("quantity", 0)
                         if broker_qty > 0:
-                            log.warning(
-                                f"BROKER DUPLICATE BLOCKED: {symbol} already held at IBKR "
-                                f"({broker_qty} shares) but not in bot positions. "
-                                f"Re-syncing position."
-                            )
+                            # Validate before syncing — don't track positions that
+                            # fail safety guards (blocked symbols, falling knives, bearish news)
+                            is_valid, reject_reason = self._validate_synced_position(symbol)
+                            if not is_valid:
+                                log.warning(
+                                    f"BROKER SYNC FLAGGED: {symbol} at IBKR ({broker_qty} shares) "
+                                    f"FAILS safety check: {reject_reason}. "
+                                    f"Syncing with flag — monitor will close if stop hit."
+                                )
+                            else:
+                                log.warning(
+                                    f"BROKER DUPLICATE BLOCKED: {symbol} already held at IBKR "
+                                    f"({broker_qty} shares) but not in bot positions. "
+                                    f"Re-syncing position."
+                                )
                             # Re-sync this position into the bot
                             pos_data = broker_positions[symbol]
                             entry = pos_data.get("entry_price", pos_data.get("avg_cost", 0))
@@ -2701,7 +2772,17 @@ class TradingEngine:
                                     "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                                     "strategy": "synced_from_ibkr",
                                     "executed_via": "IBKR",
+                                    "sync_flagged": reject_reason if not is_valid else "",
                                 }
+                            # If flagged, schedule immediate close
+                            if not is_valid:
+                                if not hasattr(self, '_slippage_close_queue'):
+                                    self._slippage_close_queue = []
+                                self._slippage_close_queue.append(symbol)
+                                log.warning(
+                                    f"SYNC CLOSE QUEUED: {symbol} — will close on next cycle "
+                                    f"({reject_reason})"
+                                )
                             return
                 except Exception as e:
                     log.debug(f"Broker duplicate check failed: {e}")
@@ -4349,6 +4430,15 @@ class TradingEngine:
                 is_crypto = any(symbol.upper().endswith(s) for s in ["-USD", "-USDT"])
                 stop_pct = 0.05 if is_crypto else self.config.risk_config.get("stop_loss_pct", 0.03)
                 tp_pct = 0.08 if is_crypto else self.config.risk_config.get("take_profit_pct", 0.20)
+
+                # Validate synced position against safety guards
+                is_valid, reject_reason = self._validate_synced_position(symbol)
+                if not is_valid:
+                    log.warning(
+                        f"ALPACA SYNC FLAGGED: {symbol} fails safety check: {reject_reason}. "
+                        f"Will close on first cycle."
+                    )
+
                 self.positions[symbol] = {
                     "symbol": symbol,
                     "direction": side,
@@ -4360,6 +4450,7 @@ class TradingEngine:
                     "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                     "strategy": "synced_from_alpaca",
                     "executed_via": "Alpaca",
+                    "sync_flagged": reject_reason if not is_valid else "",
                     "max_hold_bars": 40,
                     "bar_seconds": 300,
                     "max_hold_days": 5,  # Synced positions: 5-day default hold limit
@@ -4374,6 +4465,18 @@ class TradingEngine:
                 log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
             else:
                 log.info("Alpaca reports 0 open positions")
+
+            # Queue flagged positions for close on first cycle
+            flagged = [s for s, p in self.positions.items() if p.get("sync_flagged")]
+            if flagged:
+                if not hasattr(self, '_slippage_close_queue'):
+                    self._slippage_close_queue = []
+                self._slippage_close_queue.extend(flagged)
+                details = [f"{s} ({self.positions[s].get('sync_flagged', '')})" for s in flagged]
+                log.warning(
+                    f"ALPACA SYNC: {len(flagged)} positions queued for close: "
+                    f"{', '.join(details)}"
+                )
 
             # --- POSITION CAP ENFORCEMENT ---
             # If broker has more positions than max_positions, flag the weakest
@@ -4473,6 +4576,8 @@ class TradingEngine:
                             log.error(f"Failed to auto-cover short {sym}: {e}")
                         continue
 
+                    # Validate against safety guards before syncing
+                    is_valid, reject_reason = self._validate_synced_position(sym)
                     self.positions[sym] = {
                         "symbol": sym,
                         "direction": side,
@@ -4484,11 +4589,19 @@ class TradingEngine:
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                         "strategy": "synced_from_alpaca",
                         "executed_via": "Alpaca",
+                        "sync_flagged": reject_reason if not is_valid else "",
                         "max_hold_bars": 40,
                         "bar_seconds": 300,
                         "max_hold_days": 5,
                     }
-                    log.info(f"POSITION SYNC: Added missing {sym} from Alpaca broker to bot tracking")
+                    if not is_valid:
+                        log.warning(
+                            f"POSITION SYNC FLAGGED: {sym} fails safety check: {reject_reason}. "
+                            f"Closing immediately."
+                        )
+                        self._close_position(sym, "sync_safety_reject", reject_reason)
+                    else:
+                        log.info(f"POSITION SYNC: Added missing {sym} from Alpaca broker to bot tracking")
 
             # Find phantom positions (in bot but not at broker)
             phantoms = []
