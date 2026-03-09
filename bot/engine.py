@@ -3,6 +3,7 @@ Core Trading Engine - The brain of the operation.
 Runs the main event loop, coordinates strategies, risk, and execution.
 Fully automated, no-touch operation.
 """
+import json
 import os
 import time
 import threading
@@ -143,6 +144,11 @@ class TradingEngine:
         self.analysis_log = []
         self.max_analysis_log = 200
 
+        # Overnight hold state persistence — survives bot restarts
+        self._overnight_state_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "overnight_holds.json"
+        )
+
         # Timezone
         self.tz = pytz.timezone(self.config.timezone)
         self._in_premarket = False
@@ -187,7 +193,8 @@ class TradingEngine:
             )
 
         # Polygon.io — scanning + fallback data source
-        self.polygon = PolygonScanner(self.config.polygon_api_key)
+        blocked_symbols = self.config.risk_config.get("blocked_symbols", [])
+        self.polygon = PolygonScanner(self.config.polygon_api_key, blocked_symbols=blocked_symbols)
 
         # Market data feed (IBKR primary, Polygon fallback, Yahoo last resort)
         self.market_data = MarketDataFeed(self.config, self.broker, polygon=self.polygon)
@@ -350,6 +357,20 @@ class TradingEngine:
             raw_positions = self.broker.get_positions()
             if raw_positions:
                 now = datetime.now(self.tz)
+
+                # Load persisted overnight hold state (if any)
+                overnight_state = self._load_overnight_state()
+                overnight_syms = {}  # {symbol: saved_pos_data}
+                if overnight_state:
+                    for item in overnight_state.get("overnight_holds", []):
+                        overnight_syms[item["symbol"]] = item
+                    for item in overnight_state.get("afterhours_holds", []):
+                        overnight_syms[item["symbol"]] = item
+                    log.info(
+                        f"IBKR SYNC: Loaded overnight state — "
+                        f"{len(overnight_syms)} held positions: {list(overnight_syms.keys())}"
+                    )
+
                 # Check for pending sell orders at IBKR to avoid syncing
                 # positions that are in the process of being closed
                 pending_sell_symbols = set()
@@ -395,18 +416,53 @@ class TradingEngine:
 
                     stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
                     tp_pct = self.config.risk_config.get("take_profit_pct", 0.20)
+
+                    # Restore overnight hold metadata if this symbol was held overnight
+                    saved = overnight_syms.get(sym)
+                    if saved:
+                        use_stop = saved.get("stop_loss") or pos.get("stop_loss", entry * (1 - stop_pct))
+                        use_tp = saved.get("take_profit") or pos.get("take_profit", entry * (1 + tp_pct))
+                        use_strategy = saved.get("strategy") or pos.get("strategy", "overnight_hold")
+                        is_overnight = True
+                        log.info(
+                            f"IBKR SYNC: {sym} restored from overnight state — "
+                            f"strategy={use_strategy} stop=${use_stop:.2f} tp=${use_tp:.2f}"
+                        )
+                    else:
+                        use_stop = pos.get("stop_loss", entry * (1 - stop_pct))
+                        use_tp = pos.get("take_profit", entry * (1 + tp_pct))
+                        use_strategy = pos.get("strategy", "synced_from_ibkr")
+                        is_overnight = False
+
                     self.positions[sym] = {
                         **pos,
                         "entry_time": now,
-                        "stop_loss": pos.get("stop_loss", entry * (1 - stop_pct)),
-                        "take_profit": pos.get("take_profit", entry * (1 + tp_pct)),
+                        "stop_loss": use_stop,
+                        "take_profit": use_tp,
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
-                        "strategy": pos.get("strategy", "synced_from_ibkr"),
+                        "strategy": use_strategy,
                         "executed_via": pos.get("executed_via", "IBKR"),
+                        "overnight_hold": is_overnight,
                         "max_hold_bars": 40,
                         "bar_seconds": 300,
                         "max_hold_days": 5,
                     }
+
+                # Check: if we have more positions than max_overnight and overnight state exists,
+                # flag unexpected positions (synced but NOT in overnight state) for review
+                max_overnight = self.config.schedule_config.get("overnight", {}).get("max_overnight_positions", 3)
+                if overnight_state and len(self.positions) > max_overnight:
+                    unexpected = [s for s in self.positions if s not in overnight_syms]
+                    if unexpected:
+                        log.warning(
+                            f"IBKR SYNC: {len(self.positions)} positions exceed "
+                            f"max_overnight_positions={max_overnight}. "
+                            f"Unexpected (not in overnight state): {unexpected}"
+                        )
+
+                # Clean up overnight state file after successful restore
+                self._clear_overnight_state()
+
                 # Add signal cooldown for all synced symbols to prevent re-entry
                 # if a strategy generates a signal before the next cycle
                 for sym in self.positions:
@@ -2557,6 +2613,15 @@ class TradingEngine:
                 )
                 return
 
+        # --- BLOCKED SYMBOL GUARD ---
+        # Block inverse/leveraged ETFs and other excluded symbols from all entry sources.
+        # Going long SQQQ in a long-only momentum bot is directionally contradictory.
+        if action == "buy":
+            blocked = self.config.risk_config.get("blocked_symbols", [])
+            if symbol.upper() in {s.upper() for s in blocked}:
+                log.warning(f"BLOCKED SYMBOL: {symbol} is on the exclusion list — skipping entry")
+                return
+
         # --- FALLING KNIFE GUARD ---
         # Prevent buying stocks that are down significantly on the day.
         # High RVOL on a -5%+ drop is usually bad news, not a dip-buy opportunity.
@@ -2798,10 +2863,14 @@ class TradingEngine:
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
         # PRE-ORDER SLIPPAGE CHECK: reject stale signals BEFORE placing the order.
-        # Catches cases like signal at $21.21 but market already at $24.00 in premarket.
+        # Uses the SAME threshold as post-fill slippage check (max_slippage_pct) to prevent
+        # the enter-then-immediately-exit loop: if the price has already moved beyond what
+        # we'd accept as fill slippage, don't place the order at all.
+        # (Previously used 2x, but that created a gap where 0.8-1.6% deviation would pass
+        # pre-check then fail post-fill check, guaranteeing a double-slippage loss.)
         if action == "buy":
             signal_price = signal.get("price", 0)
-            max_pre_slippage = self.config.risk_config.get("max_slippage_pct", 0.008) * 2  # 2x normal slippage
+            max_pre_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
             if signal_price > 0 and current_price > 0:
                 pre_slippage = abs(current_price - signal_price) / signal_price
                 if pre_slippage > max_pre_slippage:
@@ -5238,6 +5307,70 @@ class TradingEngine:
 
         return should_hold, reason_str, bullish_score
 
+    def _save_overnight_state(self, overnight_holds, afterhours_holds):
+        """Persist overnight hold decisions to disk so restarts respect the max limit."""
+        try:
+            state = {
+                "date": datetime.now(self.tz).strftime("%Y-%m-%d"),
+                "overnight_holds": [],
+                "afterhours_holds": [],
+            }
+            for sym in overnight_holds:
+                pos = self.positions.get(sym, {})
+                state["overnight_holds"].append({
+                    "symbol": sym,
+                    "entry_price": pos.get("entry_price", 0),
+                    "stop_loss": pos.get("stop_loss", 0),
+                    "take_profit": pos.get("take_profit", 0),
+                    "strategy": pos.get("strategy", ""),
+                    "quantity": pos.get("quantity", 0),
+                })
+            for sym in afterhours_holds:
+                pos = self.positions.get(sym, {})
+                state["afterhours_holds"].append({
+                    "symbol": sym,
+                    "entry_price": pos.get("entry_price", 0),
+                    "stop_loss": pos.get("stop_loss", 0),
+                    "take_profit": pos.get("take_profit", 0),
+                    "strategy": pos.get("strategy", ""),
+                    "quantity": pos.get("quantity", 0),
+                })
+            os.makedirs(os.path.dirname(self._overnight_state_file), exist_ok=True)
+            with open(self._overnight_state_file, "w") as f:
+                json.dump(state, f, indent=2)
+            log.info(f"Saved overnight state: {len(overnight_holds)} overnight, {len(afterhours_holds)} AH")
+        except Exception as e:
+            log.error(f"Failed to save overnight state: {e}")
+
+    def _load_overnight_state(self):
+        """Load overnight hold state from disk. Returns None if no valid state for today."""
+        try:
+            if not os.path.exists(self._overnight_state_file):
+                return None
+            with open(self._overnight_state_file, "r") as f:
+                state = json.load(f)
+            # Only use state from today or yesterday (overnight holds are one-day affairs)
+            state_date = state.get("date", "")
+            today = datetime.now(self.tz).strftime("%Y-%m-%d")
+            yesterday = (datetime.now(self.tz) - timedelta(days=1)).strftime("%Y-%m-%d")
+            # Weekend: Friday holds are valid on Monday
+            days_back = (datetime.now(self.tz).date() - datetime.strptime(state_date, "%Y-%m-%d").date()).days
+            if days_back > 3:  # More than a long weekend — stale
+                log.info(f"Overnight state from {state_date} is stale ({days_back} days old) — ignoring")
+                return None
+            return state
+        except Exception as e:
+            log.warning(f"Failed to load overnight state: {e}")
+            return None
+
+    def _clear_overnight_state(self):
+        """Remove overnight state file after positions are synced."""
+        try:
+            if os.path.exists(self._overnight_state_file):
+                os.remove(self._overnight_state_file)
+        except Exception:
+            pass
+
     def _end_of_day(self):
         """End of day routine with smart position evaluation.
 
@@ -5465,6 +5598,10 @@ class TradingEngine:
                     f"(will be re-evaluated for overnight hold at 6 PM)",
                     level="info"
                 )
+
+            # Persist overnight state to disk so restarts respect the hold list
+            if overnight_holds or afterhours_holds:
+                self._save_overnight_state(overnight_holds, afterhours_holds)
 
         # Calculate daily stats
         wins = [t for t in self.daily_trades if t.get("pnl", 0) > 0]

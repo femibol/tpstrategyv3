@@ -77,6 +77,41 @@ risk:
   # Bot rides runners past $500 if uptrend is confirmed
   falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
 
+  # --- Blocked Symbols ---
+  # Inverse and leveraged ETFs that appear as "gainers" but are directionally wrong
+  # for a long-only momentum bot (going long SQQQ = betting against Nasdaq)
+  blocked_symbols:
+    - "SQQQ"   # 3x inverse Nasdaq
+    - "TQQQ"   # 3x leveraged Nasdaq (extreme slippage risk)
+    - "SOXS"   # 3x inverse semiconductors
+    - "SOXL"   # 3x leveraged semiconductors
+    - "SPXS"   # 3x inverse S&P 500
+    - "SPXU"   # 3x inverse S&P 500
+    - "SDOW"   # 3x inverse Dow
+    - "LABD"   # 3x inverse biotech
+    - "LABU"   # 3x leveraged biotech
+    - "UVXY"   # 1.5x leveraged VIX
+    - "SVXY"   # 0.5x inverse VIX
+    - "VIXY"   # VIX short-term futures
+    - "UVIX"   # 2x leveraged VIX
+    - "SH"     # 1x inverse S&P 500
+    - "SDS"    # 2x inverse S&P 500
+    - "PSQ"    # 1x inverse Nasdaq
+    - "QID"    # 2x inverse Nasdaq
+    - "DOG"    # 1x inverse Dow
+    - "DXD"    # 2x inverse Dow
+    - "TZA"    # 3x inverse Russell 2000
+    - "SRTY"   # 3x inverse Russell 2000
+    - "FAZ"    # 3x inverse financials
+    - "ERY"    # 2x inverse energy
+    - "DUST"   # 2x inverse gold miners
+    - "GDXD"   # 2x inverse gold miners
+    - "JDST"   # 2x inverse junior gold miners
+    - "YANG"   # 3x inverse China
+    - "DRIP"   # 2x inverse S&P Oil & Gas E&P
+    - "WEBS"   # 3x inverse Dow
+    - "HIBS"   # 3x inverse high beta
+
   # --- Portfolio-Level Risk Limits ---
   # Prevents concentrated bets, runaway exposure, and unmanaged positions
   portfolio_limits:
