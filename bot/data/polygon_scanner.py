@@ -41,11 +41,12 @@ class PolygonScanner:
     # Rate limit: free tier = 5/min, starter = 100/min
     MIN_INTERVAL = 15  # seconds between full scans (4/min, within free tier)
 
-    def __init__(self, api_key):
+    def __init__(self, api_key, blocked_symbols=None):
         self.api_key = api_key
         self.enabled = bool(api_key)
         self._client = None
         self._last_scan_time = 0
+        self._blocked_symbols = set(s.upper() for s in (blocked_symbols or []))
         self._cached_movers = []
         self._cached_runners = []
         self._cached_gap_ups = []
@@ -165,6 +166,10 @@ class PolygonScanner:
 
                 sym = t.ticker or ""
                 if not sym or "." in sym or len(sym) > 5:
+                    continue
+
+                # Block inverse/leveraged ETFs and other excluded symbols
+                if sym.upper() in self._blocked_symbols:
                     continue
 
                 ticker_count += 1
