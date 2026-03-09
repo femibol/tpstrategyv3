@@ -2626,6 +2626,7 @@ class TradingEngine:
         # Prevent buying stocks that are down significantly on the day.
         # High RVOL on a -5%+ drop is usually bad news, not a dip-buy opportunity.
         # (WAL pattern: stock down 13% on lawsuit news, bot saw volume spike and bought the bounce)
+        # FAIL-CLOSED: if we can't get a quote, block the entry rather than letting it through.
         if action == "buy":
             falling_knife_pct = self.config.settings.get("risk", {}).get("falling_knife_pct", -5.0)
             try:
@@ -2638,16 +2639,25 @@ class TradingEngine:
                             f"skipping long entry (threshold: {falling_knife_pct}%) | Strategy: {strategy}"
                         )
                         return
+                else:
+                    log.warning(
+                        f"FALLING KNIFE BLOCK (no quote): {symbol} — cannot verify day change, "
+                        f"blocking entry as precaution | Strategy: {strategy}"
+                    )
+                    return
             except Exception as e:
-                log.debug(f"Falling knife check failed for {symbol}: {e}")
+                log.warning(f"FALLING KNIFE BLOCK (error): {symbol} — quote check failed ({e}), blocking entry")
+                return
 
         # --- BEARISH NEWS CIRCUIT BREAKER ---
         # Prevent buying stocks with recent strong negative catalysts
-        # (e.g., store closures, impairment charges, SEC investigation)
-        # High RVOL on BAD news is a trap, not a setup
+        # (e.g., store closures, impairment charges, SEC investigation, class action lawsuits)
+        # High RVOL on BAD news is a trap, not a setup.
+        # Uses 4-hour lookback: class action / SEC headlines are often published hours before
+        # the bot sees the symbol on the scanner (RGNX pattern: lawsuits at 13:00, entry at 15:42)
         if action == "buy" and self.news_feed:
             try:
-                is_bearish, bear_reason = self.news_feed.has_bearish_news(symbol, lookback_minutes=30)
+                is_bearish, bear_reason = self.news_feed.has_bearish_news(symbol, lookback_minutes=240)
                 if is_bearish:
                     log.warning(
                         f"NEWS BLOCK: {symbol} rejected — bearish catalyst detected | "

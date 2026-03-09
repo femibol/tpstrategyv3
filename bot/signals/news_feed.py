@@ -453,7 +453,7 @@ class NewsFeed:
         """Get generated signals."""
         return self.signals_generated[-limit:]
 
-    def has_bearish_news(self, symbol, lookback_minutes=30):
+    def has_bearish_news(self, symbol, lookback_minutes=240):
         """Check if a symbol has recent bearish news that should block entry.
 
         Returns (is_bearish, reason_str) tuple.
@@ -462,18 +462,18 @@ class NewsFeed:
 
         Args:
             symbol: Ticker to check
-            lookback_minutes: How far back to check (default 30 min)
+            lookback_minutes: How far back to check (default 240 min / 4 hours).
+                Previously 30 min, but class action lawsuits and SEC announcements
+                are often published hours before the bot evaluates the symbol.
 
         Returns:
             (bool, str): (True if bearish news found, description of bearish catalyst)
         """
-        if not self.signals_generated:
-            return False, ""
-
         from datetime import datetime, timedelta
         cutoff = datetime.now() - timedelta(minutes=lookback_minutes)
 
-        for sig in reversed(self.signals_generated):
+        # Check signals_generated first (if any exist)
+        for sig in reversed(self.signals_generated) if self.signals_generated else []:
             sig_sym = sig.get("symbol", "")
             if sig_sym.upper() != symbol.upper():
                 continue
