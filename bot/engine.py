@@ -1282,19 +1282,49 @@ class TradingEngine:
                         f"NO PRICE for {symbol} — stops NOT monitored! "
                         f"({stale_count} consecutive misses)"
                     )
+                # SAFETY NET: Force-close after 5 minutes of no price data.
+                # A "look away" system MUST close positions it cannot monitor.
+                # 100 misses × 3 seconds = 5 minutes of blindness.
+                if stale_count >= 100:
+                    log.error(
+                        f"STALE PRICE WATCHDOG: {symbol} has had NO price data for "
+                        f"{stale_count * 3}s (~5 min). Force-closing to prevent "
+                        f"unmonitored risk."
+                    )
+                    positions_to_close.append(
+                        (symbol, "stale_price_watchdog",
+                         f"No price data for {stale_count * 3}s — cannot monitor stops")
+                    )
                 continue
             pos["_no_price_count"] = 0
 
             # --- ENTRY GRACE PERIOD ---
-            # Don't allow exits within 30 seconds of entry. This prevents:
+            # Don't allow TRAILING STOP exits within 30 seconds of entry. This prevents:
             # 1. Sell-before-fill race conditions (order just placed)
             # 2. Immediate scalp trail triggers from stale prices
             # 3. False stops from bid/ask spread noise right after entry
+            # BUT: Hard stop-loss exits ARE allowed during grace period.
+            # A stock crashing through the hard stop must be exited immediately.
             entry_time = pos.get("entry_time")
+            in_grace_period = False
             if entry_time:
                 seconds_held = (now_ts - entry_time).total_seconds()
                 if seconds_held < 30:
-                    continue  # Skip — position too fresh for exit evaluation
+                    # Check hard stop even during grace period — emergency exit
+                    stop_price = pos.get("stop_loss")
+                    if stop_price and current_price <= stop_price:
+                        log.warning(
+                            f"GRACE PERIOD EMERGENCY EXIT: {symbol} hit hard stop "
+                            f"${stop_price:.2f} at ${current_price:.2f} within "
+                            f"{seconds_held:.0f}s of entry"
+                        )
+                        positions_to_close.append(
+                            (symbol, "stop_loss",
+                             f"Hard stop hit during grace period at ${current_price:.2f}")
+                        )
+                        continue
+                    in_grace_period = True
+                    continue  # Skip trailing/profit exits — position too fresh
 
             entry_price = pos["entry_price"]
             direction = pos.get("direction", "long")
@@ -1349,7 +1379,9 @@ class TradingEngine:
                     continue
 
             # --- INTRA-CANDLE PARTIAL PROFIT TAKING (every 3 seconds) ---
-            if pt_enabled and pos["quantity"] > 1:
+            # Skip partials for tiny positions (≤3 shares) — not enough shares
+            # to meaningfully scale out. Let trailing stop manage the full exit.
+            if pt_enabled and pos["quantity"] > 3:
                 targets_hit = pos.get("targets_hit", [])
                 for i, target in enumerate(pt_targets):
                     if i in targets_hit:
@@ -1359,9 +1391,10 @@ class TradingEngine:
                         close_pct = target.get("close_pct", 0.25)
                         qty_to_close = max(1, int(pos["quantity"] * close_pct))
 
-                        # Don't close everything via partial - leave at least 1
-                        if qty_to_close >= pos["quantity"]:
-                            qty_to_close = pos["quantity"] - 1
+                        # Don't close everything via partial - leave at least 2
+                        # so trailing stop can still manage the remainder
+                        if qty_to_close >= pos["quantity"] - 1:
+                            qty_to_close = pos["quantity"] - 2
 
                         if qty_to_close > 0:
                             partial_exits.append((symbol, qty_to_close, i, target))
@@ -2821,6 +2854,30 @@ class TradingEngine:
             log.warning(f"No price for {symbol} - skipping signal")
             return
 
+        # STALE SIGNAL AGE GUARD — reject signals older than 60 seconds.
+        # In fast-moving momentum stocks, a signal from even 30s ago can be
+        # dangerously stale. This prevents entering on outdated analysis.
+        signal_generated = signal.get("generated_at") or signal.get("time")
+        if signal_generated and action == "buy":
+            try:
+                if isinstance(signal_generated, str):
+                    from dateutil.parser import parse as parse_dt
+                    signal_dt = parse_dt(signal_generated)
+                    if signal_dt.tzinfo is None:
+                        signal_dt = signal_dt.replace(tzinfo=self.tz)
+                else:
+                    signal_dt = signal_generated
+                signal_age_secs = (now - signal_dt).total_seconds()
+                max_signal_age = 60  # seconds
+                if signal_age_secs > max_signal_age:
+                    log.warning(
+                        f"STALE SIGNAL REJECT: {symbol} signal is {signal_age_secs:.0f}s old "
+                        f"(max {max_signal_age}s) — momentum may have reversed"
+                    )
+                    return
+            except Exception:
+                pass  # If we can't parse the time, proceed with price checks
+
         # STALE PRICE GUARD — reject if live price has moved too far from signal price.
         # Prevents entering with outdated stops/targets (e.g. signal at $46 but price now $49).
         signal_price = signal.get("price", 0)
@@ -3495,8 +3552,32 @@ class TradingEngine:
                     partial_fill_remaining = requested - filled
                     log.warning(
                         f"PARTIAL FILL ON CLOSE: {symbol} filled {filled}/{requested} — "
-                        f"{partial_fill_remaining} shares still held. Will retry next cycle."
+                        f"{partial_fill_remaining} shares still held. Retrying immediately."
                     )
+                    # IMMEDIATE RETRY: Don't wait for next cycle — close remainder now
+                    import time
+                    time.sleep(1)  # Brief pause for order book to settle
+                    retry_order = self.broker.place_order(
+                        symbol=symbol,
+                        action=action,
+                        quantity=partial_fill_remaining,
+                        order_type="MARKET",
+                        outside_rth=outside_rth,
+                    )
+                    if retry_order:
+                        retry_filled = retry_order.get("quantity", 0)
+                        if retry_filled >= partial_fill_remaining:
+                            log.info(
+                                f"PARTIAL FILL RETRY SUCCESS: {symbol} remaining "
+                                f"{partial_fill_remaining} shares filled"
+                            )
+                            partial_fill_remaining = 0
+                        else:
+                            partial_fill_remaining -= retry_filled
+                            log.warning(
+                                f"PARTIAL FILL RETRY: {symbol} filled {retry_filled} more, "
+                                f"{partial_fill_remaining} still remain"
+                            )
                 # Mirror exit to TradersPost for dashboard visibility
                 if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
                     try:
@@ -3559,7 +3640,31 @@ class TradingEngine:
                 try:
                     tp_result = self.tp_broker.send_signal(close_signal)
                     if tp_result and tp_result.get("success"):
-                        close_broker = "TradersPost"
+                        # VERIFY: TradersPost can return success but silently reject.
+                        # Wait briefly then confirm position is actually closed at broker.
+                        import time
+                        time.sleep(2)  # Give TP time to execute
+                        still_exists = self._alpaca_position_exists(symbol)
+                        if still_exists is True:
+                            log.error(
+                                f"TP EXIT VERIFICATION FAILED: {symbol} still exists at "
+                                f"Alpaca after TradersPost 'success'. Retrying via Alpaca direct."
+                            )
+                            retry_result = self._close_via_alpaca(symbol)
+                            if retry_result and retry_result.get("success"):
+                                close_broker = "Alpaca-Direct-Retry"
+                            else:
+                                log.error(f"Alpaca retry also failed for {symbol}")
+                        elif still_exists is False:
+                            close_broker = "TradersPost"
+                        else:
+                            # API check failed — trust TP result as best we can
+                            close_broker = "TradersPost"
+                    elif tp_result and tp_result.get("rejected"):
+                        log.warning(
+                            f"TradersPost REJECTED exit for {symbol}: {tp_result.get('response', '')} "
+                            f"— position may not exist at TP"
+                        )
                 except Exception as e:
                     log.error(f"TradersPost fallback close exception for {symbol}: {e}")
 
