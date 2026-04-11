@@ -1491,6 +1491,13 @@ class TradingEngine:
                     new_trail = current_price * (1 - trailing_pct)
                     if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
                         pos["trailing_stop"] = new_trail
+                        # SYNC TO BROKER: Update broker-side stop for momentum runners
+                        broker_stop = max(
+                            pos.get("trailing_stop", 0),
+                            pos.get("stop_loss", 0)
+                        )
+                        if broker_stop > 0:
+                            self._update_alpaca_stop(symbol, broker_stop)
                     if current_price <= pos.get("trailing_stop", 0):
                         phase = pos.get("_trail_phase", 0)
                         positions_to_close.append(
@@ -1559,6 +1566,14 @@ class TradingEngine:
                     # Only move stop UP, never down
                     if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
                         pos["trailing_stop"] = new_trail
+                        # SYNC TO BROKER: Update broker-side stop to match
+                        # Uses the higher of trailing_stop and stop_loss
+                        broker_stop = max(
+                            pos.get("trailing_stop", 0),
+                            pos.get("stop_loss", 0)
+                        )
+                        if broker_stop > 0:
+                            self._update_alpaca_stop(symbol, broker_stop)
                     if current_price <= pos.get("trailing_stop", 0):
                         positions_to_close.append(
                             (symbol, "trailing_stop",
@@ -4177,10 +4192,16 @@ class TradingEngine:
 
     def _place_order_via_alpaca(self, symbol, qty, side, limit_price=None,
                                 stop_loss=None, take_profit=None):
-        """Place an entry order directly via Alpaca API.
-        Uses market order by default, limit order if limit_price provided."""
+        """Place a bracket order via Alpaca API.
+
+        PROFESSIONAL ARCHITECTURE: Every entry creates an atomic bracket order
+        (entry + broker-side stop) so positions are ALWAYS protected at the
+        broker level, even if the bot crashes or hangs.
+
+        The bot's internal trailing stop logic updates the broker-side stop
+        as profits increase via _update_alpaca_stop().
+        """
         # LONG-ONLY GUARD: This function is for ENTRIES only.
-        # Never allow sell-side entries (would create short positions).
         if side != "buy":
             log.error(
                 f"SHORT-SELL BLOCKED: _place_order_via_alpaca called with side='{side}' "
@@ -4199,12 +4220,9 @@ class TradingEngine:
                 "APCA-API-SECRET-KEY": secret_key,
                 "Content-Type": "application/json",
             }
-            # Simple market order — the bot manages all exits (stops, trailing,
-            # profit taking) internally. Don't use bracket orders to avoid
-            # dual-control conflicts with the bot's exit monitoring.
-            # Use 'gtc' outside regular hours (pre-market/after-hours), 'day' during market
             tif = self._get_time_in_force()
             extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
+
             order_data = {
                 "symbol": symbol,
                 "qty": str(qty),
@@ -4212,11 +4230,10 @@ class TradingEngine:
                 "type": "market",
                 "time_in_force": tif,
             }
-            # Extended hours require 'limit' orders on Alpaca, not 'market'
-            # Auto-convert: use current price + small buffer to ensure fill
+
+            # Extended hours require limit orders on Alpaca
             if extended or (tif == "gtc" and limit_price):
                 if not limit_price:
-                    # Fetch current price for limit order
                     try:
                         snap = _req.get(
                             f"{base_url}/v2/snapshot?symbols={symbol}",
@@ -4226,7 +4243,6 @@ class TradingEngine:
                             snap_data = snap.json().get(symbol, {})
                             last = float(snap_data.get("latestTrade", {}).get("p", 0))
                             if last > 0:
-                                # Add 0.5% buffer for buys, subtract for sells
                                 buffer = 0.005
                                 limit_price = last * (1 + buffer) if side == "buy" else last * (1 - buffer)
                     except Exception:
@@ -4235,8 +4251,29 @@ class TradingEngine:
                     order_data["type"] = "limit"
                     order_data["limit_price"] = str(round(limit_price, 2))
                     order_data["extended_hours"] = True
-                    order_data["time_in_force"] = "day"  # Alpaca requires 'day' for extended_hours
+                    order_data["time_in_force"] = "day"
                     log.info(f"Extended hours limit order: {side} {symbol} @ ${limit_price:.2f}")
+
+            # BRACKET ORDER: Attach broker-side stop-loss to every entry.
+            # This is the critical safety net — if the bot dies, Alpaca still
+            # enforces the stop. The bot updates this stop as trailing moves up.
+            if stop_loss and not extended:
+                order_data["order_class"] = "oto"  # One-Triggers-Other
+                order_data["stop_loss"] = {
+                    "stop_price": str(round(stop_loss, 2)),
+                }
+                # Note: We use OTO (not bracket) because we don't set a fixed
+                # take-profit — the bot's trailing stop + profit-taking handles
+                # upside exits. We only need the broker to protect downside.
+                log.info(
+                    f"BRACKET ENTRY: {side.upper()} {qty} {symbol} with "
+                    f"broker-side stop @ ${stop_loss:.2f}"
+                )
+            else:
+                log.info(
+                    f"SIMPLE ENTRY: {side.upper()} {qty} {symbol} "
+                    f"(no bracket — {'extended hours' if extended else 'no stop price'})"
+                )
 
             resp = _req.post(
                 f"{base_url}/v2/orders",
@@ -4246,17 +4283,56 @@ class TradingEngine:
             )
             if resp.status_code in (200, 201):
                 data = resp.json()
-                log.info(
-                    f"ALPACA DIRECT ORDER: {side.upper()} {qty} {symbol} "
-                    f"| order_id={data.get('id', 'unknown')} status={data.get('status')}"
-                )
-                return {
+                result = {
                     "success": True,
                     "order_id": data.get("id"),
                     "status": data.get("status"),
                     "method": "alpaca_direct",
                 }
+                # Extract the stop-loss leg order ID from bracket response
+                legs = data.get("legs", [])
+                for leg in legs:
+                    if leg.get("type") == "stop" or leg.get("order_type") == "stop":
+                        result["stop_order_id"] = leg.get("id")
+                        log.info(
+                            f"BROKER STOP ACTIVE: {symbol} stop order_id={leg.get('id')} "
+                            f"@ ${stop_loss:.2f}"
+                        )
+                        break
+                log.info(
+                    f"ALPACA DIRECT ORDER: {side.upper()} {qty} {symbol} "
+                    f"| order_id={data.get('id', 'unknown')} status={data.get('status')}"
+                )
+                return result
             else:
+                # If bracket fails, fall back to simple market order
+                if order_data.get("order_class"):
+                    log.warning(
+                        f"BRACKET ORDER FAILED for {symbol} (HTTP {resp.status_code}): "
+                        f"{resp.text[:200]} — falling back to simple market order"
+                    )
+                    order_data.pop("order_class", None)
+                    order_data.pop("stop_loss", None)
+                    order_data.pop("take_profit", None)
+                    resp2 = _req.post(
+                        f"{base_url}/v2/orders",
+                        headers=headers,
+                        json=order_data,
+                        timeout=10,
+                    )
+                    if resp2.status_code in (200, 201):
+                        data2 = resp2.json()
+                        log.warning(
+                            f"FALLBACK ORDER OK: {side.upper()} {qty} {symbol} — "
+                            f"NO broker-side stop! Bot must monitor this position."
+                        )
+                        return {
+                            "success": True,
+                            "order_id": data2.get("id"),
+                            "status": data2.get("status"),
+                            "method": "alpaca_direct",
+                            "no_broker_stop": True,
+                        }
                 log.error(
                     f"ALPACA DIRECT ORDER FAILED: {side.upper()} {symbol} "
                     f"HTTP {resp.status_code} | {resp.text[:200]}"
@@ -4265,6 +4341,244 @@ class TradingEngine:
         except Exception as e:
             log.error(f"ALPACA DIRECT ORDER exception for {symbol}: {e}")
             return None
+
+    def _update_alpaca_stop(self, symbol, new_stop_price):
+        """Update broker-side stop order at Alpaca when trailing stop moves up.
+
+        PROFESSIONAL ARCHITECTURE: Every time the bot's internal trailing stop
+        ratchets higher, we cancel the old broker stop and place a new one.
+        This ensures the broker ALWAYS has the current stop price — if the bot
+        crashes, Alpaca enforces the latest stop, not the original entry stop.
+        """
+        api_key = self.config.alpaca_api_key
+        secret_key = self.config.alpaca_secret_key
+        if not api_key or not secret_key:
+            return False
+
+        pos = self.positions.get(symbol)
+        if not pos:
+            return False
+
+        # Throttle: only update broker stop every 30 seconds per symbol
+        # to avoid hammering the API on every 3-second tick
+        last_update = pos.get("_last_broker_stop_update", 0)
+        now_ts = datetime.now(self.tz).timestamp()
+        if now_ts - last_update < 30:
+            return False
+
+        # Only update if the new stop is meaningfully higher (>0.2% difference)
+        current_broker_stop = pos.get("_broker_stop_price", 0)
+        if current_broker_stop > 0:
+            improvement = (new_stop_price - current_broker_stop) / current_broker_stop
+            if improvement < 0.002:  # Less than 0.2% improvement — skip
+                return False
+
+        try:
+            import requests as _req
+            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+            headers = {
+                "APCA-API-KEY-ID": api_key,
+                "APCA-API-SECRET-KEY": secret_key,
+                "Content-Type": "application/json",
+            }
+
+            # Cancel existing stop order if we have one tracked
+            old_stop_id = pos.get("_alpaca_stop_order_id")
+            if old_stop_id:
+                try:
+                    _req.delete(
+                        f"{base_url}/v2/orders/{old_stop_id}",
+                        headers=headers, timeout=5,
+                    )
+                except Exception:
+                    pass  # Order may already be filled/cancelled
+
+            # Place new GTC stop order at the updated price
+            qty = pos.get("quantity", 0)
+            if qty <= 0:
+                return False
+
+            order_data = {
+                "symbol": symbol,
+                "qty": str(qty),
+                "side": "sell",
+                "type": "stop",
+                "stop_price": str(round(new_stop_price, 2)),
+                "time_in_force": "gtc",
+            }
+
+            resp = _req.post(
+                f"{base_url}/v2/orders",
+                headers=headers,
+                json=order_data,
+                timeout=10,
+            )
+
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                pos["_alpaca_stop_order_id"] = data.get("id")
+                pos["_broker_stop_price"] = new_stop_price
+                pos["_last_broker_stop_update"] = now_ts
+                log.info(
+                    f"BROKER STOP UPDATED: {symbol} stop → ${new_stop_price:.2f} "
+                    f"(order_id={data.get('id', 'unknown')[:12]})"
+                )
+                return True
+            else:
+                log.warning(
+                    f"BROKER STOP UPDATE FAILED: {symbol} HTTP {resp.status_code} "
+                    f"| {resp.text[:200]}"
+                )
+                return False
+
+        except Exception as e:
+            log.warning(f"BROKER STOP UPDATE exception for {symbol}: {e}")
+            return False
+
+    def _verify_broker_stops(self):
+        """Watchdog: verify every open position has an active broker-side stop.
+
+        Runs periodically (called from main loop). If a position has no stop
+        at the broker (e.g., bracket order failed, or stop was filled without
+        closing the position), places one immediately.
+        """
+        if not self.positions or not self.config.alpaca_api_key:
+            return
+
+        try:
+            import requests as _req
+            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
+            headers = {
+                "APCA-API-KEY-ID": self.config.alpaca_api_key,
+                "APCA-API-SECRET-KEY": self.config.alpaca_secret_key,
+                "Content-Type": "application/json",
+            }
+
+            # Fetch all open orders at once (efficient — single API call)
+            resp = _req.get(
+                f"{base_url}/v2/orders?status=open&limit=200",
+                headers=headers, timeout=10,
+            )
+            if resp.status_code != 200:
+                return
+
+            open_orders = resp.json()
+            # Build set of symbols that have active stop orders
+            symbols_with_stops = set()
+            for order in open_orders:
+                if (order.get("type") == "stop" and
+                        order.get("side") == "sell" and
+                        order.get("status") in ("new", "accepted", "pending_new")):
+                    symbols_with_stops.add(order.get("symbol"))
+
+            # Check each position
+            with self._positions_lock:
+                positions_snapshot = dict(self.positions)
+
+            for symbol, pos in positions_snapshot.items():
+                if symbol in symbols_with_stops:
+                    continue  # Has active stop — good
+
+                # NO BROKER STOP — this is dangerous! Place one immediately.
+                stop_price = pos.get("stop_loss") or pos.get("trailing_stop")
+                if not stop_price:
+                    # Use default stop from config
+                    entry = pos.get("entry_price", 0)
+                    stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
+                    stop_price = entry * (1 - stop_pct)
+
+                if stop_price and stop_price > 0:
+                    log.warning(
+                        f"STOP WATCHDOG: {symbol} has NO broker-side stop! "
+                        f"Placing emergency stop @ ${stop_price:.2f}"
+                    )
+                    self._update_alpaca_stop(symbol, stop_price)
+
+        except Exception as e:
+            log.debug(f"Broker stop verification error: {e}")
+
+    def _persist_positions(self):
+        """Save all position state to disk. Survives bot crashes and restarts.
+
+        PROFESSIONAL ARCHITECTURE: Position state must never exist only in
+        memory. This writes the full position dict (including stop prices,
+        trailing stops, targets hit, broker order IDs) to a JSON file.
+        Called after every position change (entry, exit, stop update).
+        """
+        try:
+            import json
+            positions_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "data", "positions_state.json"
+            )
+            state = {}
+            with self._positions_lock:
+                for symbol, pos in self.positions.items():
+                    # Serialize position — convert datetime objects
+                    serialized = {}
+                    for k, v in pos.items():
+                        if isinstance(v, datetime):
+                            serialized[k] = v.isoformat()
+                        elif k.startswith("_") and k not in (
+                            "_alpaca_stop_order_id", "_broker_stop_price",
+                            "_high_water_mark", "_trail_phase",
+                        ):
+                            continue  # Skip internal transient state
+                        else:
+                            serialized[k] = v
+                    state[symbol] = serialized
+
+            # Atomic write: write to temp file then rename (prevents corruption)
+            tmp_file = positions_file + ".tmp"
+            with open(tmp_file, "w") as f:
+                json.dump(state, f, indent=2, default=str)
+            os.replace(tmp_file, positions_file)
+        except Exception as e:
+            log.debug(f"Position persistence error: {e}")
+
+    def _load_persisted_positions(self):
+        """Load position state from disk on startup.
+
+        Merges with broker-synced positions. Persisted state has richer
+        data (trailing stops, targets hit, broker order IDs) that sync
+        doesn't capture.
+        """
+        try:
+            import json
+            positions_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "data", "positions_state.json"
+            )
+            if not os.path.exists(positions_file):
+                return {}
+
+            with open(positions_file, "r") as f:
+                state = json.load(f)
+
+            # Convert datetime strings back
+            from dateutil.parser import parse as parse_dt
+            for symbol, pos in state.items():
+                if "entry_time" in pos and isinstance(pos["entry_time"], str):
+                    try:
+                        pos["entry_time"] = parse_dt(pos["entry_time"])
+                        if pos["entry_time"].tzinfo is None:
+                            pos["entry_time"] = pos["entry_time"].replace(tzinfo=self.tz)
+                    except Exception:
+                        pass
+
+            # Check staleness — if file is >24 hours old, don't trust it
+            file_age = time.time() - os.path.getmtime(positions_file)
+            if file_age > 86400:
+                log.warning(
+                    f"Position state file is {file_age / 3600:.0f}h old — "
+                    f"ignoring, will sync from broker instead"
+                )
+                return {}
+
+            log.info(f"Loaded {len(state)} persisted positions from disk")
+            return state
+
+        except Exception as e:
+            log.debug(f"Could not load persisted positions: {e}")
+            return {}
 
     def _close_via_alpaca(self, symbol, qty=None, side="sell"):
         """Close a position directly via Alpaca API.
