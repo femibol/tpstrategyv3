@@ -1089,6 +1089,29 @@ class TradingEngine:
                             f"(merged duplicate symbols)"
                         )
                     for sig in deduped:
+                        # CLAUDE PRE-TRADE VALIDATION: Ask Claude if we should
+                        # take this trade based on recent performance and context.
+                        if (sig.get("action") == "buy" and
+                                self.ai_insights and self.ai_insights.is_available()):
+                            try:
+                                claude_verdict = self._claude_pre_trade(sig)
+                                if claude_verdict and claude_verdict.get("skip"):
+                                    log.info(
+                                        f"CLAUDE SKIP: {sig['symbol']} — "
+                                        f"{claude_verdict.get('reason', 'AI rejected')}"
+                                    )
+                                    continue
+                                if claude_verdict and claude_verdict.get("reduce_size"):
+                                    old_qty = sig.get("quantity", 0)
+                                    sig["quantity"] = max(1, int(old_qty * 0.5))
+                                    log.info(
+                                        f"CLAUDE REDUCE: {sig['symbol']} qty "
+                                        f"{old_qty} → {sig['quantity']} — "
+                                        f"{claude_verdict.get('reason', '')}"
+                                    )
+                            except Exception as e:
+                                log.debug(f"Claude pre-trade error: {e}")
+
                         self._execute_signal(sig)
                         # Record regime context for learning
                         if self.trade_analyzer and regime_result:
@@ -3106,12 +3129,13 @@ class TradingEngine:
                         self._pending_orders.discard(symbol)
                         return
 
-        # 1. Try IBKR (primary broker)
+        # === IBKR-ONLY EXECUTION (Professional Architecture) ===
+        # Single broker, single source of truth. No fallback chain = no sync bugs.
+        # If IBKR is not connected, we DON'T trade. Period.
+        # Bracket orders place a server-side stop at IBKR that survives crashes.
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
 
-            # Use MARKET for entries — MIDPRICE sits unfilled on fast-moving
-            # momentum stocks, then MKT sells create accidental short positions
             if action == "buy":
                 order = self.broker.place_order(
                     symbol=symbol,
@@ -3123,9 +3147,7 @@ class TradingEngine:
                     take_profit=take_profit_price,
                 )
             else:
-                # This path should never be reached in long-only mode
-                # (sell/short blocked above, exits routed to _close_position)
-                log.error(f"UNEXPECTED: Non-buy action '{action}' reached IBKR execution for {symbol}")
+                log.error(f"UNEXPECTED: Non-buy action '{action}' reached execution for {symbol}")
                 self._pending_orders.discard(symbol)
                 return
 
@@ -3137,138 +3159,21 @@ class TradingEngine:
                         f"SL: ${stop_loss_price:.2f} | TP: ${take_profit_price:.2f} "
                         f"(managed by IBKR server-side)"
                     )
-                # Mirror to TradersPost for dashboard visibility
-                if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
-                    try:
-                        mirror_result = self.tp_broker.notify_trade({
-                            "symbol": symbol,
-                            "action": action,
-                            "quantity": qty,
-                            "price": current_price,
-                            "strategy": strategy,
-                        })
-                        if mirror_result and mirror_result.get("success"):
-                            log.info(f"TP MIRROR OK: {action.upper()} {symbol} mirrored to TradersPost")
-                        else:
-                            log.warning(
-                                f"TP MIRROR FAILED: {action.upper()} {symbol} — "
-                                f"result: {mirror_result}"
-                            )
-                    except Exception as e:
-                        log.warning(f"TP MIRROR EXCEPTION: {action.upper()} {symbol} — {e}")
             else:
-                log.warning(f"IBKR order failed for {symbol} - falling through to TradersPost")
-        else:
-            log.debug(f"IBKR not connected - trying TradersPost for {symbol}")
-
-        # 2. TradersPost webhook (fallback when IBKR unavailable)
-        # Alpaca pre-checks only needed for non-IBKR brokers (TradersPost routes to Alpaca)
-        if not order and action == "buy" and (self.tp_broker or self.config.alpaca_api_key):
-            try:
-                broker_positions = self._alpaca_api_call("/v2/positions")
-                if isinstance(broker_positions, list):
-                    actual_count = len(broker_positions)
-                    if actual_count >= self.risk_manager.max_positions:
-                        log.error(
-                            f"HARD LIMIT: Alpaca has {actual_count} positions "
-                            f"(max {self.risk_manager.max_positions}). BLOCKING {symbol}."
-                        )
-                        self._pending_orders.discard(symbol)
-                        return
-                    broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
-                    if symbol.upper() in broker_symbols:
-                        log.warning(f"DUPLICATE BLOCKED: {symbol} already open at Alpaca.")
-                        if symbol not in self.positions:
-                            self._sync_positions_from_alpaca()
-                        self._pending_orders.discard(symbol)
-                        return
-                    account = self._alpaca_api_call("/v2/account")
-                    if isinstance(account, dict):
-                        buying_power = float(account.get("buying_power", 0))
-                        order_cost = current_price * qty
-                        if order_cost > buying_power:
-                            log.error(f"INSUFFICIENT BUYING POWER: {symbol} ${order_cost:,.2f} > ${buying_power:,.2f}. BLOCKING.")
-                            self._pending_orders.discard(symbol)
-                            return
-            except Exception as e:
-                log.warning(f"Alpaca pre-check error: {e} — proceeding (risk manager approved)")
-
-        if not order and self.tp_broker:
-            log.info(f"Sending {action.upper()} {symbol} to TradersPost webhook...")
-            tp_signal = {
-                **signal,
-                "quantity": qty,
-                "price": current_price,
-                "stop_loss": stop_loss_price,
-                "take_profit": take_profit_price,
-            }
-            try:
-                tp_result = self.tp_broker.send_signal(tp_signal)
-                if tp_result and tp_result.get("success"):
-                    order = {
-                        "order_id": f"tp_{int(datetime.now(self.tz).timestamp())}",
-                        "symbol": symbol,
-                        "action": action,
-                        "quantity": qty,
-                        "status": "sent_to_traderspost",
-                    }
-                    executed_via = "TradersPost"
-                    log.info(f"TradersPost accepted {action.upper()} {symbol} (status {tp_result.get('status_code')})")
-                else:
-                    log.warning(
-                        f"TradersPost REJECTED {action.upper()} {symbol}: "
-                        f"status={tp_result.get('status_code') if tp_result else 'None'} "
-                        f"response={tp_result.get('response', 'no response') if tp_result else 'send_signal returned None'}"
-                    )
-            except Exception as e:
-                log.error(f"TradersPost exception for {symbol}: {e}")
-
-        # 3. Alpaca direct order (fallback when TradersPost rejects/unavailable)
-        if not order and self.config.alpaca_api_key:
-            # LONG-ONLY GUARD: Only buy entries via Alpaca. Never send sell-to-open.
-            if action != "buy":
                 log.error(
-                    f"LONG-ONLY BLOCKED: Refusing to send '{action}' {symbol} "
-                    f"to Alpaca as entry order — would create short position"
+                    f"IBKR order FAILED for {symbol} — not falling through to "
+                    f"other brokers. Single-broker architecture: if IBKR can't "
+                    f"execute, we skip the trade."
                 )
-                self._pending_orders.discard(symbol)
-                return
-            log.info(f"Trying Alpaca direct order for {action.upper()} {symbol}...")
-            alpaca_result = self._place_order_via_alpaca(
-                symbol=symbol, qty=qty, side="buy",
-                stop_loss=stop_loss_price, take_profit=take_profit_price,
-            )
-            if alpaca_result and alpaca_result.get("success"):
-                order_id = alpaca_result.get("order_id", f"alp_{int(datetime.now(self.tz).timestamp())}")
-                # Try to verify fill (best-effort, don't block if can't confirm)
-                filled = self._verify_order_fill(order_id, timeout=3)
-                order = {
-                    "order_id": order_id,
-                    "symbol": symbol,
-                    "action": action,
-                    "quantity": qty,
-                    "status": "filled" if filled else "submitted",
-                }
-                executed_via = "Alpaca-Direct"
-                # Use actual fill price if available
-                if isinstance(filled, dict) and filled.get("filled_avg_price"):
-                    current_price = float(filled["filled_avg_price"])
-                log.info(
-                    f"Alpaca direct {'FILLED' if filled else 'SUBMITTED'} "
-                    f"{action.upper()} {symbol} @ ${current_price:.2f}"
-                )
-            else:
-                log.error(f"Alpaca direct order also failed for {symbol}")
-
-        # 4. If ALL brokers failed, do NOT create a simulated phantom position
-        if not order:
+        else:
             log.error(
-                f"ALL BROKERS FAILED for {action.upper()} {symbol} - "
-                f"NO position created. "
-                f"IBKR={'connected' if self.broker and self.broker.is_connected() else 'disconnected'}, "
-                f"TradersPost={'configured' if self.tp_broker else 'NOT configured'}, "
-                f"Alpaca={'configured' if self.config.alpaca_api_key else 'NOT configured'}"
+                f"IBKR NOT CONNECTED — cannot execute {action.upper()} {symbol}. "
+                f"No fallback brokers in professional architecture. "
+                f"Ensure IB Gateway is running."
             )
+
+        # If IBKR failed or not connected, do NOT create phantom positions
+        if not order:
             self._pending_orders.discard(symbol)
             return
 
@@ -3596,11 +3501,23 @@ class TradingEngine:
             except Exception as e:
                 log.warning(f"Could not verify Alpaca position for {symbol}: {e}")
 
-        # Try to close via broker chain
+        # === IBKR-ONLY CLOSE (Professional Architecture) ===
+        # Single broker close. If IBKR is connected, close through it.
+        # If not connected, the server-side bracket stop is still active.
         order = None
-        partial_fill_remaining = 0  # Track unfilled shares from partial fills
+        partial_fill_remaining = 0
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
+
         if self.broker and self.broker.is_connected():
+            # Cancel any existing broker-side stop (bracket leg) before closing
+            # to avoid the stop triggering after we've already sold
+            stop_order_id = pos.get("_ibkr_stop_order_id") or pos.get("broker_stop_order_id")
+            if stop_order_id:
+                try:
+                    self.broker.cancel_order(stop_order_id)
+                except Exception:
+                    pass
+
             order = self.broker.place_order(
                 symbol=symbol,
                 action=action,
@@ -3610,7 +3527,7 @@ class TradingEngine:
             )
             if order:
                 close_broker = "IBKR"
-                # Detect partial fill: IBKR may fill only some shares before timeout
+                # Detect partial fill
                 filled = order.get("quantity", close_qty)
                 requested = order.get("requested_quantity", close_qty)
                 if filled < requested:
@@ -3619,9 +3536,8 @@ class TradingEngine:
                         f"PARTIAL FILL ON CLOSE: {symbol} filled {filled}/{requested} — "
                         f"{partial_fill_remaining} shares still held. Retrying immediately."
                     )
-                    # IMMEDIATE RETRY: Don't wait for next cycle — close remainder now
                     import time
-                    time.sleep(1)  # Brief pause for order book to settle
+                    time.sleep(1)
                     retry_order = self.broker.place_order(
                         symbol=symbol,
                         action=action,
@@ -3643,123 +3559,15 @@ class TradingEngine:
                                 f"PARTIAL FILL RETRY: {symbol} filled {retry_filled} more, "
                                 f"{partial_fill_remaining} still remain"
                             )
-                # Mirror exit to TradersPost for dashboard visibility
-                if self.tp_broker and hasattr(self.tp_broker, 'notify_trade'):
-                    try:
-                        mirror_result = self.tp_broker.notify_trade({
-                            "symbol": symbol,
-                            "action": "exit",
-                            "quantity": filled,
-                            "price": current_price,
-                            "source": "exit",
-                        })
-                        if mirror_result and mirror_result.get("success"):
-                            log.info(f"TP MIRROR OK: EXIT {symbol} mirrored to TradersPost")
-                        else:
-                            log.warning(f"TP MIRROR FAILED: EXIT {symbol} — result: {mirror_result}")
-                    except Exception as e:
-                        log.warning(f"TP MIRROR EXCEPTION: EXIT {symbol} — {e}")
-
-        if not order:
-            # Always try Alpaca direct close FIRST — Alpaca is the actual broker
-            # and source of truth.
-            alpaca_closed = False
-            alpaca_exists = self._alpaca_position_exists(symbol)  # Single API call
-
-            if alpaca_exists is True:
-                log.info(f"Closing {symbol} via Alpaca direct API...")
-                alpaca_result = self._close_via_alpaca(symbol)
-                if alpaca_result and alpaca_result.get("success"):
-                    close_broker = "Alpaca-Direct"
-                    alpaca_closed = True
-                else:
-                    log.warning(
-                        f"Alpaca direct close failed for {symbol}: {alpaca_result} "
-                        f"— trying TradersPost..."
-                    )
-            elif alpaca_exists is False:
-                # Position confirmed NOT at Alpaca — phantom, clean up internally
-                log.warning(
-                    f"PHANTOM POSITION detected: {symbol} exists in bot but NOT "
-                    f"in broker. Cleaning up internal state."
-                )
-                close_broker = "Phantom-Cleanup"
-                alpaca_closed = True
             else:
-                # alpaca_exists is None — API call failed, can't confirm
-                log.warning(
-                    f"Alpaca position check failed for {symbol} (API error) "
-                    f"— trying TradersPost fallback..."
-                )
-
-            # If Alpaca direct didn't work, try TradersPost as fallback
-            if not alpaca_closed and self.tp_broker:
-                log.info(f"Closing {symbol} via TradersPost webhook (fallback)...")
-                close_signal = {
-                    "symbol": symbol,
-                    "action": "exit",
-                    "quantity": pos["quantity"],
-                    "price": current_price,
-                    "source": "exit",
-                }
-                try:
-                    tp_result = self.tp_broker.send_signal(close_signal)
-                    if tp_result and tp_result.get("success"):
-                        # VERIFY: TradersPost can return success but silently reject.
-                        # Wait briefly then confirm position is actually closed at broker.
-                        import time
-                        time.sleep(2)  # Give TP time to execute
-                        still_exists = self._alpaca_position_exists(symbol)
-                        if still_exists is True:
-                            log.error(
-                                f"TP EXIT VERIFICATION FAILED: {symbol} still exists at "
-                                f"Alpaca after TradersPost 'success'. Retrying via Alpaca direct."
-                            )
-                            retry_result = self._close_via_alpaca(symbol)
-                            if retry_result and retry_result.get("success"):
-                                close_broker = "Alpaca-Direct-Retry"
-                            else:
-                                log.error(f"Alpaca retry also failed for {symbol}")
-                        elif still_exists is False:
-                            close_broker = "TradersPost"
-                        else:
-                            # API check failed — trust TP result as best we can
-                            close_broker = "TradersPost"
-                    elif tp_result and tp_result.get("rejected"):
-                        log.warning(
-                            f"TradersPost REJECTED exit for {symbol}: {tp_result.get('response', '')} "
-                            f"— position may not exist at TP"
-                        )
-                except Exception as e:
-                    log.error(f"TradersPost fallback close exception for {symbol}: {e}")
-
-            if not close_broker:
-                log.error(f"ALL close attempts failed for {symbol}")
-
-            # Best-effort: notify TradersPost so it can sync its state.
-            # Only send if the original position was entered via TradersPost
-            # (otherwise TradersPost has nothing to close, causing rejections).
-            if alpaca_closed and self.tp_broker and close_broker == "Alpaca-Direct":
-                if original_broker in ("TradersPost",):
-                    try:
-                        close_signal = {
-                            "symbol": symbol, "action": "exit",
-                            "quantity": pos["quantity"], "price": current_price,
-                            "source": "exit",
-                        }
-                        tp_result = self.tp_broker.send_signal(close_signal)
-                        if tp_result and tp_result.get("rejected"):
-                            log.debug(
-                                f"TradersPost sync notification for {symbol} was rejected "
-                                f"(position may already be closed at TP) — ignoring"
-                            )
-                    except Exception:
-                        pass  # Best-effort notification
-                else:
-                    log.debug(
-                        f"Skipping TradersPost sync for {symbol} — "
-                        f"original broker was {original_broker}, not TradersPost"
-                    )
+                log.error(f"IBKR close order FAILED for {symbol}")
+        else:
+            # IBKR not connected — but if we have a bracket order, the server-side
+            # stop is STILL active at IBKR. The position is protected even now.
+            log.error(
+                f"IBKR NOT CONNECTED for close of {symbol} — cannot execute exit. "
+                f"Server-side bracket stop (if placed) is still active at IBKR."
+            )
 
         # Only remove position if a broker ACTUALLY closed it this cycle
         if not close_broker:
@@ -4393,16 +4201,14 @@ class TradingEngine:
             return None
 
     def _update_alpaca_stop(self, symbol, new_stop_price):
-        """Update broker-side stop order at Alpaca when trailing stop moves up.
+        """Update broker-side stop order at IBKR when trailing stop moves up.
 
         PROFESSIONAL ARCHITECTURE: Every time the bot's internal trailing stop
         ratchets higher, we cancel the old broker stop and place a new one.
-        This ensures the broker ALWAYS has the current stop price — if the bot
-        crashes, Alpaca enforces the latest stop, not the original entry stop.
+        This ensures IBKR ALWAYS has the current stop price — if the bot
+        crashes, IBKR enforces the latest stop, not the original entry stop.
         """
-        api_key = self.config.alpaca_api_key
-        secret_key = self.config.alpaca_secret_key
-        if not api_key or not secret_key:
+        if not self.broker or not self.broker.is_connected():
             return False
 
         pos = self.positions.get(symbol)
@@ -4424,61 +4230,40 @@ class TradingEngine:
                 return False
 
         try:
-            import requests as _req
-            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-            headers = {
-                "APCA-API-KEY-ID": api_key,
-                "APCA-API-SECRET-KEY": secret_key,
-                "Content-Type": "application/json",
-            }
-
             # Cancel existing stop order if we have one tracked
-            old_stop_id = pos.get("_alpaca_stop_order_id")
+            old_stop_id = pos.get("_ibkr_stop_order_id") or pos.get("broker_stop_order_id")
             if old_stop_id:
                 try:
-                    _req.delete(
-                        f"{base_url}/v2/orders/{old_stop_id}",
-                        headers=headers, timeout=5,
-                    )
+                    self.broker.cancel_order(old_stop_id)
                 except Exception:
                     pass  # Order may already be filled/cancelled
 
-            # Place new GTC stop order at the updated price
+            # Place new GTC stop order at IBKR
             qty = pos.get("quantity", 0)
             if qty <= 0:
                 return False
 
-            order_data = {
-                "symbol": symbol,
-                "qty": str(qty),
-                "side": "sell",
-                "type": "stop",
-                "stop_price": str(round(new_stop_price, 2)),
-                "time_in_force": "gtc",
-            }
-
-            resp = _req.post(
-                f"{base_url}/v2/orders",
-                headers=headers,
-                json=order_data,
-                timeout=10,
+            result = self.broker.place_order(
+                symbol=symbol,
+                action="SELL",
+                quantity=qty,
+                order_type="STOP",
+                stop_price=new_stop_price,
+                outside_rth=True,
             )
 
-            if resp.status_code in (200, 201):
-                data = resp.json()
-                pos["_alpaca_stop_order_id"] = data.get("id")
+            if result:
+                pos["_ibkr_stop_order_id"] = result.get("order_id")
+                pos["broker_stop_order_id"] = result.get("order_id")
                 pos["_broker_stop_price"] = new_stop_price
                 pos["_last_broker_stop_update"] = now_ts
                 log.info(
                     f"BROKER STOP UPDATED: {symbol} stop → ${new_stop_price:.2f} "
-                    f"(order_id={data.get('id', 'unknown')[:12]})"
+                    f"(order_id={result.get('order_id', 'unknown')})"
                 )
                 return True
             else:
-                log.warning(
-                    f"BROKER STOP UPDATE FAILED: {symbol} HTTP {resp.status_code} "
-                    f"| {resp.text[:200]}"
-                )
+                log.warning(f"BROKER STOP UPDATE FAILED: {symbol} — IBKR returned None")
                 return False
 
         except Exception as e:
@@ -4490,35 +4275,21 @@ class TradingEngine:
 
         Runs periodically (called from main loop). If a position has no stop
         at the broker (e.g., bracket order failed, or stop was filled without
-        closing the position), places one immediately.
+        closing the position), places one immediately via IBKR.
         """
-        if not self.positions or not self.config.alpaca_api_key:
+        if not self.positions or not self.broker or not self.broker.is_connected():
             return
 
         try:
-            import requests as _req
-            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-            headers = {
-                "APCA-API-KEY-ID": self.config.alpaca_api_key,
-                "APCA-API-SECRET-KEY": self.config.alpaca_secret_key,
-                "Content-Type": "application/json",
-            }
+            # Get all open orders from IBKR
+            open_orders = self.broker.get_open_orders() if hasattr(self.broker, 'get_open_orders') else []
 
-            # Fetch all open orders at once (efficient — single API call)
-            resp = _req.get(
-                f"{base_url}/v2/orders?status=open&limit=200",
-                headers=headers, timeout=10,
-            )
-            if resp.status_code != 200:
-                return
-
-            open_orders = resp.json()
-            # Build set of symbols that have active stop orders
+            # Build set of symbols that have active SELL stop orders
             symbols_with_stops = set()
-            for order in open_orders:
-                if (order.get("type") == "stop" and
-                        order.get("side") == "sell" and
-                        order.get("status") in ("new", "accepted", "pending_new")):
+            for order in (open_orders or []):
+                if (order.get("order_type") in ("STOP", "STP") and
+                        order.get("action") == "SELL" and
+                        order.get("status") in ("Submitted", "PreSubmitted", "ApiPending")):
                     symbols_with_stops.add(order.get("symbol"))
 
             # Check each position
@@ -4532,7 +4303,6 @@ class TradingEngine:
                 # NO BROKER STOP — this is dangerous! Place one immediately.
                 stop_price = pos.get("stop_loss") or pos.get("trailing_stop")
                 if not stop_price:
-                    # Use default stop from config
                     entry = pos.get("entry_price", 0)
                     stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
                     stop_price = entry * (1 - stop_pct)
@@ -5095,6 +4865,63 @@ class TradingEngine:
                 f"Position sync complete: removed {removed} phantom(s), "
                 f"{len(self.positions)} positions remain"
             )
+
+    def _claude_pre_trade(self, signal):
+        """Ask Claude whether to take a trade based on recent performance.
+
+        Returns dict:
+          {"skip": True, "reason": "..."} — don't take the trade
+          {"reduce_size": True, "reason": "..."} — take it but smaller
+          {} — proceed normally
+        """
+        if not self.ai_insights or not self.ai_insights.is_available():
+            return {}
+
+        symbol = signal.get("symbol", "")
+        strategy = signal.get("strategy", "unknown")
+
+        # Build compact context for Claude (keep prompt small for speed)
+        recent_trades = self.trade_history[-15:] if self.trade_history else []
+        wins = sum(1 for t in recent_trades if t.get("pnl", 0) > 0)
+        losses = len(recent_trades) - wins
+        win_rate = (wins / len(recent_trades) * 100) if recent_trades else 0
+
+        # Strategy-specific performance
+        strat_trades = [t for t in recent_trades if t.get("strategy") == strategy]
+        strat_wins = sum(1 for t in strat_trades if t.get("pnl", 0) > 0)
+        strat_wr = (strat_wins / len(strat_trades) * 100) if strat_trades else 0
+
+        # Current exposure
+        open_count = len(self.positions)
+        regime = getattr(self, 'current_regime', 'unknown')
+
+        prompt = (
+            f"Quick trade decision (respond in ONE line, start with TAKE, SKIP, or REDUCE):\n"
+            f"Signal: BUY {symbol} via {strategy} @ ${signal.get('price', 0):.2f}\n"
+            f"Stop: ${signal.get('stop_loss', 0):.2f} | Target: ${signal.get('take_profit', 0):.2f}\n"
+            f"Recent: {wins}W/{losses}L ({win_rate:.0f}%) last 15 trades\n"
+            f"Strategy '{strategy}': {strat_wins}W/{len(strat_trades)-strat_wins}L ({strat_wr:.0f}%) recent\n"
+            f"Open positions: {open_count} | Regime: {regime}\n"
+            f"Confidence: {signal.get('confidence', 0):.2f} | Score: {signal.get('score', 0)}\n"
+            f"Rules: SKIP if strategy win rate <30% on 5+ trades. "
+            f"REDUCE if >7 open positions or win rate <40%. "
+            f"TAKE if setup looks solid."
+        )
+
+        try:
+            response = self.ai_insights._call_claude(prompt)
+            if not response:
+                return {}
+
+            response_upper = response.strip().upper()
+            if response_upper.startswith("SKIP"):
+                return {"skip": True, "reason": response.strip()[:200]}
+            elif response_upper.startswith("REDUCE"):
+                return {"reduce_size": True, "reason": response.strip()[:200]}
+            else:
+                return {}
+        except Exception:
+            return {}
 
     def _handle_tv_signal(self, signal):
         """Handle incoming TradingView webhook signal."""

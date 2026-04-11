@@ -221,10 +221,12 @@ crypto:
     trailing_stop_pct: 0.025
 
 # --- Data Sources ---
+# PROFESSIONAL ARCHITECTURE: IBKR is the sole data + execution source.
+# Polygon removed (delayed data). yfinance kept for reference data only (float, sector).
 data:
-  primary: "ibkr"                 # Primary: IBKR (real-time streaming + historical bars)
-  fallback: "polygon"             # Fallback: Polygon.io (scanning + prices + bars)
-  fallback2: "yfinance"           # Last resort: yfinance
+  primary: "ibkr"                 # Primary & only: IBKR (real-time streaming + scanning + bars + execution)
+  fallback: "yfinance"            # Reference data only: float, sector classification (not time-sensitive)
+  fallback2: "yfinance"           # Same — no Polygon in the chain
   bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
   scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback

@@ -1,36 +1,35 @@
 # Docker Compose: Trading Bot + IB Gateway
 #
-# The bot starts independently and connects to IB Gateway if available.
-# IB Gateway provides real-time tick data — Alpaca + Polygon handle
-# execution and data when IBKR is down.
+# PROFESSIONAL ARCHITECTURE: IBKR is the sole data + execution source.
+# IB Gateway provides real-time data, scanning, and order execution.
+# The bot manages risk, trailing stops, and Claude AI trade validation.
 #
 # Usage:
-#   Full stack (with IBKR):  docker compose up -d
-#   Bot only (no IBKR):      docker compose up -d trading-bot
-#   Dashboard:                http://YOUR_IP:5000
+#   Start:     docker compose up -d
+#   Logs:      docker compose logs -f trading-bot
+#   Dashboard: http://YOUR_IP:5000
+#   Webhook:   http://YOUR_IP:5000/webhook/tradingview
 #
-# IB Gateway ports (internal only — not exposed to internet):
-#   - 4001 = Live trading
-#   - 4002 = Paper trading
-#   - 5900 = VNC viewer (SSH tunnel for debugging)
+# IB Gateway auto-restarts daily via IBC. Weekly 2FA approval on phone.
 
 services:
   ib-gateway:
     image: ghcr.io/unusualalpha/ib-gateway:stable
     restart: unless-stopped
-    profiles: ["ibkr"]  # Only starts with: docker compose --profile ibkr up -d
     environment:
       TWS_USERID: ${IB_USERNAME}
       TWS_PASSWORD: ${IB_PASSWORD}
-      TRADING_MODE: ${IB_TRADING_MODE:-paper}  # paper or live
+      TRADING_MODE: ${IB_TRADING_MODE:-paper}
       TWS_ACCEPT_INCOMING: "yes"
       READ_ONLY_API: "no"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
       TWS_SETTINGS_PATH: /root/Jts
+      # Auto-restart after market close (no 2FA needed for daily restart)
+      IBC_AutoRestartTime: "16:15"
     ports:
-      - "127.0.0.1:4001:4001"   # Live API (localhost only — not exposed to internet)
+      - "127.0.0.1:4001:4001"   # Live API (localhost only)
       - "127.0.0.1:4002:4002"   # Paper API (localhost only)
-      - "127.0.0.1:5900:5900"   # VNC (use SSH tunnel: ssh -L 5900:localhost:5900 root@IP)
+      - "127.0.0.1:5900:5900"   # VNC debug (SSH tunnel only)
     volumes:
       - ib-gateway-data:/root/Jts
     healthcheck:
@@ -38,54 +37,45 @@ services:
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 60s  # IB Gateway takes ~45s to start
+      start_period: 60s
 
   trading-bot:
     build: .
     restart: unless-stopped
-    # No depends_on — bot starts independently, connects to IBKR if available
+    depends_on:
+      ib-gateway:
+        condition: service_healthy
     environment:
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
 
-      # IBKR — connects to ib-gateway container (optional)
-      # Bot works without IBKR using Alpaca + Polygon for data/execution
-      IBKR_HOST: ${IBKR_HOST:-ib-gateway}
+      # IBKR — sole data + execution broker
+      IBKR_HOST: ib-gateway
       IBKR_PORT: ${IBKR_PORT:-4002}  # 4002=paper, 4001=live
       IBKR_CLIENT_ID: ${IBKR_CLIENT_ID:-1}
 
-      # Market data
-      POLYGON_API_KEY: ${POLYGON_API_KEY}
-      ALPACA_API_KEY: ${ALPACA_API_KEY}
-      ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
-      ALPACA_BASE_URL: ${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
-
-      # Execution
-      TRADERSPOST_WEBHOOK_URL: ${TRADERSPOST_WEBHOOK_URL}
-      TRADERSPOST_WEBHOOK_URL_SECONDARY: ${TRADERSPOST_WEBHOOK_URL_SECONDARY}
-      TRADERSPOST_API_KEY: ${TRADERSPOST_API_KEY}
-      TRADINGVIEW_WEBHOOK_SECRET: ${TRADINGVIEW_WEBHOOK_SECRET}
+      # Claude AI — pre-trade validation + self-improvement
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
 
       # Notifications
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
 
-      # AI
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # News (optional)
+      NEWS_API_KEY: ${NEWS_API_KEY}
 
-      # Google Sheets trade logging
+      # Google Sheets trade logging (optional)
       GOOGLE_SHEETS_CREDENTIALS: ${GOOGLE_SHEETS_CREDENTIALS}
       GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID}
 
-      # News
-      NEWS_API_KEY: ${NEWS_API_KEY}
+      # TradingView webhook secret (for alert validation)
+      TRADINGVIEW_WEBHOOK_SECRET: ${TRADINGVIEW_WEBHOOK_SECRET}
 
       # Dashboard
       DASHBOARD_HOST: 0.0.0.0
       DASHBOARD_PORT: 5000
       DASHBOARD_SECRET_KEY: ${DASHBOARD_SECRET_KEY:-change-me}
     ports:
-      - "5000:5000"   # Dashboard
-      - "8080:8080"   # TradingView webhook receiver
+      - "5000:5000"   # Dashboard + TradingView webhook receiver
     volumes:
       - bot-data:/app/data
       - bot-logs:/app/logs
