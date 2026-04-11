@@ -1,22 +1,24 @@
 # Docker Compose: Trading Bot + IB Gateway
 #
-# Runs both IB Gateway (headless IBKR connection) and the trading bot
-# on a single cloud VPS. IB Gateway auto-logs in and stays connected.
+# The bot starts independently and connects to IB Gateway if available.
+# IB Gateway provides real-time tick data — Alpaca + Polygon handle
+# execution and data when IBKR is down.
 #
 # Usage:
-#   1. Copy .env.example to .env and fill in values
-#   2. docker compose up -d
-#   3. Dashboard at http://YOUR_IP:5000
+#   Full stack (with IBKR):  docker compose up -d
+#   Bot only (no IBKR):      docker compose up -d trading-bot
+#   Dashboard:                http://YOUR_IP:5000
 #
-# IB Gateway ports:
+# IB Gateway ports (internal only — not exposed to internet):
 #   - 4001 = Live trading
 #   - 4002 = Paper trading
-#   - 5900 = VNC viewer (for debugging IB Gateway GUI)
+#   - 5900 = VNC viewer (SSH tunnel for debugging)
 
 services:
   ib-gateway:
     image: ghcr.io/unusualalpha/ib-gateway:stable
     restart: unless-stopped
+    profiles: ["ibkr"]  # Only starts with: docker compose --profile ibkr up -d
     environment:
       TWS_USERID: ${IB_USERNAME}
       TWS_PASSWORD: ${IB_PASSWORD}
@@ -26,9 +28,9 @@ services:
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
       TWS_SETTINGS_PATH: /root/Jts
     ports:
-      - "4001:4001"   # Live API
-      - "4002:4002"   # Paper API
-      - "5900:5900"   # VNC (optional, for debugging)
+      - "127.0.0.1:4001:4001"   # Live API (localhost only — not exposed to internet)
+      - "127.0.0.1:4002:4002"   # Paper API (localhost only)
+      - "127.0.0.1:5900:5900"   # VNC (use SSH tunnel: ssh -L 5900:localhost:5900 root@IP)
     volumes:
       - ib-gateway-data:/root/Jts
     healthcheck:
@@ -41,15 +43,14 @@ services:
   trading-bot:
     build: .
     restart: unless-stopped
-    depends_on:
-      ib-gateway:
-        condition: service_healthy
+    # No depends_on — bot starts independently, connects to IBKR if available
     environment:
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
 
-      # IBKR — connects to ib-gateway container
-      IBKR_HOST: ib-gateway
+      # IBKR — connects to ib-gateway container (optional)
+      # Bot works without IBKR using Alpaca + Polygon for data/execution
+      IBKR_HOST: ${IBKR_HOST:-ib-gateway}
       IBKR_PORT: ${IBKR_PORT:-4002}  # 4002=paper, 4001=live
       IBKR_CLIENT_ID: ${IBKR_CLIENT_ID:-1}
 
@@ -74,6 +75,9 @@ services:
       # Google Sheets trade logging
       GOOGLE_SHEETS_CREDENTIALS: ${GOOGLE_SHEETS_CREDENTIALS}
       GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID}
+
+      # News
+      NEWS_API_KEY: ${NEWS_API_KEY}
 
       # Dashboard
       DASHBOARD_HOST: 0.0.0.0
