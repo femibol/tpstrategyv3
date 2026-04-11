@@ -6375,17 +6375,14 @@ class TradingEngine:
             return
 
         try:
-            # --- Diagnostic: log scanner state each cycle ---
-            _poly_status = f"polygon.enabled={self.polygon.enabled}" if self.polygon else "polygon=None"
-            _ibkr_status = "ibkr=connected" if (self.broker and hasattr(self.broker, 'scan_market') and self.broker.is_connected()) else "ibkr=no_scanner"
+            # --- IBKR SCANNER (Primary — real-time data) ---
+            # Professional architecture: IBKR real-time scanners are the sole
+            # discovery source. No Polygon (delayed), no Alpaca.
+            _ibkr_available = self.broker and hasattr(self.broker, 'scan_market') and self.broker.is_connected()
             _pm_flag = getattr(self, '_in_premarket', False)
-            log.info(f"Discovery scan: {_poly_status}, {_ibkr_status}, premarket={_pm_flag}")
+            log.debug(f"Discovery scan: ibkr={'connected' if _ibkr_available else 'disconnected'}, premarket={_pm_flag}")
 
-            # --- IBKR Market Scanner (fallback when Polygon is disabled) ---
-            # Uses IBKR's built-in scanner: TOP_PERC_GAIN, MOST_ACTIVE, HOT_BY_VOLUME, HIGH_OPEN_GAP
-            # Works with your existing IBKR market data subscription — no extra cost.
-            _polygon_available = self.polygon and self.polygon.enabled
-            if not _polygon_available and self.broker and hasattr(self.broker, 'scan_market') and self.broker.is_connected():
+            if _ibkr_available:
                 # Rate limit IBKR scanner: once per 30 seconds (scanner is heavier than snapshot)
                 _now = time.time()
                 _last_ibkr_scan = getattr(self, '_last_ibkr_scan_time', 0)
@@ -6467,9 +6464,10 @@ class TradingEngine:
                         f"{len(_ibkr_loser_syms)} losers"
                     )
 
-            # --- Polygon.io full-market scan (if configured) ---
-            # One call returns ALL ~10,000 stocks — catches everything Alpaca misses
-            if self.polygon and self.polygon.enabled:
+            # --- Polygon REMOVED (Professional Architecture) ---
+            # IBKR scanners above are the sole discovery source.
+            # Polygon was delayed data — removed from execution chain.
+            if False:  # Polygon code preserved but disabled
                 # During premarket, volume is thin (1K-20K typical) — lower threshold
                 # so the scanner actually finds movers instead of filtering everything out
                 if getattr(self, '_in_premarket', False):
