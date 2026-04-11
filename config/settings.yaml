@@ -70,7 +70,7 @@ risk:
   breakeven:
     enabled: true
     trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
-    buffer_pct: 0.001             # 0.1% buffer above entry — tight
+    buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
   min_volume: 500000              # 500K volume threshold — spec: avoid stocks with avg daily <500K
   min_price: 1.00                 # Floor: $1.00 — no sub-dollar junk
   scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
@@ -152,10 +152,10 @@ schedule:
   overnight:
     enabled: true                  # Allow holding overnight
     require_profit: true           # Only hold if position is in profit
-    min_profit_pct: 0.03           # Min 3% profit to hold overnight (small caps gap down hard)
+    min_profit_pct: 0.05           # Min 5% profit to hold overnight — small caps gap down hard, need bigger cushion
     require_uptrend: true          # Only hold if in uptrend (EMA fast > slow)
     tighten_stop_pct: 0.03        # 3% stop for overnight (matches stop_loss_pct; 4% was too wide)
-    max_overnight_positions: 2    # Max 2 overnight - be selective, small caps are risky overnight
+    max_overnight_positions: 1    # Max 1 overnight — be extremely selective, gaps are the biggest risk to a "look away" system
     close_losers: true            # Always close losing positions at EOD
 
 # --- Scaling Plan ---
@@ -221,10 +221,12 @@ crypto:
     trailing_stop_pct: 0.025
 
 # --- Data Sources ---
+# PROFESSIONAL ARCHITECTURE: IBKR is the sole data + execution source.
+# Polygon removed (delayed data). yfinance kept for reference data only (float, sector).
 data:
-  primary: "ibkr"                 # Primary: IBKR (real-time streaming + historical bars)
-  fallback: "polygon"             # Fallback: Polygon.io (scanning + prices + bars)
-  fallback2: "yfinance"           # Last resort: yfinance
+  primary: "ibkr"                 # Primary & only: IBKR (real-time streaming + scanning + bars + execution)
+  fallback: "yfinance"            # Reference data only: float, sector classification (not time-sensitive)
+  fallback2: "yfinance"           # Same — no Polygon in the chain
   bar_size: "5 mins"              # 5-minute bars for swing/momentum strategies
   scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback
