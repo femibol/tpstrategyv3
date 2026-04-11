@@ -503,6 +503,34 @@ class TradingEngine:
             if os.environ.get("RENDER") or self.config.alpaca_api_key:
                 self._sync_positions_from_alpaca()
 
+        # RESTORE PERSISTED STATE: Merge saved position data (trailing stops,
+        # targets hit, broker order IDs) into broker-synced positions.
+        # The broker sync gives us qty + entry price; the persisted state
+        # gives us the richer tracking data the bot needs.
+        persisted = self._load_persisted_positions()
+        if persisted:
+            with self._positions_lock:
+                for symbol, saved_pos in persisted.items():
+                    if symbol in self.positions:
+                        # Merge persisted fields into broker-synced position
+                        live_pos = self.positions[symbol]
+                        for key in ("trailing_stop", "trailing_stop_pct", "targets_hit",
+                                    "_alpaca_stop_order_id", "_broker_stop_price",
+                                    "_high_water_mark", "_trail_phase",
+                                    "breakeven_hit", "tp_trail_activated",
+                                    "momentum_runner", "entry_type", "atr_value",
+                                    "sector_heat", "source", "breakout_play"):
+                            if key in saved_pos and key not in live_pos:
+                                live_pos[key] = saved_pos[key]
+                        log.debug(f"Restored persisted state for {symbol}")
+                    elif symbol not in self.positions:
+                        # Position in saved state but not at broker — may have been
+                        # closed while bot was down. Skip it.
+                        log.info(
+                            f"Persisted position {symbol} not found at broker — "
+                            f"likely closed while bot was offline. Skipping."
+                        )
+
     def _load_strategies(self):
         """Load and initialize all enabled strategies."""
         strat_configs = {
@@ -795,6 +823,10 @@ class TradingEngine:
                 scalp_tick += 1
                 if self.positions:
                     self._fast_scalp_monitor()
+                    # Persist position state after every monitor tick (covers
+                    # stop updates, partial exits, stop moves). Atomic write
+                    # so crash mid-write won't corrupt the file.
+                    self._persist_positions()
 
                 # --- FULL CYCLE (every ~10 seconds = 3 fast ticks) ---
                 if scalp_tick >= 3:
@@ -859,6 +891,13 @@ class TradingEngine:
 
                     # 3. Monitor existing positions (stops, targets, trailing)
                     self._monitor_positions()
+
+                    # 3a. BROKER STOP WATCHDOG: verify every position has a
+                    # live stop order at Alpaca. Places emergency stops for
+                    # any unprotected positions. This is the safety net that
+                    # makes the system crash-proof.
+                    if self.positions:
+                        self._verify_broker_stops()
 
                     # 3b. Portfolio-level risk audit (concentration, exposure, max loss)
                     self._check_portfolio_risk()
@@ -3362,6 +3401,17 @@ class TradingEngine:
                 # Gap fade detection data (premarket→open transition)
                 "prev_close": signal.get("prev_close", 0),
                 "premarket_high": signal.get("premarket_high", current_price),
+                # BROKER-SIDE STOP TRACKING: These track the actual stop order
+                # at Alpaca so the bot can cancel/replace as trailing moves up.
+                # If set, the position is protected even if the bot crashes.
+                "_alpaca_stop_order_id": (
+                    alpaca_result.get("stop_order_id")
+                    if executed_via == "Alpaca-Direct" and alpaca_result else None
+                ),
+                "_broker_stop_price": stop_loss_price if (
+                    executed_via == "Alpaca-Direct" and alpaca_result
+                    and alpaca_result.get("stop_order_id")
+                ) else 0,
             }
 
         # Rich notification with full trade details
