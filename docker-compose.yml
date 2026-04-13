@@ -60,6 +60,8 @@ services:
     depends_on:
       - ib-gateway
     environment:
+      # Timezone — must be set for APScheduler (bot uses US/Eastern)
+      TZ: "America/New_York"
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
 
