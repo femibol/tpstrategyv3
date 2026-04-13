@@ -22,10 +22,17 @@ services:
       TRADING_MODE: ${IB_TRADING_MODE:-paper}
       TWS_ACCEPT_INCOMING: "yes"
       READ_ONLY_API: "no"
+      # CRITICAL: Bind API to all interfaces so docker bot can connect.
+      # Without this, API only listens on 127.0.0.1 inside container.
+      BYPASS_WARNING: "yes"
+      AUTO_RESTART_TIME: "16:15"
+      RELOGIN_AFTER_TWOFA_TIMEOUT: "yes"
+      TWOFA_TIMEOUT_ACTION: "restart"
+      TWOFA_EXIT_INTERVAL: "60"
+      # Trust all incoming API connections from docker network
+      TRUSTED_IPS: "172.16.0.0/12,10.0.0.0/8,127.0.0.1"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
       TWS_SETTINGS_PATH: /root/Jts
-      # Auto-restart after market close (no 2FA needed for daily restart)
-      IBC_AutoRestartTime: "16:15"
     ports:
       - "127.0.0.1:4001:4001"   # Live API (localhost only)
       - "127.0.0.1:4002:4002"   # Paper API (localhost only)
