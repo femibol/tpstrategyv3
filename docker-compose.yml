@@ -20,17 +20,21 @@ services:
       TWS_USERID: ${IB_USERNAME}
       TWS_PASSWORD: ${IB_PASSWORD}
       TRADING_MODE: ${IB_TRADING_MODE:-paper}
-      TWS_ACCEPT_INCOMING: "yes"
+      TWS_ACCEPT_INCOMING: "accept"
       READ_ONLY_API: "no"
-      # CRITICAL: Bind API to all interfaces so docker bot can connect.
-      # Without this, API only listens on 127.0.0.1 inside container.
       BYPASS_WARNING: "yes"
       AUTO_RESTART_TIME: "16:15"
       RELOGIN_AFTER_TWOFA_TIMEOUT: "yes"
       TWOFA_TIMEOUT_ACTION: "restart"
       TWOFA_EXIT_INTERVAL: "60"
+      # API and dialog handling
+      SAVE_TWS_SETTINGS: "Every 30 mins"
+      MINIMIZE_MAIN_WINDOW: "yes"
+      EXISTING_SESSION_DETECTED_ACTION: "primary"
       # Trust all incoming API connections from docker network
       TRUSTED_IPS: "172.16.0.0/12,10.0.0.0/8,127.0.0.1"
+      # Allow API access from container network (not just localhost)
+      BIND_API_TO_ALL: "yes"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
       TWS_SETTINGS_PATH: /root/Jts
     ports:

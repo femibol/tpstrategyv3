@@ -868,7 +868,7 @@ class TradingEngine:
 
                     # 2. Detect market regime (every cycle, uses cached data)
                     # Feed sector performance data for geopolitical regime detection
-                    if self.polygon and self.polygon.enabled and self.regime_detector:
+                    if getattr(self, "polygon", None) and self.polygon.enabled and self.regime_detector:
                         try:
                             sector_perf = self.polygon.get_sector_performance()
                             if sector_perf:
@@ -1248,7 +1248,7 @@ class TradingEngine:
                 priority_symbols.append(sym)
 
         # 2. Top movers from Polygon (sorted by change% desc — Money Machine priority)
-        if self.polygon and self.polygon.enabled:
+        if getattr(self, "polygon", None) and self.polygon.enabled:
             top_movers = self.polygon.get_top_movers(limit=50)
             for m in top_movers:
                 sym = m.get("symbol", "")
@@ -3052,7 +3052,7 @@ class TradingEngine:
 
         # Low-float guard: reduce position size for low-float stocks (< 20M shares)
         # These are more volatile and can gap violently
-        if action == "buy" and self.polygon and self.polygon.enabled:
+        if action == "buy" and getattr(self, "polygon", None) and self.polygon.enabled:
             float_shares = self.polygon.get_float(symbol)
             if float_shares > 0 and float_shares < 20_000_000:
                 # Scale down: ultra-low float (<5M) = 40% size, low float (<20M) = 60% size
@@ -3261,7 +3261,7 @@ class TradingEngine:
         )
 
         # Enrich signal with prev_close from Polygon cache (for gap fade detection)
-        if not signal.get("prev_close") and self.polygon and self.polygon.enabled:
+        if not signal.get("prev_close") and getattr(self, "polygon", None) and self.polygon.enabled:
             _pc = self.polygon._price_cache.get(symbol, {})
             if _pc.get("prev_close"):
                 signal["prev_close"] = _pc["prev_close"]
@@ -5330,7 +5330,7 @@ class TradingEngine:
 
         # Get SPY gap from Polygon snapshot
         spy_gap_pct = 0
-        if self.polygon and self.polygon.enabled:
+        if getattr(self, "polygon", None) and self.polygon.enabled:
             spy_snap = self.polygon.get_snapshot("SPY")
             if spy_snap:
                 spy_gap_pct = spy_snap.get("change_pct", 0)
@@ -5841,7 +5841,7 @@ class TradingEngine:
                     continue
 
                 # NEVER hold through earnings — gap risk is extreme
-                if self.polygon and self.polygon.enabled:
+                if getattr(self, "polygon", None) and self.polygon.enabled:
                     try:
                         if self.polygon.has_earnings_soon(symbol, days_ahead=1):
                             log.warning(
@@ -6269,7 +6269,7 @@ class TradingEngine:
         elif self.broker and self.broker.is_connected():
             source = "IBKR Historical"
             status = "connected"
-        elif self.polygon and self.polygon.enabled:
+        elif getattr(self, "polygon", None) and self.polygon.enabled:
             source = "Polygon.io"
             status = "connected"
         elif self.market_data and self.market_data.alpaca:
@@ -6904,7 +6904,7 @@ class TradingEngine:
         seen = set()
 
         # --- 1. Polygon.io runners (10%+ movers from full-market scan) ---
-        if self.polygon and self.polygon.enabled:
+        if getattr(self, "polygon", None) and self.polygon.enabled:
             poly_runners = self.polygon.get_runners(limit=50)
             for r in poly_runners:
                 sym = r.get("symbol", "")
@@ -7154,7 +7154,7 @@ class TradingEngine:
         seen_symbols = set()
 
         # --- 1. Polygon.io full-market scan (PRIMARY — real-time) ---
-        if self.polygon and self.polygon.enabled:
+        if getattr(self, "polygon", None) and self.polygon.enabled:
             # Gainers (2%+ movers)
             poly_movers = self.polygon.get_top_movers(limit=200)
             for m in poly_movers:
