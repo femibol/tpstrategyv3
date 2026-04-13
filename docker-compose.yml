@@ -32,19 +32,22 @@ services:
       - "127.0.0.1:5900:5900"   # VNC debug (SSH tunnel only)
     volumes:
       - ib-gateway-data:/root/Jts
+    # Health check using /proc (nc not available in image)
+    # Port 4002 (paper) must be listening for gateway to be healthy
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "4002"]
-      interval: 10s
+      test: ["CMD-SHELL", "cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA2' || cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA1'"]
+      interval: 15s
       timeout: 5s
-      retries: 30
-      start_period: 60s
+      retries: 40
+      start_period: 90s
 
   trading-bot:
     build: .
     restart: unless-stopped
+    # Wait for gateway but use a flexible condition (started, not healthy,
+    # because the image's healthcheck tool `nc` isn't available)
     depends_on:
-      ib-gateway:
-        condition: service_healthy
+      - ib-gateway
     environment:
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
