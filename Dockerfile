@@ -2,9 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System dependencies for ib_insync + numpy
+# System dependencies
+# - gcc/g++ for ib_insync + numpy compilation
+# - tzdata for timezone support (US/Eastern used throughout bot)
+# - curl for container healthchecks (replaces python requests in hc)
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=US/Eastern
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ && \
+    gcc g++ tzdata curl && \
+    ln -fs /usr/share/zoneinfo/US/Eastern /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
