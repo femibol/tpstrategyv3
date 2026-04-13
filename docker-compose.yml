@@ -1,16 +1,15 @@
 # Docker Compose: Trading Bot + IB Gateway
 #
-# PROFESSIONAL ARCHITECTURE: IBKR is the sole data + execution source.
-# IB Gateway provides real-time data, scanning, and order execution.
-# The bot manages risk, trailing stops, and Claude AI trade validation.
+# IBKR is the sole data + execution broker.
+# IB Gateway auto-logs in via IBC. First time setup requires VNC:
+#   ssh -L 5900:localhost:5900 root@YOUR_IP
+#   VNC to localhost:5900 (password from .env VNC_PASSWORD)
+#   Click "Accept" on any API connection dialog (once, then persisted)
 #
 # Usage:
 #   Start:     docker compose up -d
 #   Logs:      docker compose logs -f trading-bot
 #   Dashboard: http://YOUR_IP:5000
-#   Webhook:   http://YOUR_IP:5000/webhook/tradingview
-#
-# IB Gateway auto-restarts daily via IBC. Weekly 2FA approval on phone.
 
 services:
   ib-gateway:
@@ -20,44 +19,17 @@ services:
       TWS_USERID: ${IB_USERNAME}
       TWS_PASSWORD: ${IB_PASSWORD}
       TRADING_MODE: ${IB_TRADING_MODE:-paper}
-      # CRITICAL: TWS_ACCEPT_INCOMING must be "accept" (with quotes) so
-      # IBC auto-clicks the "Accept Incoming API Connection" dialog
       TWS_ACCEPT_INCOMING: "accept"
       READ_ONLY_API: "no"
       BYPASS_WARNING: "yes"
-      AUTO_RESTART_TIME: "16:15"
-      RELOGIN_AFTER_TWOFA_TIMEOUT: "yes"
-      TWOFA_TIMEOUT_ACTION: "restart"
-      TWOFA_EXIT_INTERVAL: "60"
-      SAVE_TWS_SETTINGS: "Every 30 mins"
-      MINIMIZE_MAIN_WINDOW: "yes"
-      EXISTING_SESSION_DETECTED_ACTION: "primary"
-      # Trust docker network IPs so bot can connect
-      TRUSTED_IPS: "172.16.0.0/12,10.0.0.0/8,127.0.0.1"
-      BIND_API_TO_ALL: "yes"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
       TWS_SETTINGS_PATH: /root/Jts
-      # Accept incoming API connection silently (IBC setting)
-      IBC_AcceptIncomingApiConnection: "accept"
     ports:
-      - "127.0.0.1:4001:4001"
-      - "127.0.0.1:4002:4002"
-      - "127.0.0.1:5900:5900"
+      - "4001:4001"
+      - "4002:4002"
+      - "5900:5900"   # VNC — needed for initial API dialog approval
     volumes:
       - ib-gateway-data:/root/Jts
-      # Inject pre-configured jts.ini so API settings are set before first run.
-      # This skips the "accept incoming API connection?" dialog entirely.
-      - ./deploy/ibgateway-config/jts.ini:/root/Jts/jts.ini.template:ro
-    # Run a startup wrapper that copies the jts.ini template into place
-    # BEFORE IBC launches the gateway (so API settings are pre-configured)
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        if [ -f /root/Jts/jts.ini.template ] && [ ! -f /root/Jts/jts.ini ]; then
-          cp /root/Jts/jts.ini.template /root/Jts/jts.ini
-          echo "Injected jts.ini with API settings pre-configured"
-        fi
-        exec /root/scripts/run.sh
     healthcheck:
       test: ["CMD-SHELL", "cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA2' || cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA1'"]
       interval: 15s
@@ -68,35 +40,28 @@ services:
   trading-bot:
     build: .
     restart: unless-stopped
-    # Wait for gateway but use a flexible condition (started, not healthy,
-    # because the image's healthcheck tool `nc` isn't available)
     depends_on:
       - ib-gateway
     environment:
-      # Timezone — must be set for APScheduler (bot uses US/Eastern)
+      # Timezone (critical for APScheduler)
       TZ: "America/New_York"
+
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
 
-      # IBKR — sole data + execution broker
+      # IBKR — sole broker
       IBKR_HOST: ib-gateway
-      IBKR_PORT: ${IBKR_PORT:-4002}  # 4002=paper, 4001=live
+      IBKR_PORT: ${IBKR_PORT:-4002}
       IBKR_CLIENT_ID: ${IBKR_CLIENT_ID:-1}
 
       # Claude AI — pre-trade validation + self-improvement
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
 
-      # Notifications
+      # Optional
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
-
-      # News (optional)
       NEWS_API_KEY: ${NEWS_API_KEY}
-
-      # Google Sheets trade logging (optional)
       GOOGLE_SHEETS_CREDENTIALS: ${GOOGLE_SHEETS_CREDENTIALS}
       GOOGLE_SHEETS_SPREADSHEET_ID: ${GOOGLE_SHEETS_SPREADSHEET_ID}
-
-      # TradingView webhook secret (for alert validation)
       TRADINGVIEW_WEBHOOK_SECRET: ${TRADINGVIEW_WEBHOOK_SECRET}
 
       # Dashboard
@@ -104,7 +69,7 @@ services:
       DASHBOARD_PORT: 5000
       DASHBOARD_SECRET_KEY: ${DASHBOARD_SECRET_KEY:-change-me}
     ports:
-      - "5000:5000"   # Dashboard + TradingView webhook receiver
+      - "5000:5000"
     volumes:
       - bot-data:/app/data
       - bot-logs:/app/logs
