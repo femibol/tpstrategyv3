@@ -192,12 +192,14 @@ class TradingEngine:
                 f"max_position_pct={scaling_tier['max_position_pct']:.0%}"
             )
 
-        # Polygon.io — scanning + fallback data source
+        # Polygon — REMOVED from execution chain (IBKR is sole data source).
+        # Kept as None so legacy code paths that check `if self.polygon and self.polygon.enabled`
+        # gracefully no-op. No API calls, no initialization, no credentials needed.
+        self.polygon = None
         blocked_symbols = self.config.risk_config.get("blocked_symbols", [])
-        self.polygon = PolygonScanner(self.config.polygon_api_key, blocked_symbols=blocked_symbols)
 
-        # Market data feed (IBKR primary, Polygon fallback, Yahoo last resort)
-        self.market_data = MarketDataFeed(self.config, self.broker, polygon=self.polygon)
+        # Market data feed (IBKR primary, Yahoo fallback for reference data)
+        self.market_data = MarketDataFeed(self.config, self.broker, polygon=None)
 
         # Start IBKR real-time streaming if connected
         if self.broker and self.broker.is_connected():
