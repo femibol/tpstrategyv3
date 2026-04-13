@@ -331,21 +331,40 @@ class TradingEngine:
         log.info("All components initialized successfully")
 
     def _connect_broker(self):
-        """Connect to IBKR as primary broker/data source."""
+        """Connect to IBKR as primary broker/data source.
+
+        Retries aggressively at startup. Bot will continue starting even if
+        IBKR isn't ready yet — background reconnect loop will keep trying.
+        This lets the dashboard start and positions be monitored even if
+        IB Gateway is slow to log in.
+        """
         self.broker = IBKRBroker(self.config)
 
         # Attempt IBKR connection with retry (works locally or with remote Gateway)
         connected = False
-        max_retries = 3
+        max_retries = 5  # Was 3 — give gateway more time on first boot
         for attempt in range(1, max_retries + 1):
-            connected = self.broker.connect()
-            if connected:
-                break
+            try:
+                connected = self.broker.connect()
+                if connected:
+                    break
+            except Exception as e:
+                log.warning(f"IBKR connect exception (attempt {attempt}): {e}")
             if attempt < max_retries:
-                wait = 2 ** attempt
+                wait = min(2 ** attempt, 30)  # Cap at 30s
                 log.warning(f"IBKR connection attempt {attempt}/{max_retries} failed - retrying in {wait}s...")
                 import time as _time
                 _time.sleep(wait)
+
+        # If still not connected after all retries, start background reconnect.
+        # Don't block startup — dashboard + position monitoring can still run.
+        if not connected:
+            log.error(
+                "IBKR not connected after all retries. Starting background "
+                "reconnect loop. Bot is running in DEGRADED mode (no new trades, "
+                "existing bracket stops still active at IBKR)."
+            )
+            self._start_background_reconnect()
 
         if connected:
             log.info(f"Connected to IBKR ({self.config.mode} mode) - using as primary data source")
@@ -532,6 +551,59 @@ class TradingEngine:
                             f"Persisted position {symbol} not found at broker — "
                             f"likely closed while bot was offline. Skipping."
                         )
+
+    def _start_background_reconnect(self):
+        """Background thread that retries IBKR connection forever.
+
+        Runs every 30 seconds. Once IBKR connects, syncs account/positions
+        and exits. Bot's degraded mode ends; full trading resumes.
+        """
+        if getattr(self, '_reconnect_thread_started', False):
+            return
+        self._reconnect_thread_started = True
+
+        def reconnect_loop():
+            import time as _time
+            attempt = 0
+            while not self.broker or not self.broker.is_connected():
+                attempt += 1
+                _time.sleep(30)
+                try:
+                    log.info(f"BACKGROUND RECONNECT: attempt #{attempt}...")
+                    if self.broker:
+                        connected = self.broker.connect()
+                    else:
+                        self.broker = IBKRBroker(self.config)
+                        connected = self.broker.connect()
+                    if connected:
+                        log.info(
+                            f"BACKGROUND RECONNECT SUCCESS: IBKR connected after "
+                            f"{attempt} retries. Resuming full trading."
+                        )
+                        try:
+                            self._sync_after_reconnect()
+                        except Exception as e:
+                            log.warning(f"Post-reconnect sync error: {e}")
+                        break
+                except Exception as e:
+                    log.warning(f"Background reconnect attempt #{attempt} error: {e}")
+
+        import threading
+        t = threading.Thread(target=reconnect_loop, daemon=True, name="ibkr-reconnect")
+        t.start()
+        log.info("Background IBKR reconnect thread started (every 30s)")
+
+    def _sync_after_reconnect(self):
+        """Sync account and positions after a successful background reconnect."""
+        if not self.broker or not self.broker.is_connected():
+            return
+        account = self.broker.get_account_summary()
+        if account:
+            self.current_balance = account.get("net_liquidation", self.current_balance)
+            log.info(f"Reconnect sync: account balance ${self.current_balance:,.2f}")
+        raw_positions = self.broker.get_positions()
+        if raw_positions:
+            log.info(f"Reconnect sync: {len(raw_positions)} positions found at IBKR")
 
     def _load_strategies(self):
         """Load and initialize all enabled strategies."""
