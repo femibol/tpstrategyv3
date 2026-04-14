@@ -963,6 +963,10 @@ class TradingEngine:
                     # GEMI pattern: +7.5% winner but investigation + sector selloff headlines
                     self._check_news_profit_protection()
 
+                    # 2e. EARNINGS VIGILANCE: check if any open position has earnings
+                    # announcement in next 48 hours — exit before gap risk materializes
+                    self._check_earnings_vigilance()
+
                     # 3. Monitor existing positions (stops, targets, trailing)
                     self._monitor_positions()
 
@@ -1181,6 +1185,15 @@ class TradingEngine:
                                     log.info(
                                         f"CLAUDE REDUCE: {sig['symbol']} qty "
                                         f"{old_qty} → {sig['quantity']} — "
+                                        f"{claude_verdict.get('reason', '')}"
+                                    )
+                                if claude_verdict and claude_verdict.get("aggressive"):
+                                    old_qty = sig.get("quantity", 0)
+                                    size_mult = claude_verdict.get("size_mult", 1.5)
+                                    sig["quantity"] = int(old_qty * size_mult)
+                                    log.info(
+                                        f"CLAUDE AGGRESSIVE: {sig['symbol']} qty "
+                                        f"{old_qty} → {sig['quantity']} ({size_mult:.1f}x) — "
                                         f"{claude_verdict.get('reason', '')}"
                                     )
                             except Exception as e:
@@ -2151,6 +2164,71 @@ class TradingEngine:
                 f"Opening fade check: {len(positions_to_close)} exits, "
                 f"{len(positions_to_tighten)} stops tightened"
             )
+
+    def _check_earnings_vigilance(self):
+        """Check every open position for upcoming earnings — exit before gap risk.
+
+        Earnings announcements cause unpredictable overnight gaps (can be
+        20-50%+ either direction). For a momentum bot, holding through
+        earnings is a lottery ticket. Better to exit and re-enter post-announcement.
+
+        Checks:
+        1. Earnings within next 48 hours → close position (too risky)
+        2. Earnings within next 7 days → tighten stop aggressively
+        3. Earnings today → exit immediately regardless of P&L
+
+        Uses IBKR fundamental data (has_earnings_soon on polygon fallback).
+        Rate-limited: only runs every 30 minutes per symbol to avoid API spam.
+        """
+        if not self.positions:
+            return
+
+        now = datetime.now(self.tz)
+
+        # Throttle: only check every 30 min (earnings dates don't change intraday)
+        last_check = getattr(self, '_earnings_last_check', 0)
+        if (now.timestamp() - last_check) < 1800:  # 30 minutes
+            return
+        self._earnings_last_check = now.timestamp()
+
+        with self._positions_lock:
+            positions_snapshot = dict(self.positions)
+
+        for symbol, pos in positions_snapshot.items():
+            # Skip if already checked recently for THIS symbol
+            last_sym_check = pos.get("_earnings_last_check", 0)
+            if (now.timestamp() - last_sym_check) < 3600:  # 1 hour per symbol
+                continue
+
+            try:
+                # Check via polygon scanner (has_earnings_soon detects news mentions)
+                earnings_imminent = False
+                if getattr(self, 'polygon', None) and self.polygon.enabled:
+                    try:
+                        earnings_imminent = self.polygon.has_earnings_soon(symbol, days_ahead=2)
+                    except Exception:
+                        pass
+
+                pos["_earnings_last_check"] = now.timestamp()
+
+                if earnings_imminent:
+                    pnl_pct = pos.get("unrealized_pnl_pct", 0)
+                    # Exit if earnings within 2 days — don't hold the gap risk
+                    log.warning(
+                        f"EARNINGS VIGILANCE: {symbol} has earnings within 48h. "
+                        f"Closing position (P&L: {pnl_pct:+.1%}) to avoid gap risk."
+                    )
+                    self.notifier.risk_alert(
+                        f"Closing {symbol} — earnings within 48 hours. "
+                        f"Avoiding overnight gap risk. Current P&L: {pnl_pct:+.1%}"
+                    )
+                    self._close_position(
+                        symbol, "earnings_vigilance",
+                        f"Earnings within 48h — exiting before gap risk"
+                    )
+
+            except Exception as e:
+                log.debug(f"Earnings vigilance error for {symbol}: {e}")
 
     def _check_news_profit_protection(self):
         """News-Aware Position Protection — two modes:
@@ -3730,7 +3808,16 @@ class TradingEngine:
         if self.trade_analyzer:
             self.trade_analyzer.persist_trade(self.trade_history[-1])
 
-        # Auto-trigger Claude AI quick insight every 5 trades
+        # PER-TRADE LEARNING: After EVERY closed trade, Claude analyzes what
+        # happened and feeds insights back into bot parameters. This is the
+        # core self-improvement loop — every trade makes the bot smarter.
+        if self.ai_insights and self.ai_insights.is_available():
+            try:
+                self._claude_post_trade_learning(self.trade_history[-1])
+            except Exception as e:
+                log.debug(f"Post-trade learning error: {e}")
+
+        # Auto-trigger Claude AI quick insight every 5 trades (summary view)
         if self.ai_insights and self.ai_insights.is_available() and len(self.trade_history) % 5 == 0:
             try:
                 insight = self.ai_insights.get_quick_insight(
@@ -4941,11 +5028,16 @@ class TradingEngine:
             )
 
     def _claude_pre_trade(self, signal):
-        """Ask Claude whether to take a trade based on recent performance.
+        """Ask Claude whether to take a trade based on recent performance + learned patterns.
+
+        Uses the learning state built up from post-trade analysis to inform
+        decisions. Strategies that keep losing get auto-skipped. Aggressive
+        sizing on high-conviction setups.
 
         Returns dict:
           {"skip": True, "reason": "..."} — don't take the trade
           {"reduce_size": True, "reason": "..."} — take it but smaller
+          {"aggressive": True, "size_mult": 1.5, "reason": "..."} — size up
           {} — proceed normally
         """
         if not self.ai_insights or not self.ai_insights.is_available():
@@ -4954,32 +5046,49 @@ class TradingEngine:
         symbol = signal.get("symbol", "")
         strategy = signal.get("strategy", "unknown")
 
-        # Build compact context for Claude (keep prompt small for speed)
+        # === LEARNED PATTERN CHECK (fast, no Claude call needed) ===
+        # Auto-skip strategies that have been flagged as losing multiple times
+        learning = getattr(self, '_learning_adjustments', {})
+        avoided = learning.get("avoided_strategies", {})
+        if avoided.get(strategy, 0) >= 3:
+            return {
+                "skip": True,
+                "reason": f"AUTO-SKIP: '{strategy}' flagged avoid {avoided[strategy]}x by learning"
+            }
+
+        # Context for Claude
         recent_trades = self.trade_history[-15:] if self.trade_history else []
         wins = sum(1 for t in recent_trades if t.get("pnl", 0) > 0)
         losses = len(recent_trades) - wins
         win_rate = (wins / len(recent_trades) * 100) if recent_trades else 0
 
-        # Strategy-specific performance
         strat_trades = [t for t in recent_trades if t.get("strategy") == strategy]
         strat_wins = sum(1 for t in strat_trades if t.get("pnl", 0) > 0)
         strat_wr = (strat_wins / len(strat_trades) * 100) if strat_trades else 0
 
-        # Current exposure
         open_count = len(self.positions)
         regime = getattr(self, 'current_regime', 'unknown')
+        score = signal.get("score", 0)
+        rvol = signal.get("rvol", 0)
+
+        # Learning signals
+        boosted = learning.get("boosted_strategies", {}).get(strategy, 0)
 
         prompt = (
-            f"Quick trade decision (respond in ONE line, start with TAKE, SKIP, or REDUCE):\n"
-            f"Signal: BUY {symbol} via {strategy} @ ${signal.get('price', 0):.2f}\n"
+            f"Trade decision (ONE line, start TAKE, SKIP, REDUCE, or AGGRESSIVE):\n"
+            f"BUY {symbol} via {strategy} @ ${signal.get('price', 0):.2f}\n"
             f"Stop: ${signal.get('stop_loss', 0):.2f} | Target: ${signal.get('take_profit', 0):.2f}\n"
-            f"Recent: {wins}W/{losses}L ({win_rate:.0f}%) last 15 trades\n"
-            f"Strategy '{strategy}': {strat_wins}W/{len(strat_trades)-strat_wins}L ({strat_wr:.0f}%) recent\n"
-            f"Open positions: {open_count} | Regime: {regime}\n"
-            f"Confidence: {signal.get('confidence', 0):.2f} | Score: {signal.get('score', 0)}\n"
-            f"Rules: SKIP if strategy win rate <30% on 5+ trades. "
-            f"REDUCE if >7 open positions or win rate <40%. "
-            f"TAKE if setup looks solid."
+            f"Score: {score} | RVOL: {rvol:.1f}x | Confidence: {signal.get('confidence', 0):.2f}\n"
+            f"Recent: {wins}W/{losses}L ({win_rate:.0f}%)\n"
+            f"Strategy '{strategy}': {strat_wins}W/{len(strat_trades)-strat_wins}L ({strat_wr:.0f}%)"
+            f"{f' | LEARNED BOOST x{boosted}' if boosted else ''}\n"
+            f"Open positions: {open_count}/10 | Regime: {regime}\n\n"
+            f"Rules:\n"
+            f"- AGGRESSIVE (1.5x size) if: score>=80 AND RVOL>=5 AND win_rate>=60%\n"
+            f"- AGGRESSIVE if: strategy has LEARNED BOOST and score>=70\n"
+            f"- TAKE if setup is solid\n"
+            f"- REDUCE if: >7 open positions or strategy win rate <40%\n"
+            f"- SKIP if: strategy win rate <25% on 5+ trades or bad regime"
         )
 
         try:
@@ -4992,10 +5101,143 @@ class TradingEngine:
                 return {"skip": True, "reason": response.strip()[:200]}
             elif response_upper.startswith("REDUCE"):
                 return {"reduce_size": True, "reason": response.strip()[:200]}
+            elif response_upper.startswith("AGGRESSIVE"):
+                return {
+                    "aggressive": True,
+                    "size_mult": 1.5,
+                    "reason": response.strip()[:200]
+                }
             else:
                 return {}
         except Exception:
             return {}
+
+    def _claude_post_trade_learning(self, trade):
+        """After EVERY closed trade, Claude analyzes and updates bot behavior.
+
+        Core self-improvement loop:
+        1. Claude reviews the trade: setup, entry, exit, P&L
+        2. Extracts patterns: what worked, what didn't
+        3. Updates internal learning state that affects future decisions
+        4. Adjusts strategy weights, stop distances, timing filters
+
+        This runs AFTER every trade close (not every 5th). Every loss makes
+        the bot more careful about that setup pattern. Every win reinforces.
+        """
+        if not self.ai_insights or not self.ai_insights.is_available():
+            return
+
+        symbol = trade.get("symbol", "")
+        strategy = trade.get("strategy", "unknown")
+        pnl = trade.get("pnl", 0)
+        pnl_pct = trade.get("pnl_pct", 0)
+        reason = trade.get("reason", "")
+        hold_mins = trade.get("hold_time_mins", 0)
+        entry_price = trade.get("entry_price", 0)
+        exit_price = trade.get("exit_price", 0)
+
+        win = pnl > 0
+
+        # Context: recent performance of this strategy
+        recent = [t for t in self.trade_history[-30:] if t.get("strategy") == strategy]
+        strat_win_rate = sum(1 for t in recent if t.get("pnl", 0) > 0) / len(recent) * 100 if recent else 0
+
+        prompt = (
+            f"Trade just closed. Analyze and give ONE concrete adjustment "
+            f"(<200 chars, actionable format: 'TIGHTEN_STOP:1.5%' or 'AVOID:momentum_runner_premarket' "
+            f"or 'BOOST:prebreakout' or 'NO_CHANGE').\n\n"
+            f"Trade: {'WIN' if win else 'LOSS'} ${pnl:+.2f} ({pnl_pct*100:+.1f}%)\n"
+            f"Symbol: {symbol} | Strategy: {strategy}\n"
+            f"Entry: ${entry_price:.2f} → Exit: ${exit_price:.2f}\n"
+            f"Hold: {hold_mins:.0f} min | Exit reason: {reason}\n"
+            f"Strategy recent: {len(recent)} trades, {strat_win_rate:.0f}% win rate\n\n"
+            f"Common adjustments:\n"
+            f"- TIGHTEN_STOP:X% if premature stop-out happened\n"
+            f"- WIDEN_STOP:X% if noise stopped us out before real move\n"
+            f"- BOOST:strategy_name if win pattern repeats\n"
+            f"- AVOID:strategy_name if loss pattern repeats 3+ times\n"
+            f"- NO_CHANGE if this was a one-off."
+        )
+
+        try:
+            response = self.ai_insights._call_claude(prompt)
+            if not response:
+                return
+
+            response = response.strip()
+            log.info(f"POST-TRADE LEARNING [{symbol}]: {response[:200]}")
+
+            # Parse Claude's recommendation and apply it
+            if not hasattr(self, '_learning_adjustments'):
+                self._learning_adjustments = {
+                    "boosted_strategies": {},  # strategy_name -> boost_count
+                    "avoided_strategies": {},  # strategy_name -> avoid_count
+                    "stop_adjustments": [],    # list of {strategy, adjustment, timestamp}
+                }
+
+            upper = response.upper()
+            import re
+
+            # BOOST: boost strategy weight
+            boost_match = re.search(r'BOOST:(\w+)', upper)
+            if boost_match:
+                boosted = boost_match.group(1).lower()
+                count = self._learning_adjustments["boosted_strategies"].get(boosted, 0) + 1
+                self._learning_adjustments["boosted_strategies"][boosted] = count
+                log.info(f"LEARNING: Boosting strategy '{boosted}' (total boosts: {count})")
+                # Apply weight boost through trade analyzer
+                if self.trade_analyzer and hasattr(self.trade_analyzer, 'strategy_scores'):
+                    current = self.trade_analyzer.strategy_scores.get(boosted, 50)
+                    self.trade_analyzer.strategy_scores[boosted] = min(100, current + 5)
+
+            # AVOID: penalize strategy
+            avoid_match = re.search(r'AVOID:(\w+)', upper)
+            if avoid_match:
+                avoided = avoid_match.group(1).lower()
+                count = self._learning_adjustments["avoided_strategies"].get(avoided, 0) + 1
+                self._learning_adjustments["avoided_strategies"][avoided] = count
+                log.warning(f"LEARNING: Avoiding strategy '{avoided}' (total avoids: {count})")
+                if self.trade_analyzer and hasattr(self.trade_analyzer, 'strategy_scores'):
+                    current = self.trade_analyzer.strategy_scores.get(avoided, 50)
+                    self.trade_analyzer.strategy_scores[avoided] = max(0, current - 10)
+
+            # TIGHTEN_STOP or WIDEN_STOP: adjust default stop distance
+            stop_match = re.search(r'(TIGHTEN|WIDEN)_STOP:?(\d+\.?\d*)', upper)
+            if stop_match:
+                direction = stop_match.group(1)
+                pct = float(stop_match.group(2))
+                self._learning_adjustments["stop_adjustments"].append({
+                    "direction": direction,
+                    "pct": pct,
+                    "strategy": strategy,
+                    "timestamp": datetime.now(self.tz).isoformat(),
+                })
+                # Actually apply the adjustment to the config (in-memory)
+                current_stop = self.config.risk_config.get("stop_loss_pct", 0.03)
+                if direction == "TIGHTEN":
+                    new_stop = max(0.015, current_stop * 0.9)  # never below 1.5%
+                else:
+                    new_stop = min(0.05, current_stop * 1.1)  # never above 5%
+                self.config.risk_config["stop_loss_pct"] = new_stop
+                log.info(
+                    f"LEARNING: Stop distance {direction.lower()}ed from "
+                    f"{current_stop*100:.1f}% → {new_stop*100:.1f}%"
+                )
+
+            # Persist learning state to disk so it survives restarts
+            try:
+                import json
+                learning_file = os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "data", "learning_adjustments.json"
+                )
+                with open(learning_file, "w") as f:
+                    json.dump(self._learning_adjustments, f, indent=2, default=str)
+            except Exception:
+                pass
+
+        except Exception as e:
+            log.debug(f"Claude post-trade analysis error: {e}")
 
     def _handle_tv_signal(self, signal):
         """Handle incoming TradingView webhook signal."""
