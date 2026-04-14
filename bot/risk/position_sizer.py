@@ -74,9 +74,111 @@ class PositionSizer:
             return False
         return any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
 
-    def calculate(self, balance, price, stop_loss, strategy_allocation=1.0, symbol=None):
+    def _kelly_adjustment(self, trade_history, base_risk_pct):
+        """Calculate risk multiplier using Risk-Constrained Kelly Criterion.
+
+        Kelly = (W*B - L) / B
+          where W = win rate, L = loss rate, B = avg_win/avg_loss ratio
+
+        We use HALF-KELLY (k/2) for safety — full Kelly is too volatile.
+        Bounded to [0.25x, 2.0x] of base risk to prevent extreme sizing.
+
+        Returns: multiplier (float) to apply to base risk_per_trade_pct.
         """
-        Calculate position size in shares (or contracts for options).
+        if not trade_history or len(trade_history) < 20:
+            # Need at least 20 trades for statistical significance
+            return 1.0
+
+        recent = list(trade_history)[-100:]  # Last 100 trades for rolling Kelly
+        wins = [t for t in recent if t.get("pnl", 0) > 0]
+        losses = [t for t in recent if t.get("pnl", 0) < 0]
+
+        if not wins or not losses:
+            return 1.0  # Insufficient data for Kelly
+
+        win_rate = len(wins) / len(recent)
+        avg_win = sum(t.get("pnl", 0) for t in wins) / len(wins)
+        avg_loss = abs(sum(t.get("pnl", 0) for t in losses) / len(losses))
+
+        if avg_loss == 0:
+            return 1.0
+
+        # Kelly formula (b = avg_win / avg_loss)
+        b = avg_win / avg_loss
+        kelly_pct = (win_rate * b - (1 - win_rate)) / b
+
+        # Half-Kelly for safety (pros rarely use full Kelly — too volatile)
+        safe_kelly = kelly_pct * 0.5
+
+        # Convert to multiplier against base risk
+        # If Kelly says 2% optimal and base is 1%, multiplier = 2x
+        if safe_kelly <= 0:
+            # Negative edge — scale way down, we're losing
+            return 0.25
+
+        multiplier = safe_kelly / base_risk_pct
+
+        # Bound: never above 2x, never below 0.25x
+        return max(0.25, min(2.0, multiplier))
+
+    def _drawdown_adjustment(self, current_balance, peak_balance):
+        """Reduce size during drawdowns to prevent death spiral.
+
+        Standard hedge fund practice:
+        - Drawdown < 3%: full size (1.0x)
+        - Drawdown 3-6%: 0.75x
+        - Drawdown 6-10%: 0.50x
+        - Drawdown > 10%: 0.25x (emergency mode)
+        """
+        if peak_balance <= 0:
+            return 1.0
+        drawdown = (peak_balance - current_balance) / peak_balance
+        if drawdown < 0.03:
+            return 1.0
+        elif drawdown < 0.06:
+            return 0.75
+        elif drawdown < 0.10:
+            return 0.50
+        else:
+            return 0.25
+
+    def _session_adjustment(self, session_stats, current_hour):
+        """Boost sizing during historically best trading hours.
+
+        session_stats: dict of {hour: {trades, wins, pnl}}
+        Returns: multiplier based on this hour's performance vs average.
+        """
+        if not session_stats or current_hour not in session_stats:
+            return 1.0
+        this_hour = session_stats[current_hour]
+        if this_hour.get("trades", 0) < 10:
+            return 1.0  # Need at least 10 trades in this hour
+
+        # Compare this hour's avg P&L to overall avg
+        this_avg = this_hour.get("pnl", 0) / this_hour["trades"]
+        all_trades = sum(h.get("trades", 0) for h in session_stats.values())
+        all_pnl = sum(h.get("pnl", 0) for h in session_stats.values())
+        overall_avg = all_pnl / all_trades if all_trades > 0 else 0
+
+        if overall_avg == 0:
+            return 1.0
+
+        # If this hour does 1.5x the avg P&L, size up by 1.2x (capped)
+        ratio = this_avg / overall_avg
+        if ratio > 1.5:
+            return 1.2
+        elif ratio > 1.2:
+            return 1.1
+        elif ratio < 0.5:
+            return 0.7
+        elif ratio < 0.8:
+            return 0.9
+        return 1.0
+
+    def calculate(self, balance, price, stop_loss, strategy_allocation=1.0, symbol=None,
+                  trade_history=None, peak_balance=None, session_stats=None, current_hour=None):
+        """
+        Calculate position size using Kelly + drawdown + session-aware sizing.
 
         Args:
             balance: Current account balance
@@ -84,6 +186,10 @@ class PositionSizer:
             stop_loss: Stop loss price
             strategy_allocation: Fraction of capital for this strategy (0-1)
             symbol: Ticker symbol (used for crypto-specific sizing)
+            trade_history: List of past trades (for Kelly calculation)
+            peak_balance: All-time peak balance (for drawdown calc)
+            session_stats: Per-hour performance dict
+            current_hour: Current hour (for session adjustment)
 
         Returns:
             int: Number of shares/contracts (0 if trade doesn't meet criteria)
@@ -92,22 +198,41 @@ class PositionSizer:
             return 0
 
         # Available capital (after reserve)
-        # NOTE: strategy_allocation controls how many positions a strategy opens,
-        # NOT the size of each position. Each position should be sized to
-        # max_position_size_pct regardless of which strategy generated it.
         available = balance * (1 - self.reserve_pct)
 
         # Crypto gets smaller position cap (more volatile)
         position_pct = self.crypto_max_position_pct if self._is_crypto(symbol) else self.max_position_pct
 
-        # Max position value scales with account size (no hard dollar cap)
+        # Max position value scales with account size
         max_position = min(
             balance * position_pct,
             available
         )
 
+        # === ADAPTIVE RISK CALCULATION ===
+        # Base risk, then apply Kelly + drawdown + session multipliers
+        base_risk = self.risk_per_trade_pct
+
+        kelly_mult = self._kelly_adjustment(trade_history, base_risk) if trade_history else 1.0
+        dd_mult = self._drawdown_adjustment(balance, peak_balance) if peak_balance else 1.0
+        session_mult = self._session_adjustment(session_stats, current_hour) if session_stats else 1.0
+
+        adjusted_risk_pct = base_risk * kelly_mult * dd_mult * session_mult
+
+        # Safety floor: never risk more than 3% per trade even if Kelly says more
+        adjusted_risk_pct = min(adjusted_risk_pct, 0.03)
+        # Safety ceiling: always risk at least 0.25% (don't trade tiny)
+        adjusted_risk_pct = max(adjusted_risk_pct, 0.0025)
+
+        if kelly_mult != 1.0 or dd_mult != 1.0 or session_mult != 1.0:
+            log.info(
+                f"ADAPTIVE SIZING: base={base_risk:.2%} → "
+                f"Kelly {kelly_mult:.2f}x × DD {dd_mult:.2f}x × Session {session_mult:.2f}x = "
+                f"{adjusted_risk_pct:.2%} risk"
+            )
+
         # Risk per trade in dollars
-        risk_dollars = balance * self.risk_per_trade_pct
+        risk_dollars = balance * adjusted_risk_pct
 
         # Per-share risk
         per_share_risk = abs(price - stop_loss)

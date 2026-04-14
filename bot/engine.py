@@ -3246,12 +3246,19 @@ class TradingEngine:
             )
             stop_loss_price = current_price * 0.98  # Force 2% stop minimum
 
+        # Get current hour for session-based sizing
+        current_hour = datetime.now(self.tz).hour
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
             stop_loss=stop_loss_price,
             strategy_allocation=self.config.strategy_allocation.get(strategy, 0.25),
             symbol=symbol,
+            # Adaptive sizing inputs: Kelly, drawdown, session-based
+            trade_history=self.trade_history,
+            peak_balance=self.peak_balance,
+            session_stats=getattr(self, '_session_stats', None),
+            current_hour=current_hour,
         )
 
         if qty <= 0:
@@ -3881,6 +3888,19 @@ class TradingEngine:
         # Update win/loss stats
         self._update_performance_stats(pnl)
 
+        # SESSION STATS: Track per-hour performance for session-based sizing
+        # The bot learns its best trading hours and sizes up during them.
+        self._update_session_stats(pnl)
+
+        # PSYCHOLOGY MARKERS: Detect bot "emotional" patterns
+        # Revenge trading: taking more trades after a big loss
+        # Overconfidence: sizing up after a win streak
+        self._check_psychology_markers(pnl)
+
+        # DAILY LOSS SOFT-STOP: if down 2%+ today, enter cautious mode
+        # Hard stop at 4% (already handled in main loop)
+        self._check_daily_loss_soft_stop()
+
         # Persist trade to disk (survives restarts for AI learning)
         if self.trade_analyzer:
             self.trade_analyzer.persist_trade(self.trade_history[-1])
@@ -4091,6 +4111,124 @@ class TradingEngine:
         if pos["quantity"] <= 0:
             with self._positions_lock:
                 self.positions.pop(symbol, None)
+
+    def _update_session_stats(self, pnl):
+        """Track trade outcomes by hour-of-day for session-based edge detection.
+
+        Over time, the bot learns which hours are profitable and which aren't.
+        Position sizer uses this to boost size during best hours, reduce in bad hours.
+        Data persists in memory; rebuilt from trade_history on restart.
+        """
+        if not hasattr(self, '_session_stats'):
+            self._session_stats = {}
+
+        hour = datetime.now(self.tz).hour
+        if hour not in self._session_stats:
+            self._session_stats[hour] = {"trades": 0, "wins": 0, "pnl": 0.0}
+
+        self._session_stats[hour]["trades"] += 1
+        self._session_stats[hour]["pnl"] += pnl
+        if pnl > 0:
+            self._session_stats[hour]["wins"] += 1
+
+        # Log findings every 50 trades
+        total_trades = sum(h["trades"] for h in self._session_stats.values())
+        if total_trades % 50 == 0 and total_trades >= 20:
+            best = max(self._session_stats.items(),
+                       key=lambda x: x[1]["pnl"] / max(x[1]["trades"], 1))
+            worst = min(self._session_stats.items(),
+                        key=lambda x: x[1]["pnl"] / max(x[1]["trades"], 1))
+            log.info(
+                f"SESSION EDGE: Best hour = {best[0]}:00 "
+                f"(${best[1]['pnl']:+.0f} over {best[1]['trades']} trades) | "
+                f"Worst hour = {worst[0]}:00 "
+                f"(${worst[1]['pnl']:+.0f} over {worst[1]['trades']} trades)"
+            )
+
+    def _check_psychology_markers(self, pnl):
+        """Detect bot 'emotional' patterns and flag them.
+
+        Bots can exhibit human-like mistakes if not careful:
+        - Revenge trading: high trade frequency after losses (greedy to recover)
+        - Overconfidence: higher sizing after win streaks
+        - Style drift: abandoning what works for new shiny things
+
+        This method tracks meta-metrics and logs warnings when patterns detected.
+        """
+        if not hasattr(self, '_psych_state'):
+            self._psych_state = {
+                "consecutive_losses": 0,
+                "consecutive_wins": 0,
+                "trades_in_last_hour": [],
+                "last_big_loss_time": None,
+            }
+
+        now = datetime.now(self.tz)
+        state = self._psych_state
+
+        if pnl > 0:
+            state["consecutive_wins"] += 1
+            state["consecutive_losses"] = 0
+        else:
+            state["consecutive_losses"] += 1
+            state["consecutive_wins"] = 0
+            # Big loss = more than 1% of balance
+            if abs(pnl) > self.current_balance * 0.01:
+                state["last_big_loss_time"] = now
+
+        # Track trades in last hour
+        state["trades_in_last_hour"].append(now)
+        one_hour_ago = now - timedelta(hours=1)
+        state["trades_in_last_hour"] = [t for t in state["trades_in_last_hour"] if t >= one_hour_ago]
+
+        # FLAG: Revenge trading (>8 trades in 1 hour after big loss)
+        if (state["last_big_loss_time"] and
+                (now - state["last_big_loss_time"]).total_seconds() < 3600 and
+                len(state["trades_in_last_hour"]) >= 8):
+            log.warning(
+                f"PSYCHOLOGY FLAG: Possible revenge trading — "
+                f"{len(state['trades_in_last_hour'])} trades in 1h after big loss. "
+                f"Bot will be more cautious for next hour."
+            )
+            # Make Claude pre-trade more conservative for next hour
+            self._revenge_mode_until = now + timedelta(hours=1)
+
+        # FLAG: Win streak (>5 consecutive wins can lead to oversizing)
+        if state["consecutive_wins"] >= 5:
+            log.info(
+                f"PSYCHOLOGY: Win streak of {state['consecutive_wins']} — "
+                f"maintain discipline, don't chase"
+            )
+
+        # FLAG: Loss streak (>3 consecutive losses = something's wrong)
+        if state["consecutive_losses"] >= 3:
+            log.warning(
+                f"PSYCHOLOGY FLAG: {state['consecutive_losses']} consecutive losses — "
+                f"reducing size on next trade"
+            )
+
+    def _check_daily_loss_soft_stop(self):
+        """Soft-stop at -2% daily loss: cut size in half, no new positions for 1 hour.
+
+        Hard stop at -4% is handled by risk_manager in main loop.
+        This adds a softer intermediate pause to prevent bad days from spiraling.
+        """
+        if self.start_of_day_balance <= 0:
+            return
+        daily_pnl_pct = (self.current_balance - self.start_of_day_balance) / self.start_of_day_balance
+
+        if daily_pnl_pct <= -0.02 and not getattr(self, '_daily_soft_stop_active', False):
+            self._daily_soft_stop_active = True
+            self._soft_stop_until = datetime.now(self.tz) + timedelta(hours=1)
+            log.warning(
+                f"DAILY SOFT STOP: Down {daily_pnl_pct:.1%} today. "
+                f"No new entries for 1 hour. Existing positions still monitored."
+            )
+            if hasattr(self, 'notifier'):
+                self.notifier.risk_alert(
+                    f"Daily soft-stop triggered: Down {daily_pnl_pct:.1%}. "
+                    f"Pausing new entries for 1 hour to prevent revenge trading."
+                )
 
     def _update_performance_stats(self, pnl):
         """Update win/loss tracking stats after a trade closes."""
@@ -5252,10 +5390,27 @@ class TradingEngine:
             return False, f"score {score} below min {min_score}"
 
         # === 5. POSITION CAP CHECK ===
-        # Hard cap on simultaneous positions
         max_positions = self.config.risk_config.get("max_positions", 10)
         if len(self.positions) >= max_positions:
             return False, f"at max positions ({max_positions})"
+
+        # === 6. DAILY SOFT STOP CHECK ===
+        # If bot hit -2% daily loss, no new entries for 1 hour
+        if getattr(self, '_daily_soft_stop_active', False):
+            now = datetime.now(self.tz)
+            soft_stop_until = getattr(self, '_soft_stop_until', now)
+            if now < soft_stop_until:
+                mins_left = (soft_stop_until - now).total_seconds() / 60
+                return False, f"daily soft-stop active ({mins_left:.0f} min left)"
+            else:
+                # Cooldown expired — resume
+                self._daily_soft_stop_active = False
+
+        # === 7. REVENGE TRADING CHECK ===
+        # If flagged for revenge trading, skip this hour
+        revenge_until = getattr(self, '_revenge_mode_until', None)
+        if revenge_until and datetime.now(self.tz) < revenge_until:
+            return False, "revenge trading mode — cooling down"
 
         return True, ""
 
@@ -5288,6 +5443,16 @@ class TradingEngine:
         # Context: recent performance of this strategy
         recent = [t for t in self.trade_history[-30:] if t.get("strategy") == strategy]
         strat_win_rate = sum(1 for t in recent if t.get("pnl", 0) > 0) / len(recent) * 100 if recent else 0
+
+        # MINIMUM SAMPLE SIZE GUARD: don't make parameter adjustments on too
+        # little data. Require at least 5 trades of this strategy to have any
+        # statistical validity. 10+ trades before strategy-level adjustments.
+        if len(recent) < 5:
+            log.debug(
+                f"Skipping post-trade learning for '{strategy}' — "
+                f"only {len(recent)} trades (need 5+ for significance)"
+            )
+            return
 
         prompt = (
             f"Trade just closed. Analyze and give ONE concrete adjustment "
@@ -5325,21 +5490,20 @@ class TradingEngine:
             upper = response.upper()
             import re
 
-            # BOOST: boost strategy weight
+            # BOOST: boost strategy weight (requires 10+ trades for stat significance)
             boost_match = re.search(r'BOOST:(\w+)', upper)
-            if boost_match:
+            if boost_match and len(recent) >= 10:
                 boosted = boost_match.group(1).lower()
                 count = self._learning_adjustments["boosted_strategies"].get(boosted, 0) + 1
                 self._learning_adjustments["boosted_strategies"][boosted] = count
                 log.info(f"LEARNING: Boosting strategy '{boosted}' (total boosts: {count})")
-                # Apply weight boost through trade analyzer
                 if self.trade_analyzer and hasattr(self.trade_analyzer, 'strategy_scores'):
                     current = self.trade_analyzer.strategy_scores.get(boosted, 50)
                     self.trade_analyzer.strategy_scores[boosted] = min(100, current + 5)
 
-            # AVOID: penalize strategy
+            # AVOID: penalize strategy (requires 10+ trades for stat significance)
             avoid_match = re.search(r'AVOID:(\w+)', upper)
-            if avoid_match:
+            if avoid_match and len(recent) >= 10:
                 avoided = avoid_match.group(1).lower()
                 count = self._learning_adjustments["avoided_strategies"].get(avoided, 0) + 1
                 self._learning_adjustments["avoided_strategies"][avoided] = count
