@@ -1527,6 +1527,72 @@ class TradingEngine:
                 pos["_high_water_mark"] = current_price
             hwm = pos.get("_high_water_mark", entry_price)
 
+            # --- VELOCITY-BASED QUICK EXITS ---
+            # Detect fast price spikes and reversal momentum to grab intra-candle profits.
+            # Momentum stocks spike then reverse fast — catch the spike before reversal.
+            vel_cfg = self.config.risk_config.get("velocity_exits", {})
+            if vel_cfg.get("enabled", True) and pos["quantity"] > 3 and pnl_pct > 0:
+                # Track recent price history for velocity detection
+                price_history = pos.get("_price_history", [])
+                now_sec = now_ts.timestamp()
+                price_history.append((now_sec, current_price))
+                # Keep only last 60 seconds of ticks
+                cutoff = now_sec - 60
+                price_history = [(t, p) for t, p in price_history if t >= cutoff]
+                pos["_price_history"] = price_history
+
+                # === FAST SPIKE DETECTION ===
+                # If price moved up X% in last Y seconds — hot runner, take partial
+                spike_pct = vel_cfg.get("fast_spike_pct", 0.015)
+                spike_window = vel_cfg.get("fast_spike_window_sec", 45)
+                spike_close_pct = vel_cfg.get("fast_spike_close_pct", 0.25)
+
+                if not pos.get("_spike_partial_taken") and len(price_history) >= 2:
+                    window_start = now_sec - spike_window
+                    window_prices = [(t, p) for t, p in price_history if t >= window_start]
+                    if window_prices:
+                        window_start_price = window_prices[0][1]
+                        move_pct = (current_price - window_start_price) / window_start_price
+                        if move_pct >= spike_pct:
+                            qty_to_close = max(1, int(pos["quantity"] * spike_close_pct))
+                            if qty_to_close < pos["quantity"] - 1:
+                                log.info(
+                                    f"VELOCITY SPIKE: {symbol} +{move_pct:.1%} in {spike_window}s — "
+                                    f"taking {spike_close_pct:.0%} partial ({qty_to_close} shares)"
+                                )
+                                partial_exits.append((
+                                    symbol, qty_to_close, -1,
+                                    {"pct_from_entry": pnl_pct, "close_pct": spike_close_pct,
+                                     "reason": "velocity_spike"}
+                                ))
+                                pos["_spike_partial_taken"] = True
+
+                # === MOMENTUM REVERSAL DETECTION ===
+                # If we've given back significant profit from the HWM — reverse, take 40%
+                reversal_retrace = vel_cfg.get("reversal_retrace_pct", 0.30)
+                reversal_close = vel_cfg.get("reversal_close_pct", 0.40)
+
+                if (not pos.get("_reversal_partial_taken") and
+                        hwm > entry_price and pnl_pct >= 0.02):
+                    hwm_gain = hwm - entry_price
+                    current_gain = current_price - entry_price
+                    retrace_from_hwm = (hwm - current_price) / hwm_gain if hwm_gain > 0 else 0
+
+                    if retrace_from_hwm >= reversal_retrace:
+                        qty_to_close = max(1, int(pos["quantity"] * reversal_close))
+                        if qty_to_close < pos["quantity"] - 1:
+                            log.warning(
+                                f"REVERSAL DETECTED: {symbol} retraced {retrace_from_hwm:.0%} "
+                                f"from HWM ${hwm:.2f} → ${current_price:.2f} — "
+                                f"taking {reversal_close:.0%} partial ({qty_to_close} shares)"
+                            )
+                            partial_exits.append((
+                                symbol, qty_to_close, -2,
+                                {"pct_from_entry": pnl_pct, "close_pct": reversal_close,
+                                 "reason": "momentum_reversal"}
+                            ))
+                            pos["_reversal_partial_taken"] = True
+
             # --- STOP LOSS (instant check) ---
             stop_price = pos.get("stop_loss")
             if stop_price:

@@ -36,35 +36,56 @@ risk:
   max_signal_deviation_pct: 0.03  # Max 3% price drift from signal to live — reject if stale (prevents upside-down trades)
 
   # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
-  # Checked every 3 seconds (not per candle). Start locking in gains early.
-  # 7 tiers: take small bites often, let ~25% of position ride forever.
+  # Checked every 3 seconds on every tick — not candle-close.
+  # 9 tiers starting at 0.5% — lock in gains EARLY, let runners run later.
   # Trailing stop ratchets up on every price tick for the remaining shares.
+  # This is optimized for momentum stocks that reverse fast.
   profit_taking:
     enabled: true
     targets:
-      - pct_from_entry: 0.015     # At +1.5% — immediate breakeven lock
-        close_pct: 0.10           # Close 10%
-        move_stop: "breakeven"    # Risk-free from here
-      - pct_from_entry: 0.03      # At +3% — first real profit
-        close_pct: 0.10           # Close 10%
-        tighten_trail: 0.015      # 1.5% trail
-      - pct_from_entry: 0.05      # At +5%
-        close_pct: 0.10           # Close 10%
-        tighten_trail: 0.02       # 2% trail
-      - pct_from_entry: 0.10      # At +10% — strong move confirmed
-        close_pct: 0.15           # Close 15%
-        tighten_trail: 0.025      # 2.5% trail
-      - pct_from_entry: 0.20      # At +20% — runner confirmed
-        close_pct: 0.10           # Close 10%
-        tighten_trail: 0.035      # 3.5% trail — give runner room
-      - pct_from_entry: 0.35      # At +35% — big runner
-        close_pct: 0.10           # Close 10%
-        tighten_trail: 0.04       # 4% trail
-      - pct_from_entry: 0.50      # At +50% — monster
-        close_pct: 0.10           # Close 10%
-        tighten_trail: 0.05       # 5% trail — ride it forever
-      # Remaining ~25% rides with dynamic trailing stop (no ceiling)
+      - pct_from_entry: 0.005      # At +0.5% — scalp the first move
+        close_pct: 0.08            # Close 8%
+      - pct_from_entry: 0.01       # At +1% — small gain locked
+        close_pct: 0.08            # Close 8%
+      - pct_from_entry: 0.015      # At +1.5% — immediate breakeven lock
+        close_pct: 0.10            # Close 10%
+        move_stop: "breakeven"     # Risk-free from here
+      - pct_from_entry: 0.025      # At +2.5% — real profit
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.012       # 1.2% trail
+      - pct_from_entry: 0.04       # At +4% — strong move
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.015       # 1.5% trail
+      - pct_from_entry: 0.07       # At +7% — trending
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.02        # 2% trail
+      - pct_from_entry: 0.12       # At +12% — runner confirmed
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.025       # 2.5% trail
+      - pct_from_entry: 0.20       # At +20% — big winner
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.03        # 3% trail — give runner room
+      - pct_from_entry: 0.35       # At +35% — monster
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.04        # 4% trail
+      - pct_from_entry: 0.60       # At +60% — extreme runner
+        close_pct: 0.08            # Close 8%
+        tighten_trail: 0.05        # 5% trail — ride it
+      # Remaining ~16% rides with dynamic trailing stop (no ceiling)
       # Trail widens at extreme levels: 6% at 100%+, 8% at 200%+
+
+  # --- Velocity-Based Quick Exits ---
+  # Price spikes (e.g. 1% in 30 seconds) trigger instant partial takes.
+  # Momentum stocks reverse fast — grab profits before the reversal.
+  velocity_exits:
+    enabled: true
+    fast_spike_pct: 0.015        # 1.5% move within window → take partial
+    fast_spike_window_sec: 45    # Within 45 seconds
+    fast_spike_close_pct: 0.25   # Take 25% off the table
+
+    # Momentum reversal: significant retracement from high = trim hard
+    reversal_retrace_pct: 0.30   # HWM drops 30% = trim
+    reversal_close_pct: 0.40     # Take 40% off on reversal
 
   # --- Break Even Stop ---
   breakeven:
