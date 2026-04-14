@@ -14,9 +14,7 @@
 services:
   ib-gateway:
     # gnzsnz image is actively maintained and tracks IBKR version releases.
-    # The unusualalpha image lagged behind and kept showing "no longer supported"
-    # dialogs even on the latest tag.
-    # 10.38+ versions: `gnzsnz/ib-gateway:latest` (Gateway 10.38 or newer)
+    # Different paths than unusualalpha: runs as ibgateway user, settings at /home/ibgateway/Jts
     image: gnzsnz/ib-gateway:latest
     restart: unless-stopped
     environment:
@@ -27,13 +25,14 @@ services:
       READ_ONLY_API: "no"
       BYPASS_WARNING: "yes"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
-      TWS_SETTINGS_PATH: /root/Jts
+      # gnzsnz uses /home/ibgateway/Jts (not /root/Jts)
+      TWS_SETTINGS_PATH: /home/ibgateway/Jts
     ports:
       - "4001:4001"
       - "4002:4002"
-      - "5900:5900"   # VNC — needed for initial API dialog approval
+      - "5900:5900"
     volumes:
-      - ib-gateway-data:/root/Jts
+      - ib-gateway-data:/home/ibgateway/Jts
     healthcheck:
       test: ["CMD-SHELL", "cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA2' || cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA1'"]
       interval: 15s
