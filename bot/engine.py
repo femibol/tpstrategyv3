@@ -5339,26 +5339,65 @@ class TradingEngine:
         symbol = signal.get("symbol", "")
         score = signal.get("score", 0)
 
-        # === 1. LEVEL 2 ORDER BOOK CHECK ===
+        # === 1. LEVEL 2 ORDER BOOK CHECK (with imbalance EMA) ===
         # Look for buying pressure: bids stacked higher than asks means demand
+        # Research: "Order flow imbalance has a near-linear relationship with
+        # short-horizon price changes." — we track 3 snapshots and compute EMA.
         if self.broker and self.broker.is_connected() and hasattr(self.broker, 'get_order_book'):
             try:
-                book = self.broker.get_order_book(symbol, num_rows=5, timeout=2)
-                if book:
-                    imbalance = book.get("imbalance", 0)
+                # Take 3 rapid snapshots (300ms apart) to detect imbalance trend
+                import time as _time
+                imbalances = []
+                book = None
+                for snap_num in range(3):
+                    book = self.broker.get_order_book(symbol, num_rows=5, timeout=2)
+                    if book:
+                        imbalances.append(book.get("imbalance", 0))
+                    if snap_num < 2:
+                        _time.sleep(0.3)
+
+                if book and imbalances:
+                    # Use latest snapshot for spread check
                     spread_pct = book.get("spread_pct", 0)
+                    current_imbalance = imbalances[-1]
+
+                    # EMA (weighted toward recent): [0.2, 0.3, 0.5]
+                    if len(imbalances) == 3:
+                        ema_imbalance = imbalances[0] * 0.2 + imbalances[1] * 0.3 + imbalances[2] * 0.5
+                        # Imbalance trend: is buying pressure RAMPING UP?
+                        imbalance_ramping = (imbalances[-1] > imbalances[0] + 0.1)
+                    else:
+                        ema_imbalance = current_imbalance
+                        imbalance_ramping = False
 
                     # Reject wide spreads (>2% = poor liquidity, bad fills likely)
                     if spread_pct > 0.02:
                         return False, f"wide spread {spread_pct*100:.1f}% (>2%)"
 
-                    # Warn on negative imbalance (asks stacked = sellers in control)
-                    # Allow if imbalance > -0.3 (30% skew), reject if worse
-                    if imbalance < -0.3:
-                        return False, f"bearish book imbalance {imbalance:+.2f}"
+                    # Reject consistently bearish EMA imbalance
+                    if ema_imbalance < -0.3:
+                        return False, f"bearish EMA imbalance {ema_imbalance:+.2f}"
 
-                    signal["_book_imbalance"] = imbalance
+                    # Reject if spot imbalance diverges negative even if EMA ok
+                    # (detects flipping pressure)
+                    if current_imbalance < -0.4:
+                        return False, f"bearish spot imbalance {current_imbalance:+.2f}"
+
+                    # Store order flow metrics on signal for Claude's context
+                    signal["_book_imbalance"] = current_imbalance
+                    signal["_book_imbalance_ema"] = ema_imbalance
                     signal["_book_spread"] = spread_pct
+                    signal["_book_ramping"] = imbalance_ramping
+
+                    # Boost score if imbalance is BULLISH and ramping
+                    # Strong buying pressure signal — rare and valuable
+                    if ema_imbalance > 0.3 and imbalance_ramping:
+                        current_score = signal.get("score", 0)
+                        signal["score"] = current_score + 10
+                        log.info(
+                            f"ORDER FLOW BOOST: {symbol} EMA imbalance "
+                            f"{ema_imbalance:+.2f} ramping → score {current_score} → {signal['score']}"
+                        )
             except Exception as e:
                 log.debug(f"Order book check error for {symbol}: {e}")
 
