@@ -1167,6 +1167,17 @@ class TradingEngine:
                             f"(merged duplicate symbols)"
                         )
                     for sig in deduped:
+                        # QUALITY GATE: Multi-factor check before committing capital.
+                        # Level 2 order book, per-symbol history, market regime.
+                        # Fast, runs locally, zero API cost.
+                        if sig.get("action") == "buy":
+                            passed, gate_reason = self._entry_quality_gate(sig)
+                            if not passed:
+                                log.info(
+                                    f"QUALITY GATE SKIP: {sig['symbol']} — {gate_reason}"
+                                )
+                                continue
+
                         # CLAUDE PRE-TRADE VALIDATION: Ask Claude if we should
                         # take this trade based on recent performance and context.
                         if (sig.get("action") == "buy" and
@@ -5111,6 +5122,76 @@ class TradingEngine:
                 return {}
         except Exception:
             return {}
+
+    def _entry_quality_gate(self, signal):
+        """Multi-factor quality check before entry. Only TAKE trades that pass
+        multiple confirmations. This is the "constant profit" discipline — fewer
+        trades but higher quality.
+
+        Returns:
+            (True, "") if trade passes quality gate
+            (False, reason) if trade should be skipped
+        """
+        symbol = signal.get("symbol", "")
+        score = signal.get("score", 0)
+
+        # === 1. LEVEL 2 ORDER BOOK CHECK ===
+        # Look for buying pressure: bids stacked higher than asks means demand
+        if self.broker and self.broker.is_connected() and hasattr(self.broker, 'get_order_book'):
+            try:
+                book = self.broker.get_order_book(symbol, num_rows=5, timeout=2)
+                if book:
+                    imbalance = book.get("imbalance", 0)
+                    spread_pct = book.get("spread_pct", 0)
+
+                    # Reject wide spreads (>2% = poor liquidity, bad fills likely)
+                    if spread_pct > 0.02:
+                        return False, f"wide spread {spread_pct*100:.1f}% (>2%)"
+
+                    # Warn on negative imbalance (asks stacked = sellers in control)
+                    # Allow if imbalance > -0.3 (30% skew), reject if worse
+                    if imbalance < -0.3:
+                        return False, f"bearish book imbalance {imbalance:+.2f}"
+
+                    signal["_book_imbalance"] = imbalance
+                    signal["_book_spread"] = spread_pct
+            except Exception as e:
+                log.debug(f"Order book check error for {symbol}: {e}")
+
+        # === 2. PER-SYMBOL HISTORY CHECK ===
+        # If we've traded this symbol before, what's the track record?
+        symbol_trades = [t for t in self.trade_history if t.get("symbol") == symbol]
+        if len(symbol_trades) >= 3:
+            wins = sum(1 for t in symbol_trades if t.get("pnl", 0) > 0)
+            win_rate = wins / len(symbol_trades)
+            avg_pnl = sum(t.get("pnl", 0) for t in symbol_trades) / len(symbol_trades)
+
+            # Auto-skip symbols where we've lost money 3+ times
+            if len(symbol_trades) >= 3 and avg_pnl < 0 and win_rate < 0.35:
+                return False, (
+                    f"symbol history bad: {wins}/{len(symbol_trades)} wins "
+                    f"({win_rate*100:.0f}%), avg P&L ${avg_pnl:+.2f}"
+                )
+
+        # === 3. MARKET CONTEXT CHECK ===
+        # Respect broader market regime — don't chase longs in crisis
+        regime = getattr(self, 'current_regime', 'neutral')
+        if regime == "crisis":
+            return False, f"market regime is {regime} — no new longs"
+
+        # === 4. MINIMUM SCORE GATE ===
+        # Even after all strategy approvals, require a minimum conviction
+        min_score = self.config.risk_config.get("min_entry_score", 50)
+        if score < min_score:
+            return False, f"score {score} below min {min_score}"
+
+        # === 5. POSITION CAP CHECK ===
+        # Hard cap on simultaneous positions
+        max_positions = self.config.risk_config.get("max_positions", 10)
+        if len(self.positions) >= max_positions:
+            return False, f"at max positions ({max_positions})"
+
+        return True, ""
 
     def _claude_post_trade_learning(self, trade):
         """After EVERY closed trade, Claude analyzes and updates bot behavior.

@@ -1432,6 +1432,80 @@ class IBKRBroker(BaseBroker):
     # Open Orders Management
     # =========================================================================
 
+    def get_order_book(self, symbol, num_rows=5, timeout=3):
+        """Get Level 2 order book snapshot for analysis.
+
+        Returns dict with bid/ask ladder, showing where buyers/sellers stack.
+        Used pre-entry to detect buying pressure (stacked bids vs thin asks).
+
+        Returns:
+            {
+                "symbol": str,
+                "bids": [{"price": float, "size": int}, ...],  # Top N bid levels
+                "asks": [{"price": float, "size": int}, ...],
+                "bid_size_total": int,  # Total size across all bid levels
+                "ask_size_total": int,
+                "imbalance": float,  # (bid_size - ask_size) / total ∈ [-1, 1]
+                "spread_pct": float,  # (ask-bid)/midpoint
+            }
+            OR None on error
+        """
+        if not self.is_connected():
+            return None
+
+        try:
+            from ib_insync import Stock
+            contract = Stock(symbol, "SMART", "USD")
+
+            # Qualify contract
+            self.ib.qualifyContracts(contract)
+
+            # Request market depth (Level 2)
+            ticker = self.ib.reqMktDepth(contract, numRows=num_rows, isSmartDepth=True)
+
+            # Wait briefly for data to populate
+            import time
+            start = time.time()
+            while time.time() - start < timeout:
+                if ticker.domBids and ticker.domAsks:
+                    break
+                self.ib.sleep(0.2)
+
+            bids = [{"price": b.price, "size": b.size} for b in ticker.domBids[:num_rows]]
+            asks = [{"price": a.price, "size": a.size} for a in ticker.domAsks[:num_rows]]
+
+            # Cancel the subscription to free up slot
+            try:
+                self.ib.cancelMktDepth(contract, isSmartDepth=True)
+            except Exception:
+                pass
+
+            if not bids or not asks:
+                return None
+
+            bid_size_total = sum(b["size"] for b in bids)
+            ask_size_total = sum(a["size"] for a in asks)
+            total = bid_size_total + ask_size_total
+
+            best_bid = bids[0]["price"]
+            best_ask = asks[0]["price"]
+            mid = (best_bid + best_ask) / 2
+
+            return {
+                "symbol": symbol,
+                "bids": bids,
+                "asks": asks,
+                "bid_size_total": bid_size_total,
+                "ask_size_total": ask_size_total,
+                "imbalance": (bid_size_total - ask_size_total) / total if total > 0 else 0,
+                "spread_pct": (best_ask - best_bid) / mid if mid > 0 else 0,
+                "best_bid": best_bid,
+                "best_ask": best_ask,
+            }
+        except Exception as e:
+            log.debug(f"get_order_book({symbol}) error: {e}")
+            return None
+
     def get_open_orders(self):
         """Get all open/pending orders from IBKR."""
         if not self.is_connected():
