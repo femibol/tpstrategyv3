@@ -124,20 +124,23 @@ class PositionSizer:
     def _drawdown_adjustment(self, current_balance, peak_balance):
         """Reduce size during drawdowns to prevent death spiral.
 
-        Standard hedge fund practice:
-        - Drawdown < 3%: full size (1.0x)
+        Standard hedge fund practice (inclusive-upper tier boundaries):
+        - Drawdown 0-3%: full size (1.0x)
         - Drawdown 3-6%: 0.75x
         - Drawdown 6-10%: 0.50x
         - Drawdown > 10%: 0.25x (emergency mode)
+
+        Uses <= for upper bounds so exactly 3% stays in the full-size tier,
+        only dropping to 0.75x after crossing 3% (avoids premature cuts).
         """
         if peak_balance <= 0:
             return 1.0
         drawdown = (peak_balance - current_balance) / peak_balance
-        if drawdown < 0.03:
+        if drawdown <= 0.03:
             return 1.0
-        elif drawdown < 0.06:
+        elif drawdown <= 0.06:
             return 0.75
-        elif drawdown < 0.10:
+        elif drawdown <= 0.10:
             return 0.50
         else:
             return 0.25

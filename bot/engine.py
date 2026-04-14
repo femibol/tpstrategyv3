@@ -5,6 +5,7 @@ Fully automated, no-touch operation.
 """
 import json
 import os
+import re
 import time
 import threading
 import signal
@@ -2295,10 +2296,11 @@ class TradingEngine:
                         f"EARNINGS VIGILANCE: {symbol} has earnings within 48h. "
                         f"Closing position (P&L: {pnl_pct:+.1%}) to avoid gap risk."
                     )
-                    self.notifier.risk_alert(
-                        f"Closing {symbol} — earnings within 48 hours. "
-                        f"Avoiding overnight gap risk. Current P&L: {pnl_pct:+.1%}"
-                    )
+                    if self.notifier:
+                        self.notifier.risk_alert(
+                            f"Closing {symbol} — earnings within 48 hours. "
+                            f"Avoiding overnight gap risk. Current P&L: {pnl_pct:+.1%}"
+                        )
                     self._close_position(
                         symbol, "earnings_vigilance",
                         f"Earnings within 48h — exiting before gap risk"
@@ -4224,7 +4226,7 @@ class TradingEngine:
                 f"DAILY SOFT STOP: Down {daily_pnl_pct:.1%} today. "
                 f"No new entries for 1 hour. Existing positions still monitored."
             )
-            if hasattr(self, 'notifier'):
+            if getattr(self, 'notifier', None):
                 self.notifier.risk_alert(
                     f"Daily soft-stop triggered: Down {daily_pnl_pct:.1%}. "
                     f"Pausing new entries for 1 hour to prevent revenge trading."
@@ -5527,7 +5529,6 @@ class TradingEngine:
                 }
 
             upper = response.upper()
-            import re
 
             # BOOST: boost strategy weight (requires 10+ trades for stat significance)
             boost_match = re.search(r'BOOST:(\w+)', upper)
