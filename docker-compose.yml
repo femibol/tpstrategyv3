@@ -13,7 +13,11 @@
 
 services:
   ib-gateway:
-    image: ghcr.io/unusualalpha/ib-gateway:latest
+    # gnzsnz image is actively maintained and tracks IBKR version releases.
+    # The unusualalpha image lagged behind and kept showing "no longer supported"
+    # dialogs even on the latest tag.
+    # 10.38+ versions: `gnzsnz/ib-gateway:latest` (Gateway 10.38 or newer)
+    image: gnzsnz/ib-gateway:latest
     restart: unless-stopped
     environment:
       TWS_USERID: ${IB_USERNAME}
