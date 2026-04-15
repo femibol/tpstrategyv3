@@ -1,0 +1,39 @@
+[Unit]
+Description=Trading Bot (Docker Compose stack)
+Documentation=https://github.com/femibol/tpstrategyv3
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+# oneshot + RemainAfterExit so systemd treats "docker compose up -d" (which
+# exits immediately after launching the containers) as a long-lived service.
+Type=oneshot
+RemainAfterExit=yes
+
+WorkingDirectory=/opt/trading-bot
+
+# Pull .env into the environment before compose runs.
+EnvironmentFile=-/opt/trading-bot/.env
+
+# Bring the stack up. "up -d" is idempotent — if containers are already
+# running it's a no-op, otherwise it (re)creates them.
+ExecStart=/usr/bin/docker compose -f /opt/trading-bot/docker-compose.yml up -d --remove-orphans
+
+# On stop, gracefully tear down the stack.
+ExecStop=/usr/bin/docker compose -f /opt/trading-bot/docker-compose.yml down
+
+# If docker daemon is hiccupping, retry a few times with backoff before giving up.
+Restart=on-failure
+RestartSec=15s
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Don't let systemd kill the containers when the service stops — the ExecStop
+# handles that cleanly. TimeoutStartSec is generous because IB Gateway takes
+# ~2 minutes to fully log in on cold start.
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

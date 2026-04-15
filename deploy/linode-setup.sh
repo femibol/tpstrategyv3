@@ -125,6 +125,40 @@ cat > /etc/logrotate.d/auto-deploy << 'LOGROTATE'
 }
 LOGROTATE
 
+# --- Install systemd unit so the stack starts on boot and stays up ---
+echo ""
+echo "Installing trading-bot systemd service..."
+install -m 644 "$REPO_DIR/deploy/trading-bot.service" /etc/systemd/system/trading-bot.service
+systemctl daemon-reload
+systemctl enable trading-bot.service
+echo "  systemctl status trading-bot    # check status"
+echo "  systemctl restart trading-bot   # manual restart"
+echo "  journalctl -u trading-bot -f    # follow logs"
+
+# --- Watchdog cron (every 2 min): restarts stack if a container drops or
+# the dashboard /health goes bad. Rate-limited to one action per 10 min.
+echo ""
+echo "Setting up watchdog (checks container + dashboard health every 2 min)..."
+chmod +x "$REPO_DIR/deploy/watchdog.sh"
+WATCHDOG_CRON="*/2 * * * * $REPO_DIR/deploy/watchdog.sh >> /var/log/trading-bot-watchdog.log 2>&1"
+if ! crontab -l 2>/dev/null | grep -q "watchdog.sh"; then
+    (crontab -l 2>/dev/null; echo "$WATCHDOG_CRON") | crontab -
+    echo "Watchdog cron job added (every 2 min)"
+else
+    echo "Watchdog cron job already exists"
+fi
+
+# --- Log rotation for watchdog ---
+cat > /etc/logrotate.d/trading-bot-watchdog << 'LOGROTATE'
+/var/log/trading-bot-watchdog.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+}
+LOGROTATE
+
 echo ""
 echo "============================================"
 echo "  Setup Complete!"
@@ -135,11 +169,11 @@ echo ""
 echo "  1. Edit your .env file:"
 echo "     nano $REPO_DIR/.env"
 echo ""
-echo "  2. Start the bot + IB Gateway:"
-echo "     cd $REPO_DIR"
-echo "     docker compose up -d"
+echo "  2. Start the bot (systemd-managed — comes back on reboot):"
+echo "     systemctl start trading-bot"
 echo ""
 echo "  3. Check status:"
+echo "     systemctl status trading-bot"
 echo "     docker compose ps"
 echo "     docker compose logs -f trading-bot"
 echo ""
@@ -151,7 +185,11 @@ echo "     Push to GitHub -> Linode pulls + restarts in ~5 min"
 echo "     Manual trigger: $REPO_DIR/deploy/auto-deploy.sh"
 echo "     Logs: tail -f /var/log/auto-deploy.log"
 echo ""
-echo "  6. VNC into IB Gateway (debugging):"
+echo "  6. Watchdog is ON (every 2 min):"
+echo "     Restarts stack if containers drop or dashboard /health fails."
+echo "     Logs: tail -f /var/log/trading-bot-watchdog.log"
+echo ""
+echo "  7. VNC into IB Gateway (debugging):"
 echo "     ssh -L 5900:localhost:5900 root@YOUR_IP"
 echo "     Then connect VNC viewer to localhost:5900"
 echo ""
