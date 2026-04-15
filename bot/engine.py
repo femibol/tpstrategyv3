@@ -537,7 +537,7 @@ class TradingEngine:
                         # Merge persisted fields into broker-synced position
                         live_pos = self.positions[symbol]
                         for key in ("trailing_stop", "trailing_stop_pct", "targets_hit",
-                                    "_alpaca_stop_order_id", "_broker_stop_price",
+                                    "broker_stop_order_id", "broker_stop_price",
                                     "_high_water_mark", "_trail_phase",
                                     "breakeven_hit", "tp_trail_activated",
                                     "momentum_runner", "entry_type", "atr_value",
@@ -972,9 +972,9 @@ class TradingEngine:
                     self._monitor_positions()
 
                     # 3a. BROKER STOP WATCHDOG: verify every position has a
-                    # live stop order at Alpaca. Places emergency stops for
-                    # any unprotected positions. This is the safety net that
-                    # makes the system crash-proof.
+                    # live stop order at the broker. Places emergency stops
+                    # for any unprotected positions. This is the safety net
+                    # that makes the system crash-proof.
                     if self.positions:
                         self._verify_broker_stops()
 
@@ -1724,7 +1724,7 @@ class TradingEngine:
                             pos.get("stop_loss", 0)
                         )
                         if broker_stop > 0:
-                            self._update_alpaca_stop(symbol, broker_stop)
+                            self._update_broker_stop(symbol, broker_stop)
                     if current_price <= pos.get("trailing_stop", 0):
                         phase = pos.get("_trail_phase", 0)
                         positions_to_close.append(
@@ -1800,7 +1800,7 @@ class TradingEngine:
                             pos.get("stop_loss", 0)
                         )
                         if broker_stop > 0:
-                            self._update_alpaca_stop(symbol, broker_stop)
+                            self._update_broker_stop(symbol, broker_stop)
                     if current_price <= pos.get("trailing_stop", 0):
                         positions_to_close.append(
                             (symbol, "trailing_stop",
@@ -3166,25 +3166,36 @@ class TradingEngine:
         # In fast-moving momentum stocks, a signal from even 30s ago can be
         # dangerously stale. This prevents entering on outdated analysis.
         signal_generated = signal.get("generated_at") or signal.get("time")
-        if signal_generated and action == "buy":
-            try:
-                if isinstance(signal_generated, str):
-                    from dateutil.parser import parse as parse_dt
-                    signal_dt = parse_dt(signal_generated)
-                    if signal_dt.tzinfo is None:
-                        signal_dt = signal_dt.replace(tzinfo=self.tz)
-                else:
-                    signal_dt = signal_generated
-                signal_age_secs = (now - signal_dt).total_seconds()
-                max_signal_age = 60  # seconds
-                if signal_age_secs > max_signal_age:
-                    log.warning(
-                        f"STALE SIGNAL REJECT: {symbol} signal is {signal_age_secs:.0f}s old "
-                        f"(max {max_signal_age}s) — momentum may have reversed"
+        if action == "buy":
+            if signal_generated:
+                try:
+                    if isinstance(signal_generated, str):
+                        from dateutil.parser import parse as parse_dt
+                        signal_dt = parse_dt(signal_generated)
+                        if signal_dt.tzinfo is None:
+                            signal_dt = signal_dt.replace(tzinfo=self.tz)
+                    else:
+                        signal_dt = signal_generated
+                    signal_age_secs = (now - signal_dt).total_seconds()
+                    max_signal_age = 60  # seconds
+                    if signal_age_secs > max_signal_age:
+                        log.warning(
+                            f"STALE SIGNAL REJECT: {symbol} signal is {signal_age_secs:.0f}s old "
+                            f"(max {max_signal_age}s) — momentum may have reversed"
+                        )
+                        return
+                except Exception as e:
+                    log.debug(
+                        f"STALE SIGNAL GUARD: couldn't parse timestamp for {symbol} "
+                        f"({signal_generated!r}): {e} — guard skipped for this signal"
                     )
-                    return
-            except Exception:
-                pass  # If we can't parse the time, proceed with price checks
+            else:
+                # Visibility: signals without generated_at/time silently bypass
+                # the age guard. If this fires a lot, fix the signal producer.
+                log.debug(
+                    f"STALE SIGNAL GUARD: no generated_at/time on {symbol} signal "
+                    f"(strategy={signal.get('strategy', '?')}) — guard skipped"
+                )
 
         # STALE PRICE GUARD — reject if live price has moved too far from signal price.
         # Prevents entering with outdated stops/targets (e.g. signal at $46 but price now $49).
@@ -3544,17 +3555,11 @@ class TradingEngine:
                 # Gap fade detection data (premarket→open transition)
                 "prev_close": signal.get("prev_close", 0),
                 "premarket_high": signal.get("premarket_high", current_price),
-                # BROKER-SIDE STOP TRACKING: These track the actual stop order
-                # at Alpaca so the bot can cancel/replace as trailing moves up.
-                # If set, the position is protected even if the bot crashes.
-                "_alpaca_stop_order_id": (
-                    alpaca_result.get("stop_order_id")
-                    if executed_via == "Alpaca-Direct" and alpaca_result else None
-                ),
-                "_broker_stop_price": stop_loss_price if (
-                    executed_via == "Alpaca-Direct" and alpaca_result
-                    and alpaca_result.get("stop_order_id")
-                ) else 0,
+                # BROKER-SIDE STOP TRACKING: Track the actual stop order at the
+                # broker so the bot can cancel/replace as trailing moves up.
+                # If the IBKR order came back as a bracket, capture the SL leg ID.
+                "broker_stop_order_id": (order.get("sl_order_id") if order.get("bracket") else None),
+                "broker_stop_price": stop_loss_price if order.get("bracket") else 0,
             }
 
         # Rich notification with full trade details
@@ -3749,7 +3754,7 @@ class TradingEngine:
         if self.broker and self.broker.is_connected():
             # Cancel any existing broker-side stop (bracket leg) before closing
             # to avoid the stop triggering after we've already sold
-            stop_order_id = pos.get("_ibkr_stop_order_id") or pos.get("broker_stop_order_id")
+            stop_order_id = pos.get("broker_stop_order_id")
             if stop_order_id:
                 try:
                     self.broker.cancel_order(stop_order_id)
@@ -3765,38 +3770,18 @@ class TradingEngine:
             )
             if order:
                 close_broker = "IBKR"
-                # Detect partial fill
+                # Detect partial fill. Don't block the monitor thread retrying
+                # here — the remaining qty is handled by leaving the position
+                # tracked with a reduced quantity, so the next monitor cycle
+                # (3s later) issues a clean retry.
                 filled = order.get("quantity", close_qty)
                 requested = order.get("requested_quantity", close_qty)
                 if filled < requested:
                     partial_fill_remaining = requested - filled
                     log.warning(
                         f"PARTIAL FILL ON CLOSE: {symbol} filled {filled}/{requested} — "
-                        f"{partial_fill_remaining} shares still held. Retrying immediately."
+                        f"{partial_fill_remaining} shares still held. Will retry next cycle."
                     )
-                    import time
-                    time.sleep(1)
-                    retry_order = self.broker.place_order(
-                        symbol=symbol,
-                        action=action,
-                        quantity=partial_fill_remaining,
-                        order_type="MARKET",
-                        outside_rth=outside_rth,
-                    )
-                    if retry_order:
-                        retry_filled = retry_order.get("quantity", 0)
-                        if retry_filled >= partial_fill_remaining:
-                            log.info(
-                                f"PARTIAL FILL RETRY SUCCESS: {symbol} remaining "
-                                f"{partial_fill_remaining} shares filled"
-                            )
-                            partial_fill_remaining = 0
-                        else:
-                            partial_fill_remaining -= retry_filled
-                            log.warning(
-                                f"PARTIAL FILL RETRY: {symbol} filled {retry_filled} more, "
-                                f"{partial_fill_remaining} still remain"
-                            )
             else:
                 log.error(f"IBKR close order FAILED for {symbol}")
         else:
@@ -4435,7 +4420,7 @@ class TradingEngine:
         broker level, even if the bot crashes or hangs.
 
         The bot's internal trailing stop logic updates the broker-side stop
-        as profits increase via _update_alpaca_stop().
+        as profits increase via _update_broker_stop().
         """
         # LONG-ONLY GUARD: This function is for ENTRIES only.
         if side != "buy":
@@ -4578,13 +4563,13 @@ class TradingEngine:
             log.error(f"ALPACA DIRECT ORDER exception for {symbol}: {e}")
             return None
 
-    def _update_alpaca_stop(self, symbol, new_stop_price):
+    def _update_broker_stop(self, symbol, new_stop_price):
         """Update broker-side stop order at IBKR when trailing stop moves up.
 
-        PROFESSIONAL ARCHITECTURE: Every time the bot's internal trailing stop
-        ratchets higher, we cancel the old broker stop and place a new one.
-        This ensures IBKR ALWAYS has the current stop price — if the bot
-        crashes, IBKR enforces the latest stop, not the original entry stop.
+        Every time the bot's internal trailing stop ratchets higher, we cancel
+        the old broker stop and place a new one. This ensures IBKR always has
+        the current stop price — if the bot crashes, IBKR enforces the latest
+        stop, not the original entry stop.
         """
         if not self.broker or not self.broker.is_connected():
             return False
@@ -4601,7 +4586,7 @@ class TradingEngine:
             return False
 
         # Only update if the new stop is meaningfully higher (>0.2% difference)
-        current_broker_stop = pos.get("_broker_stop_price", 0)
+        current_broker_stop = pos.get("broker_stop_price", 0)
         if current_broker_stop > 0:
             improvement = (new_stop_price - current_broker_stop) / current_broker_stop
             if improvement < 0.002:  # Less than 0.2% improvement — skip
@@ -4609,7 +4594,7 @@ class TradingEngine:
 
         try:
             # Cancel existing stop order if we have one tracked
-            old_stop_id = pos.get("_ibkr_stop_order_id") or pos.get("broker_stop_order_id")
+            old_stop_id = pos.get("broker_stop_order_id")
             if old_stop_id:
                 try:
                     self.broker.cancel_order(old_stop_id)
@@ -4631,9 +4616,8 @@ class TradingEngine:
             )
 
             if result:
-                pos["_ibkr_stop_order_id"] = result.get("order_id")
                 pos["broker_stop_order_id"] = result.get("order_id")
-                pos["_broker_stop_price"] = new_stop_price
+                pos["broker_stop_price"] = new_stop_price
                 pos["_last_broker_stop_update"] = now_ts
                 log.info(
                     f"BROKER STOP UPDATED: {symbol} stop → ${new_stop_price:.2f} "
@@ -4662,23 +4646,30 @@ class TradingEngine:
             # Get all open orders from IBKR
             open_orders = self.broker.get_open_orders() if hasattr(self.broker, 'get_open_orders') else []
 
-            # Build set of symbols that have active SELL stop orders
-            symbols_with_stops = set()
+            # Build symbol -> total stop qty map from active SELL stops
+            stop_qty_by_symbol = {}
             for order in (open_orders or []):
                 if (order.get("order_type") in ("STOP", "STP") and
                         order.get("action") == "SELL" and
                         order.get("status") in ("Submitted", "PreSubmitted", "ApiPending")):
-                    symbols_with_stops.add(order.get("symbol"))
+                    sym = order.get("symbol")
+                    qty = int(order.get("quantity", 0) or 0)
+                    if sym:
+                        stop_qty_by_symbol[sym] = stop_qty_by_symbol.get(sym, 0) + qty
 
             # Check each position
             with self._positions_lock:
                 positions_snapshot = dict(self.positions)
 
             for symbol, pos in positions_snapshot.items():
-                if symbol in symbols_with_stops:
-                    continue  # Has active stop — good
+                pos_qty = int(pos.get("quantity", 0) or 0)
+                covered_qty = stop_qty_by_symbol.get(symbol, 0)
 
-                # NO BROKER STOP — this is dangerous! Place one immediately.
+                # Stop covers full position — good
+                if covered_qty >= pos_qty and pos_qty > 0:
+                    continue
+
+                # Either no stop, or stop undercovers the position.
                 stop_price = pos.get("stop_loss") or pos.get("trailing_stop")
                 if not stop_price:
                     entry = pos.get("entry_price", 0)
@@ -4686,11 +4677,17 @@ class TradingEngine:
                     stop_price = entry * (1 - stop_pct)
 
                 if stop_price and stop_price > 0:
-                    log.warning(
-                        f"STOP WATCHDOG: {symbol} has NO broker-side stop! "
-                        f"Placing emergency stop @ ${stop_price:.2f}"
-                    )
-                    self._update_alpaca_stop(symbol, stop_price)
+                    if covered_qty == 0:
+                        log.warning(
+                            f"STOP WATCHDOG: {symbol} has NO broker-side stop! "
+                            f"Placing emergency stop @ ${stop_price:.2f} for {pos_qty} shares"
+                        )
+                    else:
+                        log.warning(
+                            f"STOP WATCHDOG: {symbol} stop undercovers position "
+                            f"({covered_qty}/{pos_qty} shares). Replacing with full-size stop @ ${stop_price:.2f}"
+                        )
+                    self._update_broker_stop(symbol, stop_price)
 
         except Exception as e:
             log.debug(f"Broker stop verification error: {e}")
@@ -4717,7 +4714,6 @@ class TradingEngine:
                         if isinstance(v, datetime):
                             serialized[k] = v.isoformat()
                         elif k.startswith("_") and k not in (
-                            "_alpaca_stop_order_id", "_broker_stop_price",
                             "_high_water_mark", "_trail_phase",
                         ):
                             continue  # Skip internal transient state
@@ -4725,11 +4721,20 @@ class TradingEngine:
                             serialized[k] = v
                     state[symbol] = serialized
 
+            # Skip the disk write if nothing changed since last persist.
+            # This matters because _persist_positions runs every 3 seconds
+            # while positions are open, and most ticks don't mutate state.
+            serialized_bytes = json.dumps(state, sort_keys=True, default=str).encode()
+            state_hash = hash(serialized_bytes)
+            if getattr(self, "_last_persisted_hash", None) == state_hash:
+                return
+
             # Atomic write: write to temp file then rename (prevents corruption)
             tmp_file = positions_file + ".tmp"
             with open(tmp_file, "w") as f:
                 json.dump(state, f, indent=2, default=str)
             os.replace(tmp_file, positions_file)
+            self._last_persisted_hash = state_hash
         except Exception as e:
             log.debug(f"Position persistence error: {e}")
 
