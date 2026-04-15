@@ -110,7 +110,7 @@ class TradingEngine:
         self._pending_orders = set()  # Symbols with orders currently in-flight
 
         # Exit cooldown - prevent re-closing recently closed positions
-        # Tracks {symbol: close_datetime} to block re-entry via Alpaca sync
+        # Tracks {symbol: close_datetime} to block re-entry via broker sync
         self._recently_closed = {}  # {symbol: datetime when closed}
         self._exit_cooldown_secs = 300  # 5 minutes: don't re-add/re-close within this window
 
@@ -166,10 +166,10 @@ class TradingEngine:
         # Notifications
         self.notifier = Notifier(self.config)
 
-        # Connect to IBKR (also syncs Alpaca balance + positions on Render)
+        # Connect to IBKR (sole broker for data + execution)
         self._connect_broker()
 
-        # Log actual balance after broker/Alpaca sync
+        # Log actual balance after broker sync
         log.info(f"Active Capital: ${self.current_balance:,.2f} (after broker sync)")
         self.notifier.system_alert(
             f"Bot starting in {self.config.mode.upper()} mode "
@@ -521,9 +521,6 @@ class TradingEngine:
                 "Ensure IB Gateway is running and IBKR_HOST/IBKR_PORT are set correctly.",
                 max_retries,
             )
-            # On Render or when IBKR unavailable, sync positions from Alpaca
-            if os.environ.get("RENDER") or self.config.alpaca_api_key:
-                self._sync_positions_from_alpaca()
 
         # RESTORE PERSISTED STATE: Merge saved position data (trailing stops,
         # targets hit, broker order IDs) into broker-synced positions.
@@ -740,15 +737,6 @@ class TradingEngine:
             id="auto_tune_eod"
         )
 
-        # Alpaca position sync every 2 minutes (prevents phantom positions)
-        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
-            self.scheduler.add_job(
-                self._sync_positions_with_broker,
-                "interval", minutes=2,
-                id="alpaca_position_sync"
-            )
-            log.info("Alpaca position sync scheduled (every 2 min)")
-
     def start(self):
         """Start the trading engine main loop."""
         try:
@@ -906,21 +894,6 @@ class TradingEngine:
                 # --- FULL CYCLE (every ~10 seconds = 3 fast ticks) ---
                 if scalp_tick >= 3:
                     scalp_tick = 0
-
-                    # 0. Process startup trim queue (close excess positions from Alpaca sync)
-                    if hasattr(self, '_startup_trim_queue') and self._startup_trim_queue:
-                        trim_batch = self._startup_trim_queue[:3]  # Close 3 at a time
-                        self._startup_trim_queue = self._startup_trim_queue[3:]
-                        for sym in trim_batch:
-                            if sym in self.positions:
-                                pnl_pct = self.positions[sym].get("unrealized_pnl_pct", 0)
-                                log.warning(
-                                    f"STARTUP TRIM: Closing {sym} (P&L: {pnl_pct:.1%}) "
-                                    f"— over position limit. "
-                                    f"{len(self._startup_trim_queue)} remaining in queue."
-                                )
-                                self._close_position(sym, "position_cap",
-                                                     f"Over position limit — closing weakest")
 
                     # 0a. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
@@ -2931,7 +2904,7 @@ class TradingEngine:
     def _validate_synced_position(self, symbol):
         """Validate a synced position against safety guards (blocked symbols, falling knife, bearish news).
 
-        Called during broker position sync (IBKR/Alpaca startup + continuous) to ensure
+        Called during IBKR position sync (startup + continuous) to ensure
         positions that exist at the broker but were NOT entered through _execute_signal
         still get checked. Returns (is_valid, reason) tuple.
 
@@ -3324,8 +3297,8 @@ class TradingEngine:
             tp_pct = self.config.take_profit_pct
             take_profit_price = current_price * (1 + tp_pct)  # Long-only: target is always above
 
-        # --- Broker Execution Chain ---
-        # Priority: IBKR -> TradersPost -> Alpaca Direct
+        # --- Broker Execution ---
+        # IBKR is the sole execution broker. No fallback chain.
         order = None
         executed_via = None
 
@@ -3620,9 +3593,9 @@ class TradingEngine:
                                          "Excessive slippage on entry — R:R invalid")
 
     def _close_position(self, symbol, reason_type, reason_msg):
-        """Close a position through broker chain. Thread-safe with double-close guard."""
+        """Close a position through IBKR. Thread-safe with double-close guard."""
         # Exit cooldown: skip if this symbol was recently closed
-        # (prevents Alpaca sync re-add → monitor re-close → TradersPost rejection loop)
+        # (prevents broker sync re-add → monitor re-close → rejection loop)
         if symbol in self._recently_closed:
             elapsed = (datetime.now(self.tz) - self._recently_closed[symbol]).total_seconds()
             if elapsed < self._exit_cooldown_secs:
@@ -3709,40 +3682,6 @@ class TradingEngine:
                     return
             except Exception as e:
                 log.warning(f"Could not verify broker position for {symbol}: {e}")
-
-        # Alpaca qty verification (when IBKR is not connected)
-        if not (self.broker and self.broker.is_connected()) and self.config.alpaca_api_key:
-            try:
-                pos_data = self._alpaca_api_call(f"/v2/positions/{symbol}")
-                if pos_data and isinstance(pos_data, dict):
-                    alpaca_qty = abs(int(float(pos_data.get("qty", 0))))
-                    alpaca_side_long = float(pos_data.get("qty", 0)) > 0
-                    if not alpaca_side_long:
-                        log.error(
-                            f"CLOSE BLOCKED: {symbol} is SHORT at Alpaca — "
-                            f"long-only bot won't touch. Cover manually."
-                        )
-                        with self._positions_lock:
-                            self.positions.pop(symbol, None)
-                        return
-                    if alpaca_qty <= 0:
-                        log.warning(f"CLOSE BLOCKED: {symbol} 0 shares at Alpaca. Removing phantom.")
-                        with self._positions_lock:
-                            self.positions.pop(symbol, None)
-                        return
-                    if close_qty > alpaca_qty:
-                        log.warning(
-                            f"CLOSE QTY ADJUSTED: {symbol} bot has {close_qty} but Alpaca "
-                            f"holds {alpaca_qty}. Capping to prevent short."
-                        )
-                        close_qty = alpaca_qty
-                elif pos_data == self._ALPACA_NOT_FOUND:
-                    log.warning(f"CLOSE BLOCKED: {symbol} not found at Alpaca. Removing phantom.")
-                    with self._positions_lock:
-                        self.positions.pop(symbol, None)
-                    return
-            except Exception as e:
-                log.warning(f"Could not verify Alpaca position for {symbol}: {e}")
 
         # === IBKR-ONLY CLOSE (Professional Architecture) ===
         # Single broker close. If IBKR is connected, close through it.
@@ -3945,7 +3884,7 @@ class TradingEngine:
             except Exception:
                 pass
 
-        # Record exit cooldown — prevents Alpaca sync from re-adding this
+        # Record exit cooldown — prevents broker sync from re-adding this
         # position during settlement delay (causes duplicate exit rejections)
         if partial_fill_remaining == 0:
             self._recently_closed[symbol] = datetime.now(self.tz)
@@ -3982,25 +3921,25 @@ class TradingEngine:
         close_broker = None  # Track which broker ACTUALLY closed it
 
         # Verify actual broker qty before partial close to prevent overselling
-        actual_broker_qty = None
-        if self.config.alpaca_api_key and self.config.alpaca_secret_key:
+        if self.broker and self.broker.is_connected():
             try:
-                pos_data = self._alpaca_api_call(f"/v2/positions/{symbol}")
-                if isinstance(pos_data, dict):
-                    actual_broker_qty = abs(int(float(pos_data.get("qty", 0))))
+                broker_positions = self.broker.get_positions()
+                broker_pos = broker_positions.get(symbol) if broker_positions else None
+                if broker_pos:
+                    actual_broker_qty = int(broker_pos.get("quantity", 0) or 0)
                     if actual_broker_qty <= 0:
-                        log.warning(f"PARTIAL CLOSE BLOCKED: {symbol} not held at Alpaca (0 shares)")
+                        log.warning(f"PARTIAL CLOSE BLOCKED: {symbol} not held at broker (0 shares)")
                         return
                     if qty_to_close > actual_broker_qty:
                         log.warning(
                             f"PARTIAL CLOSE QTY CAPPED: {symbol} requested {qty_to_close} "
-                            f"but Alpaca holds {actual_broker_qty}. Capping to prevent short."
+                            f"but broker holds {actual_broker_qty}. Capping to prevent short."
                         )
                         qty_to_close = actual_broker_qty
             except Exception as e:
-                log.debug(f"Could not verify Alpaca position for partial close {symbol}: {e}")
+                log.debug(f"Could not verify broker position for partial close {symbol}: {e}")
 
-        # Execute via broker chain
+        # Execute via IBKR (sole execution broker)
         order = None
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
         if self.broker and self.broker.is_connected():
@@ -4011,24 +3950,6 @@ class TradingEngine:
             )
             if order:
                 close_broker = "IBKR"
-
-        if not order:
-            # Alpaca-first: close directly at the broker
-            alpaca_exists = self._alpaca_position_exists(symbol)
-            if alpaca_exists is True:
-                alpaca_result = self._close_via_alpaca(symbol, qty=qty_to_close)
-                if alpaca_result and alpaca_result.get("success"):
-                    close_broker = "Alpaca-Direct"
-
-            if not close_broker and self.tp_broker:
-                close_signal = {
-                    "symbol": symbol, "action": "exit",
-                    "quantity": qty_to_close, "price": current_price,
-                    "source": "exit",
-                }
-                tp_result = self.tp_broker.send_signal(close_signal)
-                if tp_result and tp_result.get("success"):
-                    close_broker = "TradersPost"
 
         # If nothing actually closed, don't update position
         if not close_broker:
@@ -4260,18 +4181,8 @@ class TradingEngine:
             self._close_position(symbol, "emergency", reason)
 
     def _update_account(self):
-        """Update account balance and tracking (works with or without IBKR)."""
-        # Try to sync from Alpaca first (source of truth on Render)
-        if self.config.alpaca_api_key:
-            try:
-                account = self._alpaca_api_call("/v2/account")
-                if account and isinstance(account, dict):
-                    equity = float(account.get("equity", 0))
-                    if equity > 0:
-                        self.current_balance = equity
-            except Exception:
-                pass
-        elif self.broker and self.broker.is_connected():
+        """Update account balance and tracking via IBKR."""
+        if self.broker and self.broker.is_connected():
             account = self.broker.get_account_summary()
             if account:
                 self.current_balance = account.get(
@@ -4315,253 +4226,6 @@ class TradingEngine:
             "daily_pnl": self.daily_pnl,
         })
 
-    # --- Alpaca Helpers ---
-
-    def _verify_order_fill(self, order_id, timeout=5):
-        """Check if an Alpaca order has filled within timeout seconds.
-        Returns order dict if filled, False if not filled, None on error."""
-        if not order_id:
-            return False
-        import requests as _req
-        api_key = self.config.alpaca_api_key
-        secret_key = self.config.alpaca_secret_key
-        base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-        headers = {
-            "APCA-API-KEY-ID": api_key,
-            "APCA-API-SECRET-KEY": secret_key,
-        }
-        # Poll order status every 0.5s up to timeout
-        checks = int(timeout / 0.5)
-        for _ in range(max(checks, 1)):
-            try:
-                resp = _req.get(
-                    f"{base_url}/v2/orders/{order_id}",
-                    headers=headers,
-                    timeout=5,
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    status = data.get("status", "")
-                    if status == "filled":
-                        return data
-                    elif status in ("canceled", "expired", "rejected"):
-                        log.warning(f"Order {order_id} {status}")
-                        return False
-                    # Still pending — wait and retry
-                time.sleep(0.5)
-            except Exception as e:
-                log.debug(f"Order fill check error: {e}")
-                time.sleep(0.5)
-        # Timeout — order may still be pending
-        log.warning(f"Order {order_id} not filled within {timeout}s")
-        return False
-
-    def _get_time_in_force(self):
-        """Return 'day' during regular market hours, 'gtc' otherwise.
-        Crypto always uses 'gtc' since it trades 24/7."""
-        now = datetime.now(self.tz)
-        # Crypto is always GTC
-        # During regular hours (9:30-16:00 ET, Mon-Fri), use DAY
-        day_name = now.strftime("%A")
-        if day_name in ("Saturday", "Sunday"):
-            return "gtc"
-        regular_open = now.replace(hour=9, minute=30, second=0)
-        regular_close = now.replace(hour=16, minute=0, second=0)
-        if regular_open <= now <= regular_close:
-            return "day"
-        return "gtc"
-
-    # --- Alpaca Position Sync (prevents phantom positions) ---
-
-    # Sentinel for 404 responses — distinct from None (error) and [] (empty list)
-    _ALPACA_NOT_FOUND = "NOT_FOUND"
-
-    def _alpaca_api_call(self, endpoint, method="GET"):
-        """Make a raw HTTP call to Alpaca Trading API.
-        No alpaca_trade_api library needed - uses requests directly.
-        Returns:
-          - Parsed JSON on success (200)
-          - _ALPACA_NOT_FOUND sentinel on 404
-          - None on any other error (timeout, 500, etc.)
-        Callers MUST check for None before using the result."""
-        api_key = self.config.alpaca_api_key
-        secret_key = self.config.alpaca_secret_key
-        if not api_key or not secret_key:
-            return None
-        base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-        try:
-            import requests as _req
-            resp = _req.request(
-                method,
-                f"{base_url}{endpoint}",
-                headers={
-                    "APCA-API-KEY-ID": api_key,
-                    "APCA-API-SECRET-KEY": secret_key,
-                },
-                timeout=10,
-            )
-            if resp.status_code == 200:
-                return resp.json()
-            elif resp.status_code == 404:
-                return self._ALPACA_NOT_FOUND
-            else:
-                log.debug(f"Alpaca API {endpoint}: HTTP {resp.status_code}")
-                return None
-        except Exception as e:
-            log.debug(f"Alpaca API {endpoint} error: {e}")
-            return None
-
-    def _place_order_via_alpaca(self, symbol, qty, side, limit_price=None,
-                                stop_loss=None, take_profit=None):
-        """Place a bracket order via Alpaca API.
-
-        PROFESSIONAL ARCHITECTURE: Every entry creates an atomic bracket order
-        (entry + broker-side stop) so positions are ALWAYS protected at the
-        broker level, even if the bot crashes or hangs.
-
-        The bot's internal trailing stop logic updates the broker-side stop
-        as profits increase via _update_broker_stop().
-        """
-        # LONG-ONLY GUARD: This function is for ENTRIES only.
-        if side != "buy":
-            log.error(
-                f"SHORT-SELL BLOCKED: _place_order_via_alpaca called with side='{side}' "
-                f"for {symbol}. Long-only bot refuses to create short position."
-            )
-            return None
-        api_key = self.config.alpaca_api_key
-        secret_key = self.config.alpaca_secret_key
-        if not api_key or not secret_key:
-            return None
-        try:
-            import requests as _req
-            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-            headers = {
-                "APCA-API-KEY-ID": api_key,
-                "APCA-API-SECRET-KEY": secret_key,
-                "Content-Type": "application/json",
-            }
-            tif = self._get_time_in_force()
-            extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
-
-            order_data = {
-                "symbol": symbol,
-                "qty": str(qty),
-                "side": side,
-                "type": "market",
-                "time_in_force": tif,
-            }
-
-            # Extended hours require limit orders on Alpaca
-            if extended or (tif == "gtc" and limit_price):
-                if not limit_price:
-                    try:
-                        snap = _req.get(
-                            f"{base_url}/v2/snapshot?symbols={symbol}",
-                            headers=headers, timeout=5,
-                        )
-                        if snap.status_code == 200:
-                            snap_data = snap.json().get(symbol, {})
-                            last = float(snap_data.get("latestTrade", {}).get("p", 0))
-                            if last > 0:
-                                buffer = 0.005
-                                limit_price = last * (1 + buffer) if side == "buy" else last * (1 - buffer)
-                    except Exception:
-                        pass
-                if limit_price:
-                    order_data["type"] = "limit"
-                    order_data["limit_price"] = str(round(limit_price, 2))
-                    order_data["extended_hours"] = True
-                    order_data["time_in_force"] = "day"
-                    log.info(f"Extended hours limit order: {side} {symbol} @ ${limit_price:.2f}")
-
-            # BRACKET ORDER: Attach broker-side stop-loss to every entry.
-            # This is the critical safety net — if the bot dies, Alpaca still
-            # enforces the stop. The bot updates this stop as trailing moves up.
-            if stop_loss and not extended:
-                order_data["order_class"] = "oto"  # One-Triggers-Other
-                order_data["stop_loss"] = {
-                    "stop_price": str(round(stop_loss, 2)),
-                }
-                # Note: We use OTO (not bracket) because we don't set a fixed
-                # take-profit — the bot's trailing stop + profit-taking handles
-                # upside exits. We only need the broker to protect downside.
-                log.info(
-                    f"BRACKET ENTRY: {side.upper()} {qty} {symbol} with "
-                    f"broker-side stop @ ${stop_loss:.2f}"
-                )
-            else:
-                log.info(
-                    f"SIMPLE ENTRY: {side.upper()} {qty} {symbol} "
-                    f"(no bracket — {'extended hours' if extended else 'no stop price'})"
-                )
-
-            resp = _req.post(
-                f"{base_url}/v2/orders",
-                headers=headers,
-                json=order_data,
-                timeout=10,
-            )
-            if resp.status_code in (200, 201):
-                data = resp.json()
-                result = {
-                    "success": True,
-                    "order_id": data.get("id"),
-                    "status": data.get("status"),
-                    "method": "alpaca_direct",
-                }
-                # Extract the stop-loss leg order ID from bracket response
-                legs = data.get("legs", [])
-                for leg in legs:
-                    if leg.get("type") == "stop" or leg.get("order_type") == "stop":
-                        result["stop_order_id"] = leg.get("id")
-                        log.info(
-                            f"BROKER STOP ACTIVE: {symbol} stop order_id={leg.get('id')} "
-                            f"@ ${stop_loss:.2f}"
-                        )
-                        break
-                log.info(
-                    f"ALPACA DIRECT ORDER: {side.upper()} {qty} {symbol} "
-                    f"| order_id={data.get('id', 'unknown')} status={data.get('status')}"
-                )
-                return result
-            else:
-                # If bracket fails, fall back to simple market order
-                if order_data.get("order_class"):
-                    log.warning(
-                        f"BRACKET ORDER FAILED for {symbol} (HTTP {resp.status_code}): "
-                        f"{resp.text[:200]} — falling back to simple market order"
-                    )
-                    order_data.pop("order_class", None)
-                    order_data.pop("stop_loss", None)
-                    order_data.pop("take_profit", None)
-                    resp2 = _req.post(
-                        f"{base_url}/v2/orders",
-                        headers=headers,
-                        json=order_data,
-                        timeout=10,
-                    )
-                    if resp2.status_code in (200, 201):
-                        data2 = resp2.json()
-                        log.warning(
-                            f"FALLBACK ORDER OK: {side.upper()} {qty} {symbol} — "
-                            f"NO broker-side stop! Bot must monitor this position."
-                        )
-                        return {
-                            "success": True,
-                            "order_id": data2.get("id"),
-                            "status": data2.get("status"),
-                            "method": "alpaca_direct",
-                            "no_broker_stop": True,
-                        }
-                log.error(
-                    f"ALPACA DIRECT ORDER FAILED: {side.upper()} {symbol} "
-                    f"HTTP {resp.status_code} | {resp.text[:200]}"
-                )
-                return {"success": False, "status_code": resp.status_code}
-        except Exception as e:
-            log.error(f"ALPACA DIRECT ORDER exception for {symbol}: {e}")
-            return None
 
     def _update_broker_stop(self, symbol, new_stop_price):
         """Update broker-side stop order at IBKR when trailing stop moves up.
@@ -4782,472 +4446,6 @@ class TradingEngine:
         except Exception as e:
             log.debug(f"Could not load persisted positions: {e}")
             return {}
-
-    def _close_via_alpaca(self, symbol, qty=None, side="sell"):
-        """Close a position directly via Alpaca API.
-        First cancels any pending orders for the symbol, then closes.
-        Full close: DELETE /v2/positions/{symbol}
-        Partial close: DELETE /v2/positions/{symbol}?qty={qty}"""
-        api_key = self.config.alpaca_api_key
-        secret_key = self.config.alpaca_secret_key
-        if not api_key or not secret_key:
-            return None
-        try:
-            import requests as _req
-            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-            headers = {
-                "APCA-API-KEY-ID": api_key,
-                "APCA-API-SECRET-KEY": secret_key,
-            }
-
-            # Step 1: Cancel ALL pending orders for this symbol first
-            # Alpaca rejects position close if there are pending orders
-            try:
-                orders_resp = _req.get(
-                    f"{base_url}/v2/orders",
-                    headers=headers,
-                    params={"status": "open", "symbols": symbol},
-                    timeout=10,
-                )
-                if orders_resp.status_code == 200:
-                    open_orders = orders_resp.json()
-                    for order in open_orders:
-                        order_id = order.get("id")
-                        if order_id:
-                            _req.delete(
-                                f"{base_url}/v2/orders/{order_id}",
-                                headers=headers,
-                                timeout=5,
-                            )
-                            log.info(f"Cancelled pending order {order_id} for {symbol} before close")
-            except Exception as e:
-                log.warning(f"Could not cancel orders for {symbol} before close: {e}")
-
-            # Step 2: Try DELETE /v2/positions/{symbol} first
-            url = f"{base_url}/v2/positions/{symbol}"
-            if qty:
-                url += f"?qty={qty}"
-            resp = _req.delete(url, headers=headers, timeout=10)
-            if resp.status_code in (200, 204):
-                close_type = f"partial ({qty} shares)" if qty else "full"
-                log.info(f"ALPACA DIRECT CLOSE: {symbol} {close_type} closed (HTTP {resp.status_code})")
-                return {"success": True, "method": "alpaca_delete", "status_code": resp.status_code}
-
-            log.warning(
-                f"ALPACA DELETE failed for {symbol} (HTTP {resp.status_code}: {resp.text[:100]})"
-                f" — trying POST /v2/orders sell fallback..."
-            )
-
-            # Step 3: Fallback — submit a market sell order directly
-            # DELETE can fail if there are order conflicts; a direct sell always works
-            pos_resp = _req.get(
-                f"{base_url}/v2/positions/{symbol}",
-                headers=headers,
-                timeout=5,
-            )
-            if pos_resp.status_code == 200:
-                pos_data = pos_resp.json()
-                broker_qty = abs(int(float(pos_data.get("qty", 0))))
-                broker_side_long = float(pos_data.get("qty", 0)) > 0
-
-                # LONG-ONLY GUARD: Refuse to close short positions at Alpaca
-                # (they shouldn't exist — if they do, manual intervention needed)
-                if not broker_side_long:
-                    log.error(
-                        f"SHORT POSITION DETECTED at Alpaca: {symbol} qty={pos_data.get('qty')}. "
-                        f"Long-only bot will NOT touch this. Cover manually."
-                    )
-                    return {"success": False, "reason": "short_position_at_broker"}
-
-                # Cap requested qty to actual broker position to prevent overselling
-                if qty and qty > broker_qty:
-                    log.warning(
-                        f"SELL QTY CAPPED: {symbol} requested {qty} but Alpaca "
-                        f"holds {broker_qty}. Capping to prevent short."
-                    )
-                    qty = broker_qty
-                if broker_qty <= 0:
-                    log.warning(f"ALPACA CLOSE: {symbol} has 0 shares at broker — nothing to close")
-                    return {"success": False, "reason": "no_position"}
-
-                sell_qty = str(qty) if qty else str(broker_qty)
-                sell_side = "sell"
-                extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
-                sell_order = {
-                    "symbol": symbol,
-                    "qty": sell_qty,
-                    "side": sell_side,
-                    "type": "market",
-                    "time_in_force": self._get_time_in_force(),
-                }
-                # Extended hours: convert to limit order
-                if extended:
-                    cur_price = float(pos_data.get("current_price", 0))
-                    if cur_price > 0:
-                        buffer = 0.005
-                        lp = cur_price * (1 - buffer) if sell_side == "sell" else cur_price * (1 + buffer)
-                        sell_order["type"] = "limit"
-                        sell_order["limit_price"] = str(round(lp, 2))
-                        sell_order["extended_hours"] = True
-                        sell_order["time_in_force"] = "day"
-                sell_resp = _req.post(
-                    f"{base_url}/v2/orders",
-                    headers={**headers, "Content-Type": "application/json"},
-                    json=sell_order,
-                    timeout=10,
-                )
-                if sell_resp.status_code in (200, 201):
-                    log.info(
-                        f"ALPACA SELL ORDER: {symbol} {sell_qty} shares submitted "
-                        f"(HTTP {sell_resp.status_code})"
-                    )
-                    return {"success": True, "method": "alpaca_sell_order", "status_code": sell_resp.status_code}
-                else:
-                    log.error(
-                        f"ALPACA SELL ORDER ALSO FAILED: {symbol} HTTP {sell_resp.status_code} "
-                        f"| {sell_resp.text[:200]}"
-                    )
-
-            return {"success": False, "status_code": resp.status_code}
-        except Exception as e:
-            log.error(f"ALPACA DIRECT CLOSE exception for {symbol}: {e}")
-            return None
-
-    def _alpaca_position_exists(self, symbol):
-        """Check if a position exists on the Alpaca broker side via raw HTTP.
-        Returns True/False, or None if unable to check."""
-        api_key = self.config.alpaca_api_key
-        secret_key = self.config.alpaca_secret_key
-        if not api_key or not secret_key:
-            return None
-        try:
-            import requests as _req
-            base_url = getattr(self.config, 'alpaca_base_url', 'https://paper-api.alpaca.markets')
-            resp = _req.get(
-                f"{base_url}/v2/positions/{symbol}",
-                headers={
-                    "APCA-API-KEY-ID": api_key,
-                    "APCA-API-SECRET-KEY": secret_key,
-                },
-                timeout=5,
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                return abs(float(data.get("qty", 0))) > 0
-            elif resp.status_code == 404:
-                return False
-            return None
-        except Exception:
-            return None
-
-    def _sync_positions_from_alpaca(self):
-        """On startup (Render), load actual positions from Alpaca so internal
-        state matches reality. Also syncs account balance so position sizing
-        is based on real equity, not the static settings.yaml value.
-        Uses raw HTTP - no alpaca_trade_api library needed."""
-        if not self.config.alpaca_api_key or not self.config.alpaca_secret_key:
-            log.info("Alpaca credentials not set - starting with empty positions")
-            return
-
-        # --- Sync account balance from Alpaca ---
-        try:
-            account = self._alpaca_api_call("/v2/account")
-            if isinstance(account, dict):
-                equity = float(account.get("equity", 0))
-                buying_power = float(account.get("buying_power", 0))
-                cash = float(account.get("cash", 0))
-                if equity > 0:
-                    self.current_balance = equity
-                    self.peak_balance = max(self.peak_balance, equity)
-                    self.start_of_day_balance = equity
-                    log.info(
-                        f"Alpaca account synced: equity=${equity:,.2f} | "
-                        f"cash=${cash:,.2f} | buying_power=${buying_power:,.2f}"
-                    )
-                else:
-                    log.warning("Alpaca returned $0 equity - keeping config starting_balance")
-            else:
-                log.warning("Alpaca account API returned no data")
-        except Exception as e:
-            log.warning(f"Alpaca account balance sync failed: {e}")
-
-        try:
-            broker_positions = self._alpaca_api_call("/v2/positions")
-            # FAIL-SAFE: If API returned None (error) or NOT_FOUND sentinel,
-            # do NOT assume 0 positions — skip sync to avoid wiping tracking
-            if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
-                log.warning("Alpaca startup sync: API returned no data — skipping position sync")
-                return
-            if not isinstance(broker_positions, list):
-                log.warning(f"Alpaca startup sync: unexpected response type {type(broker_positions)} — skipping")
-                return
-
-            # Sort by unrealized P&L descending — best performers get tracked first
-            # so if we hit the position cap, we keep winners and flag losers
-            try:
-                broker_positions.sort(
-                    key=lambda p: float(p.get("unrealized_plpc", 0) or 0),
-                    reverse=True,
-                )
-            except (ValueError, TypeError):
-                pass  # If sort fails, use original order
-
-            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
-            over_limit_positions = []
-
-            # Pre-fetch pending orders to avoid syncing positions that are being sold
-            pending_sell_symbols = set()
-            try:
-                open_orders = self._alpaca_api_call("/v2/orders?status=open")
-                if isinstance(open_orders, list):
-                    for o in open_orders:
-                        if o.get("side") == "sell" and o.get("status") in ("new", "accepted", "pending_new"):
-                            pending_sell_symbols.add(o.get("symbol", "").upper())
-                    if pending_sell_symbols:
-                        log.info(f"Startup sync: found pending SELL orders for: {', '.join(pending_sell_symbols)}")
-            except Exception as e:
-                log.debug(f"Could not check pending orders during sync: {e}")
-
-            for p in broker_positions:
-                symbol = p.get("symbol", "").upper()
-                qty = abs(float(p.get("qty", 0)))
-                entry = float(p.get("avg_entry_price", 0))
-                side = "long" if float(p.get("qty", 0)) > 0 else "short"
-
-                # AUTO-CLOSE short positions — long-only bot should NEVER have shorts.
-                # Instead of just skipping (which leaves the short open), cover it.
-                if side == "short":
-                    log.error(
-                        f"SHORT DETECTED at Alpaca: {symbol} ({int(qty)} shares). "
-                        f"Auto-covering — long-only bot must not hold shorts."
-                    )
-                    try:
-                        self._close_via_alpaca(symbol)
-                        log.info(f"AUTO-COVERED short: {symbol}")
-                        self.notifier.risk_alert(
-                            f"AUTO-COVERED short position: {symbol} ({int(qty)} shares) "
-                            f"at Alpaca. Long-only bot should never have shorts."
-                        )
-                    except Exception as e:
-                        log.error(f"Failed to auto-cover short {symbol}: {e}")
-                    continue
-
-                # Skip positions with pending sell orders — they're being closed
-                if symbol in pending_sell_symbols:
-                    log.info(
-                        f"SYNC: Skipping {symbol} — has pending SELL order "
-                        f"(position is being closed)"
-                    )
-                    continue
-
-                unrealized_pnl_pct = float(p.get("unrealized_plpc", 0) or 0)
-                # Use current market price for smarter stop/target
-                current_mkt = None
-                if self.market_data:
-                    try:
-                        current_mkt = self.market_data.get_price(symbol)
-                    except Exception:
-                        pass
-                ref_price = current_mkt or entry
-                is_crypto = any(symbol.upper().endswith(s) for s in ["-USD", "-USDT"])
-                stop_pct = 0.05 if is_crypto else self.config.risk_config.get("stop_loss_pct", 0.03)
-                tp_pct = 0.08 if is_crypto else self.config.risk_config.get("take_profit_pct", 0.20)
-
-                # Validate synced position against safety guards
-                is_valid, reject_reason = self._validate_synced_position(symbol)
-                if not is_valid:
-                    log.warning(
-                        f"ALPACA SYNC FLAGGED: {symbol} fails safety check: {reject_reason}. "
-                        f"Will close on first cycle."
-                    )
-
-                self.positions[symbol] = {
-                    "symbol": symbol,
-                    "direction": side,
-                    "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
-                    "entry_price": entry,
-                    "entry_time": datetime.now(self.tz),
-                    "stop_loss": ref_price * (1 - stop_pct) if side == "long" else ref_price * (1 + stop_pct),
-                    "take_profit": ref_price * (1 + tp_pct) if side == "long" else ref_price * (1 - tp_pct),
-                    "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
-                    "strategy": "synced_from_alpaca",
-                    "executed_via": "Alpaca",
-                    "sync_flagged": reject_reason if not is_valid else "",
-                    "max_hold_bars": 40,
-                    "bar_seconds": 300,
-                    "max_hold_days": 5,  # Synced positions: 5-day default hold limit
-                    "unrealized_pnl_pct": unrealized_pnl_pct,
-                }
-
-                # Track positions over the limit for auto-trim
-                if len(self.positions) > max_pos:
-                    over_limit_positions.append((symbol, unrealized_pnl_pct))
-
-            if broker_positions:
-                log.info(f"Synced {len(broker_positions)} positions from Alpaca on startup")
-            else:
-                log.info("Alpaca reports 0 open positions")
-
-            # Queue flagged positions for close on first cycle
-            flagged = [s for s, p in self.positions.items() if p.get("sync_flagged")]
-            if flagged:
-                if not hasattr(self, '_slippage_close_queue'):
-                    self._slippage_close_queue = []
-                self._slippage_close_queue.extend(flagged)
-                details = [f"{s} ({self.positions[s].get('sync_flagged', '')})" for s in flagged]
-                log.warning(
-                    f"ALPACA SYNC: {len(flagged)} positions queued for close: "
-                    f"{', '.join(details)}"
-                )
-
-            # --- POSITION CAP ENFORCEMENT ---
-            # If broker has more positions than max_positions, flag the weakest
-            # for immediate closure. This prevents the 50+ position problem.
-            if over_limit_positions:
-                over_count = len(self.positions) - max_pos
-                log.warning(
-                    f"OVER POSITION LIMIT: {len(self.positions)} positions synced "
-                    f"(max: {max_pos}). Will close {over_count} weakest on first cycle."
-                )
-                # Sort over-limit by P&L ascending (worst first)
-                over_limit_positions.sort(key=lambda x: x[1])
-                symbols_to_close = [s for s, _ in over_limit_positions[:over_count]]
-                # Mark for immediate closure on first main loop cycle
-                self._startup_trim_queue = symbols_to_close
-                self.notifier.risk_alert(
-                    f"Position cap exceeded: {len(self.positions)} synced from Alpaca "
-                    f"(max: {max_pos}). Queuing {over_count} weakest for closure: "
-                    f"{', '.join(symbols_to_close[:10])}"
-                    f"{'...' if len(symbols_to_close) > 10 else ''}"
-                )
-        except Exception as e:
-            log.warning(f"Alpaca startup sync failed: {e}")
-
-    def _sync_positions_with_broker(self):
-        """Reconcile internal positions with actual Alpaca broker positions.
-        Removes phantom positions that exist internally but not at the broker.
-        Uses raw HTTP - no alpaca_trade_api library needed.
-        CRITICAL: If the API call fails, do NOT touch positions (fail-safe).
-        Thread-safe: uses _positions_lock for all position dict mutations."""
-        if not self.config.alpaca_api_key or not self.config.alpaca_secret_key:
-            return
-
-        try:
-            broker_positions = self._alpaca_api_call("/v2/positions")
-        except Exception as e:
-            log.warning(f"Alpaca position sync failed: {e}")
-            return
-
-        # FAIL-SAFE: If API returned None (error) or NOT_FOUND, do NOT wipe positions.
-        if broker_positions is None or broker_positions == self._ALPACA_NOT_FOUND:
-            log.warning("Alpaca position sync: API returned None/NotFound — skipping sync to avoid wiping tracking")
-            return
-        if not isinstance(broker_positions, list):
-            log.warning(f"Alpaca position sync: unexpected response type {type(broker_positions)} — skipping")
-            return
-
-        broker_symbols = {p.get("symbol", "").upper() for p in broker_positions}
-
-        # Clean up expired entries from _recently_closed (older than cooldown window)
-        now = datetime.now(self.tz)
-        expired = [s for s, t in self._recently_closed.items()
-                   if (now - t).total_seconds() > self._exit_cooldown_secs]
-        for s in expired:
-            del self._recently_closed[s]
-
-        with self._positions_lock:
-            max_pos = self.risk_manager.max_positions if hasattr(self, 'risk_manager') else 25
-
-            # Also sync positions that exist at broker but NOT in bot tracking
-            for p in broker_positions:
-                sym = p.get("symbol", "").upper()
-                if sym and sym not in self.positions:
-                    # Don't re-add positions if we're already at or over the cap
-                    if len(self.positions) >= max_pos:
-                        log.debug(
-                            f"POSITION SYNC: Skipping {sym} — at position cap "
-                            f"({len(self.positions)}/{max_pos})"
-                        )
-                        continue
-
-                    # Skip symbols that were recently closed (settlement delay
-                    # can cause Alpaca to still show positions we already exited,
-                    # re-adding them causes duplicate exit signals to TradersPost)
-                    if sym in self._recently_closed:
-                        elapsed = (now - self._recently_closed[sym]).total_seconds()
-                        log.debug(
-                            f"POSITION SYNC: Skipping {sym} — closed {elapsed:.0f}s ago "
-                            f"(cooldown {self._exit_cooldown_secs}s)"
-                        )
-                        continue
-
-                    qty = abs(float(p.get("qty", 0)))
-                    entry = float(p.get("avg_entry_price", 0))
-                    side = "long" if float(p.get("qty", 0)) > 0 else "short"
-
-                    # Auto-close short positions found during continuous sync
-                    if side == "short":
-                        log.error(
-                            f"SHORT DETECTED during sync: {sym} ({int(qty)} shares). "
-                            f"Auto-covering immediately."
-                        )
-                        try:
-                            self._close_via_alpaca(sym)
-                            log.info(f"AUTO-COVERED short during sync: {sym}")
-                        except Exception as e:
-                            log.error(f"Failed to auto-cover short {sym}: {e}")
-                        continue
-
-                    # Validate against safety guards before syncing
-                    is_valid, reject_reason = self._validate_synced_position(sym)
-                    self.positions[sym] = {
-                        "symbol": sym,
-                        "direction": side,
-                        "quantity": int(qty) if qty and qty == qty and qty == int(qty) else (qty if qty and qty == qty else 0),
-                        "entry_price": entry,
-                        "entry_time": datetime.now(self.tz),
-                        "stop_loss": entry * (1 - self.config.risk_config.get("stop_loss_pct", 0.03)),
-                        "take_profit": entry * (1 + self.config.risk_config.get("take_profit_pct", 0.20)),
-                        "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
-                        "strategy": "synced_from_alpaca",
-                        "executed_via": "Alpaca",
-                        "sync_flagged": reject_reason if not is_valid else "",
-                        "max_hold_bars": 40,
-                        "bar_seconds": 300,
-                        "max_hold_days": 5,
-                    }
-                    if not is_valid:
-                        log.warning(
-                            f"POSITION SYNC FLAGGED: {sym} fails safety check: {reject_reason}. "
-                            f"Closing immediately."
-                        )
-                        self._close_position(sym, "sync_safety_reject", reject_reason)
-                    else:
-                        log.info(f"POSITION SYNC: Added missing {sym} from Alpaca broker to bot tracking")
-
-            # Find phantom positions (in bot but not at broker)
-            phantoms = []
-            for symbol in list(self.positions.keys()):
-                if symbol.upper() not in broker_symbols:
-                    phantoms.append(symbol)
-
-            removed = 0
-            for symbol in phantoms:
-                pos = self.positions[symbol]
-                # Clean up positions that were broker-executed (not simulated)
-                if pos.get("executed_via") in ("TradersPost", "Alpaca", "Alpaca-Direct", "Phantom-Cleanup"):
-                    log.warning(
-                        f"POSITION SYNC: Removing phantom {symbol} "
-                        f"(in bot but not at Alpaca broker)"
-                    )
-                    del self.positions[symbol]
-                    removed += 1
-
-        if removed > 0:
-            log.info(
-                f"Position sync complete: removed {removed} phantom(s), "
-                f"{len(self.positions)} positions remain"
-            )
 
     def _claude_pre_trade(self, signal):
         """Ask Claude whether to take a trade based on recent performance + learned patterns.
@@ -6470,7 +5668,7 @@ class TradingEngine:
         - Hold into after-hours with tightened stops (bullish runners)
         - Hold overnight (strong multi-day plays)
 
-        After-hours selling uses Alpaca extended_hours=True with limit orders.
+        After-hours selling uses IBKR outside-RTH limit orders.
         """
         log.info("=== END OF DAY ===")
 
@@ -6943,9 +6141,6 @@ class TradingEngine:
             status = "connected"
         elif getattr(self, "polygon", None) and self.polygon.enabled:
             source = "Polygon.io"
-            status = "connected"
-        elif self.market_data and self.market_data.alpaca:
-            source = "Alpaca"
             status = "connected"
         else:
             source = "Yahoo Finance"

@@ -4,8 +4,8 @@
 # ===========================================================
 #
 # Provisions a Linode (or any Ubuntu 22.04 VPS) to run:
-#   1. Trading Bot (Python, auto-restart, Alpaca + Polygon)
-#   2. IB Gateway (optional — adds real-time IBKR tick data)
+#   1. IB Gateway (headless IBKR connection)
+#   2. Trading Bot (Python, auto-restart, IBKR-only execution)
 #   3. Dashboard (Flask, port 5000)
 #   4. Auto-deploy (checks GitHub every 5 min, pulls + restarts)
 #
@@ -16,10 +16,9 @@
 #   3. Run:
 #      git clone https://github.com/femibol/tpstrategyv3.git /opt/trading-bot
 #      cd /opt/trading-bot && bash deploy/linode-setup.sh
-#   4. Edit .env with your API keys: nano /opt/trading-bot/.env
+#   4. Edit .env with your IBKR credentials: nano /opt/trading-bot/.env
 #   5. Start the bot:
-#      docker compose up -d              # Bot only (Alpaca + Polygon)
-#      docker compose --profile ibkr up -d  # Bot + IB Gateway
+#      docker compose up -d
 #
 # ===========================================================
 
@@ -75,18 +74,14 @@ if [ ! -f ".env" ]; then
     echo "  IMPORTANT: Edit .env with your API keys!"
     echo "  nano $REPO_DIR/.env"
     echo ""
-    echo "  REQUIRED (minimum to run):"
-    echo "    ALPACA_API_KEY=your_key"
-    echo "    ALPACA_SECRET_KEY=your_secret"
-    echo "    POLYGON_API_KEY=your_key"
-    echo ""
-    echo "  RECOMMENDED (notifications):"
-    echo "    DISCORD_WEBHOOK_URL=your_webhook"
-    echo ""
-    echo "  OPTIONAL (for IBKR real-time data):"
+    echo "  REQUIRED (IBKR-only execution):"
     echo "    IB_USERNAME=your_ibkr_username"
     echo "    IB_PASSWORD=your_ibkr_password"
     echo "    IB_TRADING_MODE=paper"
+    echo ""
+    echo "  RECOMMENDED:"
+    echo "    ANTHROPIC_API_KEY=your_key     # Claude pre-trade validation"
+    echo "    DISCORD_WEBHOOK_URL=your_hook  # notifications"
     echo "================================================"
     echo ""
 else
@@ -140,26 +135,23 @@ echo ""
 echo "  1. Edit your .env file:"
 echo "     nano $REPO_DIR/.env"
 echo ""
-echo "  2. Start the bot (Alpaca + Polygon, no IBKR):"
+echo "  2. Start the bot + IB Gateway:"
 echo "     cd $REPO_DIR"
 echo "     docker compose up -d"
 echo ""
-echo "  3. OR start with IBKR real-time data:"
-echo "     docker compose --profile ibkr up -d"
-echo ""
-echo "  4. Check status:"
+echo "  3. Check status:"
 echo "     docker compose ps"
 echo "     docker compose logs -f trading-bot"
 echo ""
-echo "  5. Access dashboard:"
+echo "  4. Access dashboard:"
 echo "     http://YOUR_IP:5000"
 echo ""
-echo "  6. Auto-deploy is ON:"
+echo "  5. Auto-deploy is ON:"
 echo "     Push to GitHub -> Linode pulls + restarts in ~5 min"
 echo "     Manual trigger: $REPO_DIR/deploy/auto-deploy.sh"
 echo "     Logs: tail -f /var/log/auto-deploy.log"
 echo ""
-echo "  7. VNC into IB Gateway (if using IBKR):"
+echo "  6. VNC into IB Gateway (debugging):"
 echo "     ssh -L 5900:localhost:5900 root@YOUR_IP"
 echo "     Then connect VNC viewer to localhost:5900"
 echo ""
