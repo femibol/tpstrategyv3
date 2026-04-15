@@ -43,6 +43,7 @@ from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
 from bot.learning.auto_tuner import AutoTuner
+from bot.learning.weekly_review import WeeklyReview
 from bot.signals.regime_detector import RegimeDetector
 from bot.risk.hedging import HedgingManager
 from bot.integrations.google_sheets import GoogleSheetsLogger
@@ -299,6 +300,13 @@ class TradingEngine:
         self.auto_tuner = AutoTuner(self.config)
         if self.auto_tuner.is_available():
             log.info("Auto-Tuner ENABLED - bot will self-optimize parameters")
+
+        # Weekly Review — Saturday 10am ET deep Claude digest to Discord.
+        # Needs both Claude AND Discord to be useful; constructor is cheap
+        # either way.
+        self.weekly_review = WeeklyReview(self.config, self.ai_insights, self.notifier)
+        if self.weekly_review.is_available():
+            log.info("Weekly Review ENABLED — Saturday 10am ET to Discord")
 
         # Load persisted trade history from previous sessions
         if self.trade_analyzer:
@@ -736,6 +744,19 @@ class TradingEngine:
             day_of_week="mon-fri",
             id="auto_tune_eod"
         )
+
+        # Weekly digest — Saturday 10am ET.
+        # Reviews the last 7 days, hands to Claude, posts Discord embed.
+        self.scheduler.add_job(
+            self._run_weekly_review,
+            "cron", day_of_week="sat", hour=10, minute=0,
+            id="weekly_review"
+        )
+
+    def _run_weekly_review(self):
+        """Scheduler callback — delegate to WeeklyReview if configured."""
+        if self.weekly_review and self.weekly_review.is_available():
+            self.weekly_review.run(self.trade_history)
 
     def start(self):
         """Start the trading engine main loop."""
