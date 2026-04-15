@@ -62,14 +62,31 @@ if echo "$CHANGED_FILES" | grep -qE "^(Dockerfile|requirements\.txt)$"; then
     echo "$LOG_PREFIX Dockerfile or requirements.txt changed — full rebuild needed"
 fi
 
-# Restart the bot
+# Restart the bot. Prefer systemctl if the unit is installed — that way
+# the stack stays under systemd's control and the watchdog sees consistent state.
+USE_SYSTEMD=false
+if systemctl list-unit-files trading-bot.service >/dev/null 2>&1; then
+    USE_SYSTEMD=true
+fi
+
 if [ "$NEEDS_REBUILD" = true ]; then
-    echo "$LOG_PREFIX Rebuilding and restarting trading-bot..."
+    echo "$LOG_PREFIX Rebuilding trading-bot image..."
     docker compose build trading-bot --quiet
-    docker compose up -d trading-bot
+    if [ "$USE_SYSTEMD" = true ]; then
+        echo "$LOG_PREFIX Restarting via systemctl..."
+        systemctl restart trading-bot
+    else
+        docker compose up -d trading-bot
+    fi
 else
     echo "$LOG_PREFIX Restarting trading-bot (no rebuild needed)..."
-    docker compose up -d --force-recreate trading-bot
+    if [ "$USE_SYSTEMD" = true ]; then
+        # Systemd-managed: bounce just the bot container via compose so we
+        # don't take down IB Gateway (avoids the slow cold-start login).
+        docker compose up -d --force-recreate trading-bot
+    else
+        docker compose up -d --force-recreate trading-bot
+    fi
 fi
 
 # Verify it's running

@@ -39,3 +39,6 @@ When asked to review trades:
 - "no open position" — trying to close something already closed
 - Rate limiting — 3s global cooldown, 3 signals per 60s per symbol (exits bypass this)
 - Empty `TRADERSPOST_API_KEY` is OK — code treats it as optional
+
+## PR Workflow
+- **Enable auto-merge on every PR Claude creates** (call `mcp__github__enable_pr_auto_merge` right after `create_pull_request`). The PR then merges itself the moment it's mergeable — clean state, no required checks outstanding.
