@@ -2807,14 +2807,19 @@ class TradingEngine:
         """Run all strategies and collect signals."""
         all_signals = []
 
-        # Feed trend rider its active position count so it respects max_positions
+        # Feed trend rider its active positions so it can:
+        #   - enforce max_positions
+        #   - run rotation scoring (swap weakest for clearly superior candidates)
         tr_strat = self.strategies.get("daily_trend_rider")
-        if tr_strat and hasattr(tr_strat, "set_active_count"):
-            tr_count = sum(
-                1 for p in self.positions.values()
-                if p.get("trend_rider") or p.get("strategy") == "daily_trend_rider"
-            )
-            tr_strat.set_active_count(tr_count)
+        if tr_strat:
+            tr_positions = {
+                sym: pos for sym, pos in self.positions.items()
+                if pos.get("trend_rider") or pos.get("strategy") == "daily_trend_rider"
+            }
+            if hasattr(tr_strat, "set_active_positions"):
+                tr_strat.set_active_positions(tr_positions)
+            elif hasattr(tr_strat, "set_active_count"):
+                tr_strat.set_active_count(len(tr_positions))
 
         for name, strategy in self.strategies.items():
             try:
@@ -2980,6 +2985,34 @@ class TradingEngine:
         action = signal["action"]  # buy, sell, short, cover
         strategy = signal.get("strategy", "unknown")
         now = datetime.now(self.tz)
+
+        # ROTATION: trend rider can mark a signal with rotation_target_symbol
+        # meaning "close that position first, then enter this one."
+        # Synchronous close — if it fails, abort the entry to avoid going over
+        # max_positions or holding both during a brief overlap.
+        rotation_target = signal.get("rotation_target_symbol")
+        if rotation_target and rotation_target != symbol:
+            if rotation_target not in self.positions:
+                # Already gone — fine, proceed with entry as-is
+                log.info(f"ROTATION: target {rotation_target} no longer held, entering {symbol} directly")
+            else:
+                log.info(f"ROTATION CLOSE: {rotation_target} → entering {symbol}")
+                try:
+                    self._close_position(
+                        rotation_target,
+                        "rotation",
+                        f"Replaced by stronger trend rider candidate {symbol}",
+                    )
+                except Exception as e:
+                    log.error(f"ROTATION FAILED: could not close {rotation_target}: {e} — aborting entry of {symbol}")
+                    return
+                # Verify the close took effect (don't enter while old position still tracked)
+                if rotation_target in self.positions:
+                    log.warning(
+                        f"ROTATION ABORTED: {rotation_target} still tracked after close call — "
+                        f"skipping {symbol} entry to avoid overshoot"
+                    )
+                    return
 
         # LONG-ONLY MODE: Only BUY entries allowed. Block everything else.
         # This is the last-resort guard — strategies, risk manager, and webhooks

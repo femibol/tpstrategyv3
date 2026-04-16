@@ -279,6 +279,8 @@ daily_trend_rider:
   max_hold_days: 20                 # Safety cap — exit if held > 20 days regardless
   max_positions: 3                  # Max 3 trend riders simultaneously (own overnight bucket)
   entry_pullback_pct: 0.02          # Pullback to within 2% of 9 EMA for entry
+  rotation_score_ratio: 1.25        # When at capacity, swap weakest if new candidate scores ≥1.25× higher
+  rotation_min_hold_days: 1         # Don't rotate a position that's been held < 1 day (prevents thrash)
   symbols: []                       # Empty — uses dynamically discovered symbols from IBKR scanner
 
 # --- TradingView Signal Strategy ---
