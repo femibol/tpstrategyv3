@@ -67,6 +67,14 @@ PARAM_BOUNDS = {
     "vwap_min_distance": (0.001, 0.008, 0.001),        # Min distance from VWAP
     "vwap_max_distance": (0.008, 0.025, 0.002),        # Max distance from VWAP
 
+    # Daily Trend Rider (multi-day swing strategy)
+    "tr_min_green_days": (2, 6, 1),                    # Consecutive green daily closes required
+    "tr_adx_threshold": (20, 40, 3),                   # Daily ADX minimum
+    "tr_atr_stop_mult": (1.0, 2.5, 0.2),               # Daily-ATR stop multiplier
+    "tr_max_positions": (1, 5, 1),                     # Concurrent trend riders (overnight bucket)
+    "tr_rotation_score_ratio": (1.10, 2.00, 0.10),     # How much better a new candidate must score to rotate
+    "tr_max_hold_days": (10, 30, 2),                   # Safety cap before force-exit
+
     # Strategy allocation (how much capital each strategy gets)
     "alloc_smc_forever": (0.10, 0.40, 0.05),
     "alloc_mean_reversion": (0.05, 0.35, 0.05),
@@ -75,6 +83,7 @@ PARAM_BOUNDS = {
     "alloc_vwap_scalp": (0.03, 0.25, 0.03),
     "alloc_rvol_scalp": (0.05, 0.35, 0.05),
     "alloc_pairs_trading": (0.05, 0.30, 0.05),
+    "alloc_daily_trend_rider": (0.05, 0.35, 0.05),
 }
 
 # Map from AI response keys to config paths
@@ -104,6 +113,12 @@ PARAM_TO_CONFIG = {
     "rvol_scalp_atr_target_mult": ("strategies", "rvol_scalp", "atr_target_multiplier"),
     "vwap_min_distance": ("strategies", "vwap_scalp", "min_distance_from_vwap"),
     "vwap_max_distance": ("strategies", "vwap_scalp", "max_distance_from_vwap"),
+    "tr_min_green_days": ("strategies", "daily_trend_rider", "min_green_days"),
+    "tr_adx_threshold": ("strategies", "daily_trend_rider", "adx_threshold"),
+    "tr_atr_stop_mult": ("strategies", "daily_trend_rider", "atr_stop_multiplier"),
+    "tr_max_positions": ("strategies", "daily_trend_rider", "max_positions"),
+    "tr_rotation_score_ratio": ("strategies", "daily_trend_rider", "rotation_score_ratio"),
+    "tr_max_hold_days": ("strategies", "daily_trend_rider", "max_hold_days"),
     "alloc_smc_forever": ("strategies", "allocation", "smc_forever"),
     "alloc_mean_reversion": ("strategies", "allocation", "mean_reversion"),
     "alloc_momentum": ("strategies", "allocation", "momentum"),
@@ -111,6 +126,7 @@ PARAM_TO_CONFIG = {
     "alloc_vwap_scalp": ("strategies", "allocation", "vwap_scalp"),
     "alloc_rvol_scalp": ("strategies", "allocation", "rvol_scalp"),
     "alloc_pairs_trading": ("strategies", "allocation", "pairs_trading"),
+    "alloc_daily_trend_rider": ("strategies", "allocation", "daily_trend_rider"),
 }
 
 
@@ -304,6 +320,15 @@ class AutoTuner:
         params["vwap_min_distance"] = vwap.get("min_distance_from_vwap", 0.003)
         params["vwap_max_distance"] = vwap.get("max_distance_from_vwap", 0.015)
 
+        # Daily Trend Rider (multi-day swing)
+        tr = self.config.strategies.get("daily_trend_rider", {})
+        params["tr_min_green_days"] = tr.get("min_green_days", 3)
+        params["tr_adx_threshold"] = tr.get("adx_threshold", 25)
+        params["tr_atr_stop_mult"] = tr.get("atr_stop_multiplier", 1.5)
+        params["tr_max_positions"] = tr.get("max_positions", 3)
+        params["tr_rotation_score_ratio"] = tr.get("rotation_score_ratio", 1.25)
+        params["tr_max_hold_days"] = tr.get("max_hold_days", 20)
+
         # Allocations
         alloc = self.config.strategies.get("allocation", {})
         params["alloc_smc_forever"] = alloc.get("smc_forever", 0.25)
@@ -313,6 +338,7 @@ class AutoTuner:
         params["alloc_vwap_scalp"] = alloc.get("vwap_scalp", 0.10)
         params["alloc_rvol_scalp"] = alloc.get("rvol_scalp", 0.15)
         params["alloc_pairs_trading"] = alloc.get("pairs_trading", 0.15)
+        params["alloc_daily_trend_rider"] = alloc.get("daily_trend_rider", 0.15)
 
         return params
 
