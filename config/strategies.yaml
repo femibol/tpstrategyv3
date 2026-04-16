@@ -20,6 +20,7 @@ allocation:
   options_momentum: 0.00
   short_squeeze: 0.00
   pead: 0.00
+  daily_trend_rider: 0.15           # 15% — swing trades on multi-day runners
 
 # --- Mean Reversion Strategy ---
 mean_reversion:
@@ -256,6 +257,29 @@ pead:
   atr_stop_multiplier: 2.5
   max_hold_days: 20
   symbols: []
+
+# --- Daily Trend Rider ---
+# Swing strategy: ride multi-day momentum in liquid stocks.
+# Holds overnight by design (own bucket, separate from intraday overnight cap).
+# Entry: daily green streak + SuperTrend bullish + ADX>25 + intraday pullback.
+# Exit: daily close below SuperTrend or 20 EMA, or momentum exhaustion.
+daily_trend_rider:
+  enabled: true
+  timeframe: "1d"                   # Uses daily bars for scanning, 5-min for entry
+  min_price: 10.00                  # $10+ only — need stable, liquid stocks
+  max_price: 500.00                 # Avoid stocks too expensive for meaningful sizing
+  min_avg_volume: 1000000           # 1M avg daily volume — liquid enough for market orders
+  min_green_days: 3                 # Minimum consecutive green daily closes
+  ema_period: 20                    # Daily 20 EMA — trend floor
+  adx_threshold: 25                 # ADX(14) > 25 on daily = strong trend
+  supertrend_period: 7              # SuperTrend(7,3) — the main trend indicator
+  supertrend_multiplier: 3.0        # SuperTrend ATR multiplier
+  atr_period: 14                    # ATR(14) for stop calculation
+  atr_stop_multiplier: 1.5          # Stop at 1.5x daily ATR from entry
+  max_hold_days: 20                 # Safety cap — exit if held > 20 days regardless
+  max_positions: 3                  # Max 3 trend riders simultaneously (own overnight bucket)
+  entry_pullback_pct: 0.02          # Pullback to within 2% of 9 EMA for entry
+  symbols: []                       # Empty — uses dynamically discovered symbols from IBKR scanner
 
 # --- TradingView Signal Strategy ---
 tradingview_signals:
