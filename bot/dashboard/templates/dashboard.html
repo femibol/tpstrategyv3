@@ -550,6 +550,28 @@
             .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
             .stat-value { font-size: 2em; }
         }
+
+        /* === COMPACT PHONE OVERRIDES (≤ 380px wide — small iPhones) === */
+        /* The 3-col stat / scan / wl / profile grids get cramped at ≤380px.
+         * Drop them to 2 columns and shrink fonts a touch so labels don't truncate. */
+        @media (max-width: 380px) {
+            body { padding: 8px; padding-bottom: calc(80px + var(--safe-bottom)); }
+            .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .scan-grid, .wl-grid, .profile-cards { grid-template-columns: 1fr 1fr; }
+            .pos-details { grid-template-columns: 1fr 1fr; font-size: 0.7em; }
+            .stat-value { font-size: 1.3em; }
+            .header h1 { font-size: 1em; }
+            /* Tables (e.g. trade history) scroll horizontally on tiny screens
+             * instead of crushing all columns — preserves readability. */
+            table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+
+        /* Tap targets on mobile should be at least 44×44 (Apple HIG) */
+        @media (max-width: 768px) {
+            button, .clickable, .tab, [role="button"] {
+                min-height: 44px; min-width: 44px;
+            }
+        }
     </style>
 </head>
 <body>

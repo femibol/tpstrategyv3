@@ -105,14 +105,29 @@ class WeeklyReview:
         win_pnl = sum(t.get("pnl", 0) for t in wins)
         loss_pnl = sum(t.get("pnl", 0) for t in losses)
 
-        # Strategy breakdown
-        by_strategy = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0})
+        # Strategy breakdown — per-strategy totals AND per-strategy daily P&L
+        # series so the digest can show a 7-day trajectory, not just the sum.
+        by_strategy = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0,
+                                           "daily": defaultdict(float)})
         for t in trades:
             s = t.get("strategy", "unknown")
             by_strategy[s]["trades"] += 1
             by_strategy[s]["pnl"] += t.get("pnl", 0)
             if t.get("pnl", 0) > 0:
                 by_strategy[s]["wins"] += 1
+            # Bucket pnl by day-of-week (last 7 days)
+            xt = t.get("exit_time")
+            try:
+                if isinstance(xt, str):
+                    xt_dt = datetime.fromisoformat(xt.replace("Z", "+00:00"))
+                    if xt_dt.tzinfo is not None:
+                        xt_dt = xt_dt.replace(tzinfo=None)
+                else:
+                    xt_dt = xt
+                if xt_dt:
+                    by_strategy[s]["daily"][xt_dt.date()] += float(t.get("pnl", 0) or 0)
+            except Exception:
+                pass
 
         # Exit-reason breakdown (why trades closed)
         exit_reasons = Counter(t.get("reason", "unknown") for t in trades)
@@ -182,8 +197,26 @@ class WeeklyReview:
             stats["by_strategy"].items(),
             key=lambda kv: kv[1]["pnl"]
         )
+        # Helper to render a 7-day P&L sparkline
+        def _spark(daily_dict):
+            from datetime import timedelta as _td, date as _date
+            today = _date.today()
+            chars = "▁▂▃▄▅▆▇█"
+            vals = [daily_dict.get(today - _td(days=i), 0.0) for i in range(6, -1, -1)]
+            if not any(vals):
+                return "·······"
+            mx = max(abs(v) for v in vals) or 1.0
+            out = ""
+            for v in vals:
+                if v == 0:
+                    out += "·"
+                else:
+                    idx = min(int(abs(v) / mx * (len(chars) - 1)), len(chars) - 1)
+                    # Use a different fill for negative days so trend direction is obvious
+                    out += chars[idx] if v > 0 else chars[idx].lower() if False else "▁"
+            return out
         strat_lines = [
-            f"  {name}: {data['trades']}t, {data['wins']}W, ${data['pnl']:+.2f}"
+            f"  {name}: {data['trades']}t, {data['wins']}W, ${data['pnl']:+.2f}, 7d=" + _spark(data['daily'])
             for name, data in strat_summary
         ]
 
@@ -265,17 +298,28 @@ class WeeklyReview:
         top3 = sorted_strats[:3]
         bottom1 = sorted_strats[-1] if len(sorted_strats) > 3 else None
 
+        # 7-day P&L sparkline per strategy — instantly shows direction
+        from datetime import timedelta as _td, date as _date
+        def _spark(daily_dict):
+            today = _date.today()
+            chars = "▁▂▃▄▅▆▇█"
+            vals = [daily_dict.get(today - _td(days=i), 0.0) for i in range(6, -1, -1)]
+            if not any(vals):
+                return "·······"
+            mx = max(abs(v) for v in vals) or 1.0
+            return "".join("·" if v == 0 else chars[min(int(abs(v) / mx * 7), 7)] for v in vals)
+
         strat_field_lines = []
         for name, data in top3:
             wr = (data["wins"] / data["trades"] * 100) if data["trades"] else 0
             strat_field_lines.append(
-                f"✅ {name}: ${data['pnl']:+.0f} ({data['trades']}t, {wr:.0f}%)"
+                f"✅ {name}: ${data['pnl']:+.0f} ({data['trades']}t, {wr:.0f}%) {_spark(data['daily'])}"
             )
         if bottom1 and bottom1[1]["pnl"] < 0:
             name, data = bottom1
             wr = (data["wins"] / data["trades"] * 100) if data["trades"] else 0
             strat_field_lines.append(
-                f"❌ {name}: ${data['pnl']:+.0f} ({data['trades']}t, {wr:.0f}%)"
+                f"❌ {name}: ${data['pnl']:+.0f} ({data['trades']}t, {wr:.0f}%) {_spark(data['daily'])}"
             )
         strat_value = "\n".join(strat_field_lines) or "—"
 

@@ -35,6 +35,11 @@ risk:
   max_spread_pct: 0.02            # Max 2% bid-ask spread — reject illiquid names BEFORE placing order
   max_signal_deviation_pct: 0.03  # Max 3% price drift from signal to live — reject if stale (prevents upside-down trades)
 
+  # --- New-entry safety gates (block buys, never block exits) ---
+  max_total_trades_per_day: 25      # Hard cap on entries across ALL strategies per day (0 = disabled)
+  strategy_daily_dd_pause_pct: 0.03 # If a strategy is down >3% on its allocated capital today, pause its new entries until tomorrow (0 = disabled)
+  premarket_news_check: true        # 6 AM ET sweep over overnight holds — close at open if a bearish catalyst dropped overnight
+
   # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
   # Checked every 3 seconds on every tick — not candle-close.
   # 9 tiers starting at 0.5% — lock in gains EARLY, let runners run later.
