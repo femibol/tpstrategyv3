@@ -18,6 +18,12 @@ services:
     image: gnzsnz/ib-gateway:latest
     restart: unless-stopped
     environment:
+      # IBC + IBKR session scheduling uses container-local time. Without
+      # this, anything time-based (restart windows, log timestamps) runs in
+      # UTC and is confusing vs. what you see in Discord / the dashboard.
+      # gnzsnz honors both TZ (standard Linux) and TIME_ZONE (image-specific).
+      TZ: "America/New_York"
+      TIME_ZONE: "America/New_York"
       TWS_USERID: ${IB_USERNAME}
       TWS_PASSWORD: ${IB_PASSWORD}
       TRADING_MODE: ${IB_TRADING_MODE:-paper}
