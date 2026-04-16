@@ -63,6 +63,10 @@ class DailyTrendRiderStrategy(BaseStrategy):
         self.max_hold_days = config.get("max_hold_days", 20)
         self.max_positions = config.get("max_positions", 3)
         self.entry_pullback_pct = config.get("entry_pullback_pct", 0.02)
+        # Rotation: when at capacity, allow swapping the weakest existing
+        # trend rider for a clearly superior new candidate.
+        self.rotation_score_ratio = config.get("rotation_score_ratio", 1.25)  # New must score ≥1.25× weakest
+        self.rotation_min_hold_days = config.get("rotation_min_hold_days", 1)  # Don't rotate same-day positions
 
         # Daily-bar cache: {symbol: {bars, supertrend, ema20, atr, ...}}
         self._daily_cache = {}
@@ -71,8 +75,9 @@ class DailyTrendRiderStrategy(BaseStrategy):
         self._qualified = {}  # symbol -> daily analysis dict (candidates)
         self._dynamic_symbols = set()  # Dynamically-injected universe
 
-        # Track active trend rider positions (to enforce max_positions)
+        # Track active trend rider positions (to enforce max_positions + rotation)
         self._active_count = 0
+        self._active_positions = {}  # symbol -> position dict (passed in by engine)
 
     def add_dynamic_symbols(self, symbols):
         """Inject dynamically discovered symbols from the engine's scanner."""
@@ -91,12 +96,23 @@ class DailyTrendRiderStrategy(BaseStrategy):
         """Called by engine to tell us how many trend rider positions are open."""
         self._active_count = count
 
+    def set_active_positions(self, positions):
+        """Called by engine each cycle with the current trend rider positions.
+        positions: dict {symbol: position_dict}. Used for rotation scoring."""
+        self._active_positions = positions or {}
+        self._active_count = len(self._active_positions)
+
     # =========================================================================
     # Main signal generation (called every cycle by engine)
     # =========================================================================
 
     def generate_signals(self, market_data):
-        """Two-phase: daily scan for candidates, then intraday entry triggers."""
+        """Two-phase: daily scan for candidates, then intraday entry triggers.
+
+        When at capacity, the candidate competes against the weakest existing
+        position. If it scores ≥ rotation_score_ratio× weaker, the signal is
+        emitted with rotation_target_symbol set so the engine swaps them.
+        """
         signals = []
         now = time.time()
 
@@ -105,21 +121,138 @@ class DailyTrendRiderStrategy(BaseStrategy):
             self._scan_daily_bars(market_data)
             self._last_daily_scan = now
 
-        # Phase 2: Check for intraday entry triggers on qualified candidates
-        if self._active_count >= self.max_positions:
-            return signals
+        # Phase 2: Check for intraday entry triggers on qualified candidates.
+        # Don't break early when at capacity — let candidates compete via rotation.
+        slots_used_this_cycle = 0  # Counts new entries (open slots + rotations)
+        rotated_symbols = set()    # Don't rotate the same position twice in one cycle
 
         for symbol, daily in self._qualified.items():
-            if self._active_count >= self.max_positions:
-                break
+            # Skip candidates we already hold
+            if symbol in self._active_positions:
+                continue
+
             try:
                 sig = self._check_intraday_entry(symbol, daily, market_data)
-                if sig:
+                if not sig:
+                    continue
+
+                effective_active = self._active_count + slots_used_this_cycle - len(rotated_symbols)
+                if effective_active < self.max_positions:
+                    # Open slot — straight entry
                     signals.append(sig)
+                    slots_used_this_cycle += 1
+                else:
+                    # At capacity — try rotation against weakest existing
+                    target = self._consider_rotation(sig, daily, market_data, rotated_symbols)
+                    if target:
+                        sig["rotation_target_symbol"] = target["symbol"]
+                        sig["reason"] = (
+                            f"{sig['reason']} | ROTATION: replacing {target['symbol']} "
+                            f"(score {sig['_rider_score']:.0f} vs {target['score']:.0f})"
+                        )
+                        signals.append(sig)
+                        rotated_symbols.add(target["symbol"])
+                        slots_used_this_cycle += 1
+                        log.info(
+                            f"TREND RIDER ROTATION: in {symbol} ({sig['_rider_score']:.0f}) "
+                            f"out {target['symbol']} ({target['score']:.0f}) — "
+                            f"ratio {sig['_rider_score'] / max(target['score'], 1):.2f}x"
+                        )
             except Exception as e:
                 log.debug(f"Trend rider entry check failed for {symbol}: {e}")
 
         return signals
+
+    # =========================================================================
+    # Rotation scoring
+    # =========================================================================
+
+    @staticmethod
+    def _score_setup(daily_data):
+        """Score a trend setup using its daily metrics. Higher = stronger trend.
+
+        Components (typical ranges):
+          - Green-day streak  (10 pts/day, capped at 80)
+          - ADX strength      (0-100 → use as-is, capped at 60)
+          - Weekly change %   (capped at 30)
+          - Distance above SuperTrend (% × 100, capped at 30)
+
+        Total range: ~30 (just qualified) to ~200 (monster trend).
+        """
+        green = min(daily_data.get("green_days", 0), 8) * 10
+        adx = min(daily_data.get("adx", 0), 60)
+        weekly = min(max(daily_data.get("weekly_change_pct", 0), 0), 30)
+        price = daily_data.get("price", 0)
+        st = daily_data.get("supertrend", 0)
+        st_dist = 0.0
+        if price > 0 and st > 0:
+            st_dist = min((price - st) / price * 100, 30)
+            st_dist = max(st_dist, 0)
+        return green + adx + weekly + st_dist
+
+    def _consider_rotation(self, new_signal, new_daily, market_data, already_rotated):
+        """Score the new candidate vs weakest existing position. Return the
+        weakest if it should be swapped, else None.
+
+        Returns dict {symbol, score} of the position to close, or None.
+        """
+        if not self._active_positions:
+            return None
+
+        new_score = self._score_setup(new_daily)
+        new_signal["_rider_score"] = new_score  # Store for the rotation log
+
+        broker = getattr(market_data, "broker", None)
+        if not broker or not broker.is_connected():
+            return None
+
+        # Score every existing trend rider position with FRESH daily data.
+        # Stale entry-time scores would unfairly favor swapping out positions
+        # that are still strong but were entered when momentum was lower.
+        weakest = None
+        from datetime import datetime as _dt
+        now_ts = _dt.now()
+
+        for sym, pos in self._active_positions.items():
+            if sym in already_rotated:
+                continue
+
+            # Honor minimum hold — don't rotate a position entered today
+            entry_time = pos.get("entry_time")
+            if entry_time:
+                try:
+                    if isinstance(entry_time, str):
+                        et = _dt.fromisoformat(entry_time.replace("Z", "+00:00"))
+                        if et.tzinfo is not None:
+                            et = et.replace(tzinfo=None)
+                    else:
+                        et = entry_time.replace(tzinfo=None) if hasattr(entry_time, 'tzinfo') and entry_time.tzinfo else entry_time
+                    held_days = (now_ts - et).total_seconds() / 86400
+                    if held_days < self.rotation_min_hold_days:
+                        continue
+                except Exception:
+                    pass  # If we can't parse, allow rotation
+
+            try:
+                fresh = self._analyze_daily(sym, broker)
+                if not fresh:
+                    # Position no longer qualifies on its own metrics — easy swap
+                    score = 0
+                else:
+                    score = self._score_setup(fresh)
+
+                if weakest is None or score < weakest["score"]:
+                    weakest = {"symbol": sym, "score": score}
+            except Exception as e:
+                log.debug(f"Rotation rescore failed for {sym}: {e}")
+
+        if not weakest:
+            return None
+
+        # New candidate must be meaningfully stronger
+        if new_score >= weakest["score"] * self.rotation_score_ratio:
+            return weakest
+        return None
 
     # =========================================================================
     # Phase 1: Daily bar scanning
