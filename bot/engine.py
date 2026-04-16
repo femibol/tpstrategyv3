@@ -39,6 +39,7 @@ from bot.strategies.options_momentum import OptionsMomentumStrategy
 from bot.strategies.short_squeeze import ShortSqueezeStrategy
 from bot.strategies.pead import PEADStrategy
 from bot.strategies.momentum_runner import MomentumRunnerStrategy
+from bot.strategies.daily_trend_rider import DailyTrendRiderStrategy
 from bot.data.polygon_scanner import PolygonScanner
 from bot.learning.trade_analyzer import TradeAnalyzer
 from bot.learning.ai_insights import AIInsights
@@ -627,6 +628,7 @@ class TradingEngine:
             "short_squeeze": ShortSqueezeStrategy,
             "pead": PEADStrategy,
             "momentum_runner": MomentumRunnerStrategy,
+            "daily_trend_rider": DailyTrendRiderStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -692,6 +694,11 @@ class TradingEngine:
         if runner_strat and hasattr(runner_strat, "add_dynamic_symbols"):
             runner_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into momentum runner")
+
+        trend_rider_strat = self.strategies.get("daily_trend_rider")
+        if trend_rider_strat and hasattr(trend_rider_strat, "add_dynamic_symbols"):
+            trend_rider_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into daily trend rider")
 
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
@@ -2799,6 +2806,15 @@ class TradingEngine:
     def _run_strategies(self):
         """Run all strategies and collect signals."""
         all_signals = []
+
+        # Feed trend rider its active position count so it respects max_positions
+        tr_strat = self.strategies.get("daily_trend_rider")
+        if tr_strat and hasattr(tr_strat, "set_active_count"):
+            tr_count = sum(
+                1 for p in self.positions.values()
+                if p.get("trend_rider") or p.get("strategy") == "daily_trend_rider"
+            )
+            tr_strat.set_active_count(tr_count)
 
         for name, strategy in self.strategies.items():
             try:
@@ -5485,6 +5501,55 @@ class TradingEngine:
         if tightened > 0:
             log.info(f"Power hour 3:50 PM: tightened stops on {tightened} positions")
 
+    def _check_trend_rider_daily_exit(self, symbol, pos):
+        """Check if today's daily close broke the trend for a trend rider position.
+
+        Fetches today's daily bar (or uses last close) and checks:
+        1. Close below SuperTrend → trend flipped bearish
+        2. Close below 20 EMA → lost moving average support
+        3. First red daily close after 5+ green days → momentum exhaustion
+
+        Returns (should_exit: bool, reason: str).
+        """
+        broker = self.broker if self.broker and self.broker.is_connected() else None
+        if not broker:
+            return False, ""
+
+        try:
+            bars = broker.get_historical_bars(symbol, duration="10 D", bar_size="1 day")
+            if bars is None or len(bars) < 5:
+                return False, ""
+
+            closes = bars["close"].values.astype(float)
+            highs = bars["high"].values.astype(float)
+            lows = bars["low"].values.astype(float)
+            today_close = closes[-1]
+
+            # SuperTrend check
+            st = pos.get("_daily_supertrend", 0)
+            if st > 0 and today_close < st:
+                return True, f"Daily close ${today_close:.2f} < SuperTrend ${st:.2f}"
+
+            # 20 EMA check (use stored value from entry scan, or recompute)
+            ema20 = pos.get("_daily_ema20", 0)
+            if ema20 > 0 and today_close < ema20:
+                return True, f"Daily close ${today_close:.2f} < 20 EMA ${ema20:.2f}"
+
+            # Momentum exhaustion: first red day after a long green streak
+            green_at_entry = pos.get("_daily_green_days", 0)
+            if green_at_entry >= 5 and len(closes) >= 2:
+                today_red = closes[-1] < closes[-2]
+                if today_red:
+                    return True, (
+                        f"First red daily close after {green_at_entry}+ green days — "
+                        f"momentum exhaustion"
+                    )
+
+            return False, ""
+        except Exception as e:
+            log.debug(f"Trend rider daily exit check failed for {symbol}: {e}")
+            return False, ""
+
     def _evaluate_bullish_for_afterhours(self, symbol, pos):
         """Evaluate if a position is bullish enough for after-hours / overnight hold.
 
@@ -5706,7 +5771,12 @@ class TradingEngine:
         # --- Overnight Hold Logic ---
         overnight_cfg = self.config.schedule_config.get("overnight", {})
         overnight_enabled = overnight_cfg.get("enabled", False)
-        max_overnight = overnight_cfg.get("max_overnight_positions", 3)
+        max_overnight = overnight_cfg.get("max_overnight_positions", 0)
+
+        # Trend rider positions have their own overnight bucket — they're
+        # DESIGNED to hold overnight and bypass the intraday overnight cap.
+        trend_rider_cfg = self.config.get_strategy_config("daily_trend_rider")
+        max_trend_riders = trend_rider_cfg.get("max_positions", 3)
 
         if self.positions:
             overnight_holds = []
@@ -5720,6 +5790,9 @@ class TradingEngine:
                 key=lambda x: x[1].get("unrealized_pnl_pct", 0),
                 reverse=True,
             )
+
+            # Count existing trend rider holds separately
+            trend_rider_holds = 0
 
             for symbol, pos in sorted_positions:
                 pnl_pct = pos.get("unrealized_pnl_pct", 0)
@@ -5751,6 +5824,46 @@ class TradingEngine:
                 if pos.get("strategy") == "rvol_scalp":
                     log.info(f"RVOL SCALP EXIT: Closing {symbol} - scalp positions are intraday only")
                     positions_to_close.append(symbol)
+                    continue
+
+                # TREND RIDER: holds overnight by design (own bucket, not counted
+                # against intraday max_overnight). Check daily-bar exit conditions
+                # instead of intraday bullish score.
+                if pos.get("trend_rider") or pos.get("strategy") == "daily_trend_rider":
+                    if trend_rider_holds >= max_trend_riders:
+                        positions_to_close.append(symbol)
+                        log.info(
+                            f"TREND RIDER EOD CLOSE (at capacity): {symbol} | "
+                            f"P&L: {pnl_pct:.1%} | {trend_rider_holds}/{max_trend_riders} riders held"
+                        )
+                        continue
+
+                    # Daily-close exit: check if today's close broke SuperTrend or 20 EMA
+                    should_exit, exit_reason = self._check_trend_rider_daily_exit(symbol, pos)
+                    if should_exit:
+                        positions_to_close.append(symbol)
+                        log.info(
+                            f"TREND RIDER DAILY EXIT: {symbol} | P&L: {pnl_pct:.1%} | "
+                            f"{exit_reason}"
+                        )
+                        continue
+
+                    # Hold overnight with a daily-ATR trailing stop
+                    daily_atr = pos.get("_daily_atr", 0)
+                    if daily_atr > 0:
+                        current_price = pos.get("current_price", pos["entry_price"])
+                        atr_stop = current_price - (daily_atr * 1.5)
+                        if atr_stop > pos.get("stop_loss", 0):
+                            pos["stop_loss"] = round(atr_stop, 2)
+                    pos["overnight_hold"] = True
+                    trend_rider_holds += 1
+                    overnight_holds.append(symbol)
+                    log.info(
+                        f"TREND RIDER OVERNIGHT: {symbol} | P&L: {pnl_pct:.1%} | "
+                        f"Green days: {pos.get('_daily_green_days', '?')} | "
+                        f"Stop: ${pos.get('stop_loss', 0):.2f} | "
+                        f"Rider {trend_rider_holds}/{max_trend_riders}"
+                    )
                     continue
 
                 # Crypto positions trade 24/7 - skip EOD close entirely
