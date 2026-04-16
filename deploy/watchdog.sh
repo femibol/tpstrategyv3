@@ -133,11 +133,43 @@ if [ -z "$restart_reason" ]; then
     fi
 fi
 
-# --- Health-state transitions: alert on down→up and up→down ---
-current_health=$(if [ -n "$restart_reason" ]; then echo "unhealthy"; else echo "healthy"; fi)
-last_health=$(cat "$HEALTH_STATE_FILE" 2>/dev/null || echo "unknown")
+# --- 2FA early warning ---
+# IBKR forces re-authentication periodically (weekly + after specific events).
+# When it does, IB Gateway can't log in until you tap "Approve" on the IBKR
+# mobile app. Watchdog restarts won't fix this — only the user can. So if
+# Gateway has been unhealthy for >30 min during trading hours, post a
+# distinct alert telling the user to check their phone.
+IBGW_UNHEALTHY_SINCE_FILE="/var/run/trading-bot-watchdog.ibgw-unhealthy-since"
+IBGW_2FA_ALERTED_FILE="/var/run/trading-bot-watchdog.ibgw-2fa-alerted"
+TWO_FA_THRESHOLD_SECS=1800  # 30 min
 
-# --- Take action if something is broken and we're not in cooldown ---
+if [ "${ibgw_health:-unknown}" = "unhealthy" ] && in_trading_window; then
+    if [ ! -f "$IBGW_UNHEALTHY_SINCE_FILE" ]; then
+        echo "$now" > "$IBGW_UNHEALTHY_SINCE_FILE"
+    fi
+    unhealthy_since=$(cat "$IBGW_UNHEALTHY_SINCE_FILE" 2>/dev/null || echo "$now")
+    unhealthy_duration=$((now - unhealthy_since))
+    if [ "$unhealthy_duration" -ge "$TWO_FA_THRESHOLD_SECS" ] && [ ! -f "$IBGW_2FA_ALERTED_FILE" ]; then
+        log "ALERT: IB Gateway unhealthy for ${unhealthy_duration}s during trading hours — likely 2FA"
+        discord_alert "🔐 **CHECK YOUR PHONE** — IB Gateway has been unable to connect to IBKR for $((unhealthy_duration / 60)) minutes during trading hours at $(et_ts).
+This is almost always an IBKR 2FA prompt. Open the IBKR mobile app and approve the login.
+Auto-recovery cannot fix this — only you can. Bot is NOT trading until resolved."
+        echo "$now" > "$IBGW_2FA_ALERTED_FILE"
+    fi
+else
+    # Healthy or off-hours — clear the streak so the next outage starts fresh
+    rm -f "$IBGW_UNHEALTHY_SINCE_FILE" "$IBGW_2FA_ALERTED_FILE"
+fi
+
+# --- Outage dedup ---
+# An "outage" is a continuous stretch where restart_reason is set. We alert
+# ONCE at the start, then stay quiet until the outage clears. The previous
+# logic confused itself by marking current_health="healthy" whenever the
+# trading-bot container came back up after a restart — even if ib-gateway
+# was still unhealthy. So when the cooldown expired, it thought it was a
+# brand new outage and re-alerted every 10 min.
+OUTAGE_ALERTED_FILE="/var/run/trading-bot-watchdog.outage-alerted"
+
 if [ -n "$restart_reason" ]; then
     if $cooldown_active; then
         # Already restarted recently — don't hammer. Just exit quietly.
@@ -146,32 +178,26 @@ if [ -n "$restart_reason" ]; then
 
     log "RESTART: $restart_reason"
 
-    # Decide whether to alert: first detection, or return-to-broken after recovery.
-    if [ "$last_health" != "unhealthy" ]; then
+    # Alert once per outage. Re-arms only after a clean recovery.
+    if [ ! -f "$OUTAGE_ALERTED_FILE" ]; then
         discord_alert "🚨 **WATCHDOG ALERT** — Bot is DOWN at $(et_ts)
 $restart_reason
 Attempting auto-recovery now. Trades may be missed until resolved."
+        echo "$now" > "$OUTAGE_ALERTED_FILE"
     fi
 
     log "Running: $COMPOSE up -d"
     if $COMPOSE up -d 2>&1 | sed "s/^/[$(ts)] compose: /"; then
         log "Stack started. Sleeping 15s then verifying..."
         sleep 15
-        if $COMPOSE ps --status running --services | grep -Fxq trading-bot; then
-            log "OK: trading-bot is running after restart"
-            # Recovery alert only if we were previously unhealthy; this is the
-            # "back online" confirmation the user wants to see.
-            if [ "$last_health" = "unhealthy" ] || [ "$last_health" = "unknown" ]; then
-                discord_alert "✅ **WATCHDOG OK** — Bot recovered at $(et_ts) after: $restart_reason"
-            fi
-            current_health=healthy
-        else
+        if ! $COMPOSE ps --status running --services | grep -Fxq trading-bot; then
             log "ERROR: trading-bot still not running after restart. Manual intervention needed."
-            log "  Try: $COMPOSE logs --tail 100 trading-bot"
             discord_alert "⛔ **WATCHDOG CRITICAL** — Restart FAILED at $(et_ts)
 $restart_reason
 Automatic recovery did not succeed. Manual intervention required.
 On the Linode: \`docker compose -f $REPO_DIR/docker-compose.yml logs --tail 100 trading-bot\`"
+        else
+            log "OK: trading-bot is running after restart (recovery alert deferred until full health confirmed)"
         fi
     else
         log "ERROR: $COMPOSE up -d failed"
@@ -181,13 +207,15 @@ Manual intervention required on the Linode."
     fi
     echo "$now" > "$STATE_FILE"
 else
-    # All healthy. If we were previously unhealthy (caught during cooldown,
-    # or recovered between cron runs), emit the recovery alert now.
-    if [ "$last_health" = "unhealthy" ]; then
-        log "OK: bot returned to healthy state"
+    # restart_reason is empty → we believe we're fully healthy this run.
+    # If we previously alerted on an outage, NOW is the moment to send the
+    # recovery message and re-arm dedup for next time.
+    if [ -f "$OUTAGE_ALERTED_FILE" ]; then
+        log "OK: bot returned to healthy state — clearing outage flag"
         discord_alert "✅ **WATCHDOG OK** — Bot is back to healthy state at $(et_ts)"
+        rm -f "$OUTAGE_ALERTED_FILE"
     fi
 fi
 
-# Persist current health state for the next cron run
-echo "$current_health" > "$HEALTH_STATE_FILE"
+# (HEALTH_STATE_FILE no longer used — outage flag replaces it)
+rm -f "$HEALTH_STATE_FILE" 2>/dev/null || true

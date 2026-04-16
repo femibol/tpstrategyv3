@@ -760,10 +760,63 @@ class TradingEngine:
             id="weekly_review"
         )
 
+        # Pre-market news vigilance: 6 AM ET sweep over overnight holds.
+        # If any held position picked up bearish news overnight, flag it for
+        # close at the open (instead of holding into a likely gap-down).
+        self.scheduler.add_job(
+            self._run_premarket_news_check,
+            "cron", day_of_week="mon-fri", hour=6, minute=0,
+            id="premarket_news_check"
+        )
+
     def _run_weekly_review(self):
         """Scheduler callback — delegate to WeeklyReview if configured."""
         if self.weekly_review and self.weekly_review.is_available():
             self.weekly_review.run(self.trade_history)
+
+    def _run_premarket_news_check(self):
+        """6 AM ET sweep: any overnight hold with bearish news drops gets
+        queued for close at the open. Reuses the existing has_bearish_news
+        scanner — no overlap with entry-time filters or _validate_synced_position."""
+        if not self.config.risk_config.get("premarket_news_check", True):
+            return
+        if not self.news_feed or not hasattr(self.news_feed, "has_bearish_news"):
+            return
+        if not self.positions:
+            return
+
+        flagged = []
+        with self._positions_lock:
+            holds = [
+                (sym, pos) for sym, pos in self.positions.items()
+                if pos.get("overnight_hold") or pos.get("trend_rider") or pos.get("strategy") == "daily_trend_rider"
+            ]
+
+        for symbol, _pos in holds:
+            try:
+                # Cover everything since post-close yesterday + overnight (~16 hours).
+                bearish, reason = self.news_feed.has_bearish_news(symbol, lookback_minutes=16 * 60)
+                if bearish:
+                    flagged.append((symbol, reason))
+            except Exception as e:
+                log.debug(f"premarket news check failed for {symbol}: {e}")
+
+        if not flagged:
+            log.info(f"PREMARKET NEWS SWEEP: {len(holds)} overnight holds, all clean")
+            return
+
+        # Queue for close at the open — re-use existing slippage queue mechanism
+        if not hasattr(self, "_slippage_close_queue"):
+            self._slippage_close_queue = []
+        for sym, _ in flagged:
+            self._slippage_close_queue.append(sym)
+
+        details = "\n".join(f"  • {s}: {r}" for s, r in flagged)
+        log.warning(f"PREMARKET NEWS FLAG: {len(flagged)} holds queued for open-close:\n{details}")
+        self.notifier.risk_alert(
+            f"PREMARKET NEWS: {len(flagged)} overnight position(s) had bearish news drop:\n{details}\n"
+            f"Closing at the open to avoid the gap-down."
+        )
 
     def start(self):
         """Start the trading engine main loop."""
@@ -981,6 +1034,12 @@ class TradingEngine:
 
                     # 3b. Portfolio-level risk audit (concentration, exposure, max loss)
                     self._check_portfolio_risk()
+
+                    # 3c. Safety nets: alert (don't auto-act) on conditions
+                    # the watchdog can't see — IBKR disconnect with positions
+                    # held, and per-position stale-data detection.
+                    self._check_ibkr_disconnect_with_positions()
+                    self._check_stuck_positions()
 
                     # 4. Run strategies and generate signals
                     signals = self._run_strategies()
@@ -2943,6 +3002,358 @@ class TradingEngine:
                 f"{', '.join(sorted(force_close_symbols))}"
             )
 
+    def _check_ibkr_disconnect_with_positions(self):
+        """Alert (don't auto-act) if IBKR disconnects while positions are open.
+
+        Bracket stops at IBKR still protect downside, but the bot's internal
+        trailing stop and exit logic stop updating — that's a real risk
+        the user should know about immediately. Discord alert at 5 min,
+        re-alert at 30 min if still down.
+        """
+        try:
+            ibkr_connected = bool(self.broker and self.broker.is_connected())
+            has_positions = bool(self.positions)
+
+            if not has_positions or ibkr_connected:
+                # Reset state on recovery
+                if getattr(self, "_ibkr_disconnect_since", None) is not None:
+                    if getattr(self, "_ibkr_disconnect_alerted", False):
+                        # We did alert; tell the user it's back
+                        self.notifier.system_alert(
+                            "IBKR connection RESTORED. Bot back to normal monitoring.",
+                            level="success",
+                        )
+                    self._ibkr_disconnect_since = None
+                    self._ibkr_disconnect_alerted = False
+                    self._ibkr_disconnect_realerted = False
+                return
+
+            # IBKR is disconnected AND we have open positions.
+            now_ts = datetime.now(self.tz).timestamp()
+            if getattr(self, "_ibkr_disconnect_since", None) is None:
+                self._ibkr_disconnect_since = now_ts
+                return
+
+            duration_secs = now_ts - self._ibkr_disconnect_since
+
+            # First alert at 5 min
+            if duration_secs >= 300 and not getattr(self, "_ibkr_disconnect_alerted", False):
+                pos_list = ", ".join(sorted(self.positions.keys())[:8])
+                more = f" (+{len(self.positions) - 8} more)" if len(self.positions) > 8 else ""
+                self.notifier.risk_alert(
+                    f"IBKR DISCONNECTED for {duration_secs / 60:.0f} min while holding "
+                    f"{len(self.positions)} positions: {pos_list}{more}\n"
+                    f"Broker-side stops are still active at IBKR, but the bot's trailing "
+                    f"stops and exit logic CANNOT update until IBKR reconnects. "
+                    f"Auto-reconnect is retrying — check IB Gateway / 2FA if this persists."
+                )
+                self._ibkr_disconnect_alerted = True
+                log.warning(
+                    f"IBKR DISCONNECT ALERT: {len(self.positions)} positions held, "
+                    f"{duration_secs:.0f}s with no broker connection"
+                )
+
+            # Re-alert at 30 min — escalation if still not back
+            elif duration_secs >= 1800 and not getattr(self, "_ibkr_disconnect_realerted", False):
+                self.notifier.risk_alert(
+                    f"IBKR STILL DISCONNECTED ({duration_secs / 60:.0f} min). "
+                    f"Manual intervention may be required. "
+                    f"Check the IBKR mobile app for a 2FA prompt."
+                )
+                self._ibkr_disconnect_realerted = True
+        except Exception as e:
+            log.debug(f"_check_ibkr_disconnect_with_positions error: {e}")
+
+    def _check_stuck_positions(self):
+        """Detect positions whose price feed appears stale.
+
+        If a position's current price hasn't meaningfully moved (±0.2%) for
+        30+ minutes WHILE the broader market (SPY) has moved >0.3% in the
+        same window, the data feed for this symbol is probably stale —
+        worth alerting because the bot's exits won't fire on a price that
+        doesn't change.
+
+        Alerts once per position per stuck-streak.
+        """
+        if not self.positions:
+            return
+        try:
+            now_ts = datetime.now(self.tz).timestamp()
+            spy_price = self.market_data.get_price("SPY") if self.market_data else None
+            if spy_price is None or spy_price <= 0:
+                return  # Can't compare — bail silently
+
+            if not hasattr(self, "_stuck_position_state"):
+                self._stuck_position_state = {}  # symbol -> {first_price, first_price_ts, first_spy, alerted}
+
+            for symbol, pos in list(self.positions.items()):
+                current_price = pos.get("current_price") or pos.get("entry_price")
+                if not current_price or current_price <= 0:
+                    continue
+
+                state = self._stuck_position_state.get(symbol)
+                if state is None:
+                    self._stuck_position_state[symbol] = {
+                        "first_price": current_price,
+                        "first_price_ts": now_ts,
+                        "first_spy": spy_price,
+                        "alerted": False,
+                    }
+                    continue
+
+                # Reset if price moved meaningfully (>0.2% from anchor)
+                price_drift = abs(current_price - state["first_price"]) / state["first_price"]
+                if price_drift > 0.002:
+                    self._stuck_position_state[symbol] = {
+                        "first_price": current_price,
+                        "first_price_ts": now_ts,
+                        "first_spy": spy_price,
+                        "alerted": False,
+                    }
+                    continue
+
+                # Price hasn't moved — check duration
+                stuck_secs = now_ts - state["first_price_ts"]
+                if stuck_secs < 1800:  # 30 min threshold
+                    continue
+
+                # Has SPY moved meaningfully in that window?
+                spy_drift = abs(spy_price - state["first_spy"]) / state["first_spy"]
+                if spy_drift < 0.003:
+                    continue  # Whole market is also flat — not a feed issue
+
+                if state.get("alerted"):
+                    continue  # Already alerted on this streak
+
+                self.notifier.risk_alert(
+                    f"STALE DATA SUSPECTED: {symbol} price stuck at "
+                    f"${current_price:.2f} for {stuck_secs / 60:.0f} min while SPY "
+                    f"moved {spy_drift * 100:+.2f}%. The data feed for {symbol} "
+                    f"may be broken — bot exits cannot fire on a non-updating price. "
+                    f"Consider checking the position manually."
+                )
+                log.warning(
+                    f"STALE DATA: {symbol} stuck @ ${current_price:.2f} for "
+                    f"{stuck_secs:.0f}s; SPY moved {spy_drift * 100:+.2f}%"
+                )
+                state["alerted"] = True
+
+            # Garbage-collect state for closed positions
+            for sym in list(self._stuck_position_state.keys()):
+                if sym not in self.positions:
+                    self._stuck_position_state.pop(sym, None)
+
+        except Exception as e:
+            log.debug(f"_check_stuck_positions error: {e}")
+
+    # =====================================================================
+    # New-entry safety gates (SPY breaker, global trade cap, strategy DD,
+    # pre-market news vigilance). Composed by _entry_safety_gates() so
+    # _execute_signal stays clean. Each helper is self-contained and stores
+    # its own state; nothing here overlaps with risk_manager (which handles
+    # per-position risk + max_positions) or auto_tuner (which handles
+    # long-term parameter drift).
+    # =====================================================================
+
+    def _entry_safety_gates(self, strategy_name):
+        """Run all entry gates. Returns "" to allow, or a reason string to block.
+
+        Each gate is independent; first one that fires wins. Order is cheap-to-
+        expensive. None of these duplicate risk_manager (per-position risk +
+        max_positions) or auto_tuner (long-term drift); they're complementary.
+        """
+        try:
+            reason = self._gate_spy_circuit_breaker()
+            if reason:
+                return reason
+            reason = self._gate_global_daily_trade_cap()
+            if reason:
+                return reason
+            reason = self._gate_strategy_drawdown(strategy_name)
+            if reason:
+                return reason
+        except Exception as e:
+            log.debug(f"safety gate error: {e}")
+        return ""
+
+    def _gate_spy_circuit_breaker(self):
+        """Block new entries if SPY dropped >2% in the last 30 min.
+
+        The bot already has a regime_detector but it's slow-moving. This is
+        a fast, hard breaker for sudden risk-off moves where momentum
+        strategies would just buy the falling knife.
+
+        Sticky: once tripped, stays tripped until SPY recovers to within 1%
+        of the breaker price. Auto-resumes; no manual intervention needed.
+        """
+        if not self.market_data:
+            return ""
+
+        try:
+            spy = self.market_data.get_price("SPY")
+            if spy is None or spy <= 0:
+                return ""
+
+            now_ts = datetime.now(self.tz).timestamp()
+
+            # State: rolling 30-min SPY history
+            if not hasattr(self, "_spy_breaker_state"):
+                self._spy_breaker_state = {"history": [], "tripped_at_spy": 0.0}
+
+            hist = self._spy_breaker_state["history"]
+            hist.append((now_ts, spy))
+            # Trim anything older than 30 min
+            cutoff = now_ts - 1800
+            hist[:] = [(t, p) for (t, p) in hist if t >= cutoff]
+            self._spy_breaker_state["history"] = hist
+
+            tripped_price = self._spy_breaker_state["tripped_at_spy"]
+            if tripped_price > 0:
+                # Already tripped — check for recovery (within 1% of trip price)
+                recovery_threshold = tripped_price * 0.99
+                if spy >= recovery_threshold:
+                    log.info(
+                        f"SPY CIRCUIT BREAKER: cleared at SPY=${spy:.2f} "
+                        f"(was ${tripped_price:.2f})"
+                    )
+                    self.notifier.system_alert(
+                        f"SPY circuit breaker CLEARED. SPY back to ${spy:.2f}. Resuming entries.",
+                        level="success",
+                    )
+                    self._spy_breaker_state["tripped_at_spy"] = 0.0
+                    return ""
+                return f"SPY circuit breaker active (SPY ${spy:.2f}, recover at ${recovery_threshold:.2f})"
+
+            # Not tripped — see if we should trip
+            if not hist:
+                return ""
+            highest_recent = max(p for (_t, p) in hist)
+            drop_pct = (spy - highest_recent) / highest_recent
+            if drop_pct <= -0.02:  # 2% drop
+                self._spy_breaker_state["tripped_at_spy"] = highest_recent
+                log.warning(
+                    f"SPY CIRCUIT BREAKER TRIPPED: SPY ${highest_recent:.2f} → "
+                    f"${spy:.2f} ({drop_pct * 100:+.2f}% in 30 min). Pausing new entries."
+                )
+                self.notifier.risk_alert(
+                    f"SPY CIRCUIT BREAKER: SPY dropped {drop_pct * 100:+.2f}% in 30 min "
+                    f"(${highest_recent:.2f} → ${spy:.2f}). Pausing all NEW entries until "
+                    f"SPY recovers to ${highest_recent * 0.99:.2f}. Existing positions still managed."
+                )
+                return f"SPY circuit breaker just tripped (${spy:.2f})"
+        except Exception as e:
+            log.debug(f"SPY breaker error: {e}")
+        return ""
+
+    def _gate_global_daily_trade_cap(self):
+        """Hard cap on total entries per day across ALL strategies.
+
+        Per-strategy max_trades_per_day exists already, but on wild days
+        the bot can stack 50+ entries across strategies. This is the
+        portfolio-level governor — independent of per-strategy caps.
+        """
+        cap = int(self.config.risk_config.get("max_total_trades_per_day", 25))
+        if cap <= 0:
+            return ""
+
+        # Count today's entries from trade_history (each trade = 1 entry)
+        today = datetime.now(self.tz).date()
+        entries_today = 0
+        try:
+            for t in self.trade_history:
+                et = t.get("entry_time")
+                if not et:
+                    continue
+                if isinstance(et, str):
+                    try:
+                        et_dt = datetime.fromisoformat(et.replace("Z", "+00:00"))
+                    except Exception:
+                        continue
+                else:
+                    et_dt = et
+                if et_dt.date() == today:
+                    entries_today += 1
+            # Plus currently-open positions opened today
+            for p in self.positions.values():
+                pet = p.get("entry_time")
+                if pet and hasattr(pet, "date") and pet.date() == today:
+                    entries_today += 1
+        except Exception as e:
+            log.debug(f"daily trade cap counting error: {e}")
+            return ""
+
+        if entries_today >= cap:
+            # Throttle the alert: only post once per day at the cap moment
+            cap_state_key = f"_daily_cap_alerted_{today.isoformat()}"
+            if not getattr(self, cap_state_key, False):
+                self.notifier.risk_alert(
+                    f"DAILY TRADE CAP HIT: {entries_today}/{cap} entries today. "
+                    f"Blocking further entries until tomorrow."
+                )
+                setattr(self, cap_state_key, True)
+            return f"Global daily trade cap reached ({entries_today}/{cap})"
+        return ""
+
+    def _gate_strategy_drawdown(self, strategy_name):
+        """Auto-pause a strategy that's down >X% on its allocated capital today.
+
+        Forces a cooling-off so one bad day doesn't compound. Resets at EOD.
+        Independent from auto_tuner allocation tweaks (long-term).
+        """
+        if not strategy_name:
+            return ""
+
+        threshold = float(self.config.risk_config.get("strategy_daily_dd_pause_pct", 0.03))
+        if threshold <= 0:
+            return ""
+
+        # Allocation $ for this strategy
+        try:
+            alloc_pct = float(self.config.strategies.get("allocation", {}).get(strategy_name, 0))
+            if alloc_pct <= 0:
+                return ""
+            alloc_capital = self.start_of_day_balance * alloc_pct
+            if alloc_capital <= 0:
+                return ""
+        except Exception:
+            return ""
+
+        # Sum today's P&L attributed to this strategy
+        today = datetime.now(self.tz).date()
+        strat_pnl = 0.0
+        try:
+            for t in self.trade_history:
+                if t.get("strategy") != strategy_name:
+                    continue
+                xt = t.get("exit_time")
+                if not xt:
+                    continue
+                if isinstance(xt, str):
+                    try:
+                        xt_dt = datetime.fromisoformat(xt.replace("Z", "+00:00"))
+                    except Exception:
+                        continue
+                else:
+                    xt_dt = xt
+                if xt_dt.date() == today:
+                    strat_pnl += float(t.get("pnl", 0) or 0)
+        except Exception as e:
+            log.debug(f"strategy DD calc error for {strategy_name}: {e}")
+            return ""
+
+        dd_pct = strat_pnl / alloc_capital if alloc_capital > 0 else 0
+        if dd_pct <= -threshold:
+            paused_key = f"_strategy_paused_today_{strategy_name}_{today.isoformat()}"
+            if not getattr(self, paused_key, False):
+                self.notifier.risk_alert(
+                    f"STRATEGY PAUSED: {strategy_name} down ${strat_pnl:+.2f} "
+                    f"({dd_pct * 100:+.2f}% on ${alloc_capital:,.0f} allocated). "
+                    f"Cooling off for the rest of today. Auto-resumes tomorrow."
+                )
+                setattr(self, paused_key, True)
+            return f"{strategy_name} hit daily DD limit ({dd_pct * 100:+.2f}%)"
+        return ""
+
     def _validate_synced_position(self, symbol):
         """Validate a synced position against safety guards (blocked symbols, falling knife, bearish news).
 
@@ -3023,6 +3434,13 @@ class TradingEngine:
         if action == "short":
             log.info(f"LONG-ONLY: Blocking short signal for {symbol}")
             return
+
+        # SAFETY GATES — only apply to NEW entries (let exits through always).
+        if action == "buy":
+            block_reason = self._entry_safety_gates(strategy)
+            if block_reason:
+                log.info(f"SAFETY GATE BLOCK: {symbol} via {strategy} — {block_reason}")
+                return
 
         # CRYPTO BLOCK: Reject all crypto signals when crypto is disabled
         if self._is_crypto_symbol(symbol) and not self._is_crypto_enabled():
@@ -6172,11 +6590,32 @@ class TradingEngine:
             if result.get("applied"):
                 # Reload strategy capital with new allocations
                 alloc = self.config.strategy_allocation
+                significant_shifts = []
                 for name, strategy in self.strategies.items():
                     new_alloc = alloc.get(name, 0.25)
-                    strategy.update_capital(self.current_balance * new_alloc)
+                    old_capital = getattr(strategy, "allocated_capital", 0)
+                    new_capital = self.current_balance * new_alloc
+                    strategy.update_capital(new_capital)
+                    # Detect ≥3% shifts (in $ terms vs old allocation)
+                    if old_capital > 0:
+                        shift_pct = abs(new_capital - old_capital) / old_capital
+                        if shift_pct >= 0.20:  # 20% relative change in capital
+                            significant_shifts.append((name, old_capital, new_capital))
 
                 log.info(f"Auto-Tune applied {result['total_changes']} changes - strategies reloaded")
+
+                # Notify user when allocations meaningfully shift — they care
+                # about "the bot is putting more money into X" because it's
+                # the most impactful kind of change auto-tuner can make.
+                if significant_shifts:
+                    lines = "\n".join(
+                        f"  • {name}: ${old:,.0f} → ${new:,.0f} ({(new-old)/old*100:+.0f}%)"
+                        for name, old, new in significant_shifts
+                    )
+                    self.notifier.system_alert(
+                        f"AUTO-TUNE allocation shift:\n{lines}",
+                        level="info",
+                    )
             else:
                 log.info(f"Auto-Tune: {result.get('reason', 'no changes')}")
 
