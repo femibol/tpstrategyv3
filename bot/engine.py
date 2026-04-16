@@ -4564,6 +4564,29 @@ class TradingEngine:
         # Learning signals
         boosted = learning.get("boosted_strategies", {}).get(strategy, 0)
 
+        # Strategy-specific extras. Trend rider swing trades have different
+        # decision context (daily trend, rotation) than intraday scalps.
+        is_trend_rider = (
+            strategy == "daily_trend_rider" or signal.get("trend_rider")
+        )
+        trend_rider_block = ""
+        if is_trend_rider:
+            rotation_target = signal.get("rotation_target_symbol", "")
+            trend_rider_block = (
+                f"\nTREND RIDER CONTEXT (multi-day swing, holds overnight):\n"
+                f"  Green days: {signal.get('_daily_green_days', '?')} consecutive\n"
+                f"  Daily SuperTrend: ${signal.get('_daily_supertrend', 0):.2f}\n"
+                f"  Daily 20 EMA: ${signal.get('_daily_ema20', 0):.2f}\n"
+                f"  Daily ATR: ${signal.get('_daily_atr', 0):.2f}\n"
+                f"  Setup score: {signal.get('_rider_score', 0):.0f}\n"
+                f"  Entry type: {signal.get('entry_type', '?')}"
+                f"{f' | ROTATION: replacing {rotation_target}' if rotation_target else ''}\n"
+                f"Additional rules for trend rider:\n"
+                f"- SKIP if green_days<3 or ADX too weak (not a real trend)\n"
+                f"- SKIP if rotation and existing position was a recent win\n"
+                f"- TAKE with normal size — this is an overnight hold, don't oversize\n"
+            )
+
         prompt = (
             f"Trade decision (ONE line, start TAKE, SKIP, REDUCE, or AGGRESSIVE):\n"
             f"BUY {symbol} via {strategy} @ ${signal.get('price', 0):.2f}\n"
@@ -4572,7 +4595,8 @@ class TradingEngine:
             f"Recent: {wins}W/{losses}L ({win_rate:.0f}%)\n"
             f"Strategy '{strategy}': {strat_wins}W/{len(strat_trades)-strat_wins}L ({strat_wr:.0f}%)"
             f"{f' | LEARNED BOOST x{boosted}' if boosted else ''}\n"
-            f"Open positions: {open_count}/10 | Regime: {regime}\n\n"
+            f"Open positions: {open_count}/10 | Regime: {regime}"
+            f"{trend_rider_block}\n\n"
             f"Rules:\n"
             f"- AGGRESSIVE (1.5x size) if: score>=80 AND RVOL>=5 AND win_rate>=60%\n"
             f"- AGGRESSIVE if: strategy has LEARNED BOOST and score>=70\n"
