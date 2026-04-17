@@ -1,0 +1,271 @@
+// ============================================================================
+// AlgoBot Strategy Visualizer — mirrors the bot's entry + exit logic.
+//
+// This is a STRATEGY (not indicator) so TradingView shows the full P&L
+// performance dashboard: equity curve, net profit, win rate, max drawdown,
+// profit factor, Sharpe ratio, trade list.
+//
+// Strategies covered:
+//   1. MOMENTUM (EMA 8/21 crossover + ADX + volume surge)
+//   2. TREND RIDER (SuperTrend(7,3) + 20 EMA + consecutive green days)
+//   3. RVOL MOMENTUM (relative volume spike + price strength)
+//
+// Exits:
+//   - ATR trailing stop (ratchets up, never down)
+//   - SuperTrend flip (bearish) for trend rider positions
+//   - Max hold bars (configurable)
+//
+// Usage:
+//   Add to any TradingView chart. The Strategy Tester tab at the bottom
+//   shows full P&L performance. Compare results against your live bot.
+//
+// NOTE: Approximation — the Python bot has additional filters (news,
+// risk manager, Claude pre-trade, position limits) that PineScript can't
+// replicate. Results here are the "raw signal" performance.
+// ============================================================================
+
+//@version=5
+strategy("AlgoBot Strategy", overlay=true,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=10,
+     initial_capital=47000,
+     commission_type=strategy.commission.percent,
+     commission_value=0.01,
+     slippage=2,
+     pyramiding=5,
+     max_labels_count=500)
+
+// === INPUTS ===
+grp_mom = "Momentum Strategy"
+mom_fast      = input.int(8, "Fast EMA", group=grp_mom)
+mom_slow      = input.int(21, "Slow EMA", group=grp_mom)
+mom_adx_min   = input.int(20, "Min ADX", group=grp_mom)
+mom_vol_surge = input.float(1.3, "Volume Surge x", group=grp_mom)
+
+grp_rvol = "RVOL Momentum"
+rvol_min      = input.float(1.5, "Min RVOL", group=grp_rvol)
+rvol_lookback = input.int(20, "RVOL Lookback Bars", group=grp_rvol)
+
+grp_tr = "Trend Rider (Daily)"
+tr_st_period  = input.int(7, "SuperTrend Period", group=grp_tr)
+tr_st_mult    = input.float(3.0, "SuperTrend Multiplier", group=grp_tr)
+tr_ema_period = input.int(20, "Daily EMA Period", group=grp_tr)
+tr_adx_min    = input.int(20, "Daily ADX Min", group=grp_tr)
+tr_green_days = input.int(2, "Min Green Days", group=grp_tr)
+
+grp_exit = "Exit Logic"
+trail_atr_mult  = input.float(1.5, "Trailing Stop ATR Mult", group=grp_exit)
+max_hold_bars   = input.int(80, "Max Hold Bars (0=disabled)", group=grp_exit)
+
+grp_display = "Display"
+show_momentum = input.bool(true, "Show Momentum Signals", group=grp_display)
+show_rvol     = input.bool(true, "Show RVOL Signals", group=grp_display)
+show_trend    = input.bool(true, "Show Trend Rider Signals", group=grp_display)
+
+// === CORE INDICATORS ===
+ema_fast = ta.ema(close, mom_fast)
+ema_slow = ta.ema(close, mom_slow)
+ema9     = ta.ema(close, 9)
+
+[diplus, diminus, adx_val] = ta.dmi(14, 14)
+atr_val = ta.atr(14)
+
+// Volume
+avg_vol = ta.sma(volume, rvol_lookback)
+rvol = avg_vol > 0 ? volume / avg_vol : 0
+
+// SuperTrend
+[st_line, st_dir] = ta.supertrend(tr_st_mult, tr_st_period)
+st_bullish = st_dir == -1
+
+// Daily timeframe data
+daily_ema20 = request.security(syminfo.tickerid, "D", ta.ema(close, tr_ema_period))
+[_dp, _dm, daily_adx] = request.security(syminfo.tickerid, "D", ta.dmi(14, 14))
+
+// Green day streak
+var int green_streak = 0
+daily_is_green = request.security(syminfo.tickerid, "D", close > close[1])
+if ta.change(time("D")) != 0
+    green_streak := daily_is_green ? green_streak + 1 : 0
+
+// === ENTRY SIGNALS ===
+
+// 1. Momentum
+mom_ema_bullish   = ema_fast > ema_slow
+mom_adx_strong    = adx_val >= mom_adx_min
+mom_vol_confirmed = rvol >= mom_vol_surge
+mom_breakout      = close > ta.highest(high[1], 20)
+mom_signal = mom_ema_bullish and (mom_adx_strong or mom_breakout) and mom_vol_confirmed
+mom_entry  = mom_signal and not mom_signal[1]
+
+// 2. RVOL
+rvol_spike    = rvol >= rvol_min
+rvol_price_up = close > open and close > close[1]
+rvol_ema_ok   = close > ema_fast
+rvol_signal = rvol_spike and rvol_price_up and rvol_ema_ok
+rvol_entry  = rvol_signal and not rvol_signal[1]
+
+// 3. Trend Rider
+tr_above_st  = close > st_line and st_bullish
+tr_above_ema = close > daily_ema20
+tr_adx_ok    = daily_adx >= tr_adx_min
+tr_green_ok  = green_streak >= tr_green_days
+tr_pullback  = low <= ema9 * 1.003 and close > ema9 and close > close[1]
+tr_qualified = tr_above_st and tr_above_ema and tr_adx_ok and tr_green_ok
+tr_entry     = tr_qualified and tr_pullback and not (tr_qualified[1] and tr_pullback[1])
+
+// === EXIT CONDITIONS ===
+
+// ATR trailing stop (used for all strategies)
+trail_stop_price = close - atr_val * trail_atr_mult
+
+// SuperTrend flip bearish (for trend rider exits)
+st_flip_bearish = st_bullish[1] and not st_bullish
+
+// EMA death cross (for momentum exits)
+ema_death_cross = ta.crossunder(ema_fast, ema_slow)
+
+// === PARTIAL PROFIT INPUTS ===
+grp_partial = "Partial Profit Taking"
+pt_target1_pct = input.float(2.0, "Target 1 %", group=grp_partial) / 100
+pt_target2_pct = input.float(4.0, "Target 2 %", group=grp_partial) / 100
+pt_target3_pct = input.float(8.0, "Target 3 %", group=grp_partial) / 100
+pt_close1_pct  = input.float(25.0, "Close % at T1", group=grp_partial) / 100
+pt_close2_pct  = input.float(25.0, "Close % at T2", group=grp_partial) / 100
+pt_close3_pct  = input.float(25.0, "Close % at T3", group=grp_partial) / 100
+
+show_rejections = input.bool(true, "Show Rejection Markers", group=grp_display)
+
+// === STRATEGY EXECUTION ===
+
+// Momentum entries
+if show_momentum and mom_entry
+    strategy.entry("MOM", strategy.long, comment="MOM BUY")
+
+// RVOL entries
+if show_rvol and rvol_entry
+    strategy.entry("RVOL", strategy.long, comment="RVOL BUY")
+
+// Trend Rider entries
+if show_trend and tr_entry
+    strategy.entry("RIDER", strategy.long, comment="RIDER BUY")
+
+// === PARTIAL PROFIT TAKING ===
+// Mirrors the bot's intra-candle profit taking at target levels.
+// TradingView's strategy.exit with qty_percent handles partial closes.
+if strategy.position_size > 0
+    avg_entry = strategy.position_avg_price
+    // Target 1: take 25% at +2%
+    strategy.exit("PT1 MOM", "MOM", limit=avg_entry * (1 + pt_target1_pct), qty_percent=pt_close1_pct, comment="Partial +2%")
+    strategy.exit("PT1 RVOL", "RVOL", limit=avg_entry * (1 + pt_target1_pct), qty_percent=pt_close1_pct, comment="Partial +2%")
+    strategy.exit("PT1 RIDER", "RIDER", limit=avg_entry * (1 + pt_target1_pct), qty_percent=pt_close1_pct, comment="Partial +2%")
+
+// === EXITS (full close conditions) ===
+
+// ATR trailing stop
+if strategy.position_size > 0
+    trail_pts = math.round(atr_val * trail_atr_mult / syminfo.mintick)
+    trail_offset = math.round(atr_val * 0.5 / syminfo.mintick)
+    strategy.exit("Trail MOM", "MOM", trail_offset=trail_offset, trail_points=trail_pts, comment="Trail Stop")
+    strategy.exit("Trail RVOL", "RVOL", trail_offset=trail_offset, trail_points=trail_pts, comment="Trail Stop")
+    strategy.exit("Trail RIDER", "RIDER", trail_offset=trail_offset, trail_points=trail_pts, comment="Trail Stop")
+
+// SuperTrend flip → close trend rider
+if st_flip_bearish
+    strategy.close("RIDER", comment="ST Flip ↓")
+
+// EMA death cross → close momentum
+if ema_death_cross
+    strategy.close("MOM", comment="EMA Cross ↓")
+
+// Max hold bars
+if max_hold_bars > 0 and strategy.position_size > 0
+    if bar_index - strategy.opentrades.entry_bar_index(strategy.opentrades - 1) >= max_hold_bars
+        strategy.close_all(comment="Max Hold ⏱")
+
+// === SELL LABELS (visible on chart) ===
+// TradingView auto-labels strategy exits but they're tiny. Add explicit
+// labels at SELL moments so they're as visible as the BUY labels.
+was_long = strategy.position_size[1] > 0
+just_closed = strategy.position_size == 0 and was_long
+if just_closed
+    exit_pnl = strategy.closedtrades.profit(strategy.closedtrades - 1)
+    exit_lbl = exit_pnl > 0 ? "💰 SELL\n$" + str.tostring(math.round(exit_pnl, 2)) : "💸 SELL\n$" + str.tostring(math.round(exit_pnl, 2))
+    exit_clr = exit_pnl > 0 ? color.green : color.red
+    label.new(bar_index, high, exit_lbl,
+         style=label.style_label_down, color=exit_clr,
+         textcolor=color.white, size=size.small)
+
+// === REJECTION MARKERS ===
+// Show where a signal ALMOST fired but one filter failed.
+// Yellow triangle ⚠ with the failing filter name.
+if show_rejections
+    // Momentum: most checks passed but one failed
+    mom_checks_passed = (mom_ema_bullish ? 1 : 0) + (mom_adx_strong ? 1 : 0) + (mom_vol_confirmed ? 1 : 0)
+    if mom_checks_passed == 2 and not mom_signal
+        fail_reason = not mom_ema_bullish ? "EMA bearish" : (not mom_adx_strong ? "ADX weak" : "Low RVOL")
+        label.new(bar_index, high * 1.001, "⚠ " + fail_reason,
+             style=label.style_label_down, color=color.new(color.yellow, 30),
+             textcolor=color.black, size=size.tiny)
+
+    // Trend Rider: qualified but no pullback entry, or nearly qualified
+    tr_checks = (tr_above_st ? 1 : 0) + (tr_above_ema ? 1 : 0) + (tr_adx_ok ? 1 : 0) + (tr_green_ok ? 1 : 0)
+    if tr_checks >= 3 and not tr_qualified
+        fail_reason = not tr_above_st ? "Below ST" : (not tr_above_ema ? "Below EMA20" : (not tr_adx_ok ? "ADX low" : "Green<" + str.tostring(tr_green_days)))
+        label.new(bar_index, high * 1.001, "⚠ TR:" + fail_reason,
+             style=label.style_label_down, color=color.new(color.orange, 40),
+             textcolor=color.black, size=size.tiny)
+
+// === VISUAL OVERLAYS ===
+
+// EMA lines
+plot(ema_fast, "EMA Fast", color=color.new(color.blue, 40), linewidth=1)
+plot(ema_slow, "EMA Slow", color=color.new(color.orange, 40), linewidth=1)
+plot(ema9, "EMA 9", color=color.new(color.gray, 60), linewidth=1)
+
+// SuperTrend
+st_color = st_bullish ? color.new(color.green, 30) : color.new(color.red, 30)
+plot(st_line, "SuperTrend", color=st_color, linewidth=2, style=plot.style_stepline_diamond)
+
+// RVOL highlight
+bgcolor(rvol >= rvol_min ? color.new(color.blue, 92) : na, title="High RVOL Zone")
+
+// === LIVE STATUS TABLE ===
+var table info = table.new(position.top_right, 2, 9, bgcolor=color.new(color.black, 80), border_width=1)
+
+if barstate.islast
+    table.cell(info, 0, 0, "AlgoBot Filters", text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 0, syminfo.ticker, text_color=color.yellow, text_size=size.small)
+
+    table.cell(info, 0, 1, "EMA 8/21", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 1, mom_ema_bullish ? "✅ BULL" : "❌ BEAR",
+         text_color=mom_ema_bullish ? color.green : color.red, text_size=size.tiny)
+
+    table.cell(info, 0, 2, "ADX", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 2, str.tostring(math.round(adx_val)) + (adx_val >= mom_adx_min ? " ✅" : " ❌"),
+         text_color=adx_val >= mom_adx_min ? color.green : color.red, text_size=size.tiny)
+
+    table.cell(info, 0, 3, "RVOL", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 3, str.tostring(math.round(rvol, 1)) + "x" + (rvol >= rvol_min ? " ✅" : " ❌"),
+         text_color=rvol >= rvol_min ? color.green : color.red, text_size=size.tiny)
+
+    table.cell(info, 0, 4, "SuperTrend", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 4, st_bullish ? "✅ Bull" : "❌ Bear",
+         text_color=st_bullish ? color.green : color.red, text_size=size.tiny)
+
+    table.cell(info, 0, 5, "Green Days", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 5, str.tostring(green_streak) + (green_streak >= tr_green_days ? " ✅" : " ❌"),
+         text_color=green_streak >= tr_green_days ? color.green : color.red, text_size=size.tiny)
+
+    table.cell(info, 0, 6, "ATR", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 6, "$" + str.tostring(math.round(atr_val, 2)), text_color=color.white, text_size=size.tiny)
+
+    table.cell(info, 0, 7, "vs Daily EMA20", text_color=color.gray, text_size=size.tiny)
+    table.cell(info, 1, 7, close > daily_ema20 ? "✅ Above" : "❌ Below",
+         text_color=close > daily_ema20 ? color.green : color.red, text_size=size.tiny)
+
+    // Position state
+    table.cell(info, 0, 8, "Position", text_color=color.gray, text_size=size.tiny)
+    pos_text = strategy.position_size > 0 ? "LONG " + str.tostring(math.round(strategy.openprofit, 2)) : "FLAT"
+    pos_clr = strategy.position_size > 0 ? (strategy.openprofit > 0 ? color.green : color.red) : color.gray
+    table.cell(info, 1, 8, pos_text, text_color=pos_clr, text_size=size.tiny)
