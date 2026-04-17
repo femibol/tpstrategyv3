@@ -58,9 +58,13 @@ trail_atr_mult  = input.float(1.5, "Trailing Stop ATR Mult", group=grp_exit)
 max_hold_bars   = input.int(80, "Max Hold Bars (0=disabled)", group=grp_exit)
 
 grp_display = "Display"
-show_momentum = input.bool(true, "Show Momentum Signals", group=grp_display)
-show_rvol     = input.bool(true, "Show RVOL Signals", group=grp_display)
-show_trend    = input.bool(true, "Show Trend Rider Signals", group=grp_display)
+show_momentum  = input.bool(true, "Show Momentum Signals", group=grp_display)
+show_rvol      = input.bool(true, "Show RVOL Signals", group=grp_display)
+show_trend     = input.bool(true, "Show Trend Rider Signals", group=grp_display)
+show_emas      = input.bool(false, "Show EMA Lines", group=grp_display)
+show_st_line   = input.bool(true, "Show SuperTrend Line", group=grp_display)
+show_rvol_bg   = input.bool(false, "Show RVOL Background Shading", group=grp_display)
+show_table     = input.bool(true, "Show Filter Status Table", group=grp_display)
 
 // === CORE INDICATORS ===
 ema_fast = ta.ema(close, mom_fast)
@@ -134,7 +138,7 @@ pt_close1_pct  = input.float(25.0, "Close % at T1", group=grp_partial) / 100
 pt_close2_pct  = input.float(25.0, "Close % at T2", group=grp_partial) / 100
 pt_close3_pct  = input.float(25.0, "Close % at T3", group=grp_partial) / 100
 
-show_rejections = input.bool(true, "Show Rejection Markers", group=grp_display)
+show_rejections = input.bool(false, "Show Rejection Markers (noisy)", group=grp_display)
 
 // === STRATEGY EXECUTION ===
 
@@ -218,22 +222,21 @@ if show_rejections
 
 // === VISUAL OVERLAYS ===
 
-// EMA lines
-plot(ema_fast, "EMA Fast", color=color.new(color.blue, 40), linewidth=1)
-plot(ema_slow, "EMA Slow", color=color.new(color.orange, 40), linewidth=1)
-plot(ema9, "EMA 9", color=color.new(color.gray, 60), linewidth=1)
+// EMA lines (off by default — toggle in settings to reduce clutter)
+plot(show_emas ? ema_fast : na, "EMA Fast", color=color.new(color.blue, 40), linewidth=1)
+plot(show_emas ? ema_slow : na, "EMA Slow", color=color.new(color.orange, 40), linewidth=1)
+plot(show_emas ? ema9 : na, "EMA 9", color=color.new(color.gray, 60), linewidth=1)
 
-// SuperTrend
-st_color = st_bullish ? color.new(color.green, 30) : color.new(color.red, 30)
-plot(st_line, "SuperTrend", color=st_color, linewidth=2, style=plot.style_stepline_diamond)
+// SuperTrend (on by default — the key trend line)
+plot(show_st_line ? st_line : na, "SuperTrend", color=st_bullish ? color.new(color.green, 30) : color.new(color.red, 30), linewidth=2, style=plot.style_stepline_diamond)
 
-// RVOL highlight
-bgcolor(rvol >= rvol_min ? color.new(color.blue, 92) : na, title="High RVOL Zone")
+// RVOL background (off by default — can be noisy)
+bgcolor(show_rvol_bg and rvol >= rvol_min ? color.new(color.blue, 92) : na, title="High RVOL Zone")
 
 // === LIVE STATUS TABLE ===
 var table info = table.new(position.top_right, 2, 9, bgcolor=color.new(color.black, 80), border_width=1)
 
-if barstate.islast
+if barstate.islast and show_table
     table.cell(info, 0, 0, "AlgoBot Filters", text_color=color.white, text_size=size.small)
     table.cell(info, 1, 0, syminfo.ticker, text_color=color.yellow, text_size=size.small)
 
