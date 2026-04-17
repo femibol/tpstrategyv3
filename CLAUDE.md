@@ -1,5 +1,9 @@
 # Trading Bot — Claude Review Guide
 
+## Session Handoff — READ FIRST
+- **Always read `HANDOFF.md` at the start of every session** to pick up in-progress work.
+- **Always update `HANDOFF.md` before ending a session** (or when the context window is getting full). Move merged PRs to "Recently Shipped", record open work, next steps, and gotchas. Commit + push it to the working branch so the next session (local or web) sees it.
+
 ## Trade Data Locations
 
 When reviewing trades, check these files:
