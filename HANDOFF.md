@@ -29,12 +29,22 @@ Bot is running, IBKR connected, 94 symbols streaming, but 0 trades. Investigatio
 3. **Market hours** — only 9:32-15:50 ET. First 2 min / last 10 min skipped.
 4. **DEBUG-level rejections** in strategies (`momentum.py:49`) are invisible at INFO.
 
-Also found: **logs/data not persisted to host** — lives only at `/app/logs` and `/app/data` inside the container. Every rebuild wipes `trading.log` + `trade_history.json` + `signal_log.json`. Needs a volume mount in `docker-compose.yml`. ← **next fix.**
+Also found: **logs/data were in Docker named volumes** — persisted across rebuilds, but NOT readable from the host filesystem. That's why `tail logs/trading.log` from `/opt/trading-bot` always failed. Switched to bind mounts in `docker-compose.yml` this session.
+
+### Deploy migration (one-time, BEFORE next rebuild)
+Copy old named-volume data to the new host-bind locations so you keep the history:
+```bash
+cd /opt/trading-bot
+mkdir -p data logs
+docker run --rm -v trading-bot_bot-logs:/from -v $(pwd)/logs:/to alpine sh -c "cp -a /from/. /to/ 2>/dev/null || true"
+docker run --rm -v trading-bot_bot-data:/from -v $(pwd)/data:/to alpine sh -c "cp -a /from/. /to/ 2>/dev/null || true"
+git pull && docker compose build --no-cache trading-bot && docker compose up -d --force-recreate trading-bot
+tail -f logs/trading.log   # finally works from the host!
+```
 
 ## Next Up
-- **Volume-mount `logs/` and `data/`** in `docker-compose.yml` so rebuilds don't wipe history.
 - Bump strategy-level rejection logs from DEBUG to INFO (or configurable).
-- Verify heartbeat output after first deploy — confirms diagnosis.
+- Verify heartbeat output after first deploy — confirms no-trades diagnosis.
 - PR #41 stale — verify or close.
 
 ## Known Gotchas / Watch-outs
