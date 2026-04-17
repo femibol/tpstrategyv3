@@ -1188,6 +1188,12 @@ class TradingEngine:
                             rejected=rejected_count if rejected_count > 0 else None,
                         )
 
+                    # 7e-2. Rich rejection notifications — show exactly WHY each
+                    # signal was filtered so the user can verify from Discord.
+                    if rejected_count > 0:
+                        rejected_signals = [s for s in signals if s not in approved and s.get("action") == "buy"]
+                        self._notify_signal_rejections(rejected_signals)
+
                     # 7f. UOA confirmation boost — check unusual options activity
                     # for high-score buy signals to detect smart money alignment
                     if approved and hasattr(self, 'polygon_scanner') and self.polygon_scanner:
@@ -3145,6 +3151,100 @@ class TradingEngine:
 
         except Exception as e:
             log.debug(f"_check_stuck_positions error: {e}")
+
+    # =====================================================================
+    # Signal rejection visibility — posts a detailed breakdown to Discord
+    # so the user sees exactly which filter killed each signal.
+    # =====================================================================
+
+    def _notify_signal_rejections(self, rejected_signals):
+        """Post rich rejection details to Discord for each rejected buy signal.
+
+        The user wants to see: symbol, price, strategy, score, RVOL, which
+        specific check failed (max_positions, direction, score too low, etc.).
+        Capped at 5 rejections per cycle to avoid flooding Discord.
+        """
+        if not rejected_signals or not self.notifier.discord_url:
+            return
+
+        # Cap to avoid flooding
+        to_report = rejected_signals[:5]
+        leftover = len(rejected_signals) - 5
+
+        fields = []
+        for sig in to_report:
+            symbol = sig.get("symbol", "?")
+            price = sig.get("price", 0)
+            strategy = sig.get("strategy", "?")
+            score = sig.get("score", 0)
+            confidence = sig.get("confidence", 0)
+            rvol = sig.get("rvol", 0)
+
+            # Reconstruct WHY it was rejected by checking each filter
+            checks = []
+
+            # 1. Position cap
+            if len(self.positions) >= self.risk_manager.max_positions:
+                checks.append("❌ Position cap full")
+            else:
+                checks.append(f"✅ Positions {len(self.positions)}/{self.risk_manager.max_positions}")
+
+            # 2. Already holding this symbol
+            if symbol in self.positions:
+                checks.append("❌ Already holding")
+
+            # 3. Duplicate / recently closed
+            if symbol in self._recently_closed:
+                checks.append("❌ Recently closed (cooldown)")
+
+            # 4. Score
+            min_score = 40  # general minimum
+            strat_config = self.config.get_strategy_config(strategy)
+            if strat_config:
+                min_score = strat_config.get("min_score", min_score)
+            if score < min_score:
+                checks.append(f"❌ Score {score} < min {min_score}")
+            else:
+                checks.append(f"✅ Score {score}")
+
+            # 5. RVOL
+            min_rvol = strat_config.get("min_rvol", 0) if strat_config else 0
+            if min_rvol > 0:
+                if rvol < min_rvol:
+                    checks.append(f"❌ RVOL {rvol:.1f}x < min {min_rvol}x")
+                else:
+                    checks.append(f"✅ RVOL {rvol:.1f}x")
+
+            # 6. Direction (long-only)
+            action = sig.get("action", "?")
+            if action in ("short", "sell"):
+                checks.append("❌ SHORT signal (long-only bot)")
+
+            # 7. Pending orders
+            if symbol in self._pending_orders:
+                checks.append("❌ Order already pending")
+
+            # 8. Blocked symbol
+            if hasattr(self, '_blocked_symbols') and symbol in self._blocked_symbols:
+                checks.append("❌ Blocked symbol")
+
+            detail = "\n".join(checks)
+            fields.append({
+                "name": f"❌ {symbol} @ ${price:.2f} ({strategy})",
+                "value": detail,
+                "inline": False,
+            })
+
+        footer = ""
+        if leftover > 0:
+            footer = f"(+{leftover} more rejections not shown)"
+
+        self.notifier._send_discord_embed(
+            title="🔍 Signal Rejections This Cycle",
+            color=0x8B949E,  # gray — informational, not alarming
+            fields=fields,
+            footer=f"AlgoBot {footer}" if footer else "AlgoBot",
+        )
 
     # =====================================================================
     # New-entry safety gates (SPY breaker, global trade cap, strategy DD,
