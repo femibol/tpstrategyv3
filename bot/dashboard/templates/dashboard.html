@@ -588,6 +588,19 @@
     </div>
 </div>
 
+<!-- CONTROL BAR — start/stop, reconnect, close-all -->
+<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button id="btnPauseResume" onclick="togglePause()" style="flex:1;min-width:100px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--green);font-weight:700;font-size:0.85em;cursor:pointer">
+        ▶ Running
+    </button>
+    <button onclick="reconnectIBKR()" style="flex:1;min-width:100px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--accent);font-weight:700;font-size:0.85em;cursor:pointer">
+        🔌 Reconnect IBKR
+    </button>
+    <button onclick="if(confirm('Close ALL positions?'))closeAll()" style="flex:1;min-width:100px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--red);font-weight:700;font-size:0.85em;cursor:pointer">
+        ✖ Close All
+    </button>
+</div>
+
 <!-- PULL TO REFRESH -->
 <div class="pull-indicator" id="pullIndicator">Refreshing...</div>
 
@@ -625,31 +638,41 @@
     </div>
 </div>
 
+<!-- LIVE ACTIVITY FEED — shows what the bot is doing RIGHT NOW -->
+<div class="section" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="margin:0;font-size:1em">Live Feed</h2>
+        <span id="lastUpdate" style="font-size:0.65em;color:var(--muted)">updating...</span>
+    </div>
+    <div id="liveFeed" style="max-height:200px;overflow-y:auto;font-size:0.78em;line-height:1.6">
+        <div class="empty" style="padding:8px">Waiting for activity...</div>
+    </div>
+</div>
+
 <!-- EQUITY CHART -->
 <div class="equity-chart">
     <h2>Equity Curve</h2>
     <canvas class="chart-canvas" id="equityCanvas"></canvas>
 </div>
 
-<!-- TABS -->
+<!-- TABS — reordered: most useful first -->
 <div class="tabs">
-    <div class="tab active" data-tab="suggestions">Suggestions</div>
-    <div class="tab" data-tab="rvol">RVOL</div>
-    <div class="tab" data-tab="watchlist">Watchlist</div>
-    <div class="tab" data-tab="scanner">Scanner</div>
-    <div class="tab" data-tab="positions">Positions</div>
-    <div class="tab" data-tab="performance">W/L Stats</div>
+    <div class="tab active" data-tab="positions">Positions</div>
+    <div class="tab" data-tab="suggestions">Signals</div>
     <div class="tab" data-tab="trades">Trades</div>
+    <div class="tab" data-tab="rvol">RVOL</div>
+    <div class="tab" data-tab="scanner">Scanner</div>
     <div class="tab" data-tab="history">History</div>
+    <div class="tab" data-tab="watchlist">Watchlist</div>
+    <div class="tab" data-tab="performance">W/L Stats</div>
     <div class="tab" data-tab="analysis">Analysis</div>
     <div class="tab" data-tab="daily">Daily Stats</div>
-    <div class="tab" data-tab="tips">Tips</div>
     <div class="tab" data-tab="settings">Settings</div>
     <div class="tab" data-tab="notifications">Alerts</div>
 </div>
 
-<!-- TRADE SUGGESTIONS TAB (default) -->
-<div class="tab-content active" id="tab-suggestions">
+<!-- TRADE SUGGESTIONS TAB -->
+<div class="tab-content" id="tab-suggestions">
     <div class="section">
         <h2>Trade Suggestions <span class="count" id="suggCount">0</span></h2>
         <div style="font-size:0.75em;color:var(--muted);margin-bottom:12px">
@@ -765,7 +788,7 @@
 </div>
 
 <!-- POSITIONS TAB -->
-<div class="tab-content" id="tab-positions">
+<div class="tab-content active" id="tab-positions">
     <div class="section">
         <h2>Open Positions <span class="count" id="posCount">0</span></h2>
         <div id="positionsList">
@@ -1901,6 +1924,13 @@ async function update() {
         var dot = document.getElementById('statusDot');
         dot.className = 'status-dot ' + (status.running ? (status.paused ? 'dot-yellow' : 'dot-green') : 'dot-red');
         document.getElementById('statusText').textContent = status.running ? (status.paused ? 'Paused' : 'Running') : 'Stopped';
+        // Sync pause button state
+        _botPaused = status.paused || false;
+        var pauseBtn = document.getElementById('btnPauseResume');
+        if (pauseBtn) {
+            pauseBtn.textContent = _botPaused ? '⏸ Paused' : '▶ Running';
+            pauseBtn.style.color = _botPaused ? 'var(--yellow)' : 'var(--green)';
+        }
         document.getElementById('modeBadge').textContent = status.mode.toUpperCase();
         document.getElementById('modeBadge').className = 'mode-badge mode-' + status.mode;
 
@@ -2000,6 +2030,23 @@ async function update() {
     } else {
         nList.innerHTML = '<div class="empty">No notifications</div>';
     }
+
+    // Live Feed (top of page — latest activity at a glance)
+    var feedEl = document.getElementById('liveFeed');
+    if (feedEl && notifs && notifs.length > 0) {
+        var icons = {trade:'💹', scanner:'📡', risk:'🚨', system:'⚙️', position:'📍', summary:'📊'};
+        feedEl.innerHTML = notifs.slice(-8).reverse().map(function(n) {
+            var icon = icons[n.category] || '📋';
+            var t = new Date(n.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+            var msg = (n.message || '').replace(/\*\*/g, '').replace(/```[^`]*```/g, '').substring(0, 120);
+            return '<div style="padding:4px 0;border-bottom:1px solid var(--border)">' +
+                '<span style="color:var(--muted);font-size:0.85em">' + t + '</span> ' +
+                icon + ' ' + msg +
+            '</div>';
+        }).join('');
+    }
+    var updEl = document.getElementById('lastUpdate');
+    if (updEl) updEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
     // Daily Stats
     var dList = document.getElementById('dailyList');
@@ -2400,6 +2447,44 @@ function renderHistoryTable() {
 
 function exportTrades() {
     window.open(API + '/api/trades/export', '_blank');
+}
+
+// === CONTROL BUTTONS ===
+var _botPaused = false;
+function togglePause() {
+    var endpoint = _botPaused ? '/api/control/resume' : '/api/control/pause';
+    fetch(API + endpoint, {method:'POST'}).then(function(r){return r.json()}).then(function(d) {
+        _botPaused = !_botPaused;
+        var btn = document.getElementById('btnPauseResume');
+        btn.textContent = _botPaused ? '⏸ Paused' : '▶ Running';
+        btn.style.color = _botPaused ? 'var(--yellow)' : 'var(--green)';
+    });
+}
+function reconnectIBKR() {
+    var btn = event.target;
+    btn.textContent = '🔄 Connecting...';
+    btn.disabled = true;
+    fetch(API + '/api/control/reconnect-ibkr', {method:'POST'}).then(function(r){return r.json()}).then(function(d) {
+        btn.disabled = false;
+        if (d.status === 'connected') {
+            btn.textContent = '✅ Connected';
+            btn.style.color = 'var(--green)';
+            setTimeout(function() { btn.textContent = '🔌 Reconnect IBKR'; btn.style.color = 'var(--accent)'; }, 3000);
+        } else {
+            btn.textContent = '❌ Failed: ' + (d.reason || 'unknown');
+            btn.style.color = 'var(--red)';
+            setTimeout(function() { btn.textContent = '🔌 Reconnect IBKR'; btn.style.color = 'var(--accent)'; }, 5000);
+        }
+    }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = '❌ Error';
+        setTimeout(function() { btn.textContent = '🔌 Reconnect IBKR'; btn.style.color = 'var(--accent)'; }, 3000);
+    });
+}
+function closeAll() {
+    fetch(API + '/api/control/close-all', {method:'POST'}).then(function(r){return r.json()}).then(function() {
+        update();
+    });
 }
 
 // === INIT ===

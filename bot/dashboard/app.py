@@ -438,6 +438,29 @@ class Dashboard:
                 self.engine.notifier.system_alert("EMERGENCY STOP via mobile", level="error")
             return jsonify({"status": "stopped", "positions_closed": True})
 
+        @self.app.route("/api/control/reconnect-ibkr", methods=["POST"])
+        @self._require_auth
+        def reconnect_ibkr():
+            """Force IBKR reconnection attempt."""
+            if self.engine.broker:
+                try:
+                    self.engine.broker.disconnect()
+                except Exception:
+                    pass
+                try:
+                    connected = self.engine.broker.connect()
+                    if connected:
+                        if self.engine.notifier:
+                            self.engine.notifier.system_alert(
+                                "IBKR reconnected via dashboard", level="success"
+                            )
+                        return jsonify({"status": "connected"})
+                    else:
+                        return jsonify({"status": "failed", "reason": "connect returned false"})
+                except Exception as e:
+                    return jsonify({"status": "failed", "reason": str(e)})
+            return jsonify({"status": "failed", "reason": "no broker configured"})
+
         # --- Signal Routing API ---
 
         @self.app.route("/api/signal", methods=["POST"])
