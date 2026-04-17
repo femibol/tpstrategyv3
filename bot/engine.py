@@ -378,12 +378,22 @@ class TradingEngine:
 
         if connected:
             log.info(f"Connected to IBKR ({self.config.mode} mode) - using as primary data source")
-            # Sync account state
+            # Sync account state — IBKR is the source of truth for capital.
+            # Override settings.yaml starting_balance with actual broker equity
+            # so the drawdown breaker doesn't false-trigger when the config is stale.
             account = self.broker.get_account_summary()
             if account:
-                self.current_balance = account.get("net_liquidation", self.config.starting_balance)
-                self.peak_balance = max(self.peak_balance, self.current_balance)
-                log.info(f"Account balance: ${self.current_balance:,.2f}")
+                broker_equity = account.get("net_liquidation", 0)
+                if broker_equity > 0:
+                    self.current_balance = broker_equity
+                    self.peak_balance = broker_equity
+                    self.start_of_day_balance = broker_equity
+                    log.info(
+                        f"IBKR BALANCE SYNC: ${broker_equity:,.2f} "
+                        f"(overrides settings.yaml starting_balance ${self.config.starting_balance:,.2f})"
+                    )
+                else:
+                    log.warning("IBKR returned $0 equity — keeping config starting_balance as fallback")
             # Sync existing positions
             raw_positions = self.broker.get_positions()
             if raw_positions:
