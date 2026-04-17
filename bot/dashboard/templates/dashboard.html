@@ -19,7 +19,7 @@
         body {
             background: var(--bg); color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
-            padding: 12px; padding-bottom: calc(80px + var(--safe-bottom));
+            padding: 12px; padding-bottom: calc(20px + var(--safe-bottom));
             min-height: 100vh; overflow-x: hidden;
         }
 
@@ -1065,29 +1065,9 @@
 </div>
 
 <!-- BOTTOM CONTROL BAR (6 buttons) -->
-<div class="controls">
-    <button class="ctrl-btn suggest" onclick="switchTab('suggestions')">
-        <span class="ctrl-icon">&#9733;</span>Ideas
-    </button>
-    <button class="ctrl-btn rvol-btn" onclick="switchTab('rvol')">
-        <span class="ctrl-icon">&#9650;</span>RVOL
-    </button>
-    <button class="ctrl-btn runners-btn" onclick="switchTab('runners')">
-        <span class="ctrl-icon">&#128293;</span>Runners
-    </button>
-    <button class="ctrl-btn pause" id="btnPause" onclick="controlBot('pause')">
-        <span class="ctrl-icon">| |</span>Pause
-    </button>
-    <button class="ctrl-btn resume" id="btnResume" style="display:none" onclick="controlBot('resume')">
-        <span class="ctrl-icon">&#9654;</span>Resume
-    </button>
-    <button class="ctrl-btn close-all" onclick="showConfirm('close-all')">
-        <span class="ctrl-icon">&#10006;</span>Close
-    </button>
-    <button class="ctrl-btn emergency" onclick="showEmergencyModal()">
-        <span class="ctrl-icon">&#9888;</span>STOP
-    </button>
-</div>
+<!-- Bottom bar removed — control buttons are now at the top of the page
+     (▶ Running / 🔌 Reconnect IBKR / ✖ Close All). Tab navigation handles
+     Ideas/RVOL/Runners. Frees up mobile viewport space. -->
 
 <!-- EMERGENCY STOP MODAL -->
 <div class="modal-overlay" id="emergencyModal">
