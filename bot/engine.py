@@ -240,15 +240,15 @@ class TradingEngine:
         # Inject full universe into RVOL strategies for broad scanning
         self._inject_universe_into_strategies()
 
-        # TradersPost integration
+        # TradersPost integration (optional — IBKR is primary broker)
         if self.config.traderspost_webhook_url:
             self.tp_broker = TradersPostBroker(self.config)
             log.info(f"TradersPost integration ENABLED - webhook configured")
             log.info(f"TradersPost URL: ...{self.config.traderspost_webhook_url[-20:]}")
         else:
-            log.warning(
-                "TradersPost NOT configured! Set TRADERSPOST_WEBHOOK_URL env var. "
-                "All trades will be SIMULATED until this is set."
+            log.info(
+                "TradersPost not configured — using IBKR as sole broker. "
+                "Set TRADERSPOST_WEBHOOK_URL to also mirror signals there."
             )
 
         # TradingView webhook receiver
