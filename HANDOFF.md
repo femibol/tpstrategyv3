@@ -5,30 +5,42 @@ Current state of in-progress work so the next Claude Code session picks up witho
 ---
 
 ## Last Updated
-2026-04-17 — dashboard cleanup session
+2026-04-17 — dashboard cleanup + no-trades diagnostics
 
 ## Recently Shipped (merged to main)
-- **PR #103** — Dashboard: removed redundant bottom bar (Ideas/RVOL/Runners/Pause/Close/STOP). Top control bar + tab navigation cover the same actions. Frees ~80px of mobile viewport.
+- **PR #103** — Dashboard: removed redundant bottom bar. Frees ~80px of mobile viewport.
 - **PR #102** — Dashboard overhaul: live feed, control buttons, positions-first tabs.
-- **PR #101** — IBKR is source of truth for capital (prevents false drawdown stop).
-- **PR #100** — PineScript clean defaults (noise off, trades visible).
+- **PR #101** — IBKR is source of truth for capital.
+- **PR #100** — PineScript clean defaults.
 
-## Open / In Progress
-- **Deploy pending on VPS.** Latest dashboard changes (PR #102, #103) need the rebuild step below to be visible in the browser:
+## Open / In Progress (branch: `claude/code-session-work-CaCgk`)
+- **Cycle heartbeat + IBKR-primary log fix** — pushed but NOT yet merged/deployed. Commits:
+  - `d35e58b` — fix misleading "SIMULATED" warning (IBKR is the real broker)
+  - `(next)` — add `CYCLE #N:` INFO log every ~1 min with regime/signals/approved/positions/bars_warm/market-state + warmup hint when most bars cold. This will make "why no trades" diagnose-at-a-glance.
+- **Deploy pending on VPS** for PRs #102, #103, and the heartbeat branch. Rebuild:
   ```bash
-  cd /opt/trading-bot
-  docker compose build --no-cache trading-bot
-  docker compose up -d --force-recreate trading-bot
+  cd /opt/trading-bot && git pull && docker compose build --no-cache trading-bot && docker compose up -d --force-recreate trading-bot
   ```
-  Then hard-refresh the browser (iPhone: hold reload → Request Desktop Site, or close/reopen tab).
-- **PR #41** (`claude/algo-trading-bot-srXXf`) — very old, likely stale. Verify relevance or close.
 
-## Next Up / Ideas
-- _(none queued — ask user)_
+## Why No Trades (diagnosis so far)
+Bot is running, IBKR connected, 94 symbols streaming, but 0 trades. Investigation findings:
+1. **Most likely — bar warmup.** `momentum.py:56` rejects if `<40` 5-min bars. Every `--force-recreate` wipes the buffer → silent for ~3.3h.
+2. **Regime=crisis blocker** at `engine.py:1171` silently drops new buys. No current log.
+3. **Market hours** — only 9:32-15:50 ET. First 2 min / last 10 min skipped.
+4. **DEBUG-level rejections** in strategies (`momentum.py:49`) are invisible at INFO.
+
+Also found: **logs/data not persisted to host** — lives only at `/app/logs` and `/app/data` inside the container. Every rebuild wipes `trading.log` + `trade_history.json` + `signal_log.json`. Needs a volume mount in `docker-compose.yml`. ← **next fix.**
+
+## Next Up
+- **Volume-mount `logs/` and `data/`** in `docker-compose.yml` so rebuilds don't wipe history.
+- Bump strategy-level rejection logs from DEBUG to INFO (or configurable).
+- Verify heartbeat output after first deploy — confirms diagnosis.
+- PR #41 stale — verify or close.
 
 ## Known Gotchas / Watch-outs
-- Docker caches layers; without `--no-cache` a rebuild will skip `COPY .` if `requirements.txt` didn't change → old dashboard persists.
-- Bottom-bar CSS (`.controls`, `.ctrl-btn.*`) in `bot/dashboard/templates/dashboard.html` (lines ~125-145, ~411-420) is now dead code. Left in place for now — safe to remove in a follow-up.
+- Logs inside container — not on host. Use `docker compose exec trading-bot tail logs/trading.log`.
+- Bottom-bar CSS (`.controls`, `.ctrl-btn.*`) in `dashboard.html` (~125-145, ~411-420) is now dead code.
+- IB Gateway health check was `unhealthy` in last user output — may need reconnect (button on dashboard).
 
 ## How to Use This File
 - **Start of session**: read this first, then git log to confirm.

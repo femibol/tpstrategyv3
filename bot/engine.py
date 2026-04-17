@@ -75,6 +75,9 @@ class TradingEngine:
         self.running = False
         self.paused = False
 
+        # Diagnostic counters (for periodic visibility logs)
+        self._full_cycle_count = 0
+
         # Core components
         self.broker = None
         self.risk_manager = None
@@ -1203,6 +1206,39 @@ class TradingEngine:
                     if rejected_count > 0:
                         rejected_signals = [s for s in signals if s not in approved and s.get("action") == "buy"]
                         self._notify_signal_rejections(rejected_signals)
+
+                    # 7e-3. CYCLE HEARTBEAT — one INFO line per ~minute so the
+                    # user can see the bot is actively evaluating even when no
+                    # signals fire. Diagnoses "why no trades" at a glance.
+                    self._full_cycle_count += 1
+                    if self._full_cycle_count % 6 == 1:  # every ~1 min (6 × 10s)
+                        bars_warm = 0
+                        bars_total = 0
+                        if self.market_data:
+                            try:
+                                tracked = list(getattr(self.market_data, "symbols", []) or [])
+                                bars_total = len(tracked)
+                                for sym in tracked:
+                                    df = self.market_data.get_data(sym)
+                                    if df is not None and len(df) >= 40:
+                                        bars_warm += 1
+                            except Exception:
+                                pass
+                        log.info(
+                            f"CYCLE #{self._full_cycle_count}: "
+                            f"regime={regime_str or 'n/a'} | "
+                            f"signals={len(signals)}->approved={len(approved)} | "
+                            f"positions={len(self.positions)}/{self.risk_manager.max_positions} | "
+                            f"bars_warm={bars_warm}/{bars_total} | "
+                            f"equity_open={getattr(self, '_equity_market_open', False)} | "
+                            f"pm={getattr(self, '_in_premarket', False)} "
+                            f"pwr_hr={getattr(self, '_in_power_hour', False)}"
+                        )
+                        if len(signals) == 0 and bars_total > 0 and bars_warm < bars_total * 0.5:
+                            log.info(
+                                f"  └─ HINT: only {bars_warm}/{bars_total} symbols have 40+ bars. "
+                                f"Strategies need warmup (~3h of 5m bars). This is normal after restart."
+                            )
 
                     # 7f. UOA confirmation boost — check unusual options activity
                     # for high-score buy signals to detect smart money alignment
