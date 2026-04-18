@@ -218,6 +218,8 @@ class MomentumStrategy(BaseStrategy):
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
                 "confidence": confidence,
+                "score": int(round(confidence * 100)),  # 0-100 for downstream filters/reporters
+                "rvol": round(vol_ratio, 2),
                 "reason": f"Momentum BUY: {', '.join(reasons)}",
                 "max_hold_bars": self.max_hold,
                 "bar_seconds": self._timeframe_to_seconds(),

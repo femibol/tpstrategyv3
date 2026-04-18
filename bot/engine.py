@@ -75,6 +75,9 @@ class TradingEngine:
         self.running = False
         self.paused = False
 
+        # Diagnostic counters (for periodic visibility logs)
+        self._full_cycle_count = 0
+
         # Core components
         self.broker = None
         self.risk_manager = None
@@ -240,15 +243,15 @@ class TradingEngine:
         # Inject full universe into RVOL strategies for broad scanning
         self._inject_universe_into_strategies()
 
-        # TradersPost integration
+        # TradersPost integration (optional — IBKR is primary broker)
         if self.config.traderspost_webhook_url:
             self.tp_broker = TradersPostBroker(self.config)
             log.info(f"TradersPost integration ENABLED - webhook configured")
             log.info(f"TradersPost URL: ...{self.config.traderspost_webhook_url[-20:]}")
         else:
-            log.warning(
-                "TradersPost NOT configured! Set TRADERSPOST_WEBHOOK_URL env var. "
-                "All trades will be SIMULATED until this is set."
+            log.info(
+                "TradersPost not configured — using IBKR as sole broker. "
+                "Set TRADERSPOST_WEBHOOK_URL to also mirror signals there."
             )
 
         # TradingView webhook receiver
@@ -1203,6 +1206,39 @@ class TradingEngine:
                     if rejected_count > 0:
                         rejected_signals = [s for s in signals if s not in approved and s.get("action") == "buy"]
                         self._notify_signal_rejections(rejected_signals)
+
+                    # 7e-3. CYCLE HEARTBEAT — one INFO line per ~minute so the
+                    # user can see the bot is actively evaluating even when no
+                    # signals fire. Diagnoses "why no trades" at a glance.
+                    self._full_cycle_count += 1
+                    if self._full_cycle_count % 6 == 1:  # every ~1 min (6 × 10s)
+                        bars_warm = 0
+                        bars_total = 0
+                        if self.market_data:
+                            try:
+                                tracked = list(getattr(self.market_data, "symbols", []) or [])
+                                bars_total = len(tracked)
+                                for sym in tracked:
+                                    df = self.market_data.get_data(sym)
+                                    if df is not None and len(df) >= 40:
+                                        bars_warm += 1
+                            except Exception:
+                                pass
+                        log.info(
+                            f"CYCLE #{self._full_cycle_count}: "
+                            f"regime={regime_str or 'n/a'} | "
+                            f"signals={len(signals)}->approved={len(approved)} | "
+                            f"positions={len(self.positions)}/{self.risk_manager.max_positions} | "
+                            f"bars_warm={bars_warm}/{bars_total} | "
+                            f"equity_open={getattr(self, '_equity_market_open', False)} | "
+                            f"pm={getattr(self, '_in_premarket', False)} "
+                            f"pwr_hr={getattr(self, '_in_power_hour', False)}"
+                        )
+                        if len(signals) == 0 and bars_total > 0 and bars_warm < bars_total * 0.5:
+                            log.info(
+                                f"  └─ HINT: only {bars_warm}/{bars_total} symbols have 40+ bars. "
+                                f"Strategies need warmup (~3h of 5m bars). This is normal after restart."
+                            )
 
                     # 7f. UOA confirmation boost — check unusual options activity
                     # for high-score buy signals to detect smart money alignment
@@ -3190,8 +3226,14 @@ class TradingEngine:
             confidence = sig.get("confidence", 0)
             rvol = sig.get("rvol", 0)
 
-            # Reconstruct WHY it was rejected by checking each filter
+            # The true rejection reason from the risk manager (stamped onto
+            # the signal when filter_signals rejected it). Fall back to a
+            # best-effort reconstruction when the tag is missing (e.g. the
+            # signal was dropped by a non-risk-manager filter).
+            true_reason = sig.get("_rejection_reason")
             checks = []
+            if true_reason:
+                checks.append(f"❌ {true_reason}")
 
             # 1. Position cap
             if len(self.positions) >= self.risk_manager.max_positions:

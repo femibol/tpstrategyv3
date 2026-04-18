@@ -80,10 +80,11 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - bot-data:/app/data
-      - bot-logs:/app/logs
+      # Bind-mount to host so ./logs and ./data are readable without
+      # `docker compose exec`. Makes `tail logs/trading.log` and
+      # `cat data/trade_history.json` work directly from /opt/trading-bot.
+      - ./data:/app/data
+      - ./logs:/app/logs
 
 volumes:
   ib-gateway-data:
-  bot-data:
-  bot-logs:

@@ -78,6 +78,10 @@ class RiskManager:
                 log.info(f"APPROVED: {signal['action']} {signal['symbol']} | {signal.get('reason', '')}")
             else:
                 log.info(f"REJECTED: {signal['action']} {signal['symbol']} | {reason}")
+                # Stamp the reason onto the signal so downstream reporters
+                # (Discord rejections, dashboard) show the true cause instead
+                # of having to reconstruct/guess.
+                signal["_rejection_reason"] = reason
                 self.rejected_signals.append({
                     "time": datetime.now().isoformat(),
                     "signal": signal,
