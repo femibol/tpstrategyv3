@@ -3226,8 +3226,14 @@ class TradingEngine:
             confidence = sig.get("confidence", 0)
             rvol = sig.get("rvol", 0)
 
-            # Reconstruct WHY it was rejected by checking each filter
+            # The true rejection reason from the risk manager (stamped onto
+            # the signal when filter_signals rejected it). Fall back to a
+            # best-effort reconstruction when the tag is missing (e.g. the
+            # signal was dropped by a non-risk-manager filter).
+            true_reason = sig.get("_rejection_reason")
             checks = []
+            if true_reason:
+                checks.append(f"❌ {true_reason}")
 
             # 1. Position cap
             if len(self.positions) >= self.risk_manager.max_positions:

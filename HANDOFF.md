@@ -13,11 +13,10 @@ Current state of in-progress work so the next Claude Code session picks up witho
 - **PR #101** — IBKR is source of truth for capital.
 - **PR #100** — PineScript clean defaults.
 
-## Open / In Progress (branch: `claude/code-session-work-CaCgk`)
-- **Cycle heartbeat + IBKR-primary log fix** — pushed but NOT yet merged/deployed. Commits:
-  - `d35e58b` — fix misleading "SIMULATED" warning (IBKR is the real broker)
-  - `(next)` — add `CYCLE #N:` INFO log every ~1 min with regime/signals/approved/positions/bars_warm/market-state + warmup hint when most bars cold. This will make "why no trades" diagnose-at-a-glance.
-- **Deploy pending on VPS** for PRs #102, #103, and the heartbeat branch. Rebuild:
+## Open / In Progress (branch: `claude/code-session-work-CaCgk`, PR #104)
+- Cycle heartbeat INFO log (`fca783f`), IBKR-primary log fix (`d35e58b`), bind-mount data/logs (`4a8d0ea`).
+- **Rejection-reason accuracy (`next commit`)** — Discord was showing phantom `Score 0 < min 40` rejections for real momentum signals (NVDA, META, NFLX, SMCI @ 75/100). Root cause: `_notify_signal_rejections` was reconstructing filters and `sig.get("score", 0)` defaulted to 0 because momentum.py never set `score`. Fixed by: (1) risk manager stamps `_rejection_reason` on the signal dict, (2) Discord reporter prefers the real reason, (3) momentum.py now emits `score = round(confidence * 100)` and `rvol`.
+- **Deploy pending on VPS** for PR #104. Rebuild:
   ```bash
   cd /opt/trading-bot && git pull && docker compose build --no-cache trading-bot && docker compose up -d --force-recreate trading-bot
   ```
