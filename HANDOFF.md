@@ -41,6 +41,9 @@ git pull && docker compose build --no-cache trading-bot && docker compose up -d 
 tail -f logs/trading.log   # finally works from the host!
 ```
 
+## This Session's Latest
+- **Scanner price ceiling filter** — dynamic scanner hits above `scanner_max_price` ($500 default) now get dropped at injection time so strategies don't emit phantom signals for META/NVDA/NFLX that would just be blocked at execute anyway. Logs one INFO line per cycle when any symbols were filtered: `PRICE CEILING: dropped N scanner hits above $500 (META=$688, ...)`. Engine edit only.
+
 ## Next Up
 - Bump strategy-level rejection logs from DEBUG to INFO (or configurable).
 - Verify heartbeat output after first deploy — confirms no-trades diagnosis.

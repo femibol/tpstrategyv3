@@ -7076,6 +7076,40 @@ class TradingEngine:
 
                     _ibkr_all_list = list(_ibkr_all_syms)
 
+                    # Price-ceiling filter: drop symbols above scanner_max_price
+                    # (default $500) so strategies don't waste cycles on stocks
+                    # the bot can't buy anyway. Capital-inefficient for small
+                    # accounts. Symbols whose live price isn't known yet are
+                    # allowed through — they'll get caught at execute time.
+                    _max_px = self.config.settings.get("risk", {}).get("scanner_max_price", 500.0)
+
+                    def _filter_by_price(syms):
+                        kept = []
+                        dropped = []
+                        for s in syms:
+                            px = self.market_data.get_price(s) if self.market_data else None
+                            if px is not None and px > _max_px:
+                                dropped.append((s, px))
+                            else:
+                                kept.append(s)
+                        return kept, dropped
+
+                    _ibkr_gainer_syms, _g_dropped = _filter_by_price(_ibkr_gainer_syms)
+                    _ibkr_loser_syms, _l_dropped = _filter_by_price(_ibkr_loser_syms)
+                    _ibkr_gap_syms, _gp_dropped = _filter_by_price(_ibkr_gap_syms)
+                    _ibkr_all_list, _all_dropped = _filter_by_price(_ibkr_all_list)
+                    _all_dropped_symbols = {s for s, _ in (_g_dropped + _l_dropped + _gp_dropped + _all_dropped)}
+                    if _all_dropped_symbols:
+                        _sample = sorted(
+                            {(s, px) for s, px in (_g_dropped + _l_dropped + _gp_dropped + _all_dropped)},
+                            key=lambda sp: -sp[1],
+                        )[:5]
+                        _sample_str = ", ".join(f"{s}=${px:.0f}" for s, px in _sample)
+                        log.info(
+                            f"PRICE CEILING: dropped {len(_all_dropped_symbols)} scanner hits "
+                            f"above ${_max_px:.0f} ({_sample_str})"
+                        )
+
                     # Feed gainers + active into momentum strategies
                     if _ibkr_gainer_syms:
                         if rvol_strat:
