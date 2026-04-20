@@ -5,55 +5,42 @@ Current state of in-progress work so the next Claude Code session picks up witho
 ---
 
 ## Last Updated
-2026-04-17 — dashboard cleanup + no-trades diagnostics
+2026-04-20 — sideways-regime rebalance + IBKR recovery
 
 ## Recently Shipped (merged to main)
-- **PR #103** — Dashboard: removed redundant bottom bar. Frees ~80px of mobile viewport.
-- **PR #102** — Dashboard overhaul: live feed, control buttons, positions-first tabs.
+- **PR #106** (approx) — `ceed18f` Enable mean_reversion for sideways regime resilience (`mean_reversion: 15%`, `momentum_runner: 35%`, was 0% / 50%). Regime detector's built-in multipliers (×1.4 in SIDEWAYS, ×0.6 in BULLISH for mean_reversion) now have a base to scale.
+- **PR #105** — Scanner price ceiling filter: dynamic IBKR scanner hits above `scanner_max_price` ($500) dropped at injection time. No more phantom META/NVDA buy signals.
+- **PR #104** — Cycle heartbeat INFO log, IBKR-primary honest log, bind-mount `data/`+`logs/` to host, phantom `Score 0 < min 40` fix (risk manager stamps `_rejection_reason`; Discord shows real reason; momentum emits `score`+`rvol`).
+- **PR #103** — Dashboard: removed redundant bottom bar.
+- **PR #102** — Dashboard overhaul.
 - **PR #101** — IBKR is source of truth for capital.
-- **PR #100** — PineScript clean defaults.
 
-## Open / In Progress (branch: `claude/code-session-work-CaCgk`, PR #104)
-- Cycle heartbeat INFO log (`fca783f`), IBKR-primary log fix (`d35e58b`), bind-mount data/logs (`4a8d0ea`).
-- **Rejection-reason accuracy (`next commit`)** — Discord was showing phantom `Score 0 < min 40` rejections for real momentum signals (NVDA, META, NFLX, SMCI @ 75/100). Root cause: `_notify_signal_rejections` was reconstructing filters and `sig.get("score", 0)` defaulted to 0 because momentum.py never set `score`. Fixed by: (1) risk manager stamps `_rejection_reason` on the signal dict, (2) Discord reporter prefers the real reason, (3) momentum.py now emits `score = round(confidence * 100)` and `rvol`.
-- **Deploy pending on VPS** for PR #104. Rebuild:
-  ```bash
-  cd /opt/trading-bot && git pull && docker compose build --no-cache trading-bot && docker compose up -d --force-recreate trading-bot
-  ```
+## Current Live State (VPS @ 50.116.54.226)
+- **Git**: VPS was on branch `claude/research-premarket-gainers-EFK9r`. User switched to `main` for the 2026-04-20 deploy (confirmed Done). Verify with `git branch --show-current` at session start.
+- **Docker**: trading-bot + ib-gateway compose services; bind-mounts for `data/` and `logs/` so host tails work.
+- **IBKR**: paper account, no 2FA. Gateway went unhealthy over weekend — a stuck post-login dialog ("GATEWAY" popup IBC couldn't auto-click). Fixed with `docker compose restart ib-gateway` + VNC-in (user had to reach VNC at `<vps_ip>:5900`, not `127.0.0.1:5900` — that was a recurring confusion).
+- **Strategies loaded** after 2026-04-20 deploy should be **8** (was 7): momentum 15%, momentum_runner 35%, rvol_momentum 10%, rvol_scalp 5%, prebreakout 5%, premarket_gap 5%, daily_trend_rider 15%, **mean_reversion 15%**. User confirmed "Done" but did NOT paste strategy-list log — verify on next session.
 
-## Why No Trades (diagnosis so far)
-Bot is running, IBKR connected, 94 symbols streaming, but 0 trades. Investigation findings:
-1. **Most likely — bar warmup.** `momentum.py:56` rejects if `<40` 5-min bars. Every `--force-recreate` wipes the buffer → silent for ~3.3h.
-2. **Regime=crisis blocker** at `engine.py:1171` silently drops new buys. No current log.
-3. **Market hours** — only 9:32-15:50 ET. First 2 min / last 10 min skipped.
-4. **DEBUG-level rejections** in strategies (`momentum.py:49`) are invisible at INFO.
+## Still Pending / Gotchas
+- **VPS default branch confusion.** VPS sometimes sits on a `claude/*` branch rather than `main` — then `git pull` says "Already up to date" even when main has new commits. Always verify with `git branch --show-current` + `git log --oneline -3` before assuming code deployed.
+- **Bar warmup after restart.** Momentum needs 40× 5m bars (~3.3h). Every `--force-recreate` wipes the in-memory bar buffer. First trade after restart typically not before noon ET.
+- **Every recent session has been SIDEWAYS regime.** Watch for that in the new cycle heartbeat log line. If still sideways, mean_reversion should now be active (`SIGNAL: ... mean_reversion ...` in trading.log).
+- **VNC port 5900** is exposed publicly (`0.0.0.0:5900` in docker-compose). Works but risky. Offer to bind-localhost-only in a future session.
+- **IB Gateway stuck-dialog recurrence** — if it happens again, `docker compose restart ib-gateway` usually clears it in 2 min; else VNC in.
+- **Strategy-level rejections at DEBUG.** `momentum.py:49` and similar log skip reasons at DEBUG. If strategies are silent but cycle heartbeat shows 0 signals, we can't yet see *why* at INFO.
 
-Also found: **logs/data were in Docker named volumes** — persisted across rebuilds, but NOT readable from the host filesystem. That's why `tail logs/trading.log` from `/opt/trading-bot` always failed. Switched to bind mounts in `docker-compose.yml` this session.
-
-### Deploy migration (one-time, BEFORE next rebuild)
-Copy old named-volume data to the new host-bind locations so you keep the history:
-```bash
-cd /opt/trading-bot
-mkdir -p data logs
-docker run --rm -v trading-bot_bot-logs:/from -v $(pwd)/logs:/to alpine sh -c "cp -a /from/. /to/ 2>/dev/null || true"
-docker run --rm -v trading-bot_bot-data:/from -v $(pwd)/data:/to alpine sh -c "cp -a /from/. /to/ 2>/dev/null || true"
-git pull && docker compose build --no-cache trading-bot && docker compose up -d --force-recreate trading-bot
-tail -f logs/trading.log   # finally works from the host!
-```
-
-## This Session's Latest
-- **Scanner price ceiling filter** — dynamic scanner hits above `scanner_max_price` ($500 default) now get dropped at injection time so strategies don't emit phantom signals for META/NVDA/NFLX that would just be blocked at execute anyway. Logs one INFO line per cycle when any symbols were filtered: `PRICE CEILING: dropped N scanner hits above $500 (META=$688, ...)`. Engine edit only.
-
-## Next Up
-- Bump strategy-level rejection logs from DEBUG to INFO (or configurable).
-- Verify heartbeat output after first deploy — confirms no-trades diagnosis.
+## Next Up (if user wants more)
+- Verify after 2026-04-20 deploy: 8 strategies loaded, `CYCLE #N` heartbeat firing, mean_reversion signals appearing.
+- Bump strategy-level skip reasons from DEBUG → INFO (or add gauge counts to the heartbeat line).
+- Bind VNC (5900) to localhost only for security; SSH-tunnel required for future use.
 - PR #41 stale — verify or close.
 
-## Known Gotchas / Watch-outs
-- Logs inside container — not on host. Use `docker compose exec trading-bot tail logs/trading.log`.
-- Bottom-bar CSS (`.controls`, `.ctrl-btn.*`) in `dashboard.html` (~125-145, ~411-420) is now dead code.
-- IB Gateway health check was `unhealthy` in last user output — may need reconnect (button on dashboard).
+## Trade Data Locations (from CLAUDE.md)
+- `data/trade_history.json` — every closed trade (now bind-mounted to host)
+- `data/signal_log.json` — every TradersPost webhook signal (N/A for this user, IBKR-only)
+- `logs/trading.log` — main bot log (now bind-mounted)
+- `logs/trades.log` — trade-only log
 
 ## How to Use This File
-- **Start of session**: read this first, then git log to confirm.
-- **End of session**: update "Last Updated", move merged items to "Recently Shipped", record new open work, push to the working branch.
+- **Start of session**: read this first, then `git log --oneline -10` + `git branch --show-current` (on VPS if deploying).
+- **End of session**: update "Last Updated", move merged items to "Recently Shipped", record open work, push to the working branch.

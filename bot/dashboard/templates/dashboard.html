@@ -657,18 +657,18 @@
 
 <!-- TABS — reordered: most useful first -->
 <div class="tabs">
-    <div class="tab active" data-tab="positions">Positions</div>
-    <div class="tab" data-tab="suggestions">Signals</div>
-    <div class="tab" data-tab="trades">Trades</div>
-    <div class="tab" data-tab="rvol">RVOL</div>
-    <div class="tab" data-tab="scanner">Scanner</div>
-    <div class="tab" data-tab="history">History</div>
-    <div class="tab" data-tab="watchlist">Watchlist</div>
-    <div class="tab" data-tab="performance">W/L Stats</div>
-    <div class="tab" data-tab="analysis">Analysis</div>
-    <div class="tab" data-tab="daily">Daily Stats</div>
-    <div class="tab" data-tab="settings">Settings</div>
-    <div class="tab" data-tab="notifications">Alerts</div>
+    <div class="tab active" data-tab="positions" onclick="switchTab('positions')">Positions</div>
+    <div class="tab" data-tab="suggestions" onclick="switchTab('suggestions')">Signals</div>
+    <div class="tab" data-tab="trades" onclick="switchTab('trades')">Trades</div>
+    <div class="tab" data-tab="rvol" onclick="switchTab('rvol')">RVOL</div>
+    <div class="tab" data-tab="scanner" onclick="switchTab('scanner')">Scanner</div>
+    <div class="tab" data-tab="history" onclick="switchTab('history')">History</div>
+    <div class="tab" data-tab="watchlist" onclick="switchTab('watchlist')">Watchlist</div>
+    <div class="tab" data-tab="performance" onclick="switchTab('performance')">W/L Stats</div>
+    <div class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analysis</div>
+    <div class="tab" data-tab="daily" onclick="switchTab('daily')">Daily Stats</div>
+    <div class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</div>
+    <div class="tab" data-tab="notifications" onclick="switchTab('notifications')">Alerts</div>
 </div>
 
 <!-- TRADE SUGGESTIONS TAB -->
@@ -800,9 +800,9 @@
 <!-- TRADES TAB -->
 <div class="tab-content" id="tab-trades">
     <div class="section">
-        <h2>Recent Trades <span class="count" id="tradeCount">0</span></h2>
+        <h2>Recent Closed Trades <span class="count" id="tradeCount">0</span></h2>
         <div id="tradesList">
-            <div class="empty">No trades yet</div>
+            <div class="empty">No closed trades yet. Open positions appear under the Positions tab.</div>
         </div>
     </div>
 </div>
@@ -1995,7 +1995,7 @@ async function update() {
             '</div>';
         }).join('');
     } else {
-        trList.innerHTML = '<div class="empty">No trades yet</div>';
+        trList.innerHTML = '<div class="empty">No closed trades yet. Open positions appear under the Positions tab.</div>';
     }
 
     // Notifications
