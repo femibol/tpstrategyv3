@@ -800,9 +800,9 @@
 <!-- TRADES TAB -->
 <div class="tab-content" id="tab-trades">
     <div class="section">
-        <h2>Recent Trades <span class="count" id="tradeCount">0</span></h2>
+        <h2>Recent Closed Trades <span class="count" id="tradeCount">0</span></h2>
         <div id="tradesList">
-            <div class="empty">No trades yet</div>
+            <div class="empty">No closed trades yet. Open positions appear under the Positions tab.</div>
         </div>
     </div>
 </div>
@@ -1995,7 +1995,7 @@ async function update() {
             '</div>';
         }).join('');
     } else {
-        trList.innerHTML = '<div class="empty">No trades yet</div>';
+        trList.innerHTML = '<div class="empty">No closed trades yet. Open positions appear under the Positions tab.</div>';
     }
 
     // Notifications

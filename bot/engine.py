@@ -3937,6 +3937,25 @@ class TradingEngine:
             tp_pct = self.config.take_profit_pct
             take_profit_price = current_price * (1 + tp_pct)  # Long-only: target is always above
 
+        # MINIMUM R/R ENFORCEMENT (long-only): never execute a trade where the
+        # reward is less than 2x the risk. Catches ATR-sized stops with
+        # too-close targets (e.g. AAPL entry $273.90, stop $266.97, target
+        # $275.42 = R/R 0.2 — terrible asymmetry). If the target is too
+        # close, stretch it to 2x risk; don't loosen the stop.
+        if action == "buy":
+            _risk = current_price - stop_loss_price
+            _reward = take_profit_price - current_price
+            if _risk > 0 and _reward < 2.0 * _risk:
+                new_tp = current_price + 2.0 * _risk
+                log.warning(
+                    f"R/R ENFORCE: {symbol} entry=${current_price:.2f} "
+                    f"stop=${stop_loss_price:.2f} (risk=${_risk:.2f}) "
+                    f"target=${take_profit_price:.2f} (reward=${_reward:.2f}, "
+                    f"R/R={_reward/_risk:.2f}) — stretching target to "
+                    f"${new_tp:.2f} for 2:1 minimum."
+                )
+                take_profit_price = new_tp
+
         # --- Broker Execution ---
         # IBKR is the sole execution broker. No fallback chain.
         order = None
