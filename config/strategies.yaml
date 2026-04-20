@@ -8,9 +8,9 @@
 # --- Strategy Allocation ---
 allocation:
   smc_forever: 0.00
-  mean_reversion: 0.00
+  mean_reversion: 0.15             # 15% — earns in sideways markets (regime detector scales up to 1.4x automatically)
   momentum: 0.15                   # 15% — broadest trend-following strategy, catches what others miss
-  momentum_runner: 0.50            # 50% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
+  momentum_runner: 0.35            # 35% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
   rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
   rvol_scalp: 0.05                # 5% - Quick scalps on high-RVOL movers (premarket + regular)
   vwap_scalp: 0.00
@@ -23,8 +23,11 @@ allocation:
   daily_trend_rider: 0.15           # 15% — swing trades on multi-day runners
 
 # --- Mean Reversion Strategy ---
+# Earns in sideways markets when momentum strategies idle.
+# Regime detector gives mean_reversion a 1.4x multiplier in SIDEWAYS,
+# and 0.5x in CRISIS — so allocation is dynamic, not fixed.
 mean_reversion:
-  enabled: false
+  enabled: true
   timeframe: "5m"
   lookback_period: 20
   entry_zscore: -2.0
