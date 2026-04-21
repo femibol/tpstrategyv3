@@ -42,7 +42,7 @@ class RiskManager:
         self.min_price = self.risk.get("min_price", 0.50)
         self.max_price = self.risk.get("max_price", 99999.0)  # No hard ceiling - runners can go past scanner range
         self.max_correlated = self.risk.get("max_correlated_positions", 2)
-        self.min_confidence = 0.40  # Slightly higher - only quality signals for volatile small caps
+        self.min_confidence = 0.35  # Was 0.40. Mean-reversion math lands at 0.35-0.40 on typical setups; 0.40 was silently rejecting valid signals.
         self.long_only = self.risk.get("long_only", False)
 
         # Portfolio-level risk limits

@@ -13,9 +13,11 @@
 
 services:
   ib-gateway:
-    # gnzsnz image is actively maintained and tracks IBKR version releases.
-    # Different paths than unusualalpha: runs as ibgateway user, settings at /home/ibgateway/Jts
-    image: gnzsnz/ib-gateway:latest
+    # Pinned tag (stable) so a surprise IBKR version popup doesn't
+    # silently brick the container mid-week. Bump deliberately when
+    # you're at a computer and can VNC through any first-run dialog.
+    # Use `:latest` only when testing image updates.
+    image: gnzsnz/ib-gateway:10.19.2i
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
@@ -31,6 +33,16 @@ services:
       READ_ONLY_API: "no"
       BYPASS_WARNING: "yes"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
+      # Nightly cold-restart window — IBC kills and relaunches the gateway
+      # at this local time daily. Clears any stuck dialog, re-logs in,
+      # ready for market open. 04:00 ET is pre-premarket (bot resumes
+      # by 04:05 in time for 04:00 crypto + 04:00 premarket scans).
+      AUTO_RESTART_TIME: "04:00"
+      RELOGIN_AFTER_TWO_FA_TIMEOUT: "yes"
+      # If the "Reconnect / Exit session" prompt appears during a restart,
+      # automatically click Reconnect instead of stalling for a human.
+      EXISTING_SESSION_DETECTED_ACTION: "primary"
+      TWO_FA_IN_ACTION: "exit"
       # gnzsnz uses /home/ibgateway/Jts (not /root/Jts)
       TWS_SETTINGS_PATH: /home/ibgateway/Jts
     ports:

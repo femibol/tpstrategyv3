@@ -30,10 +30,10 @@ mean_reversion:
   enabled: true
   timeframe: "5m"
   lookback_period: 20
-  entry_zscore: -2.0
+  entry_zscore: -1.5             # Was -2.0. Z-score -2.0 was too strict for normal sideways noise — rarely fired.
   exit_zscore: 0.0
-  rsi_oversold: 28
-  rsi_overbought: 72
+  rsi_oversold: 32               # Was 28. Loosened in tandem with zscore so oversold conditions trigger more often.
+  rsi_overbought: 68             # Symmetric loosen from 72
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5
