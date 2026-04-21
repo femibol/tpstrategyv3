@@ -45,6 +45,11 @@ services:
       timeout: 5s
       retries: 40
       start_period: 120s
+    labels:
+      # autoheal watches this label and restarts the container when its
+      # healthcheck fails. Fixes the recurring "IB Gateway stuck on a
+      # popup for hours while the user isn't at a computer" problem.
+      - "autoheal=true"
 
   trading-bot:
     build: .
@@ -85,6 +90,21 @@ services:
       # `cat data/trade_history.json` work directly from /opt/trading-bot.
       - ./data:/app/data
       - ./logs:/app/logs
+
+  # Watches all containers with label autoheal=true and restarts them
+  # automatically when their healthcheck reports unhealthy. Tiny Alpine
+  # image (~15MB). Fixes the current weakness where a stuck IB Gateway
+  # dialog silently wastes a full trading day.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: "autoheal"
+      AUTOHEAL_INTERVAL: "30"        # check every 30s
+      AUTOHEAL_START_PERIOD: "120"   # wait 2min after container start before checking (matches healthcheck start_period)
+      TZ: "America/New_York"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   ib-gateway-data:
