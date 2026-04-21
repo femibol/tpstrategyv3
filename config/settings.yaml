@@ -97,8 +97,8 @@ risk:
     enabled: true
     trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
     buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
-  min_volume: 500000              # 500K volume threshold — spec: avoid stocks with avg daily <500K
-  min_price: 1.00                 # Floor: $1.00 — no sub-dollar junk
+  min_volume: 200000              # 200K floor so sub-$3 low-float runners (RPGL, FCHL, BIYA tier) get through. Spread-safety still enforced per-strategy.
+  min_price: 0.50                 # Floor: $0.50 — admits proper low-floats while excluding true penny junk
   scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
   # Bot rides runners past $500 if uptrend is confirmed
   falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
