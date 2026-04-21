@@ -1688,7 +1688,7 @@ class IBKRBroker(BaseBroker):
             log.warning(f"IBKR scanner error [{scan_code}]: {e}")
             return []
 
-    def scan_premarket_gainers(self, num_rows=50, min_price=1.0, max_price=500.0):
+    def scan_premarket_gainers(self, num_rows=50, min_price=0.50, max_price=500.0):
         """Scan for top premarket percentage gainers via IBKR."""
         return self.scan_market(
             scan_code="TOP_PERC_GAIN",
@@ -1697,7 +1697,7 @@ class IBKRBroker(BaseBroker):
             price_below=max_price,
         )
 
-    def scan_premarket_losers(self, num_rows=30, min_price=2.0, max_price=500.0):
+    def scan_premarket_losers(self, num_rows=30, min_price=0.50, max_price=500.0):
         """Scan for top premarket percentage losers via IBKR (mean reversion)."""
         return self.scan_market(
             scan_code="TOP_PERC_LOSE",
@@ -1706,7 +1706,7 @@ class IBKRBroker(BaseBroker):
             price_below=max_price,
         )
 
-    def scan_most_active(self, num_rows=50, min_price=1.0, max_price=500.0):
+    def scan_most_active(self, num_rows=50, min_price=0.50, max_price=500.0):
         """Scan for most active stocks by volume via IBKR."""
         return self.scan_market(
             scan_code="MOST_ACTIVE",
@@ -1715,7 +1715,7 @@ class IBKRBroker(BaseBroker):
             price_below=max_price,
         )
 
-    def scan_hot_by_volume(self, num_rows=50, min_price=1.0, max_price=500.0):
+    def scan_hot_by_volume(self, num_rows=50, min_price=0.50, max_price=500.0):
         """Scan for stocks with unusual volume spikes via IBKR."""
         return self.scan_market(
             scan_code="HOT_BY_VOLUME",
@@ -1724,7 +1724,7 @@ class IBKRBroker(BaseBroker):
             price_below=max_price,
         )
 
-    def scan_high_gap(self, num_rows=50, min_price=1.0, max_price=500.0):
+    def scan_high_gap(self, num_rows=50, min_price=0.50, max_price=500.0):
         """Scan for stocks gapping up from previous close via IBKR."""
         return self.scan_market(
             scan_code="HIGH_OPEN_GAP",
