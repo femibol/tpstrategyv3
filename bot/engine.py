@@ -7039,7 +7039,8 @@ class TradingEngine:
         squeeze_strat = self.strategies.get("short_squeeze")
         pead_strat = self.strategies.get("pead")
         runner_strat = self.strategies.get("momentum_runner")
-        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat]):
+        momentum_strat = self.strategies.get("momentum")
+        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat, momentum_strat]):
             return
 
         try:
@@ -7143,6 +7144,8 @@ class TradingEngine:
                             squeeze_strat.add_dynamic_symbols(_ibkr_gainer_syms)
                         if pead_strat:
                             pead_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                        if momentum_strat:
+                            momentum_strat.add_dynamic_symbols(_ibkr_gainer_syms)
 
                     # Feed gap-ups into gap strategy
                     if _ibkr_gap_syms and gap_strat:

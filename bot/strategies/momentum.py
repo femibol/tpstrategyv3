@@ -5,6 +5,7 @@ Momentum / Trend Following Strategy
 - Volume surge validation
 - ATR-based stops and targets (like hedge funds)
 """
+import time
 import numpy as np
 from bot.strategies.base import BaseStrategy
 from bot.utils.logger import get_logger
@@ -37,10 +38,41 @@ class MomentumStrategy(BaseStrategy):
         self.max_hold = config.get("max_holding_bars", 40)
         self.breakout_lookback = config.get("breakout_lookback", 20)
 
+        # Dynamic symbols fed in from the engine's IBKR scanner discovery.
+        # Without this the strategy would only scan its hardcoded 13-symbol
+        # universe and keep surfacing the same mega-caps cycle after cycle.
+        self._dynamic_symbols = set()
+        self._dynamic_symbol_timestamps = {}
+        self._max_dynamic_symbols = 50  # cap so scan time stays bounded
+
+    def add_dynamic_symbols(self, symbols):
+        """Add dynamically discovered symbols (from IBKR TOP_PERC_GAIN etc)."""
+        now = time.time()
+        for sym in symbols:
+            if sym and isinstance(sym, str):
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
+        # Bound the set — keep the N most recently seen
+        if len(self._dynamic_symbols) > self._max_dynamic_symbols:
+            sorted_syms = sorted(
+                self._dynamic_symbol_timestamps.items(),
+                key=lambda x: -x[1],
+            )
+            keep = {s for s, _ in sorted_syms[: self._max_dynamic_symbols]}
+            self._dynamic_symbols = keep
+            self._dynamic_symbol_timestamps = {
+                s: t for s, t in self._dynamic_symbol_timestamps.items() if s in keep
+            }
+
+    def get_symbols(self):
+        """Return combined static + dynamic symbol list."""
+        return list(set(self.symbols) | self._dynamic_symbols)
+
     def generate_signals(self, market_data):
         signals = []
 
-        for symbol in self.symbols:
+        for symbol in self.get_symbols():
             try:
                 sig = self._analyze_symbol(symbol, market_data)
                 if sig:
