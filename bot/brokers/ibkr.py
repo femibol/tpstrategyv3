@@ -208,19 +208,27 @@ class IBKRBroker(BaseBroker):
         return symbol in self._invalid_symbols
 
     def reconnect(self):
-        """Reconnect with retry."""
+        """Reconnect with retry.
+
+        Extended retry window (up to ~2.5 min) so that autoheal-triggered
+        gateway restarts — which typically take 60-120s for IBC cold-boot
+        + IBKR login — are absorbed inside a single reconnect() call.
+        Previously gave up after 3 tries in 14s, causing the bot to sit
+        disconnected until the next scheduled _health_check fired.
+        """
         log.info("Attempting IBKR reconnect...")
         self.disconnect()
         time.sleep(2)
 
-        for attempt in range(3):
+        for attempt in range(10):
             if self.connect():
+                log.info(f"IBKR reconnected after {attempt + 1} attempt(s)")
                 return True
-            wait = 2 ** (attempt + 1)
-            log.warning(f"Reconnect attempt {attempt + 1} failed, waiting {wait}s")
+            wait = min(2 ** (attempt + 1), 30)  # cap at 30s
+            log.warning(f"Reconnect attempt {attempt + 1}/10 failed, waiting {wait}s")
             time.sleep(wait)
 
-        log.error("IBKR reconnection failed after 3 attempts")
+        log.error("IBKR reconnection failed after 10 attempts (~2.5 min)")
         return False
 
     def place_order(self, symbol, action, quantity, order_type="LIMIT",

@@ -13,11 +13,10 @@
 
 services:
   ib-gateway:
-    # Pinned tag (stable) so a surprise IBKR version popup doesn't
-    # silently brick the container mid-week. Bump deliberately when
-    # you're at a computer and can VNC through any first-run dialog.
-    # Use `:latest` only when testing image updates.
-    image: gnzsnz/ib-gateway:10.19.2i
+    # The `:stable` tag tracks IBKR's stable release channel (~10.19.x line),
+    # not the weekly-churn `:latest`. This is the community-converged choice
+    # for 24/7 bots. Bump to a specific SHA monthly if you want more control.
+    image: ghcr.io/gnzsnz/ib-gateway:stable
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
@@ -33,16 +32,20 @@ services:
       READ_ONLY_API: "no"
       BYPASS_WARNING: "yes"
       VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-password}
-      # Nightly cold-restart window — IBC kills and relaunches the gateway
-      # at this local time daily. Clears any stuck dialog, re-logs in,
-      # ready for market open. 04:00 ET is pre-premarket (bot resumes
-      # by 04:05 in time for 04:00 crypto + 04:00 premarket scans).
-      AUTO_RESTART_TIME: "04:00"
+      # Nightly cold-restart (silent, no relogin required). 23:45 ET is
+      # before IBKR's own midnight reset, so we control the restart window.
+      AUTO_RESTART_TIME: "23:45"
+      # Recover automatically if a 2FA prompt appears & times out.
+      TWOFA_TIMEOUT_ACTION: "restart"
       RELOGIN_AFTER_TWO_FA_TIMEOUT: "yes"
-      # If the "Reconnect / Exit session" prompt appears during a restart,
-      # automatically click Reconnect instead of stalling for a human.
+      # If another session is detected, seize it (bot must own the connection).
       EXISTING_SESSION_DETECTED_ACTION: "primary"
-      TWO_FA_IN_ACTION: "exit"
+      # Dismiss the three most common blocking dialogs so IBC doesn't stall
+      # waiting on a human click. These are the config.ini lines the
+      # algotrading community has converged on; gnzsnz passes them through.
+      ALLOW_BLIND_TRADING: "yes"
+      DISMISS_PASSWORD_EXPIRY_WARNING: "yes"
+      DISMISS_NSE_COMPLIANCE: "yes"
       # gnzsnz uses /home/ibgateway/Jts (not /root/Jts)
       TWS_SETTINGS_PATH: /home/ibgateway/Jts
     ports:
@@ -67,7 +70,11 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      - ib-gateway
+      # Wait for the gateway's healthcheck to pass before the bot even
+      # starts. Prevents the "bot boots, tries to connect, DNS not ready
+      # yet, gives up" race that loses trading minutes every restart.
+      ib-gateway:
+        condition: service_healthy
     environment:
       # Timezone (critical for APScheduler)
       TZ: "America/New_York"
