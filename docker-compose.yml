@@ -67,7 +67,11 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      - ib-gateway
+      # Wait for the gateway's healthcheck to pass before the bot even
+      # starts. Prevents the "bot boots, tries to connect, DNS not ready
+      # yet, gives up" race that loses trading minutes every restart.
+      ib-gateway:
+        condition: service_healthy
     environment:
       # Timezone (critical for APScheduler)
       TZ: "America/New_York"
