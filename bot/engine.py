@@ -7039,7 +7039,8 @@ class TradingEngine:
         squeeze_strat = self.strategies.get("short_squeeze")
         pead_strat = self.strategies.get("pead")
         runner_strat = self.strategies.get("momentum_runner")
-        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat]):
+        momentum_strat = self.strategies.get("momentum")
+        if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat, momentum_strat]):
             return
 
         try:
@@ -7129,36 +7130,31 @@ class TradingEngine:
                             f"above ${_max_px:.0f} ({_sample_str})"
                         )
 
-                    # Feed gainers + active into momentum strategies
-                    if _ibkr_gainer_syms:
-                        if rvol_strat:
-                            rvol_strat.add_dynamic_symbols(_ibkr_gainer_syms)
-                        if scalp_strat:
-                            scalp_strat.add_dynamic_symbols(_ibkr_gainer_syms)
-                        if runner_strat:
-                            runner_strat.add_dynamic_symbols(_ibkr_gainer_syms)
-                        if pb_strat:
-                            pb_strat.add_dynamic_symbols(_ibkr_gainer_syms)
-                        if squeeze_strat:
-                            squeeze_strat.add_dynamic_symbols(_ibkr_gainer_syms)
-                        if pead_strat:
-                            pead_strat.add_dynamic_symbols(_ibkr_gainer_syms)
+                    # Feed the FULL discovered universe into every strategy.
+                    # Price-ceiling filter above already dropped >$500 names.
+                    # Each strategy's own logic (min_price, ADX, RVOL, verdict)
+                    # still enforces quality — this just makes sure no strategy
+                    # is stuck on a stale hardcoded list while the tape moves.
+                    _trend_rider_strat = self.strategies.get("daily_trend_rider")
+                    _dynamic_strategies = [
+                        rvol_strat, scalp_strat, runner_strat, pb_strat,
+                        squeeze_strat, pead_strat, momentum_strat, gap_strat,
+                        mr_strat, _trend_rider_strat,
+                    ]
+                    if _ibkr_all_list:
+                        for _s in _dynamic_strategies:
+                            if _s and hasattr(_s, "add_dynamic_symbols"):
+                                _s.add_dynamic_symbols(_ibkr_all_list)
 
-                    # Feed gap-ups into gap strategy
+                    # Targeted feeds on top of the broad net:
+                    # gap-ups still flagged specifically for the gap strategy
                     if _ibkr_gap_syms and gap_strat:
                         gap_strat.add_dynamic_symbols(_ibkr_gap_syms)
-
-                    # Feed losers into mean reversion
+                    # losers tagged for mean reversion (oversold = reversion candidate)
                     if _ibkr_loser_syms and mr_strat:
-                        existing = set(mr_strat.symbols)
-                        new_losers = [s for s in _ibkr_loser_syms if s not in existing]
-                        mr_strat.symbols.extend(new_losers)
+                        mr_strat.add_dynamic_symbols(_ibkr_loser_syms)
                         if scalp_strat:
                             scalp_strat.add_dynamic_symbols(_ibkr_loser_syms)
-
-                    # Feed all active symbols into scalp (broad net)
-                    if _ibkr_all_list and scalp_strat:
-                        scalp_strat.add_dynamic_symbols(_ibkr_all_list)
 
                     log.info(
                         f"IBKR scanner: {len(_ibkr_all_syms)} unique symbols discovered | "
