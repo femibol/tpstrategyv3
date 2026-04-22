@@ -5,6 +5,7 @@ Mean Reversion Strategy
 - Uses RSI, Bollinger Bands, and Z-Score
 - Best for range-bound markets with liquid stocks
 """
+import time
 import numpy as np
 from bot.strategies.base import BaseStrategy
 from bot.utils.logger import get_logger
@@ -35,10 +36,38 @@ class MeanReversionStrategy(BaseStrategy):
         self.bb_std = config.get("bollinger_std", 2.0)
         self.max_hold = config.get("max_holding_periods", 20)
 
+        # Dynamic symbols from IBKR scanner (losers + active). Mean reversion
+        # on a static 13-symbol list rarely fires; live-discovered pullback
+        # candidates are where this strategy actually earns.
+        self._dynamic_symbols = set()
+        self._dynamic_symbol_timestamps = {}
+        self._max_dynamic_symbols = 50
+
+    def add_dynamic_symbols(self, symbols):
+        now = time.time()
+        for sym in symbols:
+            if sym and isinstance(sym, str):
+                s = sym.upper()
+                self._dynamic_symbols.add(s)
+                self._dynamic_symbol_timestamps[s] = now
+        if len(self._dynamic_symbols) > self._max_dynamic_symbols:
+            sorted_syms = sorted(
+                self._dynamic_symbol_timestamps.items(),
+                key=lambda x: -x[1],
+            )
+            keep = {s for s, _ in sorted_syms[: self._max_dynamic_symbols]}
+            self._dynamic_symbols = keep
+            self._dynamic_symbol_timestamps = {
+                s: t for s, t in self._dynamic_symbol_timestamps.items() if s in keep
+            }
+
+    def get_symbols(self):
+        return list(set(self.symbols) | self._dynamic_symbols)
+
     def generate_signals(self, market_data):
         signals = []
 
-        for symbol in self.symbols:
+        for symbol in self.get_symbols():
             try:
                 sig = self._analyze_symbol(symbol, market_data)
                 if sig:
