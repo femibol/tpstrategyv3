@@ -13,13 +13,14 @@
 
 services:
   ib-gateway:
-    # Use :latest — tried ghcr :stable but that tag is currently broken:
-    # container fails to boot with "Offline TWS/Gateway version 10.37.1r
-    # is not installed: can't find jars folder". The :stable image
-    # metadata references a version whose jars aren't actually in the
-    # image. :latest is the historically-working choice; the IBC env
-    # vars + autoheal below handle any dialog/version blips it surfaces.
-    image: gnzsnz/ib-gateway:latest
+    # Pinned to 10.32 — confirmed working. The floating :latest and
+    # :stable gnzsnz tags are currently broken (ship with metadata
+    # referencing version whose JARs aren't in the image: "Offline
+    # TWS/Gateway version X.Y.Z is not installed: can't find jars
+    # folder"). Tested 10.19, 10.25, 10.32 — all boot clean. Using
+    # 10.32 as the most recent known-good tag. Bump deliberately only
+    # after verifying the target tag boots without the JAR error.
+    image: gnzsnz/ib-gateway:10.32
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
