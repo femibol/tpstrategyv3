@@ -13,10 +13,13 @@
 
 services:
   ib-gateway:
-    # The `:stable` tag tracks IBKR's stable release channel (~10.19.x line),
-    # not the weekly-churn `:latest`. This is the community-converged choice
-    # for 24/7 bots. Bump to a specific SHA monthly if you want more control.
-    image: ghcr.io/gnzsnz/ib-gateway:stable
+    # Use :latest — tried ghcr :stable but that tag is currently broken:
+    # container fails to boot with "Offline TWS/Gateway version 10.37.1r
+    # is not installed: can't find jars folder". The :stable image
+    # metadata references a version whose jars aren't actually in the
+    # image. :latest is the historically-working choice; the IBC env
+    # vars + autoheal below handle any dialog/version blips it surfaces.
+    image: gnzsnz/ib-gateway:latest
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
