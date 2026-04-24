@@ -13,14 +13,15 @@
 
 services:
   ib-gateway:
-    # Pinned to 10.32 — confirmed working. The floating :latest and
-    # :stable gnzsnz tags are currently broken (ship with metadata
-    # referencing version whose JARs aren't in the image: "Offline
-    # TWS/Gateway version X.Y.Z is not installed: can't find jars
-    # folder"). Tested 10.19, 10.25, 10.32 — all boot clean. Using
-    # 10.32 as the most recent known-good tag. Bump deliberately only
-    # after verifying the target tag boots without the JAR error.
-    image: gnzsnz/ib-gateway:10.32
+    # gnzsnz image pipeline is currently broken across ALL tags tested
+    # (:latest, :stable, 10.32). Each fails at startup with
+    #   Error: Offline TWS/Gateway version X.Y.Z is not installed:
+    #   can't find jars folder
+    # because IBC in the image references a version whose JARs aren't
+    # installed. Switching to the predecessor unusualalpha image,
+    # different build pipeline + repo. Known env-var compatible with
+    # gnzsnz (both descend from the same IBC base).
+    image: ghcr.io/unusualalpha/ib-gateway:latest
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
@@ -74,11 +75,14 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      # Wait for the gateway's healthcheck to pass before the bot even
-      # starts. Prevents the "bot boots, tries to connect, DNS not ready
-      # yet, gives up" race that loses trading minutes every restart.
+      # Relaxed from condition: service_healthy to condition: service_started
+      # during gateway-image instability. The bot's internal reconnect loop
+      # (10 attempts, ~2.5 min) handles the case where gateway is still
+      # booting; it also keeps retrying indefinitely via the health_check
+      # job. If gateway is fully broken, bot at least comes up so the
+      # dashboard + notifications work and we can see logs.
       ib-gateway:
-        condition: service_healthy
+        condition: service_started
     environment:
       # Timezone (critical for APScheduler)
       TZ: "America/New_York"
