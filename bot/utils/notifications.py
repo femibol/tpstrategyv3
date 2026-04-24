@@ -262,17 +262,25 @@ class Notifier:
             )
 
     def system_alert(self, message, level="info"):
-        """Send system status alert."""
+        """Send system status alert.
+
+        level="error" triggers a Discord @everyone mention so the user's
+        phone actually vibrates on critical outages (the whole point of
+        the alert — a muted Discord channel is how we silently lost 22h
+        this week).
+        """
         icons = {"info": "ℹ️", "warning": "⚠️", "error": "🚨", "success": "✅"}
         icon = icons.get(level, "ℹ️")
         msg = f"{icon} **System**: {message}"
-        self._send(msg, title="System", category="system")
+        # Only level=error pages everyone. warning/info/success stay quiet.
+        self._send(msg, title="System", category="system",
+                   mention_everyone=(level == "error"))
 
     # =========================================================================
     # Internal routing
     # =========================================================================
 
-    def _send(self, message, title="", category=""):
+    def _send(self, message, title="", category="", mention_everyone=False):
         """Route notification to all configured channels."""
         log.info(f"[ALERT] {title}: {message[:200]}")
         self.history.append({
@@ -287,19 +295,30 @@ class Notifier:
             self.history = self.history[-100:]
 
         if self.discord_url:
-            self._send_discord(message)
+            self._send_discord(message, mention_everyone=mention_everyone)
 
-    def _send_discord(self, message):
-        """Send plain text notification to Discord webhook."""
+    def _send_discord(self, message, mention_everyone=False):
+        """Send plain text notification to Discord webhook.
+
+        When mention_everyone=True, prepends @everyone and sets
+        allowed_mentions so the ping actually fires (Discord webhooks
+        ignore mentions by default unless explicitly whitelisted).
+        """
         try:
             # Discord has 2000 char limit
             if len(message) > 1950:
                 message = message[:1950] + "..."
 
+            if mention_everyone and "@everyone" not in message:
+                message = f"@everyone {message}"
+
             payload = {
                 "content": message,
                 "username": "AlgoBot",
             }
+            if mention_everyone:
+                payload["allowed_mentions"] = {"parse": ["everyone"]}
+
             resp = requests.post(
                 self.discord_url,
                 json=payload,

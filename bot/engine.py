@@ -96,6 +96,14 @@ class TradingEngine:
         self.sheets_logger = None
         self.scheduler = None
 
+        # Gateway auto-recovery state. After N consecutive reconnect
+        # failures we try restarting the ib-gateway container via the
+        # Docker socket, bounded by per-day + cooldown caps so a bad
+        # credential or IBKR outage doesn't have us restart-looping.
+        self._auto_restart_count = 0
+        self._auto_restart_day = None   # date() of the day we're counting
+        self._last_auto_restart_ts = 0.0
+
         # State — protected by _positions_lock for thread safety
         # (BackgroundScheduler, webhook handlers, and main loop all access self.positions)
         self.positions = {}
@@ -630,15 +638,29 @@ class TradingEngine:
                 )
                 if should_alert:
                     mins = attempt * 30 // 60
+                    # Try to self-heal before paging: restart the
+                    # gateway container (bounded by 3/day + 10min cooldown).
+                    restarted = self._try_auto_recover_gateway()
+                    if restarted:
+                        # Give the freshly-restarted gateway 120s to
+                        # boot before the next reconnect attempt — IBC
+                        # cold-boot + IBKR login takes ~60-90s. This
+                        # replaces the 30s sleep at the top of the
+                        # next iteration, not adds to it.
+                        _time.sleep(120)
                     msg = (
                         f"IBKR reconnect failing: {attempt} consecutive attempts "
                         f"(~{mins} min). TCP port may be open but API wedged. "
-                        f"ACTION: docker compose restart ib-gateway (and/or VNC in "
-                        f"to clear stuck dialog). Bot is NOT trading until fixed."
+                        f"{'Auto-restart of ib-gateway was just issued. ' if restarted else ''}"
+                        f"If this alert keeps firing: VNC in to clear a stuck "
+                        f"dialog, or check IBKR credentials in .env."
                     )
                     log.critical(msg)
                     if self.notifier:
                         try:
+                            # level=error triggers @everyone, so your
+                            # phone actually vibrates instead of sitting
+                            # in a muted Discord channel for 22h.
                             self.notifier.system_alert(msg, level="error")
                         except Exception:
                             pass
@@ -648,6 +670,108 @@ class TradingEngine:
         t = threading.Thread(target=reconnect_loop, daemon=True, name="ibkr-reconnect")
         t.start()
         log.info("Background IBKR reconnect thread started (every 30s)")
+
+    def _try_auto_recover_gateway(self):
+        """Restart the ib-gateway container when the API is wedged.
+
+        TCP-only healthcheck on the gateway container can't tell the
+        difference between "alive" and "port open, API dead" (which is
+        how we lost 22h this week). Instead of trying to make the
+        healthcheck smarter (fragile inside the unusualalpha image),
+        the bot escalates from its own real liveness probe: if we've
+        been failing reconnect for ~5 min, restart the container.
+
+        Safety caps:
+          * 3 restarts per calendar day max (prevents restart-loop if
+            credentials are wrong or IBKR is out)
+          * 10 min cooldown between attempts (gateway boot takes ~90s;
+            cooldown avoids bouncing a still-booting container)
+          * Requires /var/run/docker.sock mounted + docker SDK installed
+            (both in docker-compose + requirements); silently skips if
+            either is missing so bot still runs on dev machines
+
+        Returns True if a restart was issued, False otherwise.
+        """
+        now = time.time()
+        today = datetime.now(self.tz).date()
+
+        # Reset daily counter at calendar rollover
+        if self._auto_restart_day != today:
+            self._auto_restart_day = today
+            self._auto_restart_count = 0
+
+        # Cooldown between attempts
+        if now - self._last_auto_restart_ts < 600:
+            return False
+
+        # Daily cap
+        if self._auto_restart_count >= 3:
+            # Only log the cap-reached message once per day
+            if self._auto_restart_count == 3:
+                log.critical(
+                    "AUTO-RECOVERY: daily restart cap (3) reached. "
+                    "Not attempting further container restarts today. "
+                    "Human intervention required."
+                )
+                if self.notifier:
+                    try:
+                        self.notifier.system_alert(
+                            "AUTO-RECOVERY halted: 3 ib-gateway restarts today "
+                            "all failed. Likely IBKR outage, bad credentials, "
+                            "or account lockout. Manual intervention required.",
+                            level="error",
+                        )
+                    except Exception:
+                        pass
+                self._auto_restart_count = 4  # sentinel: don't log again today
+            return False
+
+        try:
+            import docker
+            client = docker.from_env()
+            # Default container name pattern is <compose-project>-ib-gateway-1.
+            # Project name defaults to the directory name ("trading-bot").
+            # Fall back to scanning by image if naming differs.
+            target = None
+            try:
+                target = client.containers.get("trading-bot-ib-gateway-1")
+            except Exception:
+                for c in client.containers.list(all=True):
+                    if "ib-gateway" in (c.name or ""):
+                        target = c
+                        break
+            if not target:
+                log.warning("AUTO-RECOVERY: ib-gateway container not found")
+                return False
+
+            log.critical(
+                f"AUTO-RECOVERY: restarting ib-gateway container "
+                f"(attempt {self._auto_restart_count + 1}/3 today)"
+            )
+            target.restart(timeout=15)
+            self._auto_restart_count += 1
+            self._last_auto_restart_ts = now
+
+            if self.notifier:
+                try:
+                    self.notifier.system_alert(
+                        f"AUTO-RECOVERY: ib-gateway restart issued "
+                        f"({self._auto_restart_count}/3 today). Bot should "
+                        f"reconnect within ~2 min of gateway boot.",
+                        level="error",
+                    )
+                except Exception:
+                    pass
+            return True
+        except ImportError:
+            log.debug("AUTO-RECOVERY skipped: docker SDK not installed")
+            return False
+        except Exception as e:
+            log.warning(
+                f"AUTO-RECOVERY failed (docker socket likely not mounted "
+                f"or daemon unreachable): {e}"
+            )
+            return False
 
     def _sync_after_reconnect(self):
         """Sync account and positions after a successful background reconnect."""
