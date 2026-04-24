@@ -195,13 +195,95 @@ class IBKRBroker(BaseBroker):
         log.info("Disconnected from IBKR")
 
     def is_connected(self):
-        """Check connection status."""
-        if self.ib:
+        """Real liveness check (not just TCP socket state).
+
+        ib_insync's isConnected() only verifies the TCP socket is open. A
+        wedged IB Gateway (stuck dialog, hung API thread, post-restart
+        auth loop) keeps the socket open while the API is unresponsive —
+        this produced 1,700+ 'IBKR NOT CONNECTED' errors over 22h while
+        the container reported healthy.
+
+        Two-stage check:
+          1. Fast path: ib.isConnected() must return True. If it returns
+             False we're already disconnected — no probe needed.
+          2. Liveness probe: reqCurrentTimeAsync() with a 2s timeout. If
+             the API doesn't respond, mark ourselves disconnected so the
+             next reconnect cycle kicks in.
+
+        The probe result is cached for 10s because hot paths call this
+        many times per cycle (signal eval, order placement, etc.) and
+        we don't want to hammer the gateway.
+        """
+        if not self.ib:
+            return False
+        try:
+            if not self.ib.isConnected():
+                self._connected = False
+                return False
+        except Exception:
+            self._connected = False
+            return False
+
+        now = time.time()
+        last_probe = getattr(self, "_last_liveness_probe", 0.0)
+        last_result = getattr(self, "_last_liveness_result", True)
+        if now - last_probe < 10.0:
+            return last_result
+
+        alive = self._probe_api_liveness(timeout=2.0)
+        self._last_liveness_probe = now
+        self._last_liveness_result = alive
+        if not alive:
+            self._connected = False
+        return alive
+
+    def _probe_api_liveness(self, timeout=2.0):
+        """Run reqCurrentTimeAsync() with a hard timeout.
+
+        Returns True if the gateway API responded within `timeout` seconds.
+        Runs inside the current thread's event loop via asyncio.wait_for
+        (ib_insync's own pattern, respects nest_asyncio). Falls back to
+        trusting ib.isConnected() if the asyncio machinery throws — we
+        never want the probe itself to be the thing that breaks the bot.
+        """
+        if not self.ib:
+            return False
+        try:
             try:
-                return self.ib.isConnected()
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    raise RuntimeError("closed")
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            # Re-apply nest_asyncio to this thread's loop — module-level
+            # apply() only covers the loop at import time. Same pattern
+            # as connect().
+            try:
+                import nest_asyncio
+                nest_asyncio.apply(loop)
+            except Exception:
+                pass
+
+            async def _probe():
+                return await asyncio.wait_for(
+                    self.ib.reqCurrentTimeAsync(), timeout=timeout
+                )
+
+            server_time = loop.run_until_complete(_probe())
+            return server_time is not None
+        except asyncio.TimeoutError:
+            return False
+        except Exception as e:
+            # If the probe itself threw (not a timeout), don't mark the
+            # broker dead — we might be in a weird thread state. Trust
+            # the TCP check instead.
+            log.debug(f"Liveness probe errored (falling back to isConnected): {e}")
+            try:
+                return bool(self.ib.isConnected())
             except Exception:
                 return False
-        return False
 
     def is_symbol_invalid(self, symbol):
         """Check if a symbol is known to be invalid/delisted."""
