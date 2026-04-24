@@ -5,6 +5,58 @@ Current state of in-progress work so the next Claude Code session picks up witho
 ---
 
 ## Last Updated
+2026-04-24 (2) — Gateway auto-recovery + @everyone pager
+
+## Current In-Progress — claude/fix-algo-bot-jhizr (second commit of the day)
+After merging PR #117 (liveness check + signal gate + alert escalation), verified
+live on the VPS that all four fixes landed cleanly. But the TWS Gateway API was
+still wedged (user had to `docker compose restart ib-gateway` manually each time).
+
+Deep dive into alternatives (CPGW+ibeam, TradersPost, Questrade, TradingView)
+surfaced real blockers for a clean migration:
+- **CPGW Web API has hard limits** incompatible with this bot's usage: ~5
+  concurrent streaming symbols/session (bot streams dozens), scanner endpoint
+  returns symbol/name/conid only (bot uses rich scanner data), 60 new 1m-bar
+  subscriptions per 10 min (bot rotates faster).
+- **ibeam** has real production issues: stale bundled CPGW JAR, Chrome page
+  crashes requiring full container rm+recreate.
+- **IBKR OAuth for retail**: not available yet, no ETA.
+- **TradersPost + IBKR** uses the same CPGW under the hood — pushes the pain
+  onto their infra but loses control.
+
+Conclusion: stay on TWS Gateway for now, double-down on resilience. This commit:
+
+1. **Auto-recovery via Docker socket** — `engine.py:_try_auto_recover_gateway()`.
+   When background reconnect fails 10 times (~5 min, the same trigger as the
+   existing Discord alert), bot restarts the `ib-gateway` container via
+   `/var/run/docker.sock`. Safety caps: 3/day, 10-min cooldown, auto-halts at
+   cap with escalation alert. Requires docker SDK (added to requirements.txt)
+   and socket volume (added to docker-compose.yml).
+2. **@everyone on critical alerts** — `notifications.py`. `system_alert(level="error")`
+   now prepends `@everyone` and sets `allowed_mentions` so Discord webhook
+   mentions actually fire. Previously messages sat in a muted channel for
+   22h. Now phone buzzes within ~5 min of outage start.
+3. Same branch as PR #117 fixes — stacks on top of liveness check.
+
+**Deploy on VPS after merge:**
+```bash
+git fetch origin && git checkout main && git pull
+docker compose build trading-bot
+docker compose up -d --force-recreate trading-bot
+```
+The docker-compose volume change picks up on recreate; no need to restart
+ib-gateway itself. First outage after this deploys should produce a phone
+push notification within 5 min and auto-restart the gateway within 5 min;
+bot should come back online ~2 min after that.
+
+## Known ruled-out migration paths (for future sessions)
+- CPGW + ibeam + ibind — 5-stream cap + weak scanner doesn't fit this bot
+- Questrade — viable but major rewrite (new broker module + scanner from scratch),
+  tabled as warm-standby only
+- TradingView Pine-script + TradersPost — would lose Python strategies, AI
+  insights, auto-tuner, learning system. Rejected.
+
+## Last Updated (previous entry)
 2026-04-24 — IBKR liveness-check fix (why the bot wasn't trading for 22h)
 
 ## In Progress — claude/fix-algo-bot-jhizr (NOT YET MERGED)

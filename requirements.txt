@@ -38,6 +38,11 @@ websocket-client>=1.6.0
 # Monitoring
 psutil>=5.9.0
 
+# Docker SDK — used by the engine's auto-recovery path to restart the
+# ib-gateway container when its API wedges. Requires /var/run/docker.sock
+# mounted in the trading-bot container (see docker-compose.yml).
+docker>=7.0.0
+
 # Google Sheets trade logging
 gspread>=5.12.0
 google-auth>=2.23.0

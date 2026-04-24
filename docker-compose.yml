@@ -117,6 +117,15 @@ services:
       # `cat data/trade_history.json` work directly from /opt/trading-bot.
       - ./data:/app/data
       - ./logs:/app/logs
+      # Read-write access to Docker socket so the bot can self-heal by
+      # restarting the ib-gateway container when its API wedges (TCP open
+      # but handshake dead). Gated by safety caps in engine.py:
+      #   - 3 restart attempts per day max
+      #   - 10 min cooldown between restart attempts
+      #   - Only fires after 10 consecutive reconnect failures (~5 min)
+      # Mount requires RW (not :ro) because container.restart() issues
+      # a POST that modifies daemon state.
+      - /var/run/docker.sock:/var/run/docker.sock
 
   # Watches all containers with label autoheal=true and restarts them
   # automatically when their healthcheck reports unhealthy. Tiny Alpine
