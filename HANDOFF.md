@@ -5,7 +5,48 @@ Current state of in-progress work so the next Claude Code session picks up witho
 ---
 
 ## Last Updated
-2026-04-20 — sideways-regime rebalance + IBKR recovery
+2026-04-24 — IBKR liveness-check fix (why the bot wasn't trading for 22h)
+
+## In Progress — claude/fix-algo-bot-jhizr (NOT YET MERGED)
+User reported "only 2 trades in 2-3 weeks" on 2026-04-24. Live diagnosis
+via `docker compose logs trading-bot`:
+- `signals=6→approved=6 | positions=0/10` — signals generated + approved,
+  but every one dies at execution with `IBKR NOT CONNECTED`.
+- 1,739× `IBKR NOT CONNECTED` since Apr 23 20:35 restart.
+- 378× `BACKGROUND RECONNECT: attempt #N` — every one times out.
+- `docker compose ps` shows `ib-gateway ... Up 5 hours (healthy)` — the
+  healthcheck (`cat /proc/net/tcp | grep ':0FA2'`) only tests that the
+  TCP port is listening. API handshake is dead. Classic stuck-dialog /
+  wedged IBC state.
+- Bot was generating `SIGNAL: Momentum BUY ... Vol=0.0x` on Yahoo-delayed
+  data (explicit log: "IBKR not connected... falling back to Yahoo"),
+  e.g. `NFLX @ $92.42` — a stale price. That masked the outage in the
+  dashboard which showed "approved" signals.
+
+**Immediate unblock** (done by user on VPS): `docker compose restart ib-gateway`.
+
+**Four fixes on branch `claude/fix-algo-bot-jhizr`:**
+1. **Real liveness check** — `bot/brokers/ibkr.py:is_connected()` now runs
+   `reqCurrentTimeAsync()` with a 2s timeout, cached 10s. Previously
+   trusted `ib_insync.isConnected()` which only checks TCP. Catches
+   wedged-API state.
+2. **Signal suppression gate** — `bot/engine.py:_run_strategies()` hard
+   returns `[]` when broker not live. Stops phantom signals on stale
+   fallback data (root cause of misleading "approved=6 / positions=0"
+   heartbeat). Warns once every 5 min so log isn't spammed.
+3. **Loud escalation** — `bot/engine.py:_start_background_reconnect()`
+   posts CRITICAL log + Discord `system_alert` at attempt 10 (~5 min)
+   and every 20 attempts thereafter (~10 min cadence). User is paged
+   instead of silently burning hours in degraded mode. Also sends a
+   success alert on reconnect.
+4. **bars_warm=0/0 display fix** — `engine.py:1252-1266` read `.symbols`
+   which doesn't exist on MarketDataFeed. Now reads `_bars_cache.keys()`.
+
+**Still pending**: merge + deploy. Verify on VPS after merge:
+- `grep "Real liveness check" bot/brokers/ibkr.py` — confirms deploy
+- Heartbeat should now show real `bars_warm=N/M` numbers
+- If gateway wedges again, Discord gets a `[ERROR] IBKR reconnect
+  failing: 10 consecutive attempts...` alert within 5 min
 
 ## Recently Shipped (merged to main)
 - **PR #106** (approx) — `ceed18f` Enable mean_reversion for sideways regime resilience (`mean_reversion: 15%`, `momentum_runner: 35%`, was 0% / 50%). Regime detector's built-in multipliers (×1.4 in SIDEWAYS, ×0.6 in BULLISH for mean_reversion) now have a base to scale.

@@ -585,6 +585,12 @@ class TradingEngine:
         def reconnect_loop():
             import time as _time
             attempt = 0
+            # Alert every N consecutive failures so 22h silent outages can't
+            # recur. 10 attempts * 30s = 5 min before first loud alert; then
+            # re-alert every 20 attempts (10 min) so Discord isn't spammed.
+            ALERT_FIRST_AFTER = 10
+            ALERT_REPEAT_EVERY = 20
+            last_alerted = 0
             while not self.broker or not self.broker.is_connected():
                 attempt += 1
                 _time.sleep(30)
@@ -600,6 +606,14 @@ class TradingEngine:
                             f"BACKGROUND RECONNECT SUCCESS: IBKR connected after "
                             f"{attempt} retries. Resuming full trading."
                         )
+                        if self.notifier:
+                            try:
+                                self.notifier.system_alert(
+                                    f"IBKR reconnected after {attempt} attempts — trading resumed",
+                                    level="success",
+                                )
+                            except Exception:
+                                pass
                         try:
                             self._sync_after_reconnect()
                         except Exception as e:
@@ -607,6 +621,28 @@ class TradingEngine:
                         break
                 except Exception as e:
                     log.warning(f"Background reconnect attempt #{attempt} error: {e}")
+
+                # Escalation: loud CRITICAL log + Discord alert at milestones.
+                should_alert = (
+                    attempt == ALERT_FIRST_AFTER
+                    or (attempt > ALERT_FIRST_AFTER
+                        and (attempt - last_alerted) >= ALERT_REPEAT_EVERY)
+                )
+                if should_alert:
+                    mins = attempt * 30 // 60
+                    msg = (
+                        f"IBKR reconnect failing: {attempt} consecutive attempts "
+                        f"(~{mins} min). TCP port may be open but API wedged. "
+                        f"ACTION: docker compose restart ib-gateway (and/or VNC in "
+                        f"to clear stuck dialog). Bot is NOT trading until fixed."
+                    )
+                    log.critical(msg)
+                    if self.notifier:
+                        try:
+                            self.notifier.system_alert(msg, level="error")
+                        except Exception:
+                            pass
+                    last_alerted = attempt
 
         import threading
         t = threading.Thread(target=reconnect_loop, daemon=True, name="ibkr-reconnect")
@@ -1216,10 +1252,15 @@ class TradingEngine:
                         bars_total = 0
                         if self.market_data:
                             try:
-                                tracked = list(getattr(self.market_data, "symbols", []) or [])
+                                # MarketDataFeed doesn't expose a .symbols
+                                # attribute — pull tracked symbols from the
+                                # actual bar cache (set by update/get_data).
+                                tracked = list(
+                                    getattr(self.market_data, "_bars_cache", {}).keys()
+                                )
                                 bars_total = len(tracked)
                                 for sym in tracked:
-                                    df = self.market_data.get_data(sym)
+                                    df = self.market_data._bars_cache.get(sym)
                                     if df is not None and len(df) >= 40:
                                         bars_warm += 1
                             except Exception:
@@ -2917,6 +2958,24 @@ class TradingEngine:
     def _run_strategies(self):
         """Run all strategies and collect signals."""
         all_signals = []
+
+        # HARD GATE: never generate signals while IBKR is not live.
+        # Strategies don't know their input is stale Yahoo fallback data
+        # (15-min delayed) and will happily emit BUY on days-old prices,
+        # which then dies at the execution gate with "IBKR NOT CONNECTED"
+        # — producing the "approved=N, positions=0" pattern that masked
+        # a 22h outage. Better to return zero signals loudly.
+        if not self.broker or not self.broker.is_connected():
+            now = time.time()
+            last = getattr(self, "_last_broker_down_warn", 0.0)
+            if now - last >= 300:  # Warn every 5 min, not every cycle
+                log.warning(
+                    "SIGNALS SUPPRESSED: IBKR not live. Skipping strategy "
+                    "evaluation until reconnect — refusing to generate buy "
+                    "signals on stale fallback data."
+                )
+                self._last_broker_down_warn = now
+            return all_signals
 
         # Feed trend rider its active positions so it can:
         #   - enforce max_positions
