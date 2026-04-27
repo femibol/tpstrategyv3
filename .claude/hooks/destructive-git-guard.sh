@@ -24,6 +24,14 @@ PATTERNS = [
      "git branch -D force-deletes a branch and can lose unmerged commits. Use -d or push first."),
     (r"\bgit\s+clean\s+-[a-z]*f",
      "git clean -f permanently deletes untracked files. Run manually if intended."),
+    (r"\bssh\b[^\n]*\brm\s+-r?f?r?\s+",
+     "ssh ... rm -rf detected. The VPS holds the live trading data — run this manually if truly intended."),
+    (r"\bssh\b[^\n]*\bdocker\s+compose\s+down\b",
+     "ssh ... docker compose down would stop the live bot. Use vps_restart_service via the vps MCP instead."),
+    (r"\bssh\b[^\n]*\bgit\s+reset\s+--hard\b",
+     "ssh ... git reset --hard on the VPS can drop work. Use vps_git_pull via the vps MCP instead."),
+    (r"\bscp\b[^\n]*\s/(data|logs)/",
+     "scp targeting /data/ or /logs/ on the VPS. Confirm what's being overwritten before running manually."),
 ]
 
 

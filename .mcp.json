@@ -8,6 +8,20 @@
         "--headless",
         "--isolated"
       ]
+    },
+    "vps": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--quiet",
+        "${CLAUDE_PROJECT_DIR}/tools/vps_mcp.py"
+      ],
+      "env": {
+        "VPS_HOST": "${VPS_HOST}",
+        "VPS_USER": "${VPS_USER:-root}",
+        "VPS_SSH_KEY": "${VPS_SSH_KEY}",
+        "VPS_PROJECT_DIR": "${VPS_PROJECT_DIR:-/root/tpstrategyv3}"
+      }
     }
   }
 }
