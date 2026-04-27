@@ -593,12 +593,22 @@ class TradingEngine:
         def reconnect_loop():
             import time as _time
             attempt = 0
-            # Alert every N consecutive failures so 22h silent outages can't
-            # recur. 10 attempts * 30s = 5 min before first loud alert; then
-            # re-alert every 20 attempts (10 min) so Discord isn't spammed.
-            ALERT_FIRST_AFTER = 10
-            ALERT_REPEAT_EVERY = 20
-            last_alerted = 0
+            # Tiered alert schedule: first three pings then exponential
+            # backoff. The earlier "every 10 min forever" cadence pinged
+            # the user 220+ times across a 36h outage. Goal: notify
+            # promptly, then go quiet until something material changes.
+            #
+            # Alert at attempts:
+            #   10  (~5  min) — first ping, paired with auto-recovery #1
+            #   30  (~15 min) — second ping, paired with auto-recovery #2
+            #   60  (~30 min) — third ping, paired with auto-recovery #3
+            #   180 (~90 min) — backed-off check-in
+            #   360 (~3 h)
+            #   720 (~6 h)
+            #   then every 720 attempts (~6 h) until reconnect.
+            ALERT_SCHEDULE = [10, 30, 60, 180, 360, 720]
+            ALERT_BACKOFF_INTERVAL = 720  # ~6h cadence after the schedule
+            alerted_attempts = set()
             while not self.broker or not self.broker.is_connected():
                 attempt += 1
                 _time.sleep(30)
@@ -630,41 +640,62 @@ class TradingEngine:
                 except Exception as e:
                     log.warning(f"Background reconnect attempt #{attempt} error: {e}")
 
-                # Escalation: loud CRITICAL log + Discord alert at milestones.
-                should_alert = (
-                    attempt == ALERT_FIRST_AFTER
-                    or (attempt > ALERT_FIRST_AFTER
-                        and (attempt - last_alerted) >= ALERT_REPEAT_EVERY)
-                )
-                if should_alert:
+                # Decide whether this attempt is an alert milestone
+                should_alert = False
+                if attempt in ALERT_SCHEDULE:
+                    should_alert = True
+                elif attempt > ALERT_SCHEDULE[-1]:
+                    # Past the scheduled milestones — fire every Nth attempt
+                    if (attempt - ALERT_SCHEDULE[-1]) % ALERT_BACKOFF_INTERVAL == 0:
+                        should_alert = True
+
+                if should_alert and attempt not in alerted_attempts:
+                    alerted_attempts.add(attempt)
                     mins = attempt * 30 // 60
+
+                    # Compute when the next reminder will fire so the user
+                    # knows they won't be re-pinged immediately.
+                    if attempt in ALERT_SCHEDULE:
+                        idx = ALERT_SCHEDULE.index(attempt)
+                        if idx < len(ALERT_SCHEDULE) - 1:
+                            next_delta_attempts = ALERT_SCHEDULE[idx + 1] - attempt
+                        else:
+                            next_delta_attempts = ALERT_BACKOFF_INTERVAL
+                    else:
+                        next_delta_attempts = ALERT_BACKOFF_INTERVAL
+                    next_min = next_delta_attempts * 30 // 60
+
                     # Try to self-heal before paging: restart the
                     # gateway container (bounded by 3/day + 10min cooldown).
                     restarted = self._try_auto_recover_gateway()
                     if restarted:
                         # Give the freshly-restarted gateway 120s to
                         # boot before the next reconnect attempt — IBC
-                        # cold-boot + IBKR login takes ~60-90s. This
-                        # replaces the 30s sleep at the top of the
-                        # next iteration, not adds to it.
+                        # cold-boot + IBKR login takes ~60-90s.
                         _time.sleep(120)
+
+                    if restarted:
+                        recovery_note = "Auto-restart of ib-gateway was just issued. "
+                    else:
+                        recovery_note = (
+                            "Auto-restart did NOT fire (see logs for "
+                            "AUTO-RECOVERY skip reason). "
+                        )
                     msg = (
                         f"IBKR reconnect failing: {attempt} consecutive attempts "
-                        f"(~{mins} min). TCP port may be open but API wedged. "
-                        f"{'Auto-restart of ib-gateway was just issued. ' if restarted else ''}"
-                        f"If this alert keeps firing: VNC in to clear a stuck "
-                        f"dialog, or check IBKR credentials in .env."
+                        f"(~{mins} min). {recovery_note}"
+                        f"Next reminder in ~{next_min} min — "
+                        f"if this keeps firing, VNC in or check .env credentials."
                     )
                     log.critical(msg)
                     if self.notifier:
                         try:
                             # level=error triggers @everyone, so your
-                            # phone actually vibrates instead of sitting
-                            # in a muted Discord channel for 22h.
+                            # phone actually vibrates. After the first 3
+                            # pings we back off so you're not tortured.
                             self.notifier.system_alert(msg, level="error")
                         except Exception:
                             pass
-                    last_alerted = attempt
 
         import threading
         t = threading.Thread(target=reconnect_loop, daemon=True, name="ibkr-reconnect")
@@ -728,6 +759,20 @@ class TradingEngine:
 
         try:
             import docker
+        except ImportError:
+            # Bumped from DEBUG → WARNING because a silent skip is how
+            # this got missed for 36h. Throttled so it logs at most
+            # once per hour to avoid filling the log.
+            last_warn = getattr(self, "_last_auto_recovery_skip_warn", 0)
+            if now - last_warn > 3600:
+                log.warning(
+                    "AUTO-RECOVERY skipped: docker Python SDK not installed. "
+                    "Add `docker>=7.0.0` to requirements.txt and rebuild image."
+                )
+                self._last_auto_recovery_skip_warn = now
+            return False
+
+        try:
             client = docker.from_env()
             # Default container name pattern is <compose-project>-ib-gateway-1.
             # Project name defaults to the directory name ("trading-bot").
@@ -741,7 +786,14 @@ class TradingEngine:
                         target = c
                         break
             if not target:
-                log.warning("AUTO-RECOVERY: ib-gateway container not found")
+                last_warn = getattr(self, "_last_auto_recovery_skip_warn", 0)
+                if now - last_warn > 3600:
+                    log.warning(
+                        "AUTO-RECOVERY skipped: ib-gateway container not "
+                        "found in docker daemon. Available containers: "
+                        f"{[c.name for c in client.containers.list(all=True)]}"
+                    )
+                    self._last_auto_recovery_skip_warn = now
                 return False
 
             log.critical(
@@ -763,14 +815,18 @@ class TradingEngine:
                 except Exception:
                     pass
             return True
-        except ImportError:
-            log.debug("AUTO-RECOVERY skipped: docker SDK not installed")
-            return False
         except Exception as e:
-            log.warning(
-                f"AUTO-RECOVERY failed (docker socket likely not mounted "
-                f"or daemon unreachable): {e}"
-            )
+            # Bumped from "warning, every call" to "warning, once per hour"
+            # so we can see WHY recovery isn't firing without flooding the
+            # log when it's a persistent missing-mount.
+            last_warn = getattr(self, "_last_auto_recovery_skip_warn", 0)
+            if now - last_warn > 3600:
+                log.warning(
+                    f"AUTO-RECOVERY failed: {e}. Likely /var/run/docker.sock "
+                    f"not mounted in this container (check docker-compose.yml "
+                    f"volumes for trading-bot service)."
+                )
+                self._last_auto_recovery_skip_warn = now
             return False
 
     def _sync_after_reconnect(self):
