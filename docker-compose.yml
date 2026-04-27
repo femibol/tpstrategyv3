@@ -13,15 +13,22 @@
 
 services:
   ib-gateway:
-    # gnzsnz image pipeline is currently broken across ALL tags tested
-    # (:latest, :stable, 10.32). Each fails at startup with
-    #   Error: Offline TWS/Gateway version X.Y.Z is not installed:
-    #   can't find jars folder
-    # because IBC in the image references a version whose JARs aren't
-    # installed. Switching to the predecessor unusualalpha image,
-    # different build pipeline + repo. Known env-var compatible with
-    # gnzsnz (both descend from the same IBC base).
-    image: ghcr.io/unusualalpha/ib-gateway:latest
+    # 2026-04-24: SWITCHED FROM unusualalpha BACK TO gnzsnz.
+    # unusualalpha is effectively abandoned — their `:latest` ships
+    # IB Gateway 10.22.1m (3-year-old build) which IBKR has
+    # server-side deprecated. Symptom: gateway boots and logs in
+    # cleanly, IBC dismisses no dialog, but every API handshake to
+    # 4002 silently EOFs because IBKR's auth layer rejects the
+    # too-old client. Confirmed via VNC: dialog "The version of the
+    # application you are running, 1022.1m, is no longer supported."
+    #
+    # gnzsnz pipeline (which we previously fled in PR #116 due to a
+    # JAR-vs-IBC version mismatch in their 10.32 build) has since
+    # recovered — `:stable` ships 10.37.1r and `:latest` ships
+    # 10.46.1c, both pushed within the last week and well past
+    # IBKR's deprecation cutoff. Pinning to `:stable` (production
+    # channel per their docs) for fewer surprises than `:latest`.
+    image: gnzsnz/ib-gateway:stable
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
