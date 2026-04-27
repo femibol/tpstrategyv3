@@ -271,6 +271,7 @@ class AIInsights:
             response = self._client.with_options(timeout=15.0).messages.create(
                 model=self.model,
                 max_tokens=300,
+                output_config={"effort": "low"},
                 messages=[{"role": "user", "content": prompt}],
             )
             for block in response.content:
