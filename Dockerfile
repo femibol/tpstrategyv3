@@ -1,4 +1,13 @@
-FROM python:3.11-slim
+# Python 3.10, NOT 3.11. ib_insync 0.9.86 (the only version, project
+# unmaintained since 2022) was designed for 3.10. Python 3.11 made
+# contextvars.Context.run() raise on re-entry — which ib_insync's sync
+# wrappers + nest_asyncio depend on. Result on 3.11: spammed
+# `RuntimeError: cannot enter context: ... is already entered`,
+# breaking every socket read callback. nest_asyncio 1.6.0+ has a
+# partial workaround but it's not sufficient given our threading
+# pattern (background reconnect thread + APScheduler + main loop).
+# 3.10 allows the re-entry pattern and Just Works.
+FROM python:3.10-slim
 
 WORKDIR /app
 
