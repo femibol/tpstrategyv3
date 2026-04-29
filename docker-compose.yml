@@ -64,6 +64,11 @@ services:
       - "4001:4001"
       - "4002:4002"
       - "5900:5900"
+      # Dashboard — exposed on the gateway service because trading-bot
+      # shares this container's network namespace (network_mode:
+      # "service:ib-gateway"). Bot listens on 0.0.0.0:5000 *inside* the
+      # shared netns, which is the same network surface as ib-gateway.
+      - "5000:5000"
     volumes:
       - ib-gateway-data:/home/ibgateway/Jts
     healthcheck:
@@ -81,6 +86,24 @@ services:
   trading-bot:
     build: .
     restart: unless-stopped
+    # Share ib-gateway's network namespace. Two reasons:
+    #
+    # 1. IB Gateway's TrustedIPs setting can only be reliably configured
+    #    via the GUI — it gets rewritten on every boot from internal
+    #    state, defeating sed/chattr workarounds. Sharing the netns means
+    #    our connections originate from 127.0.0.1 (the gateway's view of
+    #    its own loopback), which IS in TrustedIPs by default. No more
+    #    needing VNC to whitelist 172.18.x.x docker bridge IPs.
+    #
+    # 2. The bot's IBKR client now connects to localhost:4002 — same
+    #    network stack as the gateway process. Faster than going through
+    #    docker bridge networking, and immune to docker-network DNS
+    #    flapping when ib-gateway restarts.
+    #
+    # Tradeoff: trading-bot can't have its own port mappings (the
+    # service-mode netns owns the port table). Dashboard 5000 moves to
+    # ib-gateway's `ports:` section above.
+    network_mode: "service:ib-gateway"
     depends_on:
       # Relaxed from condition: service_healthy to condition: service_started
       # during gateway-image instability. The bot's internal reconnect loop
@@ -97,8 +120,11 @@ services:
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
 
-      # IBKR — sole broker
-      IBKR_HOST: ib-gateway
+      # IBKR — sole broker. Connecting via localhost (we share
+      # ib-gateway's network namespace via network_mode above), so
+      # our source IP is 127.0.0.1 — already in IB Gateway's default
+      # TrustedIPs whitelist. No GUI/VNC config needed.
+      IBKR_HOST: 127.0.0.1
       IBKR_PORT: ${IBKR_PORT:-4002}
       IBKR_CLIENT_ID: ${IBKR_CLIENT_ID:-1}
 
@@ -116,8 +142,9 @@ services:
       DASHBOARD_HOST: 0.0.0.0
       DASHBOARD_PORT: 5000
       DASHBOARD_SECRET_KEY: ${DASHBOARD_SECRET_KEY:-change-me}
-    ports:
-      - "5000:5000"
+    # No ports: section — see network_mode comment above. Dashboard
+    # 5000 is exposed on ib-gateway's port mapping since we share its
+    # network namespace.
     volumes:
       # Bind-mount to host so ./logs and ./data are readable without
       # `docker compose exec`. Makes `tail logs/trading.log` and
