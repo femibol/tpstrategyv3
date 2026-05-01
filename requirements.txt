@@ -1,10 +1,14 @@
 # Core
-ib_insync==0.9.86
-# nest_asyncio — MUST be >=1.6.0 for Python 3.11 compatibility.
-# 1.5.x doesn't handle Python 3.11's stricter contextvars and produces
-# spammed `RuntimeError: cannot enter context: ... is already entered`
-# in `_SelectorSocketTransport._read_ready` callbacks, breaking
-# ib_insync's socket reads (bot connects but can't process responses).
+# ib_async — the maintained fork of ib_insync (which was abandoned by
+# its author in 2022). Same API surface, drop-in import rename. Fixes
+# the Python 3.10/3.11 contextvars re-entry bug that broke ib_insync's
+# socket reads under our multi-threaded reconnect pattern.
+# https://github.com/ib-api-reloaded/ib_async
+ib_async>=1.0.0
+# nest_asyncio still required: ib_async (like ib_insync) uses sync
+# wrappers that need nest_asyncio.apply() to call asyncio coroutines
+# from threads with already-running event loops (APScheduler jobs,
+# background reconnect, fast_scalp_monitor callbacks).
 nest_asyncio>=1.6.0
 pandas>=2.0.0
 numpy>=1.24.0

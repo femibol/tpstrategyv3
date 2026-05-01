@@ -32,8 +32,8 @@ except ImportError:
                 "Run: pip install nest_asyncio")
 
 try:
-    from ib_insync import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
-    from ib_insync import ScannerSubscription
+    from ib_async import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
+    from ib_async import ScannerSubscription
     HAS_IB = True
 
     # Python 3.14 fix: asyncio.wait_for() now uses asyncio.timeout() internally,
@@ -61,12 +61,12 @@ try:
                 timeout_handle.cancel()
 
         asyncio.wait_for = _compat_wait_for
-        log.info("Applied Python 3.14 asyncio.wait_for fix for ib_insync")
+        log.info("Applied Python 3.14 asyncio.wait_for fix for ib_async")
 
 except ImportError:
     HAS_IB = False
     ScannerSubscription = None
-    log.warning("ib_insync not installed - IBKR broker unavailable")
+    log.warning("ib_async not installed - IBKR broker unavailable")
 
 
 class IBKRBroker(BaseBroker):
@@ -107,7 +107,7 @@ class IBKRBroker(BaseBroker):
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
         if not HAS_IB:
-            log.error("ib_insync not installed. Run: pip install ib_insync")
+            log.error("ib_async not installed. Run: pip install ib_async")
             return False
 
         # Ensure an asyncio event loop exists in this thread
@@ -167,8 +167,8 @@ class IBKRBroker(BaseBroker):
 
             # Quiet ib_insync's own noisy logger (Error 200, Unknown contract, etc.)
             import logging as _logging
-            _logging.getLogger('ib_insync.wrapper').setLevel(_logging.CRITICAL)
-            _logging.getLogger('ib_insync.ib').setLevel(_logging.CRITICAL)
+            _logging.getLogger('ib_async.wrapper').setLevel(_logging.CRITICAL)
+            _logging.getLogger('ib_async.ib').setLevel(_logging.CRITICAL)
 
             # Register callbacks
             self.ib.orderStatusEvent += self._on_order_status
@@ -1480,7 +1480,7 @@ class IBKRBroker(BaseBroker):
             return None
 
         try:
-            from ib_insync import Stock
+            from ib_async import Stock
             contract = Stock(symbol, "SMART", "USD")
 
             # Qualify contract
