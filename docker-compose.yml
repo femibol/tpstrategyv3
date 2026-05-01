@@ -13,22 +13,19 @@
 
 services:
   ib-gateway:
-    # 2026-04-24: SWITCHED FROM unusualalpha BACK TO gnzsnz.
-    # unusualalpha is effectively abandoned — their `:latest` ships
-    # IB Gateway 10.22.1m (3-year-old build) which IBKR has
-    # server-side deprecated. Symptom: gateway boots and logs in
-    # cleanly, IBC dismisses no dialog, but every API handshake to
-    # 4002 silently EOFs because IBKR's auth layer rejects the
-    # too-old client. Confirmed via VNC: dialog "The version of the
-    # application you are running, 1022.1m, is no longer supported."
+    # 2026-04-29: PIN to specific gnzsnz version (NOT :stable or :latest).
+    # gnzsnz channel tags are unreliable — overnight they pushed a build
+    # tagged :stable that ships IBC config pointing to v10.45.1d but with
+    # mismatched JARs ("Error: Offline TWS/Gateway version 10.45.1d is
+    # not installed: can't find jars folder"). Same JAR/IBC mismatch
+    # pattern that drove the unusualalpha emergency switch in PR #116.
     #
-    # gnzsnz pipeline (which we previously fled in PR #116 due to a
-    # JAR-vs-IBC version mismatch in their 10.32 build) has since
-    # recovered — `:stable` ships 10.37.1r and `:latest` ships
-    # 10.46.1c, both pushed within the last week and well past
-    # IBKR's deprecation cutoff. Pinning to `:stable` (production
-    # channel per their docs) for fewer surprises than `:latest`.
-    image: gnzsnz/ib-gateway:stable
+    # 10.37.1r was confirmed working earlier today during the ib_async
+    # debugging session. Pinning explicitly avoids overnight tag-channel
+    # surprises. Manually bump this when IBKR deprecates the version
+    # server-side (gateway will pop a "version no longer supported"
+    # dialog at login, blocking the API).
+    image: gnzsnz/ib-gateway:10.37.1r
     restart: unless-stopped
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
