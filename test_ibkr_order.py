@@ -22,15 +22,15 @@ try:
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-from ib_insync import IB, Stock, MarketOrder
+from ib_async import IB, Stock, MarketOrder
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(message)s")
 log = logging.getLogger("test_order")
 
 # Silence ib_insync noise
-logging.getLogger('ib_insync.wrapper').setLevel(logging.CRITICAL)
-logging.getLogger('ib_insync.ib').setLevel(logging.CRITICAL)
+logging.getLogger('ib_async.wrapper').setLevel(logging.CRITICAL)
+logging.getLogger('ib_async.ib').setLevel(logging.CRITICAL)
 
 HOST = os.getenv("IBKR_HOST", "127.0.0.1")
 PORT = int(os.getenv("IBKR_PORT", "7497"))
