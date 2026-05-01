@@ -20,16 +20,19 @@ from bot.utils.logger import get_logger
 
 log = get_logger("broker.ibkr")
 
-# nest_asyncio allows ib_insync's synchronous wrappers (qualifyContracts, etc.)
-# to work from threads that already have a running event loop (APScheduler,
-# callbacks, fast_scalp_monitor, etc.). Without this, calls from background
-# threads raise "This event loop is already running".
-try:
-    import nest_asyncio
-    nest_asyncio.apply()
-except ImportError:
-    log.warning("nest_asyncio not installed — IBKR may fail from background threads. "
-                "Run: pip install nest_asyncio")
+# NOTE: nest_asyncio was previously applied here to allow ib_insync's
+# sync wrappers to be called from threads with already-running event
+# loops (APScheduler, background reconnect, etc). It's been REMOVED
+# because nest_asyncio's monkey-patch of asyncio is what was causing
+# the spammed `RuntimeError: cannot enter context: ... is already
+# entered` in ib_async 2.1.0 — every socket read callback was
+# re-entering the same contextvars Context.
+#
+# ib_async 2.1.0 has modern asyncio handling that doesn't need
+# nest_asyncio. Sync wrappers create/use their own loop per thread
+# via util.run(). If a sync call from a background thread fails,
+# the right fix is to use the async API (e.g. reqHistoricalDataAsync)
+# rather than re-introducing nest_asyncio.
 
 try:
     from ib_async import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
@@ -110,25 +113,10 @@ class IBKRBroker(BaseBroker):
             log.error("ib_async not installed. Run: pip install ib_async")
             return False
 
-        # Ensure an asyncio event loop exists in this thread
-        # (ib_insync requires one; background threads like APScheduler don't have one)
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_closed():
-                raise RuntimeError("closed")
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        # Re-apply nest_asyncio to this thread's loop (module-level apply()
-        # only patches the loop that existed at import time, which may differ
-        # from the loop in the current thread).
-        try:
-            import nest_asyncio
-            nest_asyncio.apply(loop)
-        except Exception:
-            pass
-
+        # ib_async 2.1.0 manages its own event loop via util.run().
+        # Previously created a new loop per thread + applied nest_asyncio,
+        # which caused the spammed contextvars re-entry errors. Letting
+        # ib_async handle loop creation natively avoids that.
         try:
             # Try connecting; if client ID is in use, auto-increment and retry
             max_attempts = 5
