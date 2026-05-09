@@ -4251,8 +4251,14 @@ class TradingEngine:
 
         # === IBKR-ONLY EXECUTION (Professional Architecture) ===
         # Single broker, single source of truth. No fallback chain = no sync bugs.
-        # If IBKR is not connected, we DON'T trade. Period.
-        # Bracket orders place a server-side stop at IBKR that survives crashes.
+        # Execution routing:
+        #   1. If IBKR is connected, use it (low latency, native bracket orders).
+        #   2. Else if TradersPost configured, fall back to webhook execution.
+        #      TradersPost runs IBKR auth/session on their infra, so it works
+        #      when our local IB Gateway is wedged. ~500ms slower than direct.
+        #   3. Else, no execution path — log error.
+        order = None
+        executed_via = None
         if self.broker and self.broker.is_connected():
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
 
@@ -4280,16 +4286,49 @@ class TradingEngine:
                         f"(managed by IBKR server-side)"
                     )
             else:
-                log.error(
-                    f"IBKR order FAILED for {symbol} — not falling through to "
-                    f"other brokers. Single-broker architecture: if IBKR can't "
-                    f"execute, we skip the trade."
+                log.warning(
+                    f"IBKR order failed for {symbol} — falling through to "
+                    f"TradersPost fallback if configured."
                 )
-        else:
+
+        # Fallback: TradersPost webhook. Triggered when IBKR was unavailable
+        # OR when the IBKR order placement returned None. TradersPost handles
+        # the IBKR session on their infra — works through gateway wedges.
+        # Note: bracket orders aren't supported via webhook, so SL/TP must
+        # be managed by the bot's existing position-monitoring path.
+        if not order and self.tp_broker:
+            log.info(
+                f"Executing {symbol} via TradersPost webhook"
+                f"{'  [OUTSIDE RTH]' if outside_rth else ''}..."
+            )
+            if action == "buy":
+                order = self.tp_broker.place_order(
+                    symbol=symbol,
+                    action="buy",
+                    quantity=qty,
+                    order_type="MARKET",
+                    limit_price=current_price,
+                )
+            if order:
+                executed_via = "TradersPost"
+                # Hint the order dict carries no bracket — the bot's
+                # _monitor_positions loop will manage stops/targets locally.
+                log.info(
+                    f"TradersPost SUBMITTED: {symbol} qty={qty}. "
+                    f"SL ${stop_loss_price:.2f} / TP ${take_profit_price:.2f} "
+                    f"will be managed by bot (no broker-side bracket)."
+                )
+            else:
+                log.error(
+                    f"TradersPost webhook also failed for {symbol}. "
+                    f"Both IBKR and TradersPost paths exhausted."
+                )
+
+        if not order:
             log.error(
-                f"IBKR NOT CONNECTED — cannot execute {action.upper()} {symbol}. "
-                f"No fallback brokers in professional architecture. "
-                f"Ensure IB Gateway is running."
+                f"NO EXECUTION PATH AVAILABLE — cannot execute {action.upper()} "
+                f"{symbol}. IBKR not connected and TradersPost not configured. "
+                f"Set TRADERSPOST_WEBHOOK_URL in .env for webhook fallback."
             )
 
         # If IBKR failed or not connected, do NOT create phantom positions
