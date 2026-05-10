@@ -1,60 +1,64 @@
+# Pinned to versions installed in the production container as of
+# 2026-05-10 (`docker compose exec trading-bot pip freeze`). Bump
+# deliberately in a follow-up PR; do not let `>=` drift back in.
+
 # Core
 # ib_async — the maintained fork of ib_insync (which was abandoned by
 # its author in 2022). Same API surface, drop-in import rename. Fixes
 # the Python 3.10/3.11 contextvars re-entry bug that broke ib_insync's
 # socket reads under our multi-threaded reconnect pattern.
 # https://github.com/ib-api-reloaded/ib_async
-ib_async>=1.0.0
+ib_async==2.1.0
 # nest_asyncio still required: ib_async (like ib_insync) uses sync
 # wrappers that need nest_asyncio.apply() to call asyncio coroutines
 # from threads with already-running event loops (APScheduler jobs,
 # background reconnect, fast_scalp_monitor callbacks).
-nest_asyncio>=1.6.0
-pandas>=2.0.0
-numpy>=1.24.0
-pyyaml>=6.0
-python-dotenv>=1.0.0
+nest_asyncio==1.6.0
+pandas==2.3.3
+numpy==2.2.6
+pyyaml==6.0.1
+python-dotenv==1.2.2
 
 # Web server (webhooks + dashboard)
-flask>=3.0.0
-flask-cors>=4.0.0
-gunicorn>=21.2.0
+flask==3.1.3
+flask-cors==6.0.2
+gunicorn==25.3.0
 
 # Technical analysis
-ta>=0.11.0
+ta==0.11.0
 # ta-lib requires C library - install separately if needed locally
 # On Render: not needed, we use pure-python ta library + numpy
 
 # Market data
-yfinance>=0.2.30
-alpaca-trade-api>=3.0.0
-polygon-api-client>=1.14.0
+yfinance==0.2.58
+alpaca-trade-api==3.2.0
+polygon-api-client==1.15.4
 
 # Scheduling
-apscheduler>=3.10.0
+apscheduler==3.11.2
 # Timezone data for zoneinfo (APScheduler uses this via stdlib)
 # Ships tz database as Python package — no system tzdata needed
-tzdata>=2024.1
-pytz>=2024.1
+tzdata==2025.3
+pytz==2026.1.post1
 
 # Notifications
-requests>=2.31.0
-websocket-client>=1.6.0
+requests==2.33.1
+websocket-client==1.9.0
 
 # AI Insights — official Anthropic SDK (retries, prompt caching, typed errors)
-anthropic>=0.97.0
+anthropic==0.97.0
 
 # Monitoring
-psutil>=5.9.0
+psutil==7.2.2
 
 # Docker SDK — used by the engine's auto-recovery path to restart the
 # ib-gateway container when its API wedges. Requires /var/run/docker.sock
 # mounted in the trading-bot container (see docker-compose.yml).
-docker>=7.0.0
+docker==7.1.0
 
 # Google Sheets trade logging
-gspread>=5.12.0
-google-auth>=2.23.0
+gspread==6.2.1
+google-auth==2.50.0
 
 # Backtesting
-matplotlib>=3.7.0
+matplotlib==3.10.9
