@@ -697,6 +697,14 @@ class TradingEngine:
                         except Exception:
                             pass
 
+            # Loop exited (either via the success-break above or because
+            # is_connected() flipped True mid-iteration). Clear the
+            # singleton guard so a future disconnect can spawn a fresh
+            # reconnect thread — previously the flag was set once at
+            # startup and never reset, so a second mid-flight disconnect
+            # found the guard True and skipped escalation entirely.
+            self._reconnect_thread_started = False
+
         import threading
         t = threading.Thread(target=reconnect_loop, daemon=True, name="ibkr-reconnect")
         t.start()
@@ -7076,7 +7084,22 @@ class TradingEngine:
         try:
             if self.broker and not self.broker.is_connected():
                 log.warning("Broker disconnected - attempting reconnect")
-                self.broker.reconnect()
+                if not self.broker.reconnect():
+                    # Fast-path (broker.reconnect: 10 attempts over ~2.5 min)
+                    # gave up. Hand off to the background reconnect thread,
+                    # which retries every 30s indefinitely AND escalates to
+                    # _try_auto_recover_gateway() (container restart via the
+                    # Docker socket) at the scheduled alert milestones.
+                    # Previously the failure here just returned silently and
+                    # the next health-check 5 min later repeated the same
+                    # fast-path forever — auto-recovery never fired on
+                    # mid-flight disconnects (only on startup-time failure).
+                    log.warning(
+                        "Fast-path reconnect failed; escalating to background "
+                        "reconnect (will invoke auto-recovery after 10/30/60 "
+                        "attempts)"
+                    )
+                    self._start_background_reconnect()
 
             # Trim unbounded lists to prevent memory leaks
             if len(self.analysis_log) > self.max_analysis_log:
