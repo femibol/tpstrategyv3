@@ -5,80 +5,77 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
-2026-05-10 (2) — PRs 1, 3, 4 from the 7-PR brief merged. PR 2 blocked on `pip freeze` paste. PRs 5–7 pending review windows.
+2026-05-10 (3) — End of session. **All 7 brief items resolved**: PRs 1–6 merged, PR 7 deferred.
 
-## Status of the 7-PR Brief
+## Summary
+
+This session executed the 7-PR brief that landed on `main` as PR #130. Six PRs merged cleanly today; PR 7 is deferred to its own session.
 
 | PR | What | Status |
 | --- | --- | --- |
-| **1** | DNS pin `8.8.8.8` / `1.1.1.1` on `ib-gateway` in `docker-compose.yml` | ✅ merged (#131, `a2201d8`) |
-| **2** | Pin `requirements.txt` (`>=` → `==`) | ⏸ **blocked** — needs `pip freeze` from VPS production container |
-| **3** | Yahoo / yfinance fallback gated behind broker-disconnect + 60s per-symbol rate limit + yfinance logger capped at ERROR | ✅ merged (#132, `09bcf0e`) |
-| **4** | Real README (was 9-byte stub). All rights reserved license | ✅ merged (#133, `a92da1c`) |
-| **5** | Dashboard auth hardening (Basic auth, fail-closed on missing `DASHBOARD_SECRET_KEY`, `before_request` hook, CORS scoped, drop URL-query secret fallback in TradingView webhook) | ⏳ awaits its own session — manual verify required |
-| **6** | Unit tests for `risk_manager` + `position_sizer` + `requirements-dev.txt` + (optional) GH Actions workflow | ⏳ awaits its own session |
-| **7** | Split `bot/engine.py` (8 632 lines) into `bot/engine/` package via mixins | ⏳ awaits its own session — paper verify required, **do not auto-merge** |
+| 1 | DNS pin (`8.8.8.8`/`1.1.1.1`) on `ib-gateway` | ✅ #131 (`a2201d8`) |
+| 2 | `requirements.txt` pinned `>=` → `==` from production `pip freeze` | ✅ #137 (`0e48c6f`) |
+| 3 | Yahoo / yfinance fallback gating + 60s rate limit + logger suppression | ✅ #132 (`09bcf0e`) |
+| 4 | Real `README.md` (was 9-byte stub) | ✅ #133 (`a92da1c`) |
+| 5 | Dashboard auth hardening + TradingView webhook tighten | ✅ #135 (`7148b55`) — **merged unverified at user request, see "Post-merge actions" below** |
+| 6 | `tests/` scaffold + 59 unit tests for `RiskManager` and `PositionSizer` + GH Actions | ✅ #136 (`b42c9d0`) |
+| 7 | Split `bot/engine.py` (8 632 lines) via mixins | ⏳ deferred — own session, paper verify required, **do not auto-merge** |
 
-## How to unblock PR 2
+## Post-merge actions for PR #135 (dashboard auth)
 
-On the VPS, run:
+Merged without the manual 5-check verify because the prior verify accidentally tested `main` (the working tree never switched off `main` — `git checkout` had aborted on a local `docker-compose.yml` diff that turned out to be the now-redundant DNS hand-patch). So PR #135 has not been live-verified end to end.
 
-```bash
-docker compose exec trading-bot pip freeze > /tmp/freeze.txt
-scp <vps>:/tmp/freeze.txt ./
-```
+**Before/during the next deploy on the VPS:**
 
-Paste the contents into the next session and tell Claude: "PR 2: replace
-every `>=` in `requirements.txt` with `==` matching this freeze". Preserve
-the `ib_async` and `nest_asyncio` block comments — they document load-bearing
-context (contextvars re-entry bug, why nest_asyncio is still required).
+1. Confirm `DASHBOARD_SECRET_KEY` is set in `/opt/trading-bot/.env` to a real value (not the `verify-only-123` placeholder). Suggested rotation:
+   ```bash
+   sed -i 's/^DASHBOARD_SECRET_KEY=.*/DASHBOARD_SECRET_KEY='"$(openssl rand -hex 32)"'/' /opt/trading-bot/.env
+   ```
+2. After `docker compose build trading-bot && docker compose up -d --force-recreate trading-bot`, watch logs for `RuntimeError: DASHBOARD_SECRET_KEY must be set` — that means the env var is empty and the dashboard refused to start (intentional fail-closed).
+3. From the VPS shell, repeat the curl checks (these will now actually exercise PR 5 because main has the merge):
+   ```bash
+   curl -i -s http://localhost:5000/api/positions | head -3              # expect 401
+   curl -i -s -u admin:wrong http://localhost:5000/api/positions | head -3   # expect 401
+   curl -i -s -u admin:<your-secret> http://localhost:5000/api/positions | head -5  # expect 200
+   curl -i -s http://localhost:5000/health | head -3                     # expect 200 (public)
+   ```
+4. Browser to the dashboard via SSH tunnel — Basic auth dialog should appear.
 
-## How to drive PRs 5–7
+## How to drive PR 7 (engine split)
 
-Each in its own session. Tell Claude Code, in a fresh clone:
+In its own session, in a fresh clone, after market close. Tell Claude:
 
-> Read `HANDOFF.md`. Execute PR 5 only — dashboard auth hardening per the
-> 7-PR brief in the previous session's git history. Stop at the manual
-> verify step and wait for me to run the 5 checks.
-
-Repeat for PR 6, then PR 7. **Do not let auto-merge fire on PR 7** — set
-`enable_pr_auto_merge` only if explicitly requested and skip it otherwise.
-
-PR 5 manual verify (5 checks, summarized — full list in the brief):
-1. Local boot, hit `:5000` → Basic auth dialog appears.
-2. Wrong password → 401.
-3. Right password → dashboard loads.
-4. Unauthenticated `curl /api/positions` → 401.
-5. Empty `DASHBOARD_SECRET_KEY` + `--mode live` → process exits with clear error.
+> Read `HANDOFF.md`. Execute PR 7 only — split `bot/engine.py` (8 632 lines) into a `bot/engine/` package via mixins per the original 7-PR brief in PR #130's history. Stop at the manual verify step and wait for me to run the 3 paper-verify checks. Do not enable auto-merge.
 
 PR 7 manual verify (3 checks):
 1. `python -m bot.main --backtest --strategy momentum --symbols AAPL --start 2026-04-01 --end 2026-04-30` runs without ImportError.
 2. `python -m bot.main --mode paper --no-dashboard` boots and runs 5 minutes.
-3. VPS deploy after market close, watch logs 10 min — no AttributeErrors.
+3. VPS deploy after market close, watch logs 10 min — no AttributeErrors. Force a `docker compose restart ib-gateway` and confirm auto-recovery still fires (riskiest path to break in a refactor).
 
-## Recently Shipped (merged to main since the last handoff)
-- **PR #133 (`a92da1c`)** — Real README. Replaced the 9-byte stub with project overview: architecture pointer, ops commands, strategy list, license (All rights reserved).
-- **PR #132 (`09bcf0e`)** — Yahoo / yfinance fallback gating. `MarketDataFeed._yahoo_gate(symbol)` short-circuits when broker is connected; per-symbol 60s rate limit when not. Wired into `_fetch_bars`, `_fetch_bars_1m`, `refresh_prices`, `get_quote`. Suppresses yfinance INFO logs.
-- **PR #131 (`a2201d8`)** — Pinned `8.8.8.8` / `1.1.1.1` DNS resolvers on `ib-gateway`. Matches the manual VPS hand-patch.
-- **PR #130 (`3dd50ca`)** — The 7-PR handoff brief itself.
-- **PR #129** — TradersPost as execution fallback when IBKR is wedged.
-- **PR #128** — Stripped a stray `nest_asyncio.apply()`.
-- **PR #126** — Migrated `ib_insync` → `ib_async`.
-- **PR #127** — Pinned `gnzsnz/ib-gateway` to `10.37.1r`.
-- **PR #125** — Downgraded base image to `python:3.10-slim`.
-- **PR #124** — Pinned `nest_asyncio>=1.6.0`.
+## Recently Shipped (merged today)
+- **#137 (`0e48c6f`)** — Pinned `requirements.txt` from production `pip freeze`.
+- **#136 (`b42c9d0`)** — pytest scaffold + 59 unit tests + GH Actions workflow.
+- **#135 (`7148b55`)** — Dashboard Basic auth via `before_request` hook (every route except `/health`), fail-closed on missing `DASHBOARD_SECRET_KEY`, scoped CORS, dropped 17 `@self._require_auth` decorations, removed secret from template render. TradingView webhook switched to `hmac.compare_digest`, dropped URL-query secret fallback, fail-closed in live mode.
+- **#134 (`ac7cfb6`)** — Mid-session HANDOFF status update.
+- **#133 (`a92da1c`)** — Real README with All Rights Reserved license.
+- **#132 (`09bcf0e`)** — `MarketDataFeed._yahoo_gate(symbol)`: hard-skip when broker connected; per-symbol 60s rate limit when not. Wired into `_fetch_bars`, `_fetch_bars_1m`, `refresh_prices`, `get_quote`. Caps yfinance logger at ERROR.
+- **#131 (`a2201d8`)** — DNS resolvers pinned on `ib-gateway`.
+- **#130 (`3dd50ca`)** — The 7-PR handoff brief itself.
+
+(Earlier merges in `git log --oneline -30` cover the TradersPost fallback, ib_async migration, gnzsnz pin, base-image downgrade, etc.)
 
 ## Current Live State (VPS)
-- **Branch**: confirm with `git branch --show-current` — has historically drifted to `claude/*` branches and silently failed `git pull`.
-- **Docker**: `trading-bot` + `ib-gateway` services; `data/` + `logs/` bind-mounted; trading-bot shares `ib-gateway`'s netns. Now also pins DNS on the gateway service (PR #131).
-- **IBKR**: paper account, no 2FA, gnzsnz `10.37.1r`.
-- **Brokers**: IBKR primary, TradersPost as execution fallback (PR #129).
+- **Branch on VPS**: confirm with `git branch --show-current` — must be on `main` and `git pull` should be clean. Earlier today the VPS was 7 commits behind because a `git checkout` aborted on a local `docker-compose.yml` diff (the DNS hand-patch). User ran `git checkout -- docker-compose.yml && git pull && docker compose build trading-bot && docker compose up -d --force-recreate trading-bot` — bot booted on `0e48c6f` with $24,584.51 paper balance, 2 long positions, 8 strategies, 94 IBKR streams.
+- **Brokers**: IBKR primary (`gnzsnz/ib-gateway:10.37.1r`), TradersPost as execution fallback (PR #129).
+- **Untracked-on-VPS leftovers**: `.env.backup`, `.env.save`. Harmless but worth `rm`ing.
 
-## Gotchas (carried forward)
-- **VPS branch drift.** Always confirm `git branch --show-current` before assuming a deploy landed.
+## Gotchas (carried forward + new)
+- **Dashboard now refuses to start with empty `DASHBOARD_SECRET_KEY`.** If a future deploy crashes with `RuntimeError: DASHBOARD_SECRET_KEY must be set`, set the env var. This is intentional fail-closed.
+- **Dashboard JS still references an `AUTH_KEY` constant** (see `bot/dashboard/templates/dashboard.html:1107`). With Basic auth handled by the browser session, that path is now a no-op. Optional cleanup: drop the JS constant and the `dashboard_key=""` template arg in `bot/dashboard/app.py`.
+- **IBKR disconnect at 14:29 ET today** (`Peer closed connection`) — recurring gateway flakiness, **not caused by today's PRs**. Signal-suppression gate from a prior session fired correctly: `SIGNALS SUPPRESSED: IBKR not live...refusing to generate buy signals on stale fallback data`. Auto-recovery via Docker socket should kick in if reconnect fails 10× in a row.
+- **VPS branch drift.** Always confirm `git branch --show-current` AND that the working tree is clean before assuming a deploy landed. A pending diff silently aborts `git checkout` and the next `docker compose build` then bakes the wrong tree into the image.
 - **Bar warmup after restart.** Momentum needs ~3.3h of 5-min bars. First trade after `--force-recreate` typically not before noon ET.
-- **VNC publicly exposed** — still pending fix (it's PR 3 in some prior brief versions; the current 7-PR brief does not include it). Treat 5900 as hostile until bound to localhost.
-- **IB Gateway stuck-dialog recurrence** — `docker compose restart ib-gateway` usually clears in 2 min.
+- **VNC publicly exposed** on `0.0.0.0:5900` — not addressed in this brief. Bind to `127.0.0.1:5900` in `docker-compose.yml` next session if you want the SSH-tunnel-only access pattern.
 - **`engine.py` is 8 632 lines.** Any edit risks merge conflicts with PR 7 once that lands. If touching engine.py before PR 7, plan to rebase PR 7 on top.
 - **PR 7 risk surface.** The `_execute_signal` defense-in-depth gate stack (rotation, long-only, crypto block, falling knife, news block, duplicate guard, broker sync, cooldown, stale-signal age, stale-price drift) is load-bearing. Comments document specific historical incidents (WAL, RGNX, NFLX-on-Yahoo). Refactor must preserve every guard.
 
