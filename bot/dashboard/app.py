@@ -3,12 +3,12 @@ Performance Dashboard - Web-based monitoring UI.
 Shows live P&L, positions, equity curve, and system status.
 Mobile-responsive with touch controls for phone access via Render.
 """
+import hmac
 import os
 import io
 import csv
 import json
 from datetime import datetime, timedelta
-from functools import wraps
 
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
@@ -21,37 +21,65 @@ log = get_logger("dashboard")
 class Dashboard:
     """Web dashboard for monitoring the trading bot - mobile ready."""
 
+    # Routes that bypass auth: container healthcheck only.
+    _PUBLIC_ENDPOINTS = frozenset({"health"})
+
     def __init__(self, engine, config):
         self.engine = engine
         self.config = config
+
+        # Fail-closed: refuse to start the dashboard if no secret is configured.
+        # Previously the check lived inside an optional decorator, so missing
+        # config silently disabled auth on every endpoint.
+        self._secret = os.environ.get("DASHBOARD_SECRET_KEY", "")
+        if not self._secret:
+            raise RuntimeError(
+                "DASHBOARD_SECRET_KEY must be set; refusing to start dashboard "
+                "with no auth"
+            )
+
         self.app = Flask(
             "trading_dashboard",
             template_folder=str(
                 __import__("pathlib").Path(__file__).parent / "templates"
             )
         )
-        CORS(self.app)
-        self._setup_routes()
 
-    def _require_auth(self, f):
-        """Simple API key auth for mobile control endpoints."""
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            secret = os.environ.get("DASHBOARD_SECRET_KEY", "")
-            if secret:
-                provided = request.headers.get("X-API-Key", "") or request.args.get("key", "")
-                if provided != secret:
-                    return jsonify({"error": "Unauthorized"}), 401
-            return f(*args, **kwargs)
-        return decorated
+        # Scope CORS — default to local-only; override with a comma-separated
+        # DASHBOARD_ALLOWED_ORIGINS for browser access from another origin.
+        origins_env = os.environ.get(
+            "DASHBOARD_ALLOWED_ORIGINS", "http://localhost:5000"
+        )
+        origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+        CORS(self.app, origins=origins, supports_credentials=True)
+
+        # Single auth choke point — every request goes through this before
+        # hitting any route handler. New routes inherit auth automatically.
+        @self.app.before_request
+        def _enforce_basic_auth():
+            if request.endpoint in self._PUBLIC_ENDPOINTS:
+                return None
+            auth = request.authorization
+            if not auth or not hmac.compare_digest(
+                auth.password or "", self._secret
+            ):
+                return (
+                    "",
+                    401,
+                    {"WWW-Authenticate": 'Basic realm="AlgoBot Dashboard"'},
+                )
+            return None
+
+        self._setup_routes()
 
     def _setup_routes(self):
 
         @self.app.route("/")
         def index():
-            # Pass auth key to template so dashboard JS can make authenticated calls
-            dashboard_key = os.environ.get("DASHBOARD_SECRET_KEY", "")
-            return render_template("dashboard.html", dashboard_key=dashboard_key)
+            # Auth is enforced by the global before_request hook (Basic auth).
+            # The browser session carries the credentials on subsequent XHRs,
+            # so the template no longer needs the secret rendered into it.
+            return render_template("dashboard.html", dashboard_key="")
 
         @self.app.route("/health")
         def health():
@@ -296,7 +324,6 @@ class Dashboard:
             return jsonify({})
 
         @self.app.route("/api/learning/analyze", methods=["POST"])
-        @self._require_auth
         def run_analysis():
             """Manually trigger learning analysis."""
             if self.engine.trade_analyzer:
@@ -317,7 +344,6 @@ class Dashboard:
             return jsonify({"available": False, "message": "AI insights not configured"})
 
         @self.app.route("/api/ai-insights/analyze", methods=["POST"])
-        @self._require_auth
         def run_ai_analysis():
             """Trigger Claude to analyze trades (costs API tokens)."""
             if not self.engine.ai_insights or not self.engine.ai_insights.is_available():
@@ -377,7 +403,6 @@ class Dashboard:
             return jsonify([])
 
         @self.app.route("/api/auto-tuner/run", methods=["POST"])
-        @self._require_auth
         def run_auto_tune():
             """Manually trigger auto-tune cycle."""
             if not self.engine.auto_tuner or not self.engine.auto_tuner.is_available():
@@ -395,7 +420,6 @@ class Dashboard:
         # --- Control APIs (for mobile) ---
 
         @self.app.route("/api/control/pause", methods=["POST"])
-        @self._require_auth
         def pause():
             self.engine.paused = True
             log.info("Bot PAUSED via dashboard")
@@ -404,7 +428,6 @@ class Dashboard:
             return jsonify({"status": "paused"})
 
         @self.app.route("/api/control/resume", methods=["POST"])
-        @self._require_auth
         def resume():
             self.engine.paused = False
             log.info("Bot RESUMED via dashboard")
@@ -413,7 +436,6 @@ class Dashboard:
             return jsonify({"status": "running"})
 
         @self.app.route("/api/control/close/<symbol>", methods=["POST"])
-        @self._require_auth
         def close_position(symbol):
             symbol = symbol.upper()
             if symbol in self.engine.positions:
@@ -422,14 +444,12 @@ class Dashboard:
             return jsonify({"error": f"No position in {symbol}"}), 404
 
         @self.app.route("/api/control/close-all", methods=["POST"])
-        @self._require_auth
         def close_all():
             count = len(self.engine.positions)
             self.engine._close_all_positions("Manual close-all via mobile dashboard")
             return jsonify({"status": "closed_all", "count": count})
 
         @self.app.route("/api/control/emergency-stop", methods=["POST"])
-        @self._require_auth
         def emergency_stop():
             self.engine._close_all_positions("EMERGENCY STOP via mobile")
             self.engine.running = False
@@ -439,7 +459,6 @@ class Dashboard:
             return jsonify({"status": "stopped", "positions_closed": True})
 
         @self.app.route("/api/control/reconnect-ibkr", methods=["POST"])
-        @self._require_auth
         def reconnect_ibkr():
             """Force IBKR reconnection attempt."""
             if self.engine.broker:
@@ -464,7 +483,6 @@ class Dashboard:
         # --- Signal Routing API ---
 
         @self.app.route("/api/signal", methods=["POST"])
-        @self._require_auth
         def submit_signal():
             """
             Submit a manual trading signal.
@@ -558,7 +576,6 @@ class Dashboard:
             return jsonify([])
 
         @self.app.route("/api/politicians/check", methods=["POST"])
-        @self._require_auth
         def politician_check():
             """Manually trigger check for new politician trades."""
             if self.engine.politician_tracker:
@@ -567,7 +584,6 @@ class Dashboard:
             return jsonify({"error": "Politician tracker not enabled"}), 404
 
         @self.app.route("/api/politicians/add", methods=["POST"])
-        @self._require_auth
         def add_politician():
             """Add a politician to track."""
             data = request.get_json()
@@ -614,7 +630,6 @@ class Dashboard:
             return jsonify(self.engine.get_watchlist_data())
 
         @self.app.route("/api/watchlist/add", methods=["POST"])
-        @self._require_auth
         def watchlist_add():
             data = request.get_json()
             if not data or not data.get("symbol"):
@@ -623,7 +638,6 @@ class Dashboard:
             return jsonify({"status": "added", "watchlist": symbols})
 
         @self.app.route("/api/watchlist/remove", methods=["POST"])
-        @self._require_auth
         def watchlist_remove():
             data = request.get_json()
             if not data or not data.get("symbol"):
@@ -644,7 +658,6 @@ class Dashboard:
             return jsonify(self.engine.get_editable_settings())
 
         @self.app.route("/api/settings/profile", methods=["POST"])
-        @self._require_auth
         def set_profile():
             """Switch trading mode profile (scalp/swing/invest)."""
             data = request.get_json()
@@ -654,7 +667,6 @@ class Dashboard:
             return jsonify({"error": f"Unknown profile: {profile}"}), 400
 
         @self.app.route("/api/settings/update", methods=["POST"])
-        @self._require_auth
         def update_setting():
             """Update a single config setting."""
             data = request.get_json()
@@ -724,7 +736,6 @@ class Dashboard:
         # --- Quick Trade (execute a suggestion) ---
 
         @self.app.route("/api/suggestions/execute", methods=["POST"])
-        @self._require_auth
         def execute_suggestion():
             """Execute a trade suggestion (LONG only)."""
             data = request.get_json()

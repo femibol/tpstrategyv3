@@ -41,6 +41,21 @@ class TradingViewReceiver:
         self.config = config
         self.callback = callback
         self.secret = config.tradingview_webhook_secret
+
+        # Fail-closed in live mode — a webhook with no secret is a fully open
+        # signal-injection vector. In paper mode, warn but continue so dev
+        # iteration isn't blocked.
+        if not self.secret:
+            if getattr(config, "is_live", False):
+                raise RuntimeError(
+                    "TRADINGVIEW_WEBHOOK_SECRET must be set in live mode; "
+                    "refusing to start the webhook receiver"
+                )
+            log.warning(
+                "TRADINGVIEW_WEBHOOK_SECRET not set — webhook is unauthenticated "
+                "(paper mode only)"
+            )
+
         self.app = Flask("tradingview_receiver")
         self.received_signals = []
         self._setup_routes()
@@ -52,21 +67,23 @@ class TradingViewReceiver:
         def receive_webhook():
             """Receive and process TradingView webhook."""
             try:
-                # Validate secret
+                # Validate secret. Header preferred, body-secret accepted as
+                # fallback (TradingView's webhook payload format makes headers
+                # awkward for some users). URL query param is intentionally
+                # NOT honored — it would leak to logs and access-log archives.
+                data = None
                 if self.secret:
-                    auth = request.headers.get("X-Webhook-Secret", "")
-                    # Also check query param
-                    if not auth:
-                        auth = request.args.get("secret", "")
-                    # Also check in body
-                    body_secret = None
+                    header_secret = request.headers.get("X-Webhook-Secret", "")
+                    body_secret = ""
                     try:
                         data = request.get_json(force=True)
-                        body_secret = data.get("secret", "")
+                        body_secret = (data or {}).get("secret", "") or ""
                     except Exception:
                         data = None
 
-                    if auth != self.secret and body_secret != self.secret:
+                    header_ok = hmac.compare_digest(header_secret, self.secret)
+                    body_ok = hmac.compare_digest(body_secret, self.secret)
+                    if not (header_ok or body_ok):
                         log.warning("TradingView webhook: invalid secret")
                         return jsonify({"error": "Unauthorized"}), 401
 
