@@ -63,7 +63,12 @@ services:
     ports:
       - "4001:4001"
       - "4002:4002"
-      - "5900:5900"
+      # VNC bound to 127.0.0.1 only — the public 0.0.0.0:5900 binding was
+      # the only path into the IB Gateway desktop, exposing the login
+      # session to anyone scanning the VPS. Access via SSH tunnel:
+      #   ssh -L 5900:localhost:5900 root@<vps>
+      # then VNC client to localhost:5900.
+      - "127.0.0.1:5900:5900"
       # Dashboard — exposed on the gateway service because trading-bot
       # shares this container's network namespace (network_mode:
       # "service:ib-gateway"). Bot listens on 0.0.0.0:5000 *inside* the
