@@ -8,6 +8,7 @@ Data sources (in priority order):
 
 No fake data. No simulated prices.
 """
+import logging
 import time
 import json
 from datetime import datetime, timedelta
@@ -19,6 +20,10 @@ import pandas as pd
 from bot.utils.logger import get_logger
 
 log = get_logger("data.market_data")
+
+# yfinance's own logger emits "Failed to get ticker" / "possibly delisted" at
+# INFO even on calls we then silently retry — pollutes trading.log. Cap at ERROR.
+logging.getLogger("yfinance").setLevel(logging.ERROR)
 
 # yfinance is optional last-resort fallback
 try:
@@ -65,6 +70,12 @@ class MarketDataFeed:
         self._bars_last_fetch = {}  # symbol -> timestamp of last bar fetch attempt (separate from price updates)
         self._bars_fail_cache = {}  # symbol -> timestamp of last failed bar fetch
         self._bars_fail_ttl = 120   # Retry failed bar fetches every 2 minutes (not every cycle)
+
+        # Yahoo fallback rate-limit: at most one call per symbol per 60s, and only
+        # when the broker is actually disconnected. Stops the hundreds-per-minute
+        # fc.yahoo.com spam observed when IBKR briefly drops mid-cycle.
+        self._yahoo_last_call = {}  # symbol -> ts of last Yahoo/yfinance call
+        self._yahoo_rate_limit = 60
 
         # Streaming state (IBKR only)
         self._streaming_active = False
@@ -231,7 +242,7 @@ class MarketDataFeed:
                 log.debug(f"Polygon data failed for {symbol}: {e}")
 
         # 3. Yahoo Finance direct API (no dependency issues)
-        if bars is None:
+        if bars is None and self._yahoo_gate(symbol):
             try:
                 bars = self._fetch_yahoo_direct(symbol)
                 if bars is not None and len(bars) > 0:
@@ -240,7 +251,7 @@ class MarketDataFeed:
                 log.debug(f"Yahoo direct failed for {symbol}: {e}")
 
         # 4. yfinance library (if installed and working)
-        if bars is None and HAS_YF:
+        if bars is None and HAS_YF and self._yahoo_gate(symbol):
             try:
                 bars = self._fetch_yfinance(symbol)
                 if bars is not None and len(bars) > 0:
@@ -253,6 +264,20 @@ class MarketDataFeed:
     # =========================================================================
     # Yahoo Finance Direct API (fallback - ~15 minute delay)
     # =========================================================================
+
+    def _yahoo_gate(self, symbol):
+        """Allow a Yahoo/yfinance call iff (a) IBKR is not live and (b) we
+        haven't called for this symbol in the last _yahoo_rate_limit seconds.
+        On allow, stamp the timestamp so subsequent callers in the same window
+        skip. Returns True when the call is permitted."""
+        if self.broker and self.broker.is_connected():
+            return False
+        now = time.time()
+        last = self._yahoo_last_call.get(symbol, 0)
+        if now - last < self._yahoo_rate_limit:
+            return False
+        self._yahoo_last_call[symbol] = now
+        return True
 
     def _fetch_yahoo_direct(self, symbol):
         """Fetch real market data directly from Yahoo Finance API."""
@@ -403,36 +428,37 @@ class MarketDataFeed:
                 pass
 
         # 3. Yahoo Finance direct (1m bars, 2-day range)
-        try:
-            url = (
-                f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
-                f"?interval=1m&range=2d"
-            )
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            resp = _requests.get(url, headers=headers, timeout=8)
-            if resp.status_code == 200:
-                data = resp.json()
-                result = data.get("chart", {}).get("result", [])
-                if result:
-                    chart = result[0]
-                    timestamps = chart.get("timestamp", [])
-                    quote = chart.get("indicators", {}).get("quote", [{}])[0]
-                    if timestamps and quote:
-                        df = pd.DataFrame({
-                            "open": quote.get("open", []),
-                            "high": quote.get("high", []),
-                            "low": quote.get("low", []),
-                            "close": quote.get("close", []),
-                            "volume": quote.get("volume", []),
-                        }, index=pd.to_datetime(timestamps, unit="s"))
-                        df = df.dropna(subset=["close"])
-                        if not df.empty:
-                            return df
-        except Exception:
-            pass
+        if self._yahoo_gate(symbol):
+            try:
+                url = (
+                    f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+                    f"?interval=1m&range=2d"
+                )
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                resp = _requests.get(url, headers=headers, timeout=8)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    result = data.get("chart", {}).get("result", [])
+                    if result:
+                        chart = result[0]
+                        timestamps = chart.get("timestamp", [])
+                        quote = chart.get("indicators", {}).get("quote", [{}])[0]
+                        if timestamps and quote:
+                            df = pd.DataFrame({
+                                "open": quote.get("open", []),
+                                "high": quote.get("high", []),
+                                "low": quote.get("low", []),
+                                "close": quote.get("close", []),
+                                "volume": quote.get("volume", []),
+                            }, index=pd.to_datetime(timestamps, unit="s"))
+                            df = df.dropna(subset=["close"])
+                            if not df.empty:
+                                return df
+            except Exception:
+                pass
 
         # 4. yfinance library fallback
-        if HAS_YF:
+        if HAS_YF and self._yahoo_gate(symbol):
             try:
                 ticker = yf.Ticker(symbol)
                 df = ticker.history(period="2d", interval="1m")
@@ -470,6 +496,8 @@ class MarketDataFeed:
 
         # 3. Yahoo fallback (15-min delayed — only if no Polygon)
         for symbol in symbols:
+            if not self._yahoo_gate(symbol):
+                continue
             try:
                 url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
                 headers = {"User-Agent": "Mozilla/5.0"}
@@ -535,28 +563,29 @@ class MarketDataFeed:
                 log.debug(f"Polygon quote failed for {symbol}: {e}")
 
         # 3. Yahoo fallback (~15 min delay)
-        try:
-            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
-            headers = {"User-Agent": "Mozilla/5.0"}
-            resp = _requests.get(url, headers=headers, timeout=5)
-            if resp.status_code == 200:
-                data = resp.json()
-                result = data.get("chart", {}).get("result", [])
-                if result:
-                    meta = result[0].get("meta", {})
-                    price = meta.get("regularMarketPrice", 0)
-                    prev_close = meta.get("chartPreviousClose", 0)
-                    if price and price > 0:
-                        return {
-                            "symbol": symbol,
-                            "price": price,
-                            "prev_close": prev_close,
-                            "change": price - prev_close if prev_close else 0,
-                            "change_pct": ((price - prev_close) / prev_close * 100) if prev_close else 0,
-                            "market_state": meta.get("marketState", "UNKNOWN"),
-                            "source": "YAHOO",
-                        }
-        except Exception as e:
-            log.debug(f"Quote failed for {symbol}: {e}")
+        if self._yahoo_gate(symbol):
+            try:
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
+                headers = {"User-Agent": "Mozilla/5.0"}
+                resp = _requests.get(url, headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    result = data.get("chart", {}).get("result", [])
+                    if result:
+                        meta = result[0].get("meta", {})
+                        price = meta.get("regularMarketPrice", 0)
+                        prev_close = meta.get("chartPreviousClose", 0)
+                        if price and price > 0:
+                            return {
+                                "symbol": symbol,
+                                "price": price,
+                                "prev_close": prev_close,
+                                "change": price - prev_close if prev_close else 0,
+                                "change_pct": ((price - prev_close) / prev_close * 100) if prev_close else 0,
+                                "market_state": meta.get("marketState", "UNKNOWN"),
+                                "source": "YAHOO",
+                            }
+            except Exception as e:
+                log.debug(f"Quote failed for {symbol}: {e}")
 
         return None
