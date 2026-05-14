@@ -10,8 +10,11 @@ Setup:
 5. Set .env IBKR_PORT accordingly
 """
 import time
+import queue
 import asyncio
+import functools
 import threading
+import concurrent.futures
 from datetime import datetime
 from collections import defaultdict
 
@@ -20,21 +23,29 @@ from bot.utils.logger import get_logger
 
 log = get_logger("broker.ibkr")
 
-# Restore nest_asyncio.apply() — PR #128's removal crashed the bot.
-# Without it, sync wrappers (e.g. IB.connect()) called from background
-# threads (APScheduler, reconnect loop) raise "This event loop is
-# already running" and the container exits.
-#
-# The contextvars spam we get back is noisy but non-fatal — bot keeps
-# running, just with spammed traceback in logs. Bot can still execute
-# orders. The TradersPost fallback path now placed in engine.py
-# bypasses ib_async entirely for order placement, so the contextvars
-# bug only affects the data callbacks (annoying, not blocking).
-try:
-    import nest_asyncio
-    nest_asyncio.apply()
-except ImportError:
-    log.warning("nest_asyncio not installed — IBKR may fail from background threads.")
+# NO nest_asyncio — it was the root of the contextvars re-entry crash that
+# repeatedly wedged the bot. ib_async's sync wrappers were being driven from
+# multiple threads under nest_asyncio-patched loops, and the same asyncio
+# context got entered concurrently ("cannot enter context: ... is already
+# entered"). The fix is structural: see the dedicated worker thread in
+# IBKRBroker below. ib_async is touched from exactly ONE thread, so its
+# plain single-threaded sync API works with no patching at all.
+
+
+def _on_worker(method):
+    """Route an IBKRBroker method through the dedicated ib_async worker thread.
+
+    Every method that performs ib_async network I/O is wrapped with this. The
+    method body is unchanged and still synchronous — it just executes on the
+    one thread that owns the IB() object and its event loop, never the
+    caller's thread. This is the whole fix for the nest_asyncio contextvars
+    crash: single-threaded ib_async access, no loop nesting, no patching.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        return self._run(lambda: method(self, *args, **kwargs))
+    return wrapper
+
 
 try:
     from ib_async import IB, Stock, Option, MarketOrder, LimitOrder, StopOrder, util, Order
@@ -109,28 +120,72 @@ class IBKRBroker(BaseBroker):
         # News callback (set by subscribe_news)
         self._news_callback = None
 
+        # --- Dedicated ib_async worker thread ---
+        # ib_async is NOT thread-safe. The contextvars re-entry crash that
+        # repeatedly wedged this bot came from ib_async sync wrappers being
+        # driven from many threads (engine loop, APScheduler jobs, reconnect
+        # thread, scalp callbacks) under nest_asyncio. Fix: ONE worker thread
+        # owns the IB() object and its event loop; every public method funnels
+        # its ib_async work through this thread via @_on_worker / _run().
+        # No nest_asyncio, no cross-thread loop access, no context collision.
+        self._ib_loop = asyncio.new_event_loop()
+        self._ib_queue = queue.Queue()
+        self._ib_stop = False
+        self._ib_thread = threading.Thread(
+            target=self._ib_worker, daemon=True, name="ibkr-worker"
+        )
+        self._ib_thread.start()
+
+    def _ib_worker(self):
+        """The single thread that owns ib_async. Executes queued jobs one at a
+        time; pumps the ib_async event loop while idle so streaming ticks,
+        news, real-time bars and the connection heartbeat keep flowing."""
+        asyncio.set_event_loop(self._ib_loop)
+        log.info("IBKR worker thread started (single-threaded ib_async access)")
+        while not self._ib_stop:
+            try:
+                fn, fut = self._ib_queue.get(timeout=0.05)
+            except queue.Empty:
+                # Idle — pump the ib_async event loop briefly so incoming
+                # streaming data and the keepalive heartbeat get processed.
+                if self.ib is not None and self._connected:
+                    try:
+                        self.ib.sleep(0.05)
+                    except Exception:
+                        pass
+                continue
+            try:
+                fut.set_result(fn())
+            except Exception as e:
+                fut.set_exception(e)
+
+    def _run(self, fn, timeout=180):
+        """Submit a callable to the dedicated ib_async worker thread and block
+        for its result. If we're already ON the worker thread (e.g. called
+        from an ib_async event callback, or one decorated method calling
+        another), run inline to avoid a self-deadlock."""
+        if threading.current_thread() is self._ib_thread:
+            return fn()
+        fut = concurrent.futures.Future()
+        self._ib_queue.put((fn, fut))
+        try:
+            return fut.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            log.error(f"IBKR worker call timed out after {timeout}s")
+            return None
+        except Exception as e:
+            log.error(f"IBKR worker call failed: {e}")
+            return None
+
+    @_on_worker
     def connect(self):
         """Connect to IBKR TWS/Gateway."""
         if not HAS_IB:
             log.error("ib_async not installed. Run: pip install ib_async")
             return False
 
-        # Ensure an asyncio event loop exists in this thread + nest_asyncio
-        # is applied to it. Both required for ib_async sync wrappers when
-        # called from background threads (APScheduler, reconnect loop).
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_closed():
-                raise RuntimeError("closed")
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        try:
-            import nest_asyncio
-            nest_asyncio.apply(loop)
-        except Exception:
-            pass
-
+        # ib_async runs on the dedicated worker thread (see _ib_worker), which
+        # owns this thread's event loop. No per-call loop setup, no nest_asyncio.
         try:
             # Try connecting; if client ID is in use, auto-increment and retry
             max_attempts = 5
@@ -186,6 +241,7 @@ class IBKRBroker(BaseBroker):
             self._connected = False
             return False
 
+    @_on_worker
     def disconnect(self):
         """Disconnect from IBKR."""
         if self.ib and self._connected:
@@ -230,6 +286,12 @@ class IBKRBroker(BaseBroker):
     def reconnect(self):
         """Reconnect with retry.
 
+        NOT @_on_worker — this method only calls connect()/disconnect()
+        (each already routed to the worker thread) plus time.sleep()
+        between attempts. It never touches self.ib directly, so it runs
+        on the caller's thread and lets each connect() attempt get its
+        own worker-timeout budget instead of sharing one 180s ceiling.
+
         Extended retry window (up to ~2.5 min) so that autoheal-triggered
         gateway restarts — which typically take 60-120s for IBC cold-boot
         + IBKR login — are absorbed inside a single reconnect() call.
@@ -251,6 +313,7 @@ class IBKRBroker(BaseBroker):
         log.error("IBKR reconnection failed after 10 attempts (~2.5 min)")
         return False
 
+    @_on_worker
     def place_order(self, symbol, action, quantity, order_type="LIMIT",
                     limit_price=None, stop_price=None, **kwargs):
         """
@@ -680,6 +743,7 @@ class IBKRBroker(BaseBroker):
             return None
         return Option(symbol, expiry, strike, right, "SMART", "100", "USD")
 
+    @_on_worker
     def get_option_chain(self, symbol):
         """
         Get the option chain for a symbol.
@@ -718,6 +782,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to get option chain for {symbol}: {e}")
             return None
 
+    @_on_worker
     def cancel_order(self, order_id):
         """Cancel an open order."""
         if not self.is_connected():
@@ -735,6 +800,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Cancel order failed: {e}")
             return False
 
+    @_on_worker
     def get_positions(self):
         """Get all open positions from IBKR."""
         if not self.is_connected():
@@ -758,6 +824,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to get positions: {e}")
             return {}
 
+    @_on_worker
     def get_account_summary(self):
         """Get account summary from IBKR using accountValues (no subscription needed)."""
         if not self.is_connected():
@@ -787,6 +854,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to get account summary: {e}")
             return None
 
+    @_on_worker
     def get_order_status(self, order_id):
         """Get status of a specific order."""
         if not self.is_connected():
@@ -807,6 +875,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to get order status: {e}")
             return None
 
+    @_on_worker
     def get_historical_bars(self, symbol, duration="1 D", bar_size="5 mins"):
         """Get historical bars from IBKR."""
         if not self.is_connected():
@@ -861,6 +930,7 @@ class IBKRBroker(BaseBroker):
     # Real-Time Streaming Market Data
     # =========================================================================
 
+    @_on_worker
     def subscribe_market_data(self, symbols):
         """
         Subscribe to real-time market data for a list of symbols.
@@ -925,6 +995,7 @@ class IBKRBroker(BaseBroker):
 
         return subscribed > 0
 
+    @_on_worker
     def unsubscribe_market_data(self, symbols=None):
         """Unsubscribe from market data streams."""
         if not self.is_connected():
@@ -940,6 +1011,7 @@ class IBKRBroker(BaseBroker):
                     pass
             self._streaming_tickers.pop(symbol, None)
 
+    @_on_worker
     def subscribe_realtime_bars(self, symbols):
         """
         Subscribe to 5-second real-time bars for symbols.
@@ -1116,6 +1188,7 @@ class IBKRBroker(BaseBroker):
 
     # --- IBKR News Integration ---
 
+    @_on_worker
     def subscribe_news(self, callback=None):
         """
         Subscribe to IBKR real-time news ticks.
@@ -1172,6 +1245,7 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.debug(f"News tick error: {e}")
 
+    @_on_worker
     def get_news_providers(self):
         """Get available IBKR news providers (e.g. BZ=Benzinga, FLY=Flyonthewall)."""
         if not self.is_connected():
@@ -1183,6 +1257,7 @@ class IBKRBroker(BaseBroker):
             log.debug(f"Failed to get news providers: {e}")
             return []
 
+    @_on_worker
     def get_news_article(self, provider_code, article_id):
         """Fetch full article body from IBKR."""
         if not self.is_connected():
@@ -1207,6 +1282,7 @@ class IBKRBroker(BaseBroker):
     # Real-Time Account PnL (IBKR native — no manual calculation needed)
     # =========================================================================
 
+    @_on_worker
     def subscribe_account_pnl(self):
         """
         Subscribe to real-time account PnL updates from IBKR.
@@ -1245,6 +1321,7 @@ class IBKRBroker(BaseBroker):
     # Enhanced 5-Second Bar Callback for Ultra-Fast Scalping
     # =========================================================================
 
+    @_on_worker
     def subscribe_realtime_bars_with_callback(self, symbols, callback):
         """
         Subscribe to 5-second real-time bars with a callback for instant processing.
@@ -1347,6 +1424,7 @@ class IBKRBroker(BaseBroker):
     # Tick-by-Tick Data (fastest possible — every trade print)
     # =========================================================================
 
+    @_on_worker
     def subscribe_tick_by_tick(self, symbols, callback):
         """
         Subscribe to tick-by-tick trade data for instant processing.
@@ -1441,6 +1519,7 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.debug(f"Tick-by-tick error for {symbol}: {e}")
 
+    @_on_worker
     def unsubscribe_tick_by_tick(self, symbols=None):
         """Cancel tick-by-tick subscriptions."""
         if not self.is_connected():
@@ -1460,6 +1539,7 @@ class IBKRBroker(BaseBroker):
     # Open Orders Management
     # =========================================================================
 
+    @_on_worker
     def get_order_book(self, symbol, num_rows=5, timeout=3):
         """Get Level 2 order book snapshot for analysis.
 
@@ -1534,6 +1614,7 @@ class IBKRBroker(BaseBroker):
             log.debug(f"get_order_book({symbol}) error: {e}")
             return None
 
+    @_on_worker
     def get_open_orders(self):
         """Get all open/pending orders from IBKR."""
         if not self.is_connected():
@@ -1559,6 +1640,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to get open orders: {e}")
             return []
 
+    @_on_worker
     def cancel_symbol_orders(self, symbol, side=None):
         """Cancel all open orders for a specific symbol (optionally filtered by side).
 
@@ -1590,6 +1672,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to cancel orders for {symbol}: {e}")
         return cancelled
 
+    @_on_worker
     def cancel_all_orders(self):
         """Cancel all open orders. Use for emergency stop."""
         if not self.is_connected():
@@ -1602,6 +1685,7 @@ class IBKRBroker(BaseBroker):
             log.error(f"Global cancel failed: {e}")
             return False
 
+    @_on_worker
     def close_all_positions(self):
         """Close all open positions with market orders. Use for emergency flatten."""
         if not self.is_connected():
@@ -1663,6 +1747,7 @@ class IBKRBroker(BaseBroker):
     # Market Scanner — Uses IBKR's built-in scanner (no Polygon needed)
     # =========================================================================
 
+    @_on_worker
     def scan_market(self, scan_code="TOP_PERC_GAIN", instrument="STK",
                     location="STK.US.MAJOR", num_rows=50,
                     price_above=1.0, price_below=500.0,

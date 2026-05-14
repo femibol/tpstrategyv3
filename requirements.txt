@@ -11,10 +11,10 @@
 #
 # Load-bearing context:
 #   ib_async        — maintained fork of abandoned ib_insync
-#   aeventkit       — ib_async's async event dependency; the contextvars
-#                     bug is sensitive to this exact version
-#   nest_asyncio    — required for sync wrappers calling coroutines from
-#                     threads with already-running loops
+#   aeventkit       — ib_async's async event dependency
+#   nest_asyncio    — REMOVED. It was the root of the contextvars re-entry
+#                     crash. ib_async now runs on a single dedicated worker
+#                     thread (see bot/brokers/ibkr.py) — no nesting, no patch.
 
 aeventkit==2.1.0
 aiohappyeyeballs==2.6.1
@@ -67,7 +67,6 @@ mdurl==0.1.2
 msgpack==1.0.3
 multidict==6.7.1
 multitasking==0.0.13
-nest-asyncio==1.6.0
 numpy==2.2.6
 oauthlib==3.3.1
 packaging==26.2
