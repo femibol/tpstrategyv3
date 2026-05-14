@@ -5,57 +5,97 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
-2026-05-14 (2) — **Architecture decision made: TradersPost-primary execution, IBKR demoted to data-only.** Reverting PR #139 did NOT fix the crash. Stop patching `ib_async`. Bot is DOWN; stabilize via `1331fc9` rollback, then next session builds the new architecture.
+2026-05-14 (3) — **Diagnosis CONCLUSIVE. Next session = the `bot/brokers/ibkr.py` dedicated-event-loop refactor.** PR #146 (TradersPost-primary execution) is merged + deployed and is correct — but the bot still crashes *at startup* in the `ib_async` connect/streaming path, before "engine started." Every patch this session is exhausted. The full build plan for the real fix is below — open `bot/brokers/ibkr.py` and execute it.
 
-## ⛔ CURRENT STATE: BOT IS DOWN
+## ⛔ CURRENT STATE: BOT IS DOWN (container stopped)
 
-- `trading-bot` was crash-looping with `RuntimeError: cannot enter context: <_contextvars.Context object> is already entered` on every asyncio socket read — event loop wedged, no trading.
-- User stopped the container. `ib-gateway` left running.
-- **PR #139 was reverted (PR #144, `81dfcab`) — crash STILL happened.** So #139 was not the cause, or not the only one. Patching `ib_async` is over.
+- `main` HEAD = `56da615` (PR #146 merge). VPS is on `main`, new code confirmed deployed (`grep -c 'EXECUTION ROUTING: TradersPost-primary'` in the container returned `1`).
+- The `trading-bot` container crash-loops at **startup** — `RuntimeError: cannot enter context: <_contextvars.Context object> is already entered` — and never reaches "engine started". The crash is in the `ib_async` connect / streaming / news subscription path that runs during boot.
+- User has stopped the container (`docker compose stop trading-bot`). `ib-gateway` left running.
+- **Cheap shot ruled out:** `docker compose restart ib-gateway` (clean gateway) + bot restart → still crashed (`20` contextvars errors, no "engine started"). The crash is independent of gateway health.
 
-## ✅ IMMEDIATE STABILIZATION (do this first, ~5 min)
+## ✅ WHAT'S ALREADY DONE & CORRECT (do not redo)
 
-Roll the VPS to `1331fc9` — the last commit that ran 28h stable, before any of this session's 13 PRs. Best-available known-good state. Gets the bot trading TODAY while the real rearchitecture happens in its own session.
+- **PR #146 — TradersPost-primary execution (`56da615`).** Every `ib_async` *execution* call in `engine.py` is gated: when `TRADERSPOST_WEBHOOK_URL` is set, order entry/exit/stop/partial-close all route through the TradersPost webhook (pure HTTPS, no asyncio). IBKR `place_order`/`cancel_order`/`get_positions`-on-exit-path/`get_live_price`-spread-check are all behind `not self.tp_broker` gates or `elif self.broker` legacy branches. This is correct and stays. It just isn't *sufficient* — because the bot also calls `ib_async` heavily at **startup** (connect, position sync, stream subscribe, news subscribe), and that's what still crashes.
+- `TRADERSPOST_WEBHOOK_URL` is set in the VPS `.env` (user's webhook configured this session).
+- `TradersPostBroker` (`bot/brokers/traderspost.py`, 454 lines) — fully built, unchanged, working.
 
-```bash
-cd /opt/trading-bot
-git stash                              # set aside local docker-compose VNC edit
-git checkout 1331fc9
-docker compose build trading-bot
-docker rm -f trading-bot-trading-bot-1 2>/dev/null
-docker compose up -d trading-bot
-sleep 90
-docker compose logs trading-bot --tail=100 | grep -c 'cannot enter context'   # want 0
-docker compose logs trading-bot --tail=40 | grep -iE 'connected to ibkr|engine started'
+## 🎯 CONCLUSIVE DIAGNOSIS (settled — do not re-investigate)
+
+The `contextvars` re-entry crash is in **`ib_async` itself, driven under `nest_asyncio`, at the connection/data layer.** Proven by elimination this session:
+- NOT dependency drift — PR #142 pinned all 88 packages, crash persisted.
+- NOT solely PR #139 — PR #144 reverted it, crash persisted.
+- NOT the execution path alone — PR #146 routed execution off `ib_async`, crash persisted **at startup**.
+- NOT gateway health — clean `ib-gateway` restart, crash persisted.
+
+Root mechanism: `bot/brokers/ibkr.py` calls `ib_async`'s **synchronous wrappers** (`self.ib.connect()`, `self.ib.qualifyContracts()`, `self.ib.reqHistoricalData()`, `self.ib.reqMktData()`, `self.ib.placeOrder()` + `self.ib.sleep()`, `self.ib.reqTickers()`, etc.) from **multiple threads** (engine main loop, APScheduler jobs, the background reconnect thread, scalp-monitor callbacks). Each sync wrapper does `loop.run_until_complete()` on the *calling thread's* loop; `nest_asyncio.apply()` patches those loops to allow nesting; when `ib_async`'s event callbacks fire across these threads, the same `contextvars.Context` gets entered concurrently → `RuntimeError`. `nest_asyncio` is the hack that makes this *possible*; the multi-thread access is what *triggers* it.
+
+## 🏗️ THE BUILD PLAN: `bot/brokers/ibkr.py` dedicated-event-loop refactor
+
+**Goal:** `ib_async` runs in exactly ONE thread that owns exactly ONE event loop, created with `asyncio.new_event_loop()` + `run_forever()` in a daemon thread. That loop is never nested, never re-entered. `nest_asyncio` is deleted entirely. Every public `IBKRBroker` method submits work to that loop from whatever thread calls it via `asyncio.run_coroutine_threadsafe(coro, self._loop).result(timeout=...)`. This is the pattern `ib_async`'s own docs prescribe for multi-threaded apps.
+
+**File:** `bot/brokers/ibkr.py` (1792 lines, one class `IBKRBroker`, ~50 methods). This is the whole job — `engine.py` should need few/no changes because the public method signatures stay identical.
+
+### Step 1 — Kill `nest_asyncio`
+- Remove the module-level `import nest_asyncio` / `nest_asyncio.apply()` (lines ~34-35).
+- Remove the in-`connect()` `nest_asyncio.apply(loop)` block (lines ~128-131).
+- Remove `nest-asyncio` from `requirements.txt`.
+- Keep the Python-3.14 `asyncio.wait_for` compat shim (lines ~44-69) for now — it's unrelated; revisit only if it conflicts.
+
+### Step 2 — Dedicated loop + thread (in `__init__` or a new `_start_loop()`)
+```python
+self._loop = asyncio.new_event_loop()
+self._loop_thread = threading.Thread(
+    target=self._loop.run_forever, daemon=True, name="ibkr-eventloop")
+self._loop_thread.start()
+```
+Create the `IB()` instance and call **all** `ib_async` I/O on this loop's thread — never elsewhere.
+
+### Step 3 — The submit helper
+```python
+def _run(self, coro, timeout=30):
+    """Submit a coroutine to the dedicated ib_async loop from any thread."""
+    fut = asyncio.run_coroutine_threadsafe(coro, self._loop)
+    try:
+        return fut.result(timeout=timeout)
+    except Exception as e:
+        log.error(f"IBKR _run error: {e}")
+        return None
 ```
 
-Caveat: the contextvars bug has recurred for ~2 months across many commits — `1331fc9` is "ran 28h this time," not "permanently immune." It's a *bridge*, not the fix. If it also crashes, the host/gateway/IBKR-API changed underneath us and the rearchitecture below becomes the only path.
+### Step 4 — Convert every I/O method to async + `_run`
+`ib_async` exposes an `*Async` variant for every blocking call. Convert each public method to build a coroutine and submit it via `_run`. Map:
+| sync (current) | async (use inside coroutine) |
+| --- | --- |
+| `self.ib.connect(...)` | `await self.ib.connectAsync(...)` |
+| `self.ib.qualifyContracts(c)` | `await self.ib.qualifyContractsAsync(c)` |
+| `self.ib.reqHistoricalData(...)` | `await self.ib.reqHistoricalDataAsync(...)` |
+| `self.ib.reqTickers(c)` | `await self.ib.reqTickersAsync(c)` |
+| `self.ib.reqSecDefOptParams(...)` | `await self.ib.reqSecDefOptParamsAsync(...)` |
+| `self.ib.placeOrder(...)` + `self.ib.sleep(n)` | `self.ib.placeOrder(...)` then `await asyncio.sleep(n)` — inside a coroutine on the loop |
+| `self.ib.reqScannerData(...)` | `await self.ib.reqScannerDataAsync(...)` |
 
-## 🏗️ THE ARCHITECTURE: TradersPost-primary execution, IBKR data-only
+**Methods that DON'T need `_run`** — `ib_async` calls that only read cached state (no I/O, safe from any thread): `self.ib.isConnected()`, `self.ib.positions()`, `self.ib.accountValues()`, `self.ib.trades()`, `self.ib.openTrades()`, `self.ib.portfolio()`. Leave `is_connected()` exactly as-is (bare `self.ib.isConnected()`).
 
-**Decision (2026-05-14, user call):** stop trying to make `ib_async` order execution + reconnect stable. The `nest_asyncio` contextvars bug has been fought across PRs #124–129, #139, #142 — every patch eventually fails. Instead, **remove `ib_async` from the critical execution path entirely.**
+**Methods that DO need `_run`** (they do network I/O): `connect`, `disconnect`, `reconnect`, `place_order`, `_place_bracket_order`, `_get_snap_price`, `get_option_chain`, `cancel_order`, `get_historical_bars`, `subscribe_market_data`, `unsubscribe_market_data`, `subscribe_realtime_bars`, `subscribe_realtime_bars_with_callback`, `subscribe_tick_by_tick`, `unsubscribe_tick_by_tick`, `subscribe_news`, `get_news_providers`, `get_news_article`, `subscribe_account_pnl`, `get_order_book`, `cancel_symbol_orders`, `cancel_all_orders`, `close_all_positions`, `scan_market` (+ all `scan_*` wrappers), `qualifyContracts` calls inside the above.
 
-**Why this ends the cycle:** the contextvars crash only happens because `ib_async` coroutines get driven from threads under a nested event loop. A TradersPost webhook is a plain HTTP POST — no asyncio, no `nest_asyncio`, no event loop. Move execution there and that crash class is *structurally impossible* on the path that matters: getting orders filled. IBKR data streaming can still wedge, but it's no longer fatal — it's a degraded data feed, and the Polygon fallback already exists.
+### Step 5 — Event callbacks
+`_on_order_status`, `_on_error`, `_on_disconnect`, `_on_pending_tickers`, `_on_news_tick`, `_on_pnl_update`, `_on_realtime_bar`, `_on_tick_data` — these fire ON the dedicated loop's thread (good — single thread). They already use `self._stream_lock` where they touch shared dicts; keep that. They must NOT call `_run` (would deadlock — already on the loop thread); they can touch `self.ib` directly.
 
-**Current wiring (what exists today):**
-- `bot/brokers/traderspost.py` (454 lines) — `TradersPostBroker` is fully built: `send_signal()`, `place_order()`, webhook send with retry, 3s global rate limit, dual-mode (live+paper), crypto-webhook routing, signal persistence to `data/signal_log.json`. Added by PR #129 as a *fallback*.
-- `bot/engine.py`: `self.broker` = IBKR (primary), `self.tp_broker` = TradersPost. `_execute_signal()` (line ~3792) calls `self.broker.place_order()` (IBKR) first, then falls back to `self.tp_broker.place_order()` at line ~4307 (`if not order and self.tp_broker`).
-- Other `self.broker.place_order()` call sites to reroute: engine.py lines ~455, ~4648, ~4891, ~5218, ~6923.
+### Step 6 — `reconnect()` / `connect()` retry logic
+The client-id-increment retry loop in `connect()` stays, but runs as a coroutine on the dedicated loop. `reconnect()` = `disconnect` then `connect`, all via `_run`. No more ad-hoc reconnect threads driving `ib_async` — the dedicated loop is the only place it runs.
 
-**The rearchitecture (next session's job):**
-1. **Flip execution priority.** In `_execute_signal()` and every other `place_order` call site, route to `self.tp_broker` as PRIMARY. Drop (or make last-resort-only) the `self.broker.place_order()` IBKR path. All order entry/exit/stop/partial-close goes through the TradersPost webhook.
-2. **Demote IBKR to data-only.** `self.broker` (IBKR) keeps: streaming quotes/bars, historical bars, scanner, real-time price. It NEVER places orders. Its connection wedging is now non-fatal.
-3. **Make the IBKR data path non-blocking / non-fatal.** When `ib_async` streaming/reconnect misbehaves, the engine should fall through to the existing Polygon path (`bot/data/market_data.py` already does IBKR→Polygon→Yahoo) instead of crash-looping. Consider: does the contextvars crash originate in streaming callbacks too? If so, the data path may also need the dedicated-event-loop treatment — but as a *reliability* improvement, not a *can't-trade* blocker.
-4. **Config:** TradersPost is enabled when `TRADERSPOST_WEBHOOK_URL` is set (`config.traderspost_webhook_url`). Confirm it (and `_secondary` / `_crypto` / `_password` as needed) is set in the VPS `.env`. Webhook→broker linkage is configured on the TradersPost side (their dashboard), not in this repo.
-5. **Verify before deploy (paper):** send a manual signal through `_execute_signal`, confirm it reaches TradersPost (`data/signal_log.json` gets the entry, webhook returns 200), confirm IBKR data still streams, confirm a forced `ib_async` hiccup no longer takes the bot down.
+### Step 7 — Verify (paper, before any deploy)
+1. `python -c "from bot.brokers.ibkr import IBKRBroker"` — imports clean, no `nest_asyncio`.
+2. `python -m bot.main --mode paper --no-dashboard` locally (or on VPS after close) — bot reaches **"engine started"**, connects to IBKR, streams data + news, runs 15 min, **ZERO `contextvars` tracebacks**.
+3. Confirm an APScheduler job (scanner cycle) and the engine main loop both hit IBKR concurrently without error — that's the exact multi-thread condition that used to crash.
+4. Confirm a forced `docker compose restart ib-gateway` → bot reconnects via the dedicated loop, no thread storm, no crash.
+5. Only then deploy to VPS.
 
-**Cost note:** TradersPost is ~$78/mo. User has explicitly accepted this — two months of downtime/debugging outweighs it.
+**Scope estimate:** real but mechanical — ~50 methods, most are a 3-line wrap. The risk is in `connect()`/streaming/callbacks; do those carefully. It's a focused session's work. Land it as a PR the user reviews; do NOT auto-merge; do NOT deploy unverified.
 
-**Optional later step:** if IBKR data *also* proves too unstable, move data fully to Polygon (key already configured) and remove `ib_async` + `nest_asyncio` from the codebase entirely. Not required for the core fix — execution-via-webhook is the load-bearing change.
-
-## Root Cause (confirmed — for context, not for re-investigation)
-
-The `contextvars` re-entry crash is **not** dependency drift (PR #142 pinned all 88 packages, crash persisted) and **not** solely PR #139 (PR #144 reverted it, crash persisted). It is the long-standing `nest_asyncio` fragility: the codebase calls `ib_async` coroutines from threads with already-running loops (APScheduler jobs, reconnect threads, scalp-monitor callbacks), and under load the same asyncio context gets entered concurrently. Fought across PRs #124, #125, #126, #128, #129, #139, #142, #144. **Conclusion: do not patch it again — route around it (architecture above).**
+## Bridge option (if the bot must trade before the refactor lands)
+`git checkout 1331fc9` on the VPS + rebuild — last commit that ran 28h (pre-session). It is NOT immune (same `ib_async`/`nest_asyncio`), it just happened to boot cleanly that day. A coin-flip bridge, not a fix. The refactor is the fix.
 
 ## Today's Merges (2026-05-14 session)
 
@@ -74,9 +114,11 @@ The `contextvars` re-entry crash is **not** dependency drift (PR #142 pinned all
 | #141 | HANDOFF end-of-session update | `d5e2050` |
 | #142 | Full 88-package dependency tree pin — did NOT fix the crash | `2ea9fe3` |
 | #143 | HANDOFF architecture-pivot writeup | `3ef705a` |
-| #144 | **Revert PR #139 — crash STILL happened, so #139 was not the (sole) cause** | `81dfcab` |
+| #144 | Revert PR #139 — crash STILL happened, so #139 was not the (sole) cause | `81dfcab` |
+| #145 | HANDOFF TradersPost-architecture decision | `667e6e9` |
+| #146 | **TradersPost-primary execution — routes order flow off `ib_async` (correct, deployed, but bot still crashes at *startup*)** | `56da615` |
 
-All 13 are on `main`. PRs #131–#138, #140–#143 are believed safe and stay on `main`. #139 is reverted. #142 is harmless. **`main` HEAD is good for the next session to branch from — but the *running VPS bot* should be on `1331fc9` per the stabilization step above until the TradersPost rearchitecture ships.**
+All 16 are on `main` (HEAD = `56da615`). Believed-safe and staying: #131–#138, #140–#146. #139 is reverted. #142 is harmless. **Next session branches from `main` HEAD and does the `bot/brokers/ibkr.py` refactor above.** The running VPS bot is currently stopped — it boots only after the refactor lands (or temporarily via the `1331fc9` bridge).
 
 ## Deployment / ops notes from the session
 - **Gateway stuck-dialog**: earlier today `ib-gateway` crash-looped on `IBC exit code 1109` — IBC rewriting `jts.ini` and a full disk prevented the write from persisting. Fixed by clearing disk (`docker container/image/builder prune`, `journalctl --vacuum-size=100M`) — `/` had been showing free space but a stale 2-day-old `trading-bot-trading-bot-run-*` orphan container + 23h of crash-loop logs had exhausted it. The `ib-gateway-data` named volume already persists `/home/ibgateway/Jts`, so once disk was free the gateway booted clean.
