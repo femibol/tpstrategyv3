@@ -452,8 +452,17 @@ class TradingEngine:
                             f"Auto-covering — long-only bot must not hold shorts."
                         )
                         try:
-                            self.broker.place_order(sym, "BUY", qty, "MARKET")
-                            log.info(f"AUTO-COVERED IBKR short: {sym}")
+                            if self.tp_broker:
+                                # TradersPost-primary: IBKR is data-only, the
+                                # bot does not place orders at IBKR. Cover manually.
+                                log.warning(
+                                    f"SHORT {sym} at IBKR NOT auto-covered — "
+                                    f"TradersPost-primary, IBKR is data-only. "
+                                    f"Cover this position manually."
+                                )
+                            else:
+                                self.broker.place_order(sym, "BUY", qty, "MARKET")
+                                log.info(f"AUTO-COVERED IBKR short: {sym}")
                         except Exception as e:
                             log.error(f"Failed to auto-cover IBKR short {sym}: {e}")
                         continue
@@ -4231,7 +4240,10 @@ class TradingEngine:
         # Catches wide bid-ask spreads (e.g. $1.40 bid / $1.60 ask = 13% spread)
         # that guarantee slippage on MARKET orders. Prevents the costly
         # enter-then-immediately-exit loop that lost ~$2,500 on 2024-03-04.
-        if action == "buy" and self.broker and self.broker.is_connected():
+        # Skip the IBKR spread check entirely when TradersPost is the
+        # execution broker — get_live_price() is an ib_async coroutine and
+        # must not run on the execution path (contextvars crash risk).
+        if action == "buy" and not self.tp_broker and self.broker and self.broker.is_connected():
             max_spread_pct = self.config.risk_config.get("max_spread_pct", 0.02)
             quote = self.broker.get_live_price(symbol) if hasattr(self.broker, 'get_live_price') else None
             if quote and quote.get("bid") and quote.get("ask"):
@@ -4249,19 +4261,50 @@ class TradingEngine:
                         self._pending_orders.discard(symbol)
                         return
 
-        # === IBKR-ONLY EXECUTION (Professional Architecture) ===
-        # Single broker, single source of truth. No fallback chain = no sync bugs.
-        # Execution routing:
-        #   1. If IBKR is connected, use it (low latency, native bracket orders).
-        #   2. Else if TradersPost configured, fall back to webhook execution.
-        #      TradersPost runs IBKR auth/session on their infra, so it works
-        #      when our local IB Gateway is wedged. ~500ms slower than direct.
-        #   3. Else, no execution path — log error.
+        # === EXECUTION ROUTING: TradersPost-primary ===
+        # TradersPost webhook is the PRIMARY execution path. It is a plain
+        # HTTPS POST — it never touches ib_async / nest_asyncio, so it is
+        # structurally immune to the asyncio contextvars re-entry crash that
+        # repeatedly wedged the bot when IBKR placed orders directly.
+        # IBKR is data-only here. The direct IBKR order path is kept ONLY as
+        # a legacy fallback for setups with no TradersPost webhook configured.
         order = None
         executed_via = None
-        if self.broker and self.broker.is_connected():
-            log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
 
+        if self.tp_broker:
+            log.info(
+                f"Executing {symbol} via TradersPost webhook"
+                f"{'  [OUTSIDE RTH]' if outside_rth else ''}..."
+            )
+            if action == "buy":
+                order = self.tp_broker.place_order(
+                    symbol=symbol,
+                    action="buy",
+                    quantity=qty,
+                    order_type="MARKET",
+                    limit_price=current_price,
+                )
+            else:
+                log.error(f"UNEXPECTED: Non-buy action '{action}' reached execution for {symbol}")
+                self._pending_orders.discard(symbol)
+                return
+            if order:
+                executed_via = "TradersPost"
+                # No broker-side bracket via webhook — the bot's
+                # _monitor_positions loop manages stops/targets locally.
+                log.info(
+                    f"TradersPost SUBMITTED: {symbol} qty={qty}. "
+                    f"SL ${stop_loss_price:.2f} / TP ${take_profit_price:.2f} "
+                    f"managed by bot (no broker-side bracket)."
+                )
+            else:
+                log.error(f"TradersPost webhook FAILED for {symbol} — no execution.")
+
+        elif self.broker and self.broker.is_connected():
+            # Legacy path: no TradersPost webhook configured. Places directly
+            # at IBKR via ib_async — carries the contextvars crash risk.
+            # Configure TRADERSPOST_WEBHOOK_URL to avoid it.
+            log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
             if action == "buy":
                 order = self.broker.place_order(
                     symbol=symbol,
@@ -4276,7 +4319,6 @@ class TradingEngine:
                 log.error(f"UNEXPECTED: Non-buy action '{action}' reached execution for {symbol}")
                 self._pending_orders.discard(symbol)
                 return
-
             if order:
                 executed_via = "IBKR"
                 if order.get("bracket"):
@@ -4286,53 +4328,15 @@ class TradingEngine:
                         f"(managed by IBKR server-side)"
                     )
             else:
-                log.warning(
-                    f"IBKR order failed for {symbol} — falling through to "
-                    f"TradersPost fallback if configured."
-                )
+                log.warning(f"IBKR order failed for {symbol}.")
 
-        # Fallback: TradersPost webhook. Triggered when IBKR was unavailable
-        # OR when the IBKR order placement returned None. TradersPost handles
-        # the IBKR session on their infra — works through gateway wedges.
-        # Note: bracket orders aren't supported via webhook, so SL/TP must
-        # be managed by the bot's existing position-monitoring path.
-        if not order and self.tp_broker:
-            log.info(
-                f"Executing {symbol} via TradersPost webhook"
-                f"{'  [OUTSIDE RTH]' if outside_rth else ''}..."
-            )
-            if action == "buy":
-                order = self.tp_broker.place_order(
-                    symbol=symbol,
-                    action="buy",
-                    quantity=qty,
-                    order_type="MARKET",
-                    limit_price=current_price,
-                )
-            if order:
-                executed_via = "TradersPost"
-                # Hint the order dict carries no bracket — the bot's
-                # _monitor_positions loop will manage stops/targets locally.
-                log.info(
-                    f"TradersPost SUBMITTED: {symbol} qty={qty}. "
-                    f"SL ${stop_loss_price:.2f} / TP ${take_profit_price:.2f} "
-                    f"will be managed by bot (no broker-side bracket)."
-                )
-            else:
-                log.error(
-                    f"TradersPost webhook also failed for {symbol}. "
-                    f"Both IBKR and TradersPost paths exhausted."
-                )
-
+        # If nothing executed, do NOT create a phantom position
         if not order:
             log.error(
                 f"NO EXECUTION PATH AVAILABLE — cannot execute {action.upper()} "
-                f"{symbol}. IBKR not connected and TradersPost not configured. "
-                f"Set TRADERSPOST_WEBHOOK_URL in .env for webhook fallback."
+                f"{symbol}. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution "
+                f"path), or ensure IBKR is connected (legacy fallback)."
             )
-
-        # If IBKR failed or not connected, do NOT create phantom positions
-        if not order:
             self._pending_orders.discard(symbol)
             return
 
@@ -4562,8 +4566,10 @@ class TradingEngine:
         if not pos:
             return
 
-        # Cancel any broker-side stop order to avoid orphan orders
-        if pos.get("broker_stop_order_id") and self.broker and self.broker.is_connected():
+        # Cancel any broker-side stop order to avoid orphan orders.
+        # Skipped under TradersPost-primary: no IBKR-side stops exist there,
+        # and cancel_order is an ib_async coroutine (contextvars risk).
+        if not self.tp_broker and pos.get("broker_stop_order_id") and self.broker and self.broker.is_connected():
             try:
                 self.broker.cancel_order(pos["broker_stop_order_id"])
                 log.info(f"Cancelled broker stop order for {symbol}")
@@ -4588,8 +4594,11 @@ class TradingEngine:
         original_broker = pos.get("executed_via", "Simulated")
         close_broker = None  # Track which broker ACTUALLY closed it (None = nothing worked)
 
-        # Verify actual broker quantity before closing to prevent accidental shorts
-        if self.broker and self.broker.is_connected():
+        # Verify actual broker quantity before closing to prevent accidental
+        # shorts. Skipped under TradersPost-primary — get_positions() is an
+        # ib_async coroutine and must not run on the exit path; TradersPost
+        # is the execution broker and the bot's own tracking is the record.
+        if not self.tp_broker and self.broker and self.broker.is_connected():
             try:
                 broker_positions = self.broker.get_positions()
                 broker_pos = broker_positions.get(symbol) if broker_positions else None
@@ -4620,16 +4629,35 @@ class TradingEngine:
             except Exception as e:
                 log.warning(f"Could not verify broker position for {symbol}: {e}")
 
-        # === IBKR-ONLY CLOSE (Professional Architecture) ===
-        # Single broker close. If IBKR is connected, close through it.
-        # If not connected, the server-side bracket stop is still active.
+        # === CLOSE ROUTING: TradersPost-primary ===
+        # Exits go through the TradersPost webhook (plain HTTPS, no ib_async,
+        # no contextvars risk). TradersPost bypasses its own rate limits for
+        # exits. IBKR direct-close is kept only as a legacy fallback when no
+        # webhook is configured.
         order = None
         partial_fill_remaining = 0
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
-        if self.broker and self.broker.is_connected():
+        if self.tp_broker:
+            order = self.tp_broker.place_order(
+                symbol=symbol,
+                action=action,
+                quantity=close_qty,
+                order_type="MARKET",
+                limit_price=current_price,
+            )
+            if order:
+                close_broker = "TradersPost"
+            else:
+                log.error(
+                    f"TradersPost close webhook FAILED for {symbol} — "
+                    f"position stays tracked for retry next cycle."
+                )
+
+        elif self.broker and self.broker.is_connected():
+            # Legacy IBKR-direct close (no TradersPost webhook configured).
             # Cancel any existing broker-side stop (bracket leg) before closing
-            # to avoid the stop triggering after we've already sold
+            # to avoid the stop triggering after we've already sold.
             stop_order_id = pos.get("broker_stop_order_id")
             if stop_order_id:
                 try:
@@ -4661,11 +4689,10 @@ class TradingEngine:
             else:
                 log.error(f"IBKR close order FAILED for {symbol}")
         else:
-            # IBKR not connected — but if we have a bracket order, the server-side
-            # stop is STILL active at IBKR. The position is protected even now.
             log.error(
-                f"IBKR NOT CONNECTED for close of {symbol} — cannot execute exit. "
-                f"Server-side bracket stop (if placed) is still active at IBKR."
+                f"NO EXECUTION PATH for close of {symbol} — TradersPost webhook "
+                f"not configured and IBKR not connected. Position stays tracked "
+                f"for retry next cycle."
             )
 
         # Only remove position if a broker ACTUALLY closed it this cycle
@@ -4857,8 +4884,10 @@ class TradingEngine:
         action = "SELL"
         close_broker = None  # Track which broker ACTUALLY closed it
 
-        # Verify actual broker qty before partial close to prevent overselling
-        if self.broker and self.broker.is_connected():
+        # Verify actual broker qty before partial close to prevent
+        # overselling. Skipped under TradersPost-primary — get_positions()
+        # is an ib_async coroutine and must not run on the exit path.
+        if not self.tp_broker and self.broker and self.broker.is_connected():
             try:
                 broker_positions = self.broker.get_positions()
                 broker_pos = broker_positions.get(symbol) if broker_positions else None
@@ -4876,10 +4905,18 @@ class TradingEngine:
             except Exception as e:
                 log.debug(f"Could not verify broker position for partial close {symbol}: {e}")
 
-        # Execute via IBKR (sole execution broker)
+        # Execute the partial close — TradersPost-primary, IBKR legacy fallback
         order = None
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
-        if self.broker and self.broker.is_connected():
+        if self.tp_broker:
+            order = self.tp_broker.place_order(
+                symbol=symbol, action=action,
+                quantity=qty_to_close, order_type="MARKET",
+                limit_price=current_price,
+            )
+            if order:
+                close_broker = "TradersPost"
+        elif self.broker and self.broker.is_connected():
             order = self.broker.place_order(
                 symbol=symbol, action=action,
                 quantity=qty_to_close, order_type="MARKET",
@@ -5108,8 +5145,10 @@ class TradingEngine:
         """Emergency close all positions."""
         log.warning(f"Closing all positions: {reason}")
 
-        # Cancel all pending IBKR orders first (bracket stop/target orders)
-        if self.broker and self.broker.is_connected() and hasattr(self.broker, 'cancel_all_orders'):
+        # Cancel all pending IBKR orders first (bracket stop/target orders).
+        # Skipped under TradersPost-primary — there are no IBKR-side orders,
+        # and cancel_all_orders is an ib_async coroutine (contextvars risk).
+        if not self.tp_broker and self.broker and self.broker.is_connected() and hasattr(self.broker, 'cancel_all_orders'):
             self.broker.cancel_all_orders()
 
         with self._positions_lock:
@@ -5172,6 +5211,13 @@ class TradingEngine:
         the current stop price — if the bot crashes, IBKR enforces the latest
         stop, not the original entry stop.
         """
+        # TradersPost-primary: IBKR is data-only — no broker-side stop orders.
+        # Both cancel_order and place_order below are ib_async coroutines and
+        # must not run on this path. The bot's _monitor_positions loop manages
+        # trailing stops locally instead.
+        if self.tp_broker:
+            return False
+
         if not self.broker or not self.broker.is_connected():
             return False
 
@@ -6896,10 +6942,18 @@ class TradingEngine:
             for symbol in positions_to_close:
                 self._close_position(symbol, "eod_close", "End of day close")
 
-            # Place server-side stop orders at IBKR for overnight holds
-            # These protect against gap-downs even if the bot is offline
+            # Place server-side stop orders at IBKR for overnight holds.
+            # These protect against gap-downs even if the bot is offline.
+            # Skipped under TradersPost-primary — broker-side stops require
+            # direct IBKR order placement (ib_async coroutine, contextvars
+            # risk); the bot's _monitor_positions loop manages stops locally.
             all_holds = overnight_holds + afterhours_holds
-            if all_holds and self.broker and self.broker.is_connected():
+            if all_holds and self.tp_broker:
+                log.info(
+                    f"TradersPost-primary: {len(all_holds)} overnight hold(s) — "
+                    f"stops managed locally by the bot, no IBKR-side GTC stops placed."
+                )
+            if all_holds and not self.tp_broker and self.broker and self.broker.is_connected():
                 for symbol in all_holds:
                     pos = self.positions.get(symbol)
                     if not pos or not pos.get("stop_loss"):
