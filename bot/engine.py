@@ -4327,6 +4327,31 @@ class TradingEngine:
 
         # Get current hour for session-based sizing
         current_hour = datetime.now(self.tz).hour
+
+        # Per-signal regime affinity: REGIME_STRATEGY_AFFINITY maps each
+        # regime to per-strategy multipliers (the same table EOD uses for
+        # allocation). Reading the regime status here lets live conditions
+        # shift sizing within the trading day — momentum strategies grow in
+        # BULL_TREND, mean-reversion grows in SIDEWAYS, everything shrinks in
+        # CRISIS.
+        #
+        # CONFIDENCE GATE: only apply the multiplier when the detector is
+        # confident (> 0.55). The SIDEWAYS default lands at 0.5 confidence and
+        # "Insufficient data" at 0.3 — applying multipliers from those states
+        # would shrink momentum sizing 30-50% on a stuck-SIDEWAYS bot, which
+        # is exactly the wrong direction for a long-only momentum trader. Low
+        # confidence → neutral 1.0 multiplier instead.
+        regime_mult = 1.0
+        if self.regime_detector:
+            try:
+                status = self.regime_detector.get_status()
+                regime_conf = status.get("confidence", 0.0)
+                if regime_conf > 0.55:
+                    multipliers = status.get("strategy_multipliers", {})
+                    regime_mult = multipliers.get(strategy, 1.0)
+            except Exception as e:
+                log.debug(f"Regime multiplier lookup failed for {strategy}: {e}")
+
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
@@ -4338,6 +4363,9 @@ class TradingEngine:
             peak_balance=self.peak_balance,
             session_stats=getattr(self, '_session_stats', None),
             current_hour=current_hour,
+            # New: confidence-scaled + regime-aware sizing
+            confidence=signal.get("confidence", 0.6),
+            regime_multiplier=regime_mult,
         )
 
         if qty <= 0:
@@ -4527,12 +4555,36 @@ class TradingEngine:
             # at IBKR via ib_async — carries the contextvars crash risk.
             # Configure TRADERSPOST_WEBHOOK_URL to avoid it.
             log.info(f"Executing {symbol} via IBKR{'  [OUTSIDE RTH]' if outside_rth else ''}...")
+            # MIDPRICE order routing: for strategies that aren't time-critical
+            # (swing/accumulation entries, mean-reversion), use IBKR's MIDPRICE
+            # algo to fill at the bid-ask midpoint and capture half the spread
+            # as price improvement. Capped at +0.5% above live so worst case
+            # = same as a tight LIMIT.
+            #
+            # Speed-critical strategies (momentum runners, gap chases, scalps)
+            # stay on MARKET — for them, a missed fill costs more than the
+            # half-spread saved. Outside RTH always uses MARKET because
+            # MIDPRICE has no midpoint when the book is closed; ibkr.py
+            # converts that to an aggressive LIMIT internally.
+            midprice_strats = {
+                "daily_trend_rider", "mean_reversion", "prebreakout", "smc_forever",
+            }
+            use_midprice = (
+                action == "buy"
+                and not outside_rth
+                and strategy in midprice_strats
+                and current_price and current_price > 0
+            )
+            entry_order_type = "MIDPRICE" if use_midprice else "MARKET"
+            entry_limit_price = round(current_price * 1.005, 2) if use_midprice else None
+
             if action == "buy":
                 order = self.broker.place_order(
                     symbol=symbol,
                     action="BUY",
                     quantity=qty,
-                    order_type="MARKET",
+                    order_type=entry_order_type,
+                    limit_price=entry_limit_price,
                     outside_rth=outside_rth,
                     stop_loss=stop_loss_price,
                     take_profit=take_profit_price,

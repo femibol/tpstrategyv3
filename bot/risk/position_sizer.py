@@ -145,6 +145,27 @@ class PositionSizer:
         else:
             return 0.25
 
+    @staticmethod
+    def _confidence_multiplier(confidence):
+        """Scale risk by signal confidence — bet bigger when the bot is most
+        confident, smaller when it's a marginal setup.
+
+        Buckets (piecewise, not interpolated, to keep behavior predictable):
+          >= 0.85: 1.5x  (high conviction — A+ setups)
+          >= 0.70: 1.2x  (above average)
+          >= 0.55: 1.0x  (neutral — most signals land here)
+          else:    0.7x  (low conviction; risk_manager already rejects <0.35)
+        """
+        if confidence is None:
+            return 1.0
+        if confidence >= 0.85:
+            return 1.5
+        if confidence >= 0.70:
+            return 1.2
+        if confidence >= 0.55:
+            return 1.0
+        return 0.7
+
     def _session_adjustment(self, session_stats, current_hour):
         """Boost sizing during historically best trading hours.
 
@@ -179,9 +200,11 @@ class PositionSizer:
         return 1.0
 
     def calculate(self, balance, price, stop_loss, strategy_allocation=1.0, symbol=None,
-                  trade_history=None, peak_balance=None, session_stats=None, current_hour=None):
+                  trade_history=None, peak_balance=None, session_stats=None, current_hour=None,
+                  confidence=None, regime_multiplier=1.0):
         """
-        Calculate position size using Kelly + drawdown + session-aware sizing.
+        Calculate position size using Kelly + drawdown + session + confidence
+        + regime multipliers stacked on top of base risk_per_trade_pct.
 
         Args:
             balance: Current account balance
@@ -193,6 +216,11 @@ class PositionSizer:
             peak_balance: All-time peak balance (for drawdown calc)
             session_stats: Per-hour performance dict
             current_hour: Current hour (for session adjustment)
+            confidence: Signal confidence 0-1 — high-conviction setups get
+                bigger size (1.5x at 0.85+), marginal ones smaller (0.7x).
+            regime_multiplier: Per-strategy regime affinity (from
+                REGIME_STRATEGY_AFFINITY) — already used for EOD allocation,
+                now applied per-signal so live conditions move sizing.
 
         Returns:
             int: Number of shares/contracts (0 if trade doesn't meet criteria)
@@ -219,19 +247,27 @@ class PositionSizer:
         kelly_mult = self._kelly_adjustment(trade_history, base_risk) if trade_history else 1.0
         dd_mult = self._drawdown_adjustment(balance, peak_balance) if peak_balance else 1.0
         session_mult = self._session_adjustment(session_stats, current_hour) if session_stats else 1.0
+        conf_mult = self._confidence_multiplier(confidence)
+        # Clamp regime multiplier to [0.3, 2.0] so a bad lookup or extreme regime
+        # affinity can't push sizing outside sane bounds.
+        regime_mult = max(0.3, min(2.0, regime_multiplier or 1.0))
 
-        adjusted_risk_pct = base_risk * kelly_mult * dd_mult * session_mult
+        adjusted_risk_pct = (
+            base_risk * kelly_mult * dd_mult * session_mult * conf_mult * regime_mult
+        )
 
         # Safety floor: never risk more than 3% per trade even if Kelly says more
         adjusted_risk_pct = min(adjusted_risk_pct, 0.03)
         # Safety ceiling: always risk at least 0.25% (don't trade tiny)
         adjusted_risk_pct = max(adjusted_risk_pct, 0.0025)
 
-        if kelly_mult != 1.0 or dd_mult != 1.0 or session_mult != 1.0:
+        if (kelly_mult != 1.0 or dd_mult != 1.0 or session_mult != 1.0
+                or conf_mult != 1.0 or regime_mult != 1.0):
             log.info(
                 f"ADAPTIVE SIZING: base={base_risk:.2%} → "
-                f"Kelly {kelly_mult:.2f}x × DD {dd_mult:.2f}x × Session {session_mult:.2f}x = "
-                f"{adjusted_risk_pct:.2%} risk"
+                f"Kelly {kelly_mult:.2f}x × DD {dd_mult:.2f}x × "
+                f"Session {session_mult:.2f}x × Conf {conf_mult:.2f}x × "
+                f"Regime {regime_mult:.2f}x = {adjusted_risk_pct:.2%} risk"
             )
 
         # Risk per trade in dollars
