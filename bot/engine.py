@@ -11,6 +11,7 @@ import threading
 import signal
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from collections import defaultdict
 
 import pytz
@@ -101,9 +102,19 @@ class TradingEngine:
         # failures we try restarting the ib-gateway container via the
         # Docker socket, bounded by per-day + cooldown caps so a bad
         # credential or IBKR outage doesn't have us restart-looping.
+        #
+        # CRITICAL: this state must survive bot restarts. Restarting
+        # ib-gateway tears down the shared network namespace, which kills
+        # the trading-bot container too (network_mode: service:ib-gateway).
+        # Docker brings the bot back up — but with in-memory counters the
+        # 3/day cap resets and the bot ramps up another restart cycle
+        # forever. State is loaded from disk on init and persisted after
+        # every change.
+        self._auto_recovery_state_file = Path("data/auto_recovery_state.json")
         self._auto_restart_count = 0
         self._auto_restart_day = None   # date() of the day we're counting
         self._last_auto_restart_ts = 0.0
+        self._load_auto_recovery_state()
 
         # State — protected by _positions_lock for thread safety
         # (BackgroundScheduler, webhook handlers, and main loop all access self.positions)
@@ -727,6 +738,50 @@ class TradingEngine:
         t.start()
         log.info("Background IBKR reconnect thread started (every 30s)")
 
+    def _load_auto_recovery_state(self):
+        """Read persisted auto-recovery counters from disk so the 3/day cap
+        actually holds across bot restarts. Without this, every fresh bot
+        process starts with count=0 — and since restarting the gateway kills
+        the shared netns (and thus the bot), in-memory state never lasts
+        long enough for the cap to fire. Result: ~10-min restart loops
+        observed live on 2026-05-15."""
+        try:
+            if not self._auto_recovery_state_file.exists():
+                return
+            with open(self._auto_recovery_state_file) as f:
+                state = json.load(f)
+            saved_day = state.get("day")
+            today = datetime.now(self.tz).date().isoformat()
+            # Counters only valid for today — yesterday's count starts fresh
+            if saved_day == today:
+                self._auto_restart_count = int(state.get("count", 0))
+                self._auto_restart_day = datetime.now(self.tz).date()
+                self._last_auto_restart_ts = float(state.get("last_ts", 0.0))
+                log.warning(
+                    f"AUTO-RECOVERY state loaded: {self._auto_restart_count}/3 "
+                    f"gateway restarts already used today (last at "
+                    f"{datetime.fromtimestamp(self._last_auto_restart_ts).isoformat() if self._last_auto_restart_ts else 'never'})"
+                )
+        except Exception as e:
+            log.warning(f"AUTO-RECOVERY state load failed (will treat as fresh): {e}")
+
+    def _persist_auto_recovery_state(self):
+        """Save counters to disk so they survive the bot restart that the
+        gateway restart triggers via shared-netns teardown."""
+        try:
+            self._auto_recovery_state_file.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self._auto_recovery_state_file.with_suffix(".json.tmp")
+            payload = {
+                "day": self._auto_restart_day.isoformat() if self._auto_restart_day else None,
+                "count": self._auto_restart_count,
+                "last_ts": self._last_auto_restart_ts,
+            }
+            with open(tmp, "w") as f:
+                json.dump(payload, f)
+            tmp.replace(self._auto_recovery_state_file)
+        except Exception as e:
+            log.warning(f"AUTO-RECOVERY state persist failed: {e}")
+
     def _try_auto_recover_gateway(self):
         """Restart the ib-gateway container when the API is wedged.
 
@@ -755,6 +810,7 @@ class TradingEngine:
         if self._auto_restart_day != today:
             self._auto_restart_day = today
             self._auto_restart_count = 0
+            self._persist_auto_recovery_state()
 
         # Cooldown between attempts
         if now - self._last_auto_restart_ts < 600:
@@ -780,6 +836,7 @@ class TradingEngine:
                     except Exception:
                         pass
                 self._auto_restart_count = 4  # sentinel: don't log again today
+                self._persist_auto_recovery_state()
             return False
 
         try:
@@ -825,9 +882,14 @@ class TradingEngine:
                 f"AUTO-RECOVERY: restarting ib-gateway container "
                 f"(attempt {self._auto_restart_count + 1}/3 today)"
             )
-            target.restart(timeout=15)
+            # Persist the bump BEFORE issuing the restart — once
+            # target.restart() returns, the shared netns is torn down and the
+            # trading-bot container may die before any subsequent code runs.
+            # Writing first guarantees the next boot sees the incremented count.
             self._auto_restart_count += 1
             self._last_auto_restart_ts = now
+            self._persist_auto_recovery_state()
+            target.restart(timeout=15)
 
             if self.notifier:
                 try:
