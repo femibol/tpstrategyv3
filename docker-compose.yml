@@ -77,7 +77,14 @@ services:
     volumes:
       - ib-gateway-data:/home/ibgateway/Jts
     healthcheck:
-      test: ["CMD-SHELL", "cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA2' || cat /proc/net/tcp | awk '{print $$2}' | grep -qi ':0FA1'"]
+      # Pass when the API port (4002 paper / 4001 live) has a listening
+      # socket. MUST check /proc/net/tcp6 as well as /proc/net/tcp: the
+      # gnzsnz gateway binds the API port on the IPv6 wildcard (:::4002),
+      # so an IPv4-only check is a permanent false negative — it reports a
+      # fully working gateway as unhealthy, autoheal kills it, and the
+      # gateway never gets the ~90s it needs to finish booting. That false
+      # negative is what drove the 2026-05-14 crash-loop.
+      test: ["CMD-SHELL", "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | awk '{print $$2}' | grep -qiE ':0FA2|:0FA1'"]
       interval: 15s
       timeout: 5s
       retries: 40

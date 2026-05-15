@@ -5,14 +5,23 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
-2026-05-14 (4) — **BOT RECOVERED. The two-month contextvars crash is fixed and verified.** PR #148 (`e58d3c8`) refactored `bot/brokers/ibkr.py` to run `ib_async` on a single dedicated worker thread; `nest_asyncio` deleted. Deployed to the VPS — bot reaches "Trading engine started", IBKR data + news streaming (94 symbols), 8 strategies loaded, `0` contextvars errors, container healthy.
+2026-05-15 — **Architecture pivot: execution is now IBKR-direct, TradersPost disabled.** The "TradersPost not working" symptom unravelled into two real bugs (below). Bot is verified up on the VPS: `Connected to IBKR (PAPER) at 127.0.0.1:4002`, `using IBKR as sole broker`, `IBKR streaming active for 95 symbols`, `0` `cannot enter context` errors. A manual test trade ran the full `handle_manual_signal → IBKR` path cleanly (rejected only by legit risk checks).
 
-## ✅ CURRENT STATE: BOT IS UP
+## ✅ CURRENT STATE: BOT IS UP — IBKR-DIRECT
 
-- `main` HEAD includes PR #148 (`e58d3c8`, ibkr.py dedicated worker thread) + PR #146 (`56da615`, TradersPost-primary execution).
-- VPS deployed and verified: `IBKR worker thread started` → `Connected to IBKR (PAPER)` → `News scanner started (IBKR)` → `IBKR streaming active for 94 symbols` → `Total strategies loaded: 8` → `Trading engine started - entering main loop`. `0` `cannot enter context` errors. Container `Up ... (healthy)`.
-- **Architecture now live:** execution → TradersPost webhook (pure HTTPS, PR #146); market data + news → IBKR via the single-threaded `ib_async` worker (PR #148); Claude AI insights/auto-tuner unchanged.
-- One verification still worth doing: let it run, force `docker compose restart ib-gateway`, confirm it reconnects with `0` contextvars errors (proves the reconnect path under the new architecture). If that passes, every code path is proven.
+- **Execution path:** IBKR-direct via the bot's own `ib-gateway` container (`bot/brokers/ibkr.py`, single-threaded `ib_async` worker from PR #148). `TRADERSPOST_WEBHOOK_URL` is **commented out** in the VPS `.env` → `engine.py` leaves `tp_broker = None` → the original IBKR-direct bracket-order path (`engine.py:4303`+) is live. PR #148 already made `ib_async` execution safe, so this carries no contextvars risk.
+- **TradersPost is disabled**, not deleted — `bot/brokers/traderspost.py` stays in the tree in case a non-IBKR execution broker is added later.
+- Verified on the VPS this session: gateway logs in (`DU7733247`, paper), bot connects first try, streams 95 symbols, `/api/signal` test trade processed cleanly.
+
+## 🔑 The two bugs behind "TradersPost not working"
+
+1. **IBKR one-session-per-username — unsolvable for a shared paper account.** The bot's `ib-gateway` and the TradersPost `ALGO_BOT_IBKR` connection were both logging into the *same* IBKR username. IBKR allows only one active session per username, and one paper account has exactly one username (confirmed via IBKR support — cannot be split, cannot add a second login to the same paper account). So the gateway and TradersPost evicted each other forever ("Session Inactive" on one side, `ConnectionRefused 4002` on the other). Alpaca/Tradier (the easy TradersPost fixes) are US-only — not available in Canada. A second *linked IBKR account* would work but means a fresh IBKR application. Decision: drop TradersPost execution entirely and go IBKR-direct (Option B) — PR #148 already removed the only reason TradersPost was made primary.
+2. **Healthcheck IPv4/IPv6 false negative — the real crash-loop cause.** `docker-compose.yml`'s `ib-gateway` healthcheck grep'd only `/proc/net/tcp`, but the gnzsnz gateway binds the API port on the IPv6 wildcard (`:::4002`). So a fully healthy gateway always read as unhealthy → autoheal restarted it → and the bot's own self-heal (Docker socket, fires after 10 failed reconnects) restarted it too → the gateway never got the ~90s it needs to finish booting. Fixed this session: healthcheck now greps `/proc/net/tcp6` as well. Proof it was a false negative: with the bot + autoheal stopped, the gateway came up fine and `/proc/net/tcp6` showed `:0FA2` in state `0A` (LISTEN).
+
+## Still worth doing
+- **Restart autoheal** — it was stopped during diagnosis (`docker compose stop trading-bot autoheal`). Once the healthcheck fix is deployed, `docker compose up -d` brings it back; verify the gateway now reads `(healthy)`.
+- Re-run a real test trade during market hours on a symbol with no existing position (e.g. `MSFT`) to see an actual fill, not just a clean reject.
+- Deploy this branch to the VPS (the `.env` change is already done there manually; this branch makes the healthcheck + doc changes permanent).
 
 ## How the fix works (PR #148 — for context)
 
