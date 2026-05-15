@@ -157,6 +157,16 @@ class Config:
     def traderspost_webhook_password(self):
         return os.getenv("TRADERSPOST_WEBHOOK_PASSWORD", "")
 
+    @property
+    def traderspost_mirror_webhook_url(self):
+        """Optional mirror-only webhook. Receives notify_trade() copies of
+        every IBKR fill (entries + closes) for visualization in TradersPost.
+        Independent of TRADERSPOST_WEBHOOK_URL — execution stays IBKR-direct.
+        Point this at a TradersPost subscription whose broker is set to
+        TradersPost's built-in Paper Trading, NEVER at one that connects to
+        the same IBKR login the bot's gateway uses (session war)."""
+        return os.getenv("TRADERSPOST_MIRROR_WEBHOOK_URL", "")
+
     # --- TradingView ---
     @property
     def tradingview_webhook_secret(self):

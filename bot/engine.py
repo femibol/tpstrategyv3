@@ -87,6 +87,7 @@ class TradingEngine:
         self.indicators = TechnicalIndicators()
         self.tv_receiver = None
         self.tp_broker = None
+        self.tp_mirror = None
         self.politician_tracker = None
         self.news_feed = None
         self.trade_analyzer = None
@@ -260,6 +261,21 @@ class TradingEngine:
             log.info(
                 "TradersPost not configured — using IBKR as sole broker. "
                 "Set TRADERSPOST_WEBHOOK_URL to also mirror signals there."
+            )
+
+        # TradersPost MIRROR (visualization only — never executes).
+        # Sends a copy of every IBKR fill (entries + closes) to a separate
+        # TradersPost webhook so the trades show up in TradersPost's UI.
+        # Independent of tp_broker; the mirror endpoint should point at a
+        # TradersPost subscription using its built-in Paper Trading broker.
+        mirror_url = self.config.traderspost_mirror_webhook_url
+        if mirror_url:
+            self.tp_mirror = TradersPostBroker(
+                self.config, webhook_url_override=mirror_url
+            )
+            log.info(
+                f"TradersPost MIRROR enabled — IBKR fills will be mirrored "
+                f"to ...{mirror_url[-20:]}"
             )
 
         # TradingView webhook receiver
@@ -4496,8 +4512,23 @@ class TradingEngine:
             targets=signal.get("targets"),
         )
 
-        # NOTE: Do NOT forward IBKR orders to TradersPost — that causes
-        # duplicate execution. TradersPost is a FALLBACK, not a mirror.
+        # Mirror the entry to TradersPost (visualization only — never an
+        # execution path). The mirror instance is wired to a separate
+        # webhook (TRADERSPOST_MIRROR_WEBHOOK_URL) whose subscription should
+        # use TradersPost's built-in Paper Trading broker, so this can never
+        # double-fill on IBKR.
+        if self.tp_mirror:
+            try:
+                self.tp_mirror.notify_trade({
+                    "symbol": symbol,
+                    "action": action,
+                    "quantity": qty,
+                    "price": current_price,
+                    "strategy": strategy,
+                    "source": "mirror_entry",
+                })
+            except Exception as e:
+                log.debug(f"TradersPost mirror (entry) failed for {symbol}: {e}")
 
         # Subscribe to tick-by-tick for ALL new positions (fastest exit monitoring —
         # fires on every trade print, not just every 5 seconds)
@@ -4732,6 +4763,19 @@ class TradingEngine:
                 f"CLOSED {symbol} via {executed_via} | {reason_type} | "
                 f"P&L: ${pnl:+.2f} | {reason_msg}"
             )
+
+        # Mirror the close to TradersPost (visualization only).
+        if self.tp_mirror:
+            try:
+                self.tp_mirror.notify_trade({
+                    "symbol": symbol,
+                    "action": action,
+                    "quantity": closed_qty,
+                    "price": current_price,
+                    "source": "mirror_exit",
+                })
+            except Exception as e:
+                log.debug(f"TradersPost mirror (close) failed for {symbol}: {e}")
 
         pnl_pct = pnl / (pos["entry_price"] * closed_qty) if pos["entry_price"] * closed_qty > 0 else 0
         hold_time = (datetime.now(self.tz) - pos["entry_time"]) if "entry_time" in pos else None
