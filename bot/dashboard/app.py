@@ -530,9 +530,17 @@ class Dashboard:
             else:
                 # Try the streaming cache first (free / instant for the ~95 streamed symbols).
                 price = self.engine.market_data.get_price(symbol) if self.engine.market_data else None
-                # Fall back to a one-off broker snapshot for symbols outside the
-                # streaming subscription (META, etc.) — paid as one IBKR API call,
-                # no streaming line burned. Enables manual trades on any symbol.
+                # Crypto path: Yahoo direct (~5s age, 24/7). Crypto isn't on the
+                # IBKR streaming budget and IBKR's PAXOS crypto coverage is
+                # limited/paper-uncertain. Try this before the IBKR snapshot.
+                if not price and self.engine.market_data and hasattr(self.engine.market_data, "get_crypto_price"):
+                    try:
+                        price = self.engine.market_data.get_crypto_price(symbol)
+                    except Exception:
+                        price = None
+                # Equity fallback: one-off broker snapshot for symbols outside the
+                # streaming subscription (META, etc.) — one IBKR API call, no
+                # streaming line burned.
                 if not price and self.engine.broker and hasattr(self.engine.broker, "get_snapshot_price"):
                     try:
                         price = self.engine.broker.get_snapshot_price(symbol)
@@ -544,7 +552,11 @@ class Dashboard:
                     return jsonify({"error": f"No price available for {symbol}. Provide 'price' in request."}), 400
 
             if data.get("quantity"):
-                signal["quantity"] = int(data["quantity"])
+                # Crypto trades fractionally (0.001 BTC, 0.01 ETH); equities are
+                # whole shares. Accept float so /api/signal can submit either.
+                # Stocks get an int cast downstream; crypto preserves the float.
+                qty = float(data["quantity"])
+                signal["quantity"] = qty if self.engine._is_crypto_symbol(symbol) else int(qty)
             if data.get("stop_loss"):
                 signal["stop_loss"] = float(data["stop_loss"])
             if data.get("take_profit"):

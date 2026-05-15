@@ -235,12 +235,15 @@ watchlist:
   track_weekly_performance: true    # Track weekly P&L per symbol
 
 # --- Crypto Configuration ---
-# PAUSED: All capital redirected to equities for more stock positions
+# Crypto execution routes through TradersPost's crypto subscription (separate
+# from the IBKR-direct equity path). Set TRADERSPOST_WEBHOOK_URL_CRYPTO in
+# .env to wire the bot to your crypto venue. Manual /api/signal with a
+# crypto-suffixed symbol fetches a real-time price via Yahoo (~5s age).
 crypto:
-  enabled: false                  # PAUSED - focusing all capital on equities
+  enabled: true                   # Crypto sleeve active (testing)
   symbols_suffix: ["-USD", "-USDT", "-BTC", "-ETH"]  # How we detect crypto tickers
   schedule:
-    trading_24h: false            # Disabled - no 24/7 trading
+    trading_24h: true             # Crypto markets are 24/7
     trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
   risk:
     max_position_size_pct: 0.12

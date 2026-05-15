@@ -521,6 +521,40 @@ class MarketDataFeed:
         """Get latest real price for a symbol."""
         return self._price_cache.get(symbol)
 
+    def get_crypto_price(self, symbol):
+        """One-shot crypto price lookup via Yahoo Finance.
+
+        Crypto markets are 24/7 and Yahoo updates crypto bars on a ~5s cadence
+        (NOT the 15-min delay it imposes on equities). The bot's IBKR streaming
+        subscription is capped at ~95 lines and crypto isn't currently on it,
+        so this is the on-demand price source for /api/signal crypto trades.
+
+        Bypasses the standard _yahoo_gate (which blocks when IBKR is connected) —
+        crypto symbols don't compete with the IBKR equity streaming line budget
+        and the gate's "don't double-pay for live data" reasoning doesn't apply.
+        """
+        if not self._is_crypto(symbol):
+            return None
+        try:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
+            resp = _requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+            if resp.status_code != 200:
+                return None
+            result = resp.json().get("chart", {}).get("result", [])
+            if not result:
+                return None
+            quote = result[0].get("indicators", {}).get("quote", [{}])[0]
+            closes = [c for c in (quote.get("close") or []) if c is not None]
+            if not closes:
+                return None
+            price = float(closes[-1])
+            self._price_cache[symbol] = price
+            self._last_update[symbol] = time.time()
+            return price
+        except Exception as e:
+            log.debug(f"get_crypto_price failed for {symbol}: {e}")
+            return None
+
     def get_volume(self, symbol):
         """Get latest volume for a symbol."""
         return self._volume_cache.get(symbol)

@@ -151,6 +151,10 @@ services:
       TRADINGVIEW_WEBHOOK_SECRET: ${TRADINGVIEW_WEBHOOK_SECRET}
       # TradersPost MIRROR — visualization-only webhook (never executes).
       TRADERSPOST_MIRROR_WEBHOOK_URL: ${TRADERSPOST_MIRROR_WEBHOOK_URL}
+      # TradersPost CRYPTO — separate execution subscription for crypto symbols.
+      # The engine routes crypto-suffixed symbols (BTC-USD, ETH-USD, SOL-USD, …)
+      # to this webhook instead of IBKR; equities stay IBKR-direct.
+      TRADERSPOST_WEBHOOK_URL_CRYPTO: ${TRADERSPOST_WEBHOOK_URL_CRYPTO}
 
       # Dashboard
       DASHBOARD_HOST: 0.0.0.0

@@ -282,6 +282,24 @@ class TradingEngine:
                 "Set TRADERSPOST_WEBHOOK_URL to also mirror signals there."
             )
 
+        # TradersPost CRYPTO broker — separate execution path for crypto.
+        # IBKR's crypto coverage is limited (PAXOS-routed BTC/ETH/LTC/BCH) and
+        # paper-mode crypto isn't reliable, so we keep crypto execution off
+        # IBKR and route it via TradersPost's crypto subscription. This is a
+        # separate broker instance from `tp_broker` so equities stay
+        # IBKR-direct unchanged. Symbol-class routing happens in the engine's
+        # execution paths; this broker only ever sees crypto symbols.
+        crypto_url = getattr(self.config, 'traderspost_webhook_url_crypto', '') or ''
+        self.tp_crypto_broker = None
+        if crypto_url:
+            self.tp_crypto_broker = TradersPostBroker(
+                self.config, webhook_url_override=crypto_url
+            )
+            log.info(
+                f"TradersPost CRYPTO broker enabled — crypto signals route "
+                f"to ...{crypto_url[-20:]}"
+            )
+
         # TradersPost MIRROR (visualization only — never executes).
         # Sends a copy of every IBKR fill (entries + closes) to a separate
         # TradersPost webhook so the trades show up in TradersPost's UI.
@@ -4405,9 +4423,14 @@ class TradingEngine:
             return
 
         # Price ceiling filter — safety net for extreme-priced stocks
-        # Top gainers scanner has no cap; this is the last safeguard
+        # Top gainers scanner has no cap; this is the last safeguard.
+        # Crypto exempt: BTC is $79k, ETH is $2k — the $500 stock ceiling is
+        # an asset-class mismatch. Risk for crypto is capped by position
+        # sizing ($ value), not unit price.
         max_buy_price = self.config.settings.get("risk", {}).get("scanner_max_price", 500.0)
-        if action == "buy" and current_price > max_buy_price:
+        if (action == "buy"
+                and current_price > max_buy_price
+                and not self._is_crypto_symbol(symbol)):
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} above ${max_buy_price} ceiling — skipping")
             return
 
@@ -4641,13 +4664,21 @@ class TradingEngine:
         order = None
         executed_via = None
 
-        if self.tp_broker:
+        # Asset-class routing:
+        #   - crypto → tp_crypto_broker (separate TradersPost subscription, crypto venues)
+        #   - stock + tp_broker → tp_broker (legacy primary path)
+        #   - stock + no tp_broker → IBKR-direct (current default)
+        is_crypto = self._is_crypto_symbol(symbol)
+        active_tp = self.tp_crypto_broker if (is_crypto and self.tp_crypto_broker) else self.tp_broker
+
+        if active_tp:
             log.info(
-                f"Executing {symbol} via TradersPost webhook"
+                f"Executing {symbol} via TradersPost"
+                f"{' (CRYPTO)' if (is_crypto and self.tp_crypto_broker) else ''}"
                 f"{'  [OUTSIDE RTH]' if outside_rth else ''}..."
             )
             if action == "buy":
-                order = self.tp_broker.place_order(
+                order = active_tp.place_order(
                     symbol=symbol,
                     action="buy",
                     quantity=qty,
@@ -5085,8 +5116,14 @@ class TradingEngine:
         _rth_e = _now_et.replace(hour=16, minute=0, second=0, microsecond=0)
         outside_rth = not ((_now_et.weekday() < 5) and (_rth_s <= _now_et <= _rth_e))
 
-        if self.tp_broker:
-            order = self.tp_broker.place_order(
+        # Asset-class routing on exit: crypto → tp_crypto_broker, stock → tp_broker.
+        # Symmetric with the entry path so a position opened on the crypto
+        # subscription gets closed there too (NOT sent to the equity webhook).
+        _is_crypto_exit = self._is_crypto_symbol(symbol)
+        _active_tp = self.tp_crypto_broker if (_is_crypto_exit and self.tp_crypto_broker) else self.tp_broker
+
+        if _active_tp:
+            order = _active_tp.place_order(
                 symbol=symbol,
                 action=action,
                 quantity=close_qty,
@@ -5367,9 +5404,16 @@ class TradingEngine:
 
         # Execute the partial close — TradersPost-primary, IBKR legacy fallback
         order = None
-        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
-        if self.tp_broker:
-            order = self.tp_broker.place_order(
+        # Wall-clock outside-RTH (same logic as entry / full-close paths).
+        _now_et = datetime.now(self.tz)
+        _rth_s = _now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        _rth_e = _now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+        outside_rth = not ((_now_et.weekday() < 5) and (_rth_s <= _now_et <= _rth_e))
+        # Asset-class routing (crypto → tp_crypto_broker, stock → tp_broker).
+        _is_crypto_pc = self._is_crypto_symbol(symbol)
+        _active_tp_pc = self.tp_crypto_broker if (_is_crypto_pc and self.tp_crypto_broker) else self.tp_broker
+        if _active_tp_pc:
+            order = _active_tp_pc.place_order(
                 symbol=symbol, action=action,
                 quantity=qty_to_close, order_type="MARKET",
                 limit_price=current_price,
