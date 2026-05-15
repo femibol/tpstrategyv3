@@ -4731,6 +4731,11 @@ class TradingEngine:
                 f"next regular session (status={order.get('status', 'PreSubmitted')}). "
                 f"Not tracking position; engine will pick up the fill via streaming."
             )
+            # Stash on the signal dict so handle_manual_signal can distinguish
+            # "queued at broker" from "blocked by gate" in its API response.
+            # Signal dicts flow by reference, so the caller sees the mutation.
+            signal["_deferred"] = True
+            signal["_deferred_order_id"] = order.get("order_id")
             self._pending_orders.discard(symbol)
             return
 
@@ -6329,6 +6334,17 @@ class TradingEngine:
                 filled = held_before != held_after
             if filled:
                 results.append({"symbol": sym, "action": action, "status": "executed"})
+            elif sig.get("_deferred"):
+                # Order accepted by IBKR but queued for the next session
+                # (typical for overnight / weekend manual signals). The fill
+                # arrives via streaming when the venue opens — not a failure.
+                results.append({
+                    "symbol": sym,
+                    "action": action,
+                    "status": "deferred",
+                    "order_id": sig.get("_deferred_order_id"),
+                    "reason": "queued at IBKR for next regular session",
+                })
             else:
                 results.append({
                     "symbol": sym,
