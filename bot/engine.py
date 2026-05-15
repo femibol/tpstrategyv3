@@ -1032,6 +1032,25 @@ class TradingEngine:
             pead_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into PEAD")
 
+        # Crypto sleeve: inject the configured crypto symbols into the
+        # crypto-eligible strategies so they iterate BTC/ETH/SOL on every
+        # cycle alongside equities. Bars for these come from Yahoo (see
+        # market_data._fetch_bars crypto short-circuit). Strategies emit
+        # signals → engine routes to tp_crypto_broker → TradersPost webhook.
+        if self._is_crypto_enabled():
+            crypto_cfg = self.config.settings.get("crypto", {})
+            crypto_symbols = crypto_cfg.get("symbols", [])
+            allowed = crypto_cfg.get("allowed_strategies", ["mean_reversion", "momentum"])
+            if crypto_symbols:
+                for strat_name in allowed:
+                    strat = self.strategies.get(strat_name)
+                    if strat and hasattr(strat, "add_dynamic_symbols"):
+                        strat.add_dynamic_symbols(crypto_symbols)
+                        log.info(
+                            f"Injected {len(crypto_symbols)} crypto symbols "
+                            f"({', '.join(crypto_symbols)}) into {strat_name}"
+                        )
+
         runner_strat = self.strategies.get("momentum_runner")
         if runner_strat and hasattr(runner_strat, "add_dynamic_symbols"):
             runner_strat.add_dynamic_symbols(self.universe)
@@ -7956,6 +7975,22 @@ class TradingEngine:
         pead_strat = self.strategies.get("pead")
         runner_strat = self.strategies.get("momentum_runner")
         momentum_strat = self.strategies.get("momentum")
+
+        # Crypto re-injection: keep the configured crypto symbols in the
+        # crypto-eligible strategies' dynamic universes on every scanner
+        # cycle. add_dynamic_symbols refreshes timestamps for symbols
+        # already present, so the 30-min prune (_prune_stale_dynamic_symbols)
+        # won't evict crypto between cycles. Without this, BTC/ETH/SOL drop
+        # out after 30 minutes since they never appear in the equity scanner.
+        if self._is_crypto_enabled():
+            crypto_cfg = self.config.settings.get("crypto", {})
+            crypto_symbols = crypto_cfg.get("symbols", [])
+            allowed = crypto_cfg.get("allowed_strategies", ["mean_reversion", "momentum"])
+            if crypto_symbols:
+                for strat_name in allowed:
+                    strat = self.strategies.get(strat_name)
+                    if strat and hasattr(strat, "add_dynamic_symbols"):
+                        strat.add_dynamic_symbols(crypto_symbols)
         if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat, momentum_strat]):
             return
 

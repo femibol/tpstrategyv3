@@ -242,6 +242,17 @@ watchlist:
 crypto:
   enabled: true                   # Crypto sleeve active (testing)
   symbols_suffix: ["-USD", "-USDT", "-BTC", "-ETH"]  # How we detect crypto tickers
+  # Tradeable crypto universe — these get auto-injected into the
+  # crypto-eligible strategies (`allowed_strategies` below) on each cycle.
+  # Yahoo Finance is the bar source (~5s age, 24/7). Add/remove symbols
+  # to scale the universe; risk is bounded by max_crypto_positions and
+  # crypto.risk.max_position_size_pct, not the symbol count.
+  symbols: ["BTC-USD", "ETH-USD", "SOL-USD"]
+  # Which strategies fire on crypto bars. Equity-scanner-dependent
+  # strategies (rvol_*, momentum_runner, premarket_gap, daily_trend_rider)
+  # are intentionally excluded — they fetch their candidates from IBKR's
+  # equity scanner and have no crypto equivalent yet.
+  allowed_strategies: ["mean_reversion", "momentum"]
   schedule:
     trading_24h: true             # Crypto markets are 24/7
     trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]

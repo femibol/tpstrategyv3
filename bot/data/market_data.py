@@ -215,6 +215,20 @@ class MarketDataFeed:
         """Fetch real bars from available sources (no fake data)."""
         bars = None
 
+        # Crypto: short-circuit to Yahoo. IBKR's stock-contract path errors
+        # on BTC-USD/ETH-USD/SOL-USD, and the standard _yahoo_gate refuses
+        # Yahoo while IBKR is connected (a sensible rule for equities where
+        # we'd be double-paying for live data). Crypto doesn't compete for
+        # IBKR streaming lines and Yahoo's crypto bars are ~5s age, 24/7.
+        if self._is_crypto(symbol):
+            try:
+                bars = self._fetch_yahoo_direct(symbol)
+                if bars is not None and len(bars) > 0:
+                    return bars
+            except Exception as e:
+                log.debug(f"Yahoo crypto bars failed for {symbol}: {e}")
+            return None
+
         # 1. IBKR (real-time, highest quality)
         # Skip IBKR entirely for symbols already blacklisted (delisted/invalid)
         # to avoid wasting time on qualifyContracts calls that will fail.
