@@ -4678,12 +4678,25 @@ class TradingEngine:
                 f"{'  [OUTSIDE RTH]' if outside_rth else ''}..."
             )
             if action == "buy":
+                # Cap the take_profit sent to TradersPost at a sane bracket
+                # distance — the bot's settings.yaml take_profit_pct=999.0
+                # produces $79M-style numbers because the bot manages exits
+                # locally via trailing stops. But TradersPost / its downstream
+                # brokers reject OTO (single-leg) orders, so we MUST send a
+                # real bracket pair. Use the bot's computed SL as one leg and
+                # a 20% TP cap as the other — the trailing stop will exit long
+                # before the 20% TP triggers, but the bracket is now valid.
+                tp_for_broker = take_profit_price
+                if take_profit_price and current_price and take_profit_price > current_price * 1.20:
+                    tp_for_broker = round(current_price * 1.20, 2)
                 order = active_tp.place_order(
                     symbol=symbol,
                     action="buy",
                     quantity=qty,
                     order_type="MARKET",
                     limit_price=current_price,
+                    stop_loss=stop_loss_price,
+                    take_profit=tp_for_broker,
                 )
             else:
                 log.error(f"UNEXPECTED: Non-buy action '{action}' reached execution for {symbol}")

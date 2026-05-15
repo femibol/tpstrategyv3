@@ -228,23 +228,27 @@ class TradersPostBroker(BaseBroker):
         if "price" in signal:
             payload["price"] = signal["price"]
 
-        # Add stop loss / take profit as TradersPost objects
-        # TradersPost requires: {"limitPrice": x} for takeProfit, {"stopPrice": x} for stopLoss
-        # The strategy config requires takeProfit on every entry signal
+        # Add stop loss / take profit as TradersPost objects.
+        # TradersPost requires: {"limitPrice": x} for takeProfit, {"stopPrice": x} for stopLoss.
+        # Brokers that don't support OTO (One-Triggers-Other) reject signals
+        # that have ONLY a takeProfit — must send both legs as a true bracket
+        # or neither leg. Strategy here: always send BOTH if we have a price;
+        # default each to ±3% if the caller didn't supply them. This makes the
+        # webhook a valid bracket order on any TradersPost-supported broker.
         if not is_exit:
             stop_loss = signal.get("stop_loss")
             take_profit = signal.get("take_profit")
             price = signal.get("price", 0)
 
+            if not stop_loss and price:
+                stop_loss = price * 0.97 if tp_action == "buy" else price * 1.03
+            if not take_profit and price:
+                take_profit = price * 1.02 if tp_action == "buy" else price * 0.98
+
             if stop_loss:
                 payload["stopLoss"] = {"type": "stop", "stopPrice": round(float(stop_loss), 2)}
-
             if take_profit:
                 payload["takeProfit"] = {"type": "limit", "limitPrice": round(float(take_profit), 2)}
-            elif price:
-                # Default 2% take profit if none provided (TradersPost requires it)
-                default_tp = price * 1.02 if tp_action == "buy" else price * 0.98
-                payload["takeProfit"] = {"type": "limit", "limitPrice": round(float(default_tp), 2)}
 
         try:
             headers = {"Content-Type": "application/json"}
@@ -421,14 +425,24 @@ class TradersPostBroker(BaseBroker):
             return None
 
     def place_order(self, symbol, action, quantity, order_type="LIMIT",
-                    limit_price=None, stop_price=None):
-        """Place order via TradersPost webhook."""
+                    limit_price=None, stop_price=None,
+                    stop_loss=None, take_profit=None):
+        """Place order via TradersPost webhook.
+
+        stop_loss / take_profit must BOTH be passed for entries on brokers
+        that don't accept OTO (one-triggers-other). Sending only takeProfit
+        triggers "OTO orders are not supported" rejection downstream
+        (observed 2026-05-15 on the crypto subscription)."""
         signal = {
             "symbol": symbol,
             "action": action.lower(),
             "quantity": quantity,
             "price": limit_price or stop_price,
         }
+        if stop_loss is not None:
+            signal["stop_loss"] = stop_loss
+        if take_profit is not None:
+            signal["take_profit"] = take_profit
         result = self.send_signal(signal)
         if result and result.get("success"):
             return {
