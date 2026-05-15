@@ -3255,6 +3255,13 @@ class TradingEngine:
                     sym = sig.get("symbol")
                     if sym and self.market_data:
                         sig["market_price"] = self.market_data.get_price(sym)
+                    # Session hint: lets risk_manager widen its slippage + staleness
+                    # gates during pre/post market when pre-market gappers can drift
+                    # 5-15% between signal generation and execution.
+                    sig["_extended_hours"] = bool(
+                        getattr(self, "_in_premarket", False)
+                        or getattr(self, "_in_postmarket", False)
+                    )
                 all_signals.extend(signals)
             except Exception as e:
                 log.error(f"Strategy {name} error: {e}", exc_info=True)
@@ -4296,16 +4303,17 @@ class TradingEngine:
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
         # PRE-ORDER SLIPPAGE CHECK: reject stale signals BEFORE placing the order.
-        # Session-aware: pre/post market gappers routinely drift 1-3% in seconds, so we
-        # use the wider max_signal_deviation_pct (2.5% default) outside RTH and the
-        # tight max_slippage_pct (0.8% default) inside RTH. Otherwise the gate filters
-        # out exactly the gap-up entries the bot is designed to catch.
+        # Sized to match risk_manager.Rule 6 (5% RTH, 12% extended) so this isn't
+        # the new binding constraint after risk_manager opens up. Uses
+        # max_signal_deviation_pct (signal-vs-live drift) — distinct from
+        # max_slippage_pct (post-fill price-vs-signal slippage, which stays tight
+        # at 0.8% to protect realized R:R).
         if action == "buy":
             signal_price = signal.get("price", 0)
             if outside_rth:
-                max_pre_slippage = self.config.risk_config.get("max_signal_deviation_pct", 0.025)
+                max_pre_slippage = self.config.risk_config.get("max_signal_deviation_pct_extended", 0.12)
             else:
-                max_pre_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
+                max_pre_slippage = self.config.risk_config.get("max_signal_deviation_pct", 0.05)
             if signal_price > 0 and current_price > 0:
                 pre_slippage = abs(current_price - signal_price) / signal_price
                 if pre_slippage > max_pre_slippage:
