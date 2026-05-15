@@ -3494,6 +3494,20 @@ class TradingEngine:
             if len(self.analysis_log) > self.max_analysis_log:
                 self.analysis_log = self.analysis_log[-self.max_analysis_log:]
 
+        # Re-stamp timestamp + market_price for the WHOLE batch so they reflect
+        # "the moment this batch arrives at risk_manager", not "the moment each
+        # individual strategy emitted." Without this, slow late-loop strategies
+        # (rvol_*, momentum_runner, daily_trend_rider can take 30s+ each) make
+        # early-loop signals look 100s stale even though they're market-fresh.
+        # Observed 2026-05-15: 87 ghost "Stale signal: 103s old" rejections —
+        # all from the same 10:17:33 stamp, all rejected at 10:19:15.
+        batch_now = datetime.now(self.tz)
+        for sig in all_signals:
+            sig["timestamp"] = batch_now
+            sym = sig.get("symbol")
+            if sym and self.market_data:
+                sig["market_price"] = self.market_data.get_price(sym)
+
         return all_signals
 
     def _check_portfolio_risk(self):
