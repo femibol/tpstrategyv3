@@ -724,6 +724,22 @@ class IBKRBroker(BaseBroker):
             log.error(f"Bracket order failed for {symbol}: {e}")
             return None
 
+    @_on_worker
+    def get_snapshot_price(self, symbol):
+        """Public one-shot price lookup for any symbol, even if not in the
+        streaming subscription (which is capped at ~95 IBKR market data lines).
+        Used by the dashboard's /api/signal handler so manual trades can be
+        placed on symbols outside the streamed universe (META, etc.)."""
+        if not self.is_connected() or symbol in self._invalid_symbols:
+            return None
+        try:
+            contract = Stock(symbol, "SMART", "USD")
+            self.ib.qualifyContracts(contract)
+            return self._get_snap_price(contract, "BUY")
+        except Exception as e:
+            log.debug(f"get_snapshot_price failed for {symbol}: {e}")
+            return None
+
     def _get_snap_price(self, contract, action):
         """Get a snapshot price for aggressive LIMIT order pricing.
         Returns the best available price (last, bid/ask, or close)."""

@@ -227,11 +227,19 @@ class TradingEngine:
         # Market data feed (IBKR primary, Yahoo fallback for reference data)
         self.market_data = MarketDataFeed(self.config, self.broker, polygon=None)
 
-        # Start IBKR real-time streaming if connected
+        # Start IBKR real-time streaming if connected. Held positions go FIRST
+        # so they always make the 95-line cap — without this, on a busy
+        # restart the scanner trim could leave a held symbol unmonitored
+        # (no live price → no trailing stop → no exits).
         if self.broker and self.broker.is_connected():
-            all_symbols = list(set(self.watchlist))
+            held = list(self.positions.keys())
+            watch = [s for s in set(self.watchlist) if s not in self.positions]
+            all_symbols = held + watch
             self.market_data.start_streaming(all_symbols)
-            log.info("IBKR real-time streaming initialized for watchlist")
+            log.info(
+                f"IBKR real-time streaming initialized "
+                f"({len(held)} held + {len(watch)} watchlist)"
+            )
 
             # Subscribe to real-time account PnL (native IBKR — more accurate than manual calc)
             if hasattr(self.broker, 'subscribe_account_pnl'):
@@ -3486,6 +3494,20 @@ class TradingEngine:
             if len(self.analysis_log) > self.max_analysis_log:
                 self.analysis_log = self.analysis_log[-self.max_analysis_log:]
 
+        # Re-stamp timestamp + market_price for the WHOLE batch so they reflect
+        # "the moment this batch arrives at risk_manager", not "the moment each
+        # individual strategy emitted." Without this, slow late-loop strategies
+        # (rvol_*, momentum_runner, daily_trend_rider can take 30s+ each) make
+        # early-loop signals look 100s stale even though they're market-fresh.
+        # Observed 2026-05-15: 87 ghost "Stale signal: 103s old" rejections —
+        # all from the same 10:17:33 stamp, all rejected at 10:19:15.
+        batch_now = datetime.now(self.tz)
+        for sig in all_signals:
+            sig["timestamp"] = batch_now
+            sym = sig.get("symbol")
+            if sym and self.market_data:
+                sig["market_price"] = self.market_data.get_price(sym)
+
         return all_signals
 
     def _check_portfolio_risk(self):
@@ -4161,7 +4183,18 @@ class TradingEngine:
             falling_knife_pct = self.config.settings.get("risk", {}).get("falling_knife_pct", -5.0)
             in_extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
             premarket_sources = {"premarket_gap", "rvol_momentum", "momentum_runner"}
-            fail_open = in_extended or signal.get("source") in premarket_sources or strategy in premarket_sources
+            # Manual signals come from a human via the dashboard — they fail open on
+            # the no-quote path because non-streamed symbols (anything outside the
+            # 95-line IBKR cap) have no real-time quote, and the user already chose
+            # the symbol consciously. The legit "quote present + change ≤ threshold"
+            # block below still fires for manual — that protection is preserved.
+            is_manual = signal.get("source") == "manual" or strategy == "manual"
+            fail_open = (
+                in_extended
+                or signal.get("source") in premarket_sources
+                or strategy in premarket_sources
+                or is_manual
+            )
             try:
                 quote = self.market_data.get_quote(symbol) if self.market_data else None
                 if quote:
@@ -6275,10 +6308,34 @@ class TradingEngine:
             [signal], self.positions, self.current_balance
         )
 
+        # Report ACTUAL fill outcome, not just "_execute_signal returned".
+        # _execute_signal runs additional gates (falling-knife / bad-news / spread /
+        # post-slippage) after risk_manager. Previously we reported "executed" the
+        # moment the function returned, masking downstream blocks (META hit this on
+        # 2026-05-15 — falling-knife "no quote" block, but the API still said
+        # executed). Detect the real outcome via position-state transition.
         results = []
         for sig in approved:
+            sym = sig["symbol"]
+            action = sig["action"]
+            held_before = sym in self.positions
             self._execute_signal(sig)
-            results.append({"symbol": sig["symbol"], "action": sig["action"], "status": "executed"})
+            held_after = sym in self.positions
+            if action in ("buy", "short"):
+                filled = (not held_before) and held_after
+            elif action in ("sell", "cover", "close"):
+                filled = held_before and (not held_after)
+            else:
+                filled = held_before != held_after
+            if filled:
+                results.append({"symbol": sym, "action": action, "status": "executed"})
+            else:
+                results.append({
+                    "symbol": sym,
+                    "action": action,
+                    "status": "blocked",
+                    "reason": "downstream gate (falling-knife / news / spread / slippage — see logs)",
+                })
 
         return results if results else [{"status": "rejected", "reason": "Failed risk checks"}]
 
