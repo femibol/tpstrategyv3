@@ -48,7 +48,7 @@ class PreMarketGapStrategy(BaseStrategy):
         self.max_hold_minutes = config.get("max_hold_minutes", 45)    # 45 min max (tightened from 60 — gaps resolve fast)
         self.max_trades_per_day = config.get("max_trades_per_day", 3) # Max 3 gap plays/day (cut from 6 — be selective)
         self.max_candidates = config.get("max_candidates", 2)        # Top 2 only (cut from 3)
-        self.start_hour = config.get("start_hour", 6)               # 6 AM ET
+        self.start_hour = config.get("start_hour", 4)               # 4 AM ET — matches settings.yaml premarket window
         self.end_hour = config.get("end_hour", 10)                  # 10 AM ET (catch open push)
         self.trailing_stop_pct = config.get("trailing_stop_pct", 0.025)  # 2.5% trail
         # Post-open dead zone: avoid the first N minutes after market open (9:30)

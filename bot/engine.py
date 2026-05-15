@@ -1023,6 +1023,35 @@ class TradingEngine:
             id="premarket_news_check"
         )
 
+        # Trend rider pre-open scan: 9:00 AM ET, 30 min before the bell.
+        # Pre-populates `_qualified` candidates so the breakout-of-yesterday's-high
+        # entry can fire on the open instead of waiting for the lazy first scan
+        # mid-morning. Without this the breakouts the bot most wants to catch are
+        # already 1.5%+ extended by the time the strategy is ready.
+        self.scheduler.add_job(
+            self._run_trend_rider_prescan,
+            "cron", day_of_week="mon-fri", hour=9, minute=0,
+            id="trend_rider_prescan"
+        )
+
+    def _run_trend_rider_prescan(self):
+        """Force the daily-trend-rider daily-bar scan at 9 AM ET so candidates are
+        queued before the bell. No-op if the strategy is not loaded."""
+        strat = self.strategies.get("daily_trend_rider")
+        if not strat:
+            return
+        if not self.market_data:
+            return
+        try:
+            strat._scan_daily_bars(self.market_data)
+            strat._last_daily_scan = time.time()
+            log.info(
+                f"TREND RIDER PRESCAN: {len(getattr(strat, '_qualified', {}))} candidates "
+                f"qualified before market open"
+            )
+        except Exception as e:
+            log.error(f"Trend rider prescan failed: {e}", exc_info=True)
+
     def _run_weekly_review(self):
         """Scheduler callback — delegate to WeeklyReview if configured."""
         if self.weekly_review and self.weekly_review.is_available():
@@ -2723,8 +2752,18 @@ class TradingEngine:
             except Exception:
                 pass
 
+            # Trend riders are explicitly "ride till bad news" — they're more
+            # sensitive than other strategies. A score-1 bearish whisper (analyst
+            # downgrade, soft sector commentary) should be enough to tighten the
+            # trail on a profitable swing position, even if it wouldn't faze an
+            # intraday momentum trade.
+            is_trend_rider = (
+                pos.get("trend_rider") or pos.get("strategy") == "daily_trend_rider"
+            )
+            min_news_score = 1 if is_trend_rider else 2
+
             if not is_bearish:
-                # Also check raw recent_news for moderate bearish (score 2+)
+                # Also check raw recent_news for moderate bearish
                 from bot.signals.news_feed import BEARISH_CATALYSTS
                 bearish_count = 0
                 reason_parts = []
@@ -2735,7 +2774,7 @@ class TradingEngine:
                         continue
                     title = (article.get("title") or "").lower()
                     for kw, score in BEARISH_CATALYSTS.items():
-                        if kw in title and score >= 2:
+                        if kw in title and score >= min_news_score:
                             bearish_count += 1
                             reason_parts.append(kw)
                             max_score = max(max_score, score)
@@ -2931,6 +2970,15 @@ class TradingEngine:
 
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
+
+            # --- Trend Rider Sharp-Drop Exit ---
+            # Catches institutional distribution mid-session (3%+ drop in 30 min)
+            # before the daily-close exit logic gets to react. No-op for non-trend-
+            # rider positions.
+            should_drop_exit, drop_reason = self._check_trend_rider_sharp_drop(symbol, pos)
+            if should_drop_exit:
+                positions_to_close.append((symbol, "trend_rider_sharp_drop", drop_reason))
+                continue
 
             # --- Break-Even Stop ---
             if be_enabled and not pos.get("breakeven_hit") and pnl_pct >= be_trigger:
@@ -3905,9 +3953,16 @@ class TradingEngine:
         # Prevent buying stocks that are down significantly on the day.
         # High RVOL on a -5%+ drop is usually bad news, not a dip-buy opportunity.
         # (WAL pattern: stock down 13% on lawsuit news, bot saw volume spike and bought the bounce)
-        # FAIL-CLOSED: if we can't get a quote, block the entry rather than letting it through.
+        # Fails CLOSED during RTH (block on missing data, safer default), but fails
+        # OPEN during pre/post-market for scanner-vetted gap-up sources: the scanner
+        # already proved direction, and IBKR's streaming quote takes a few seconds
+        # to populate after a new subscription. Blocking those silently kills
+        # exactly the pre-market entries the bot is supposed to take.
         if action == "buy":
             falling_knife_pct = self.config.settings.get("risk", {}).get("falling_knife_pct", -5.0)
+            in_extended = getattr(self, "_in_premarket", False) or getattr(self, "_in_postmarket", False)
+            premarket_sources = {"premarket_gap", "rvol_momentum", "momentum_runner"}
+            fail_open = in_extended or signal.get("source") in premarket_sources or strategy in premarket_sources
             try:
                 quote = self.market_data.get_quote(symbol) if self.market_data else None
                 if quote:
@@ -3918,6 +3973,11 @@ class TradingEngine:
                             f"skipping long entry (threshold: {falling_knife_pct}%) | Strategy: {strategy}"
                         )
                         return
+                elif fail_open:
+                    log.info(
+                        f"FALLING KNIFE SKIP: {symbol} no quote in extended/momentum context "
+                        f"(scanner already proved direction) | Strategy: {strategy}"
+                    )
                 else:
                     log.warning(
                         f"FALLING KNIFE BLOCK (no quote): {symbol} — cannot verify day change, "
@@ -3925,8 +3985,11 @@ class TradingEngine:
                     )
                     return
             except Exception as e:
-                log.warning(f"FALLING KNIFE BLOCK (error): {symbol} — quote check failed ({e}), blocking entry")
-                return
+                if fail_open:
+                    log.info(f"FALLING KNIFE SKIP (error, extended/momentum): {symbol} — {e}")
+                else:
+                    log.warning(f"FALLING KNIFE BLOCK (error): {symbol} — quote check failed ({e}), blocking entry")
+                    return
 
         # --- BEARISH NEWS CIRCUIT BREAKER ---
         # Prevent buying stocks with recent strong negative catalysts
@@ -4233,34 +4296,40 @@ class TradingEngine:
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
         # PRE-ORDER SLIPPAGE CHECK: reject stale signals BEFORE placing the order.
-        # Uses the SAME threshold as post-fill slippage check (max_slippage_pct) to prevent
-        # the enter-then-immediately-exit loop: if the price has already moved beyond what
-        # we'd accept as fill slippage, don't place the order at all.
-        # (Previously used 2x, but that created a gap where 0.8-1.6% deviation would pass
-        # pre-check then fail post-fill check, guaranteeing a double-slippage loss.)
+        # Session-aware: pre/post market gappers routinely drift 1-3% in seconds, so we
+        # use the wider max_signal_deviation_pct (2.5% default) outside RTH and the
+        # tight max_slippage_pct (0.8% default) inside RTH. Otherwise the gate filters
+        # out exactly the gap-up entries the bot is designed to catch.
         if action == "buy":
             signal_price = signal.get("price", 0)
-            max_pre_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
+            if outside_rth:
+                max_pre_slippage = self.config.risk_config.get("max_signal_deviation_pct", 0.025)
+            else:
+                max_pre_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
             if signal_price > 0 and current_price > 0:
                 pre_slippage = abs(current_price - signal_price) / signal_price
                 if pre_slippage > max_pre_slippage:
                     log.warning(
                         f"PRE-ORDER REJECT: {symbol} live ${current_price:.2f} vs "
                         f"signal ${signal_price:.2f} = {pre_slippage:.1%} slippage "
-                        f"(max {max_pre_slippage:.1%}). Skipping order."
+                        f"(max {max_pre_slippage:.1%}, session={'EXT' if outside_rth else 'RTH'}). "
+                        f"Skipping order."
                     )
                     self._pending_orders.discard(symbol)
                     return
 
         # PRE-ORDER SPREAD CHECK: reject illiquid names BEFORE placing the order.
         # Catches wide bid-ask spreads (e.g. $1.40 bid / $1.60 ask = 13% spread)
-        # that guarantee slippage on MARKET orders. Prevents the costly
-        # enter-then-immediately-exit loop that lost ~$2,500 on 2024-03-04.
-        # Skip the IBKR spread check entirely when TradersPost is the
-        # execution broker — get_live_price() is an ib_async coroutine and
-        # must not run on the execution path (contextvars crash risk).
+        # that guarantee slippage on MARKET orders. Session- and price-tier-aware:
+        # extended hours and sub-$5 names get wider headroom because their normal
+        # spreads are structurally wider — a 2% cap rejects the whole low-float runner
+        # universe pre-market.
         if action == "buy" and not self.tp_broker and self.broker and self.broker.is_connected():
             max_spread_pct = self.config.risk_config.get("max_spread_pct", 0.02)
+            if outside_rth:
+                max_spread_pct *= 2.0      # extended hours: double the spread budget
+            if current_price and current_price < 5:
+                max_spread_pct *= 1.5      # sub-$5 names: 50% wider allowed
             quote = self.broker.get_live_price(symbol) if hasattr(self.broker, 'get_live_price') else None
             if quote and quote.get("bid") and quote.get("ask"):
                 bid = quote["bid"]
@@ -6514,6 +6583,38 @@ class TradingEngine:
 
         if tightened > 0:
             log.info(f"Power hour 3:50 PM: tightened stops on {tightened} positions")
+
+    def _check_trend_rider_sharp_drop(self, symbol, pos):
+        """Intraday sharp-drop check for trend riders.
+
+        Daily-bar exits (SuperTrend / 20 EMA / red-after-green) only fire at the
+        close. But institutional distribution shows up intraday: a clean 3%+ drop
+        in 30 minutes on no specific news is a tell the trend is breaking *now*,
+        not at 4 PM. The trailing stop catches this eventually, but for swing
+        positions held days the trail may be loose enough that 4-5% comes off
+        the peak before it triggers. Returns (should_exit: bool, reason: str).
+        """
+        if not (pos.get("trend_rider") or pos.get("strategy") == "daily_trend_rider"):
+            return False, ""
+        if not self.market_data:
+            return False, ""
+        try:
+            bars = self.market_data.get_bars(symbol, 8)  # last ~40 min on 5m
+            if bars is None or len(bars) < 6:
+                return False, ""
+            recent_high = float(bars["high"].iloc[-6:].max())
+            current = float(bars["close"].iloc[-1])
+            if recent_high <= 0:
+                return False, ""
+            drop_pct = (current - recent_high) / recent_high
+            if drop_pct <= -0.03:
+                return True, (
+                    f"Sharp drop: -{abs(drop_pct):.1%} in last 30 min "
+                    f"(${recent_high:.2f} → ${current:.2f}) — institutional distribution"
+                )
+        except Exception as e:
+            log.debug(f"Trend rider sharp-drop check failed for {symbol}: {e}")
+        return False, ""
 
     def _check_trend_rider_daily_exit(self, symbol, pos):
         """Check if today's daily close broke the trend for a trend rider position.

@@ -172,12 +172,15 @@ class DailyTrendRiderStrategy(BaseStrategy):
         """Score a trend setup using its daily metrics. Higher = stronger trend.
 
         Components (typical ranges):
-          - Green-day streak  (10 pts/day, capped at 80)
-          - ADX strength      (0-100 → use as-is, capped at 60)
-          - Weekly change %   (capped at 30)
+          - Green-day streak       (10 pts/day, capped at 80)
+          - ADX strength           (0-100 → use as-is, capped at 60)
+          - Weekly change %        (capped at 30)
           - Distance above SuperTrend (% × 100, capped at 30)
+          - Proximity to 52-week high (0-25 pts, 25 = at the high)
 
-        Total range: ~30 (just qualified) to ~200 (monster trend).
+        Stocks near 52-week highs have no overhead supply and tend to run cleaner;
+        the bonus tilts rotation toward genuine breakouts over range-bound bounces.
+        Total range: ~30 (just qualified) to ~225 (monster trend at new highs).
         """
         green = min(daily_data.get("green_days", 0), 8) * 10
         adx = min(daily_data.get("adx", 0), 60)
@@ -188,7 +191,9 @@ class DailyTrendRiderStrategy(BaseStrategy):
         if price > 0 and st > 0:
             st_dist = min((price - st) / price * 100, 30)
             st_dist = max(st_dist, 0)
-        return green + adx + weekly + st_dist
+        # near_52w_high: 0.0 (>5% below) to 1.0 (at or above the 52-week high)
+        near_52w = max(0.0, min(1.0, daily_data.get("near_52w_high", 0.0)))
+        return green + adx + weekly + st_dist + near_52w * 25
 
     def _consider_rotation(self, new_signal, new_daily, market_data, already_rotated):
         """Score the new candidate vs weakest existing position. Return the
@@ -358,6 +363,17 @@ class DailyTrendRiderStrategy(BaseStrategy):
         # Weekly change (last 5 trading days)
         weekly_change = (closes[-1] - closes[-6]) / closes[-6] * 100 if len(closes) >= 6 else 0
 
+        # 52-week high proximity. 1.0 = at-or-above the 52w high (cleanest breakout
+        # with zero overhead supply), 0.0 = >5% below. Used by _score_setup to
+        # prioritize genuine breakouts over range-bound bounces.
+        lookback_52w = min(252, len(highs))
+        high_52w = float(np.max(highs[-lookback_52w:])) if lookback_52w > 0 else current_price
+        if high_52w > 0:
+            near_52w = 1.0 - (high_52w - current_price) / (0.05 * high_52w)
+            near_52w = max(0.0, min(1.0, near_52w))
+        else:
+            near_52w = 0.0
+
         return {
             "qualified": True,
             "price": round(current_price, 2),
@@ -371,6 +387,8 @@ class DailyTrendRiderStrategy(BaseStrategy):
             "avg_volume": int(avg_vol),
             "yesterday_high": round(yesterday_high, 2),
             "weekly_change_pct": round(weekly_change, 2),
+            "high_52w": round(high_52w, 2),
+            "near_52w_high": round(near_52w, 3),
             "stop_distance": round(atr * self.atr_stop_mult, 2),
         }
 
@@ -429,13 +447,38 @@ class DailyTrendRiderStrategy(BaseStrategy):
             if extension < 0.015:
                 breakout_entry = True
 
-        if not pullback_entry and not breakout_entry:
+        # --- Entry Type 3: Market entry on qualified setup, not too extended ---
+        # For when a stock is already running and won't give a clean pullback —
+        # before this, the bot would qualify the daily setup, see the breakout
+        # already 1.5%+ above yesterday's high, and never enter. Catches the
+        # strongest trends (the ones that don't pause).
+        market_entry = False
+        if not pullback_entry and not breakout_entry and len(bars_5m) >= 6:
+            highs_5m = bars_5m["high"].values.astype(float)
+            today_high = float(np.max(highs_5m[-min(78, len(highs_5m)):]))
+            giveback = (today_high - current_price) / today_high if today_high > 0 else 1.0
+            if (
+                giveback < 0.02
+                and current_price > yesterday_high
+                and vol_ratio >= 1.0
+            ):
+                market_entry = True
+
+        if not pullback_entry and not breakout_entry and not market_entry:
             return None
 
-        entry_type = "pullback_9ema" if pullback_entry else "breakout_yest_high"
+        if pullback_entry:
+            entry_type = "pullback_9ema"
+        elif breakout_entry:
+            entry_type = "breakout_yest_high"
+        else:
+            entry_type = "market_qualified"
 
         # --- Stop & Target ---
-        stop_loss = round(current_price - (atr * self.atr_stop_mult), 2)
+        # Market entries skip the tight pullback-low stop placement, so widen the
+        # ATR multiplier to give the trade room.
+        stop_mult = self.atr_stop_mult * (1.2 if entry_type == "market_qualified" else 1.0)
+        stop_loss = round(current_price - (atr * stop_mult), 2)
         # Don't let stop be above SuperTrend — that's our daily floor
         stop_loss = min(stop_loss, round(supertrend - 0.01, 2))
         # Don't let stop be above daily 20 EMA
@@ -445,8 +488,14 @@ class DailyTrendRiderStrategy(BaseStrategy):
         take_profit = round(current_price + (atr * 3.0), 2)
 
         risk_pct = (current_price - stop_loss) / current_price
-        if risk_pct > 0.06:
-            # Stop is too wide (>6% from entry) — skip, wait for better entry
+        # Scale the risk cap with the stock's own daily ATR — a high-ATR leader
+        # (NVDA, PLTR class) routinely has a 7-10% wide stop and the 6% global
+        # cap was filtering out exactly the names that run the most. Floor at 6%
+        # for boring names, ceiling at 10% even for the wildest ATR.
+        atr_pct = daily.get("atr_pct", 0) / 100  # 0.07 = 7% daily ATR
+        max_risk_pct = max(0.06, min(0.10, atr_pct * 1.8))
+        if risk_pct > max_risk_pct:
+            # Stop is wider than this stock's volatility justifies — skip
             return None
         if risk_pct < 0.005:
             # Stop is unrealistically tight — data issue
