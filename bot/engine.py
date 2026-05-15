@@ -4552,8 +4552,22 @@ class TradingEngine:
         if action == "buy":
             self._pending_orders.add(symbol)
 
-        # Outside-RTH flag: allow pre/post market orders
-        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
+        # Outside-RTH flag: source of truth is the wall clock, not the bot's
+        # _in_premarket / _in_postmarket state flags. Those flags only cover
+        # 04:00–20:00 ET (the configured pre/post-market windows) and are False
+        # overnight (20:00–04:00) and on weekends — so a manual /api/signal at
+        # 23:00 ET would have built a regular MARKET order, which IBKR rejects
+        # off-hours. With wall-clock determination, the broker takes the
+        # extended-hours path (aggressive LIMIT + outsideRth + DAY) any time
+        # we're outside 09:30–16:00 ET on a weekday. Overnight, IBKR holds the
+        # order as PreSubmitted; the place_order timeout handler already
+        # surfaces that as "deferred", not a failure. Result: manual trades
+        # work any time the bot is up.
+        now_et = datetime.now(self.tz)
+        rth_start = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        rth_end = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+        in_rth = (now_et.weekday() < 5) and (rth_start <= now_et <= rth_end)
+        outside_rth = not in_rth
 
         # PRE-ORDER SLIPPAGE CHECK: reject stale signals BEFORE placing the order.
         # Directional, mirroring risk_manager.Rule 6 with even fresher data
