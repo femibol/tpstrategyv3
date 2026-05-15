@@ -537,6 +537,7 @@ class IBKRBroker(BaseBroker):
             # it would throw away a valid working order. Anything else (Submitted,
             # Inactive, etc.) is genuinely stalled and gets cancelled to avoid ghost
             # positions where the bot only tracks the partial fill.
+            midprice_fallback_filled = False
             if fill_status != "Filled":
                 if outside_rth and fill_status == "PreSubmitted" and filled_qty == 0:
                     deferred = True
@@ -562,10 +563,68 @@ class IBKRBroker(BaseBroker):
                         self.ib.sleep(1)
                     except Exception:
                         pass
+
+                    # MIDPRICE fallback: when a MIDPRICE order can't fill within the
+                    # window (stock ran past the +0.5% cap), fall back to MARKET for
+                    # the remaining quantity. The cap was there to capture half the
+                    # spread — but on a fast mover, missing the entry costs far more
+                    # than full-spread slippage. Only RTH; outside-RTH MARKET converts
+                    # to aggressive LIMIT upstream and is a different code path.
+                    if (order_type.upper() == "MIDPRICE"
+                            and not outside_rth
+                            and remaining > 0):
+                        log.info(
+                            f"MIDPRICE FALLBACK: {symbol} not filled at LIMIT cap — "
+                            f"retrying {remaining} shares as MARKET."
+                        )
+                        try:
+                            market_order = MarketOrder(action.upper(), remaining)
+                            market_order.tif = "DAY"
+                            fb_trade = self.ib.placeOrder(contract, market_order)
+                            fb_filled = 0
+                            fb_avg = 0.0
+                            fb_status = fb_trade.orderStatus.status
+                            for _ in range(20):  # 10s @ 0.5s, MARKET should be ~instant
+                                self.ib.sleep(0.5)
+                                fb_status = fb_trade.orderStatus.status
+                                fb_filled = int(fb_trade.orderStatus.filled or 0)
+                                fb_avg = float(fb_trade.orderStatus.avgFillPrice or 0)
+                                if fb_status == "Filled":
+                                    break
+                                if fb_status in ("Cancelled", "ApiCancelled", "Inactive"):
+                                    break
+                            if fb_filled > 0:
+                                # Merge MARKET fill into the totals so the caller
+                                # sees one consolidated result.
+                                old_qty = filled_qty
+                                old_cost = avg_fill_price * old_qty
+                                new_cost = fb_avg * fb_filled
+                                filled_qty = old_qty + fb_filled
+                                if filled_qty > 0:
+                                    avg_fill_price = (old_cost + new_cost) / filled_qty
+                                fill_status = fb_status
+                                order_id = fb_trade.order.orderId
+                                midprice_fallback_filled = True
+                                log.info(
+                                    f"MIDPRICE FALLBACK FILLED: {action} {fb_filled} {symbol} "
+                                    f"@ ${fb_avg:.2f} | combined {filled_qty}/{quantity} "
+                                    f"avg ${avg_fill_price:.2f} | Order ID: {order_id}"
+                                )
+                            else:
+                                log.warning(
+                                    f"MIDPRICE FALLBACK failed: MARKET retry for {symbol} "
+                                    f"ended in status={fb_status} filled={fb_filled}"
+                                )
+                        except Exception as e:
+                            log.error(f"MIDPRICE FALLBACK error for {symbol}: {e}")
+
                     if filled_qty == 0:
                         return None
-                # Recompute avg from fills for the partial
-                if trade.fills:
+                # Recompute avg from fills for the partial. Skip if a MIDPRICE
+                # fallback already merged its MARKET fill into filled_qty /
+                # avg_fill_price — otherwise we'd overwrite the merged totals
+                # with just the (partial) MIDPRICE leg's fills.
+                if trade.fills and not midprice_fallback_filled:
                     total_qty = sum(f.execution.shares for f in trade.fills)
                     total_cost = sum(f.execution.shares * f.execution.price for f in trade.fills)
                     if total_qty > 0:
