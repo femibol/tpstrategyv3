@@ -39,6 +39,18 @@ echo "$LOG_PREFIX $(date '+%Y-%m-%d %H:%M:%S') Checking for updates on $BRANCH..
 # preserves any local edits (.env tweaks, etc.).
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+    # Honor active Claude / human work-in-progress branches. Auto-switching
+    # away from claude/* / wip/* / hotfix/* yanks the working tree out from
+    # under a live session — that exact failure happened on 2026-05-15
+    # at 20:35 (auto-deploy switched away from claude/crypto-enable,
+    # so a crypto commit later landed on local main instead of the
+    # feature branch). For everything else, restore the deploy invariant.
+    case "$CURRENT_BRANCH" in
+        claude/*|wip/*|hotfix/*)
+            echo "$LOG_PREFIX On '$CURRENT_BRANCH' (active work branch) — skipping deploy this tick"
+            exit 0
+            ;;
+    esac
     echo "$LOG_PREFIX On branch '$CURRENT_BRANCH', switching to '$BRANCH'"
     STASHED=false
     if ! git diff --quiet || ! git diff --cached --quiet; then
