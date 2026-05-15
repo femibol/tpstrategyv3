@@ -528,7 +528,16 @@ class Dashboard:
             if data.get("price"):
                 signal["price"] = float(data["price"])
             else:
+                # Try the streaming cache first (free / instant for the ~95 streamed symbols).
                 price = self.engine.market_data.get_price(symbol) if self.engine.market_data else None
+                # Fall back to a one-off broker snapshot for symbols outside the
+                # streaming subscription (META, etc.) — paid as one IBKR API call,
+                # no streaming line burned. Enables manual trades on any symbol.
+                if not price and self.engine.broker and hasattr(self.engine.broker, "get_snapshot_price"):
+                    try:
+                        price = self.engine.broker.get_snapshot_price(symbol)
+                    except Exception:
+                        price = None
                 if price:
                     signal["price"] = price
                 else:
