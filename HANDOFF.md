@@ -5,6 +5,31 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-15 (yet later) — **Three remaining follow-ups shipped:**
+1. **Deferred-order surfacing** — `engine.py:_execute_signal` now checks `order.get("deferred")` BEFORE the slippage / position-tracking code runs. Previously a queued-by-IBKR order returned with `quantity=requested` (PR #152 had a phantom-position bug for deferred outside-RTH orders that nobody had hit yet). Now: log + return cleanly; fill arrives via streaming when venue opens.
+2. **Directional drift check** — `risk_manager.Rule 6` and `engine.py` pre-order slippage are now *asymmetric*. For BUY signals: chase UP (market > signal, trend strengthened) gets the wide cap (5% RTH / 12% extended); chase DOWN (market < signal, setup broke) gets a tight cap (3% RTH / 5% extended). Catches the "buying a fade" pattern that was sneaking through the symmetric check. Added 3 new tests in `tests/test_risk_manager.py`; 62/62 pass.
+3. **Strategy time-of-day audit** — quick survey of the other 13 strategies. The 3 with sketchy session awareness (`pairs_trading`, `pead`, `short_squeeze`) are all at 0% allocation in `strategies.yaml`, so no code change needed today. Documented below for when allocation changes.
+
+### Strategy audit (no code changes — for reference)
+| Strategy | Allocation | Session | Verdict |
+|---|---|---|---|
+| mean_reversion | 15% | 24/7 | ✅ Z-score/RSI/BB valid any session |
+| momentum | 15% | 24/7 | ✅ EMA/ADX/volume valid any session |
+| momentum_runner | 30% | Multi-session | ✅ Has session-aware afternoon reduction |
+| rvol_momentum | 10% | Pre-market disabled by RVOL math | ✅ Correct — thin pre-market RVOL is noise |
+| rvol_scalp | 5% | 24/7 | ✅ 5% allocation caps damage; risk_manager filters |
+| prebreakout | 10% | 24/7 | ✅ Compression patterns form any session |
+| premarket_gap | 5% | 4 AM - 10 AM ET (PR #152) | ✅ Sized to settings.yaml window |
+| daily_trend_rider | 15% | Multi-session w/ 9 AM ET prescan (PR #152) | ✅ |
+| **pairs_trading** | 0% | 24/7 | 🐛 Should be RTH-only if ever enabled (slippage on thin-session legs) |
+| **pead** | 0% | 24/7 | 🐛 Should be RTH only + multi-day if enabled |
+| **short_squeeze** | 0% | 24/7 | ⚠️ Pre-market entry without SI confirmation is noise |
+| options_momentum | 0% | 24/7 | ⚠️ Options thin pre-market |
+| smc_forever | 0% | Likely time-gated | ✅ |
+| vwap_scalp | 0% | 24/7 | ⚠️ VWAP math degrades pre-market |
+
+**Answer to "do we catch RTH trades?": YES.** 7 of 8 active strategies fire during RTH. None of the recent PRs accidentally tightened the RTH path; PR #153 + this one actually loosened it (engine pre-order RTH 0.8% → 5%) and added directional asymmetry.
+
 2026-05-15 (even later) — **Risk manager session-awareness follow-up.** Live VPS logs showed PR #152's pre-market gates never fired because `risk_manager` was rejecting signals *first* on its own hardcoded 60s staleness and 5% deviation caps. Follow-up PR: signals stamped with `_extended_hours`, risk_manager widens to 180s / 12% during pre/post market, engine pre-order check aligned to use distinct `max_signal_deviation_pct` (5% RTH, 12% extended) so it doesn't become the new binding constraint. `max_slippage_pct` 0.8% stays — it's a different check (post-fill R:R protection).
 
 2026-05-15 (later) — **Pre-market profit recovery + trend rider polish.** 12 fixes landed on `claude/resume-work-AvsjR` from the senior-engineer review (scanning / entry / exit / pre-market). Compile-clean, 59/59 tests still pass. See "Shipping now" below.

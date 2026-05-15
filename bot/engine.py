@@ -4303,25 +4303,35 @@ class TradingEngine:
         outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
 
         # PRE-ORDER SLIPPAGE CHECK: reject stale signals BEFORE placing the order.
-        # Sized to match risk_manager.Rule 6 (5% RTH, 12% extended) so this isn't
-        # the new binding constraint after risk_manager opens up. Uses
-        # max_signal_deviation_pct (signal-vs-live drift) — distinct from
-        # max_slippage_pct (post-fill price-vs-signal slippage, which stays tight
-        # at 0.8% to protect realized R:R).
+        # Directional, mirroring risk_manager.Rule 6 with even fresher data
+        # (current_price is just-fetched from broker streaming, not the signal's
+        # stamped market_price). Chase UP gets wide cap (trend strengthened);
+        # chase DOWN gets tight cap (bullish setup broke). Post-fill
+        # max_slippage_pct=0.008 is a separate, untouched check that protects
+        # realized R:R on the actual fill.
         if action == "buy":
             signal_price = signal.get("price", 0)
-            if outside_rth:
-                max_pre_slippage = self.config.risk_config.get("max_signal_deviation_pct_extended", 0.12)
-            else:
-                max_pre_slippage = self.config.risk_config.get("max_signal_deviation_pct", 0.05)
             if signal_price > 0 and current_price > 0:
-                pre_slippage = abs(current_price - signal_price) / signal_price
-                if pre_slippage > max_pre_slippage:
+                signed_drift = (current_price - signal_price) / signal_price
+                if outside_rth:
+                    max_up = self.config.risk_config.get("max_signal_deviation_pct_extended", 0.12)
+                    max_down = 0.05
+                else:
+                    max_up = self.config.risk_config.get("max_signal_deviation_pct", 0.05)
+                    max_down = 0.03
+                if signed_drift > max_up:
                     log.warning(
-                        f"PRE-ORDER REJECT: {symbol} live ${current_price:.2f} vs "
-                        f"signal ${signal_price:.2f} = {pre_slippage:.1%} slippage "
-                        f"(max {max_pre_slippage:.1%}, session={'EXT' if outside_rth else 'RTH'}). "
-                        f"Skipping order."
+                        f"PRE-ORDER REJECT (chase up): {symbol} signal ${signal_price:.2f} → "
+                        f"live ${current_price:.2f} = {signed_drift:+.1%} "
+                        f"(max +{max_up:.0%}, {'EXT' if outside_rth else 'RTH'})"
+                    )
+                    self._pending_orders.discard(symbol)
+                    return
+                if signed_drift < -max_down:
+                    log.warning(
+                        f"PRE-ORDER REJECT (setup broke): {symbol} signal ${signal_price:.2f} → "
+                        f"live ${current_price:.2f} = {signed_drift:+.1%} "
+                        f"(max -{max_down:.0%})"
                     )
                     self._pending_orders.discard(symbol)
                     return
@@ -4429,6 +4439,20 @@ class TradingEngine:
                 f"NO EXECUTION PATH AVAILABLE — cannot execute {action.upper()} "
                 f"{symbol}. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution "
                 f"path), or ensure IBKR is connected (legacy fallback)."
+            )
+            self._pending_orders.discard(symbol)
+            return
+
+        # DEFERRED: IBKR accepted the order outside RTH but queued it for the next
+        # regular session (PreSubmitted / Warning 399). The broker is holding it —
+        # don't track a position yet, the fill will arrive via streaming when the
+        # venue opens. Without this branch the engine would book a phantom
+        # position for the requested quantity even though zero shares filled.
+        if order.get("deferred"):
+            log.info(
+                f"Order DEFERRED at IBKR: {action.upper()} {qty} {symbol} queued for "
+                f"next regular session (status={order.get('status', 'PreSubmitted')}). "
+                f"Not tracking position; engine will pick up the fill via streaming."
             )
             self._pending_orders.discard(symbol)
             return
