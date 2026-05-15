@@ -1860,6 +1860,8 @@ class TradingEngine:
                 continue
             try:
                 strat._dynamic_symbols = set(hot_symbols)
+                if hasattr(strat, "set_held_symbols"):
+                    strat.set_held_symbols(set(self.positions.keys()))
                 sigs = strat.generate_signals(self.market_data) or []
                 for sig in sigs:
                     sig["strategy"] = name
@@ -3362,6 +3364,15 @@ class TradingEngine:
                 tr_strat.set_active_positions(tr_positions)
             elif hasattr(tr_strat, "set_active_count"):
                 tr_strat.set_active_count(len(tr_positions))
+
+        # Stamp held positions on every strategy so exit-signal branches can
+        # gate on actual ownership instead of firing sells against unheld
+        # scanner-discovered symbols (risk_manager would reject as "No position
+        # to exit" — wastes a slot and crowds the rejection log).
+        held_symbols = set(self.positions.keys())
+        for strategy in self.strategies.values():
+            if hasattr(strategy, "set_held_symbols"):
+                strategy.set_held_symbols(held_symbols)
 
         for name, strategy in self.strategies.items():
             try:

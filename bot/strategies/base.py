@@ -36,6 +36,12 @@ class BaseStrategy(ABC):
         # Dynamic symbol TTL tracking — prevents unbounded symbol accumulation
         self._dynamic_symbol_timestamps = {}  # symbol -> time.time() when last added/refreshed
 
+        # Symbols the bot currently holds (set by engine before each scan cycle).
+        # Strategies that emit exit signals MUST gate on this — generating
+        # action="sell" for an unheld symbol burns a slot for a guaranteed
+        # risk_manager rejection. None = unset → treat as no filtering (legacy).
+        self._held_symbols: set | None = None
+
     @abstractmethod
     def generate_signals(self, market_data):
         """
@@ -96,6 +102,12 @@ class BaseStrategy(ABC):
         if hasattr(self, '_dynamic_symbols'):
             self._dynamic_symbols.clear()
         self._dynamic_symbol_timestamps.clear()
+
+    def set_held_symbols(self, symbols):
+        """Engine sets this before each scan so strategies can gate exit signals
+        on actual position ownership. Defaults to None (no filtering) so
+        strategies that never get this called keep their legacy behavior."""
+        self._held_symbols = set(symbols) if symbols is not None else None
 
     def record_entry_filled(self, symbol):
         """Engine callback: called AFTER a successful entry to bump the daily
