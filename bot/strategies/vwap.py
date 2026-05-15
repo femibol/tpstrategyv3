@@ -175,7 +175,8 @@ class VWAPScalpStrategy(BaseStrategy):
 
             log.info(f"SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f}")
             self.signals_generated += 1
-            self.trades_today += 1
+            # trades_today bumps on fill via engine.record_entry_filled callback,
+            # not here — rejections no longer burn day slots.
             return signal
 
         # --- SHORT at upper VWAP band ---
@@ -212,7 +213,8 @@ class VWAPScalpStrategy(BaseStrategy):
 
             log.info(f"SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f}")
             self.signals_generated += 1
-            self.trades_today += 1
+            # trades_today bumps on fill via engine.record_entry_filled callback,
+            # not here — rejections no longer burn day slots.
             return signal
 
         return None
