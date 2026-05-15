@@ -5076,7 +5076,14 @@ class TradingEngine:
         # webhook is configured.
         order = None
         partial_fill_remaining = 0
-        outside_rth = getattr(self, '_in_premarket', False) or getattr(self, '_in_postmarket', False)
+        # Wall-clock outside-RTH: same logic as the entry path. Exits must also
+        # work overnight (close a position bought in pre-market at 23:00 ET).
+        # Without this, a manual SELL after 20:00 builds a plain MARKET order
+        # that IBKR rejects off-hours.
+        _now_et = datetime.now(self.tz)
+        _rth_s = _now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+        _rth_e = _now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+        outside_rth = not ((_now_et.weekday() < 5) and (_rth_s <= _now_et <= _rth_e))
 
         if self.tp_broker:
             order = self.tp_broker.place_order(
