@@ -1255,6 +1255,14 @@ class TradingEngine:
                     # so crash mid-write won't corrupt the file.
                     self._persist_positions()
 
+                # --- HOT-MOVER FAST LANE (every 3 seconds) ---
+                # Closes the PIII-style gap: a 5-15% gainer that spikes
+                # mid-cycle was previously evaluated once per 10s. By the time
+                # the next cycle runs the price has drifted past the deviation
+                # gate. Fast lane re-evaluates the top 5 movers every 3s so a
+                # fresh, current-priced signal can fire and fill.
+                self._quick_scan_hot_movers()
+
                 # --- FULL CYCLE (every ~10 seconds = 3 fast ticks) ---
                 if scalp_tick >= 3:
                     scalp_tick = 0
@@ -1783,6 +1791,117 @@ class TradingEngine:
                 scalp_symbols.append(sym)
         if scalp_symbols and self.market_data:
             self.market_data.update_1m_bars(scalp_symbols)
+
+    def _quick_scan_hot_movers(self):
+        """Fast-lane signal generation for top movers (runs every 3 seconds).
+
+        Closes the gap the PIII miss exposed: a stock spiking 5-15% mid-cycle
+        was evaluated once per 10s, so by the next cycle the signal price was
+        stale and risk_manager.Rule 6 rejected it for excessive drift. Now the
+        top 5 movers get re-evaluated every 3s by the strategies designed for
+        them, so a fresh current-priced signal can fire and reach execution
+        before the price moves another 10%.
+
+        Safe to run frequently: polygon_scanner.get_top_movers reads its 15s
+        cached snapshot, so no extra API calls. Strategies are evaluated only
+        on the hot-mover subset (not the full universe), keeping the work
+        small.
+        """
+        # Skip outside market hours
+        if not getattr(self, "_equity_market_open", False):
+            return
+        # Need polygon for the mover list
+        if not getattr(self, "polygon", None) or not self.polygon.enabled:
+            return
+        # Skip if the strategy ecosystem isn't ready yet
+        if not self.strategies or not self.market_data:
+            return
+
+        try:
+            movers = self.polygon.get_top_movers(limit=5)
+        except Exception as e:
+            log.debug(f"FAST LANE: get_top_movers failed: {e}")
+            return
+        if not movers:
+            return
+
+        # Normalize to a symbol set; movers can be dicts or strings depending
+        # on the polygon adapter version
+        hot_symbols = set()
+        for m in movers:
+            sym = m.get("symbol") if isinstance(m, dict) else m
+            if sym:
+                hot_symbols.add(str(sym).upper())
+        if not hot_symbols:
+            return
+        # Strip symbols we already hold — duplicate-entry guard catches them
+        # later but skipping early saves work
+        hot_symbols -= set(self.positions.keys())
+        if not hot_symbols:
+            return
+
+        # Only momentum-aware strategies benefit from fast-lane evaluation;
+        # mean-reversion / pairs / etc. have no reason to re-fire on hot movers
+        fast_lane_strats = (
+            "momentum_runner", "premarket_gap", "rvol_momentum", "daily_trend_rider",
+        )
+
+        fast_signals = []
+        for name in fast_lane_strats:
+            strat = self.strategies.get(name)
+            if strat is None or not hasattr(strat, "generate_signals"):
+                continue
+            # Temporarily reduce dynamic universe to JUST the hot movers so
+            # generate_signals iterates only those. Static `symbols` stays.
+            # Without an explicit _dynamic_symbols attr the strategy can't be
+            # subset cleanly, so skip it for this pass.
+            original_dyn = getattr(strat, "_dynamic_symbols", None)
+            if original_dyn is None:
+                continue
+            try:
+                strat._dynamic_symbols = set(hot_symbols)
+                sigs = strat.generate_signals(self.market_data) or []
+                for sig in sigs:
+                    sig["strategy"] = name
+                    sig["timestamp"] = datetime.now(self.tz)
+                    sym = sig.get("symbol")
+                    if sym and self.market_data:
+                        sig["market_price"] = self.market_data.get_price(sym)
+                    sig["_extended_hours"] = bool(
+                        getattr(self, "_in_premarket", False)
+                        or getattr(self, "_in_postmarket", False)
+                    )
+                    sig["_fast_lane"] = True
+                fast_signals.extend(sigs)
+            except Exception as e:
+                log.debug(f"FAST LANE: strategy {name} error: {e}")
+            finally:
+                strat._dynamic_symbols = original_dyn
+
+        if not fast_signals:
+            return
+
+        try:
+            approved = self.risk_manager.filter_signals(
+                fast_signals, self.positions, self.current_balance
+            )
+        except Exception as e:
+            log.error(f"FAST LANE: risk_manager error: {e}", exc_info=True)
+            return
+
+        if approved:
+            log.info(
+                f"FAST LANE: {len(approved)}/{len(fast_signals)} signals approved on "
+                f"hot movers {sorted(hot_symbols)[:5]}"
+            )
+            for sig in approved:
+                try:
+                    self._execute_signal(sig)
+                except Exception as e:
+                    log.error(
+                        f"FAST LANE: execute failed for {sig.get('symbol')}: {e}",
+                        exc_info=True,
+                    )
 
     def _fast_scalp_monitor(self):
         """AGGRESSIVE universal position monitor (runs every 3 seconds).
@@ -4592,6 +4711,18 @@ class TradingEngine:
                 "broker_stop_order_id": (order.get("sl_order_id") if order.get("bracket") else None),
                 "broker_stop_price": stop_loss_price if order.get("bracket") else 0,
             }
+
+        # Bump the originating strategy's daily-trade counter. Counter only
+        # increments AFTER a successful entry — previously strategies bumped
+        # this in generate_signals, which burned the day's slots even when
+        # risk_manager rejected the signal (PIII pattern: 3 rejected signals
+        # silently killed the strategy for the rest of the day).
+        strat_obj = self.strategies.get(strategy) if strategy else None
+        if strat_obj and hasattr(strat_obj, "record_entry_filled"):
+            try:
+                strat_obj.record_entry_filled(symbol)
+            except Exception as e:
+                log.debug(f"record_entry_filled failed for {strategy}/{symbol}: {e}")
 
         # Rich notification with full trade details
         self.notifier.trade_entry(

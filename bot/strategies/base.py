@@ -21,6 +21,14 @@ class BaseStrategy(ABC):
         self.signals_generated = 0
         self.trades_taken = 0
 
+        # Daily-cycle counter shared by all strategies that enforce a per-day
+        # trade cap (max_trades_per_day). Engine bumps this via
+        # record_entry_filled() AFTER a successful entry — not when the strategy
+        # generates a signal. Otherwise three risk-manager rejections of the
+        # same symbol burn the day's slots without ever taking a trade.
+        self.trades_today = 0
+        self.last_trade_date = None
+
         # Scanner: stores latest indicator values for EVERY symbol each cycle
         # This is what makes the analysis visible in the dashboard
         self.scan_results = {}  # symbol -> {indicators + verdict}
@@ -88,6 +96,13 @@ class BaseStrategy(ABC):
         if hasattr(self, '_dynamic_symbols'):
             self._dynamic_symbols.clear()
         self._dynamic_symbol_timestamps.clear()
+
+    def record_entry_filled(self, symbol):
+        """Engine callback: called AFTER a successful entry to bump the daily
+        counter. Replaces the old per-strategy pattern of incrementing
+        trades_today inside generate_signals (which counted rejections too)."""
+        self.trades_today += 1
+        self.trades_taken += 1
 
     def _check_volume_filter(self, market_data, symbol, min_volume=None):
         """Check if symbol meets minimum volume requirement."""

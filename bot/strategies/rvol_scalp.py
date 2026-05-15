@@ -91,8 +91,11 @@ class RvolScalpStrategy(BaseStrategy):
                     self.scan_results[symbol] = result["scan"]
                     if result.get("signal"):
                         signals.append(result["signal"])
-                        self.trades_today += 1
-                        if self.trades_today >= self.max_trades_per_day:
+                        # Per-cycle cap: don't generate MORE signals this cycle
+                        # than the daily cap allows. trades_today counts filled
+                        # entries only (engine.record_entry_filled callback) —
+                        # rejections no longer burn day slots.
+                        if self.trades_today + len(signals) >= self.max_trades_per_day:
                             break
             except Exception as e:
                 log.debug(f"RVOL scalp error for {symbol}: {e}")

@@ -97,8 +97,9 @@ class PreBreakoutStrategy(BaseStrategy):
                     self.scan_results[symbol] = result["scan"]
                     if result.get("signal"):
                         signals.append(result["signal"])
-                        self.trades_today += 1
-                        if self.trades_today >= self.max_trades_per_day:
+                        # Per-cycle cap only. trades_today bumps on fill via
+                        # engine.record_entry_filled (rejections don't burn slots).
+                        if self.trades_today + len(signals) >= self.max_trades_per_day:
                             break
             except Exception as e:
                 log.debug(f"Pre-breakout error for {symbol}: {e}")
