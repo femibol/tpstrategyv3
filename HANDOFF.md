@@ -5,6 +5,16 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-15 (post-#156 diagnosis) — **Gate mean_reversion SELL signals on actual position ownership.** Diagnosed live: today's "every signal rejected" had 3 causes — 115 ghost sells (55%), 87 stale signals (41%), 6 chase rejections (3%). Ghost-sell root cause: `mean_reversion._analyze_symbol` SELL branch fired for any scanner-discovered overbought stock regardless of ownership; risk_manager correctly rejected as "No position to exit" but the slot was already burned and the rejection log was drowned in noise.
+- `bot/strategies/base.py`: new `set_held_symbols(symbols)` on `BaseStrategy`. `None` default preserves legacy behavior for strategies whose host never plumbs this in.
+- `bot/engine.py`: stamps `set(self.positions.keys())` on every strategy before `generate_signals` — both the main scan loop AND the hot-mover fast lane.
+- `bot/strategies/mean_reversion.py:228`: SELL branch returns `None` when symbol not in held set.
+- `tests/test_mean_reversion_sell_gate.py`: 3 tests (suppressed / emitted / legacy).
+- **Out of scope, separate PR worth opening:** `vwap.py:201` and `smc_forever.py:347` also use `action="sell"` but reason field says "SHORT" — mislabeled (should be `action="short"`). Both are 0% allocated → not currently loaded, no live impact. One-line fix per file.
+- **Restart context (amplifier, not root cause):** today's `*/5 * * * *` auto-deploy cron restarted the bot 5 times in 40 min (10:55 → 11:35 ET) as PRs #153 → #156 merged in sequence. Each restart wipes cycle counter + bar warmup state. Worth thinking about: rate-limit deploys or pause auto-deploy during RTH.
+- **Still unsolved:** the 103s "Stale signal" rejections (87 today). Strategy→risk_manager pipeline has ~1-2 min latency on some signals. Probably scanner blocking or signal queue not draining. Not investigated this session — next priority once the noise drops.
+- **VPS auth gotcha discovered this session:** the existing `~/.ssh/github_deploy` key on the VPS is **read-only**. To push from the VPS, a second write-enabled deploy key was added: `~/.ssh/github_deploy_write` + SSH alias `github-write` in `~/.ssh/config`. Remote was switched to `git@github-write:femibol/tpstrategyv3.git`. Keep or revoke per your taste.
+
 2026-05-15 (later-still) — **PR #156: MIDPRICE entries + confidence-scaled + regime-aware sizing.**
 - `bot/risk/position_sizer.py`: `calculate()` now takes `confidence` and `regime_multiplier` kwargs. New multiplier stack: `base × Kelly × DD × Session × Confidence × Regime`. Floor 0.25%, ceiling 3% risk (unchanged). Confidence buckets: ≥0.85→1.5x, ≥0.70→1.2x, ≥0.55→1.0x, else 0.7x. Regime clamped to [0.3, 2.0].
 - `bot/engine.py:_execute_buy` reads `regime_detector.get_status()` per-signal — **but only applies the multiplier when `confidence > 0.55`**. The SIDEWAYS default lands at 0.5 confidence; without this gate, a "stuck" detector would silently shrink momentum sizing on every entry. With the gate: low-confidence → neutral 1.0x.
