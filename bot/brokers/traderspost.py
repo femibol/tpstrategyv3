@@ -51,9 +51,13 @@ class TradersPostBroker(BaseBroker):
     RATE_LIMIT_MAX = 3       # max signals per symbol per window (was 2)
     GLOBAL_MIN_INTERVAL = 3  # minimum seconds between ANY webhook call (was 5)
 
-    def __init__(self, config):
+    def __init__(self, config, webhook_url_override=None):
         self.config = config
-        self.webhook_url = config.traderspost_webhook_url
+        # webhook_url_override lets us instantiate a second TradersPostBroker
+        # for mirror-only mode (engine.tp_mirror) without touching the
+        # primary execution URL. The mirror instance is constructed with the
+        # mirror URL and only ever has notify_trade() called on it.
+        self.webhook_url = webhook_url_override or config.traderspost_webhook_url
         self.webhook_url_secondary = config.traderspost_webhook_url_secondary
         self.webhook_url_crypto = getattr(config, 'traderspost_webhook_url_crypto', '') or ''
         self.api_key = config.traderspost_api_key
