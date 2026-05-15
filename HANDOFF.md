@@ -5,6 +5,56 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-15 (afternoon session) — **PR #157 + #160: ghost-sell gate, manual signal path, signal-staleness fix.** Live-traded 10 events (5 entries + 5 exits) end-to-end through dashboard → IBKR → TradersPost mirror.
+
+### PR #157 — `mean_reversion` SELL signals gated on ownership
+- Diagnosed from morning logs: 115 of 210 rejections were "No position to exit" — mean_reversion firing sells against scanner-discovered overbought stocks (SQQQ, SOXS, ZSL, PIII, etc.) that the bot didn't own.
+- `bot/strategies/base.py`: `set_held_symbols(symbols)` on `BaseStrategy`. `None` default = legacy behavior.
+- `bot/engine.py`: stamps held-set on every strategy before `generate_signals` (main scan loop AND hot-mover fast lane).
+- `bot/strategies/mean_reversion.py:228`: SELL branch returns `None` when symbol not in held set.
+- **Out of scope (separate PR worth opening):** `vwap.py:201` and `smc_forever.py:347` use `action="sell"` but reason says SHORT — mislabeled. Both 0% allocated → no live impact. One-line fix.
+
+### PR #160 — Manual-signal path overhaul + signal-staleness root cause
+**Five fixes in one branch, all live-validated:**
+1. **Truthful API status.** `handle_manual_signal` (engine.py:6260+) detects actual fill via position-state delta (held_before vs held_after, differentiated by buy/short/sell/cover/close). Reports `{status: "blocked", reason: "..."}` on downstream gates. **Validated:** META correctly returned `blocked` (price-filter $500 ceiling), was lying as `executed` before.
+2. **Manual exempt from no-quote falling-knife.** `engine.py:4163` adds `signal.source == "manual"` to fail-open set. Legit "quote present + change ≤ threshold" block still fires.
+3. **Dashboard snapshot price fallback.** `bot/dashboard/app.py:531` calls `broker.get_snapshot_price(symbol)` when streaming cache misses. **Manual trades now work for ANY symbol IBKR can resolve, not just the ~95 streamed.** Validated live: BAC ($49.40, not streamed) filled clean.
+4. **Held positions stream first.** `engine.py:232` builds initial subscription as `held + watchlist`, so the 95-line cap never trims a position out. Boot log now shows `"IBKR real-time streaming initialized (N held + M watchlist)"`.
+5. **Signal-staleness root cause + fix.** Morning logs showed 87 rejections with *exactly* "Stale signal: 103s old (max 60s)" — all from one 10:17:33 timestamp, all rejected at 10:19:15. Root cause: `_run_strategies` runs 8 strategies sequentially; each stamps its signals with `datetime.now()` the instant it returns. Strategies 3-8 (rvol_*, momentum_runner, prebreakout, premarket_gap, daily_trend_rider) take ~100s combined to complete, making early-loop signals look 102s stale to the 60s gate. **Fix at engine.py ~3497**: re-stamp `timestamp` + `market_price` for the WHOLE batch with a single `batch_now` right before returning from `_run_strategies`. Now staleness reflects actual pipeline latency (ms), not strategy-loop duration.
+
+### End-to-end execution validated (2026-05-15)
+- **Entries:** 5/5 manual `/api/signal` POSTs filled. Path: dashboard → risk_manager → engine → IBKR market order → fill confirmation → `self.positions[sym]` registered → TradersPost mirror (`TP MIRROR: BUY X qty=1 @ $Y → primary webhook (200)`).
+- **Exits:** 5/5 manual SELLs filled. Path: dashboard → "Webhook exit signal: routing SELL X through close path" → IBKR market sell → fill → `self.positions.pop(sym)` → TradersPost mirror (`TP MIRROR: EXIT X qty=1.0 → primary webhook (200)`).
+- Session P&L: –$11.36 across 5 trades (pure spread cost, no strategy hold).
+
+### Open follow-ups (not yet shipped)
+- **Strategy-loop duration itself (~100s/cycle).** The staleness fix in #160 prevents false rejections, but the bot still only does a full strategy scan every ~2 min. Hot-mover fast lane (PR #155) covers momentum names every 3s; the slow-scan delay only affects non-momentum strategies. Worth profiling which of rvol_*, momentum_runner, daily_trend_rider, prebreakout is the long pole. Diagnostic: add per-strategy `time.perf_counter()` around each `generate_signals` call.
+- **`max_price` ceiling at $500** blocked META today. Worth checking `config/settings.yaml` `risk.max_price` — if you want to trade higher-priced names (SPY, GOOGL, AVGO, etc. when they go > $500), raise it. Currently META @ $618 was blocked even though it's clearly tradeable.
+- **Cosmetic log message.** `engine.py:4177` "FALLING KNIFE SKIP: {symbol} no quote in extended/momentum context (scanner already proved direction)" — the "scanner already proved direction" text is misleading for manual signals (which go through the same fail-open path now). Reword to cover manual case.
+- **`vwap.py:201` + `smc_forever.py:347`** — `action="sell"` should be `action="short"` (reason field literally says SHORT). Both 0% allocated so no live impact, but a strategy-allocation change would break it. ~1-line fix per file.
+- **Falling-knife "no quote" branch logging.** When manual signals hit fail-open via the no-quote path, log INFO not WARNING (it's expected behavior now, not a precaution).
+
+### What the next session should expect to see
+Run morning rejection breakdown:
+```bash
+awk '/REJECTED:/ { if(/No position to exit/)g++; else if(/Stale signal/)s++; else if(/Price.*away from market/)c++; else o++ } END { print "ghost:",g,"stale:",s,"chase:",c,"other:",o }' logs/trading.log
+```
+**Expected after #160 deployed:** `ghost: 0, stale: 0` (or near-zero — any remaining staleness is real pipeline latency, not loop duration). Chase rejections may still appear — they're working as designed.
+
+If ghost ≠ 0: a strategy other than mean_reversion is firing unguarded sells (check `vwap.py` / `smc_forever.py` allocations).
+If stale ≠ 0: there's a separate pipeline-latency source the #160 batch re-stamp didn't catch. Look at where `filter_signals` is called from sites other than the main loop.
+
+### Auth note for the VPS
+- `~/.ssh/github_deploy` is read-only (the existing key, kept for read).
+- `~/.ssh/github_deploy_write` is a write-capable deploy key added 2026-05-15 (label `claude-vps-write` in repo Settings → Deploy keys). SSH alias `github-write` in `~/.ssh/config`. Origin URL on the VPS now `git@github-write:femibol/tpstrategyv3.git`.
+- Revoke if Claude shouldn't have push access here long-term.
+
+### Auto-deploy thrash gotcha (worth a follow-up PR)
+- `*/5 * * * * /opt/trading-bot/deploy/auto-deploy.sh` runs `git fetch origin main; if HEAD != origin/main: git pull origin main; docker compose up -d --force-recreate trading-bot`.
+- It does **NOT** switch the working tree's branch first. If a session leaves the tree on a non-main branch (Claude or terminal user), `git pull origin main` either no-ops or creates a wrong-branch merge → infinite restart loop every 5 min.
+- Today's session hit this between 17:15–17:25 UTC (3-4 useless restarts). Fix: prepend `git checkout main --quiet` before `git fetch` in `deploy/auto-deploy.sh`. One line.
+- Auto-deploy also doesn't pass `--build`, so code-only changes don't actually reach the running image until a Dockerfile/requirements.txt change forces a rebuild. The bot stayed on stale code for hours today despite "successful" deploys. Either always-build or detect significant source changes.
+
 2026-05-15 (later-still) — **PR #156: MIDPRICE entries + confidence-scaled + regime-aware sizing.**
 - `bot/risk/position_sizer.py`: `calculate()` now takes `confidence` and `regime_multiplier` kwargs. New multiplier stack: `base × Kelly × DD × Session × Confidence × Regime`. Floor 0.25%, ceiling 3% risk (unchanged). Confidence buckets: ≥0.85→1.5x, ≥0.70→1.2x, ≥0.55→1.0x, else 0.7x. Regime clamped to [0.3, 2.0].
 - `bot/engine.py:_execute_buy` reads `regime_detector.get_status()` per-signal — **but only applies the multiplier when `confidence > 0.55`**. The SIDEWAYS default lands at 0.5 confidence; without this gate, a "stuck" detector would silently shrink momentum sizing on every entry. With the gate: low-confidence → neutral 1.0x.
