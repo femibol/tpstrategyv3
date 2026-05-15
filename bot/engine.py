@@ -1374,13 +1374,29 @@ class TradingEngine:
                 if scalp_tick >= 3:
                     scalp_tick = 0
 
+                    # Per-stage timing (kept in process memory; logged at cycle end
+                    # if any single stage exceeded 5s — surfaces slow paths without
+                    # spamming the log on healthy cycles). The 22-min cycle observed
+                    # 2026-05-15 came from _update_data hitting IBKR's historical-bar
+                    # pacing limit; without timing visibility the symptom looked like
+                    # a hung bot when it was actually a slow-but-progressing loop.
+                    import time as _time
+                    _t0 = _time.perf_counter()
+                    _stage_times = {}
+                    def _stage(name):
+                        nonlocal _t0
+                        _stage_times[name] = _time.perf_counter() - _t0
+                        _t0 = _time.perf_counter()
+
                     # 0a. Dynamic discovery: feed top movers into RVOL strategies
                     self._discover_dynamic_symbols()
+                    _stage("discover")
 
                     # 0a2. Prune stale dynamic symbols (30 min TTL)
                     # Symbols still actively moving get refreshed each cycle;
                     # dead symbols that stopped appearing as movers get pruned
                     self._prune_stale_dynamic_symbols()
+                    _stage("prune")
 
                     # 0b. Update news feed watchlist with held + active symbols
                     if self.news_feed:
@@ -1388,10 +1404,13 @@ class TradingEngine:
                             list(self.positions.keys()) + self.watchlist[:20]
                         ))
                         self.news_feed.update_watchlist(news_watch)
+                    _stage("news_watch")
 
                     # 1. Update market data (standard 5-min + 1-min for scalps)
                     self._update_data()
+                    _stage("update_data")
                     self._update_scalp_data()
+                    _stage("update_scalp")
 
                     # 2. Detect market regime (every cycle, uses cached data)
                     # Feed sector performance data for geopolitical regime detection
@@ -1420,8 +1439,11 @@ class TradingEngine:
                     # announcement in next 48 hours — exit before gap risk materializes
                     self._check_earnings_vigilance()
 
+                    _stage("misc_3")
+
                     # 3. Monitor existing positions (stops, targets, trailing)
                     self._monitor_positions()
+                    _stage("monitor_positions")
 
                     # 3a. BROKER STOP WATCHDOG: verify every position has a
                     # live stop order at the broker. Places emergency stops
@@ -1441,6 +1463,7 @@ class TradingEngine:
 
                     # 4. Run strategies and generate signals
                     signals = self._run_strategies()
+                    _stage("run_strategies")
 
                     # 5. Check hedging needs
                     if self.hedging_manager and self.hedging_manager.auto_hedge:
@@ -1453,6 +1476,7 @@ class TradingEngine:
                     approved = self.risk_manager.filter_signals(
                         signals, self.positions, self.current_balance
                     )
+                    _stage("filter")
 
                     # 6a. Capture rejected signals for momentum rotation
                     rejected_for_rotation = [s for s in signals if s not in approved and s.get("action") == "buy"]
@@ -1591,6 +1615,19 @@ class TradingEngine:
                     if rejected_count > 0:
                         rejected_signals = [s for s in signals if s not in approved and s.get("action") == "buy"]
                         self._notify_signal_rejections(rejected_signals)
+
+                    _stage("post_signal")
+
+                    # Surface slow stages so future regressions of the 22-min
+                    # cycle bottleneck are obvious. Only logs when a stage
+                    # exceeded the threshold — healthy cycles stay quiet.
+                    _slow = {k: v for k, v in _stage_times.items() if v > 5.0}
+                    if _slow:
+                        _total = sum(_stage_times.values())
+                        _detail = ", ".join(f"{k}={v:.1f}s" for k, v in sorted(_slow.items(), key=lambda kv: -kv[1]))
+                        log.warning(
+                            f"SLOW CYCLE ({_total:.1f}s total): {_detail}"
+                        )
 
                     # 7e-3. CYCLE HEARTBEAT — one INFO line per ~minute so the
                     # user can see the bot is actively evaluating even when no

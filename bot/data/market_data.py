@@ -169,6 +169,18 @@ class MarketDataFeed:
                     self._price_cache[sym] = price
                     self._last_update[sym] = now
 
+        # Per-cycle historical-bar fetch cap. IBKR paces historical-data
+        # requests (~12s/symbol on a saturated link), so attempting to refresh
+        # all 95+ symbols in one cycle blocks the main loop for ~19 min and
+        # the engine never advances past _update_data. Capping the count
+        # spreads fetches across cycles: the caller hands us a priority-sorted
+        # list (held positions first, then top movers, then rest), so the
+        # most-important symbols always get refreshed; lower-priority symbols
+        # wait at most a few cycles. Live ticks from streaming keep prices
+        # fresh in the meantime.
+        fetch_budget = int(self.config.settings.get("data", {}).get("max_bar_fetches_per_cycle", 20))
+        fetched = 0
+
         for symbol in symbols:
             # If streaming is active, grab live prices from IBKR stream first
             if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
@@ -192,8 +204,13 @@ class MarketDataFeed:
             if fail_time and now - fail_time < self._bars_fail_ttl:
                 continue
 
+            # Per-cycle fetch cap (see comment at top of update()).
+            if fetched >= fetch_budget:
+                break
+
             try:
                 bars = self._fetch_bars(symbol)
+                fetched += 1
                 if bars is not None and len(bars) > 0:
                     self._bars_cache[symbol] = bars
                     if symbol not in self._subscribed_symbols:

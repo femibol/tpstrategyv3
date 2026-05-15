@@ -272,7 +272,11 @@ data:
   scalp_bar_size: "1 min"         # 1-minute bars for RVOL scalp strategy
   lookback_days: 30               # Historical data lookback
   price_poll_interval: 3          # Poll prices every 3 seconds for scalp exits
-  cache_ttl: 10                   # 10-second cache TTL (was 30s, too slow for scalps)
+  cache_ttl: 180                  # Bar cache TTL. 5-min bars don't roll over until 5 min,
+                                  # so 3 min stale is essentially current. Scalp uses a
+                                  # separate _cache_ttl_1m (5s), unaffected. The previous 10s
+                                  # value plus IBKR pacing (~12s/historical req for 95 symbols)
+                                  # meant every cycle was a 100% cache miss → 19-min refetch.
 
 # --- Top Gainers Scanner ---
 # Catches the biggest % movers with NO price cap — finds runners at any price.
