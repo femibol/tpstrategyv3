@@ -488,25 +488,29 @@ class IBKRBroker(BaseBroker):
             )
 
             # Wait for fill — exits get longer timeout because failing to close
-            # a position is worse than waiting. Entries: 15s, Exits: 30s.
+            # a position is worse than waiting. Extended-hours books are thin and
+            # an aggressive LIMIT can take 30-90s to fill while the book rebuilds;
+            # the old 15s cap was cancelling pre-market entries before they had a
+            # chance to lift the offer.
             is_entry = action.upper() == "BUY"
-            fill_timeout = 15 if is_entry else 30
+            if outside_rth:
+                fill_timeout = 90 if is_entry else 120
+            else:
+                fill_timeout = 15 if is_entry else 30
             filled_qty = 0
             avg_fill_price = 0
             fill_status = trade.orderStatus.status
+            # IBKR's "this order will be deferred to the next regular session"
+            # path: status stays at PreSubmitted indefinitely (Warning 399). We
+            # don't want to cancel — IBKR is holding the order and will route it
+            # at next open. Surface it as a deferred order instead.
+            deferred = False
 
             for _ in range(fill_timeout * 2):  # Check every 0.5s
                 self.ib.sleep(0.5)
                 fill_status = trade.orderStatus.status
                 filled_qty = int(trade.orderStatus.filled or 0)
                 avg_fill_price = float(trade.orderStatus.avgFillPrice or 0)
-
-                # Detect deferred orders early — IBKR sets PreSubmitted when
-                # an order won't route until next session (Warning 399)
-                if fill_status == "PreSubmitted" and not is_entry:
-                    # Check if IBKR gave us a warning about deferred execution
-                    # If so, cancel and retry without outsideRth
-                    pass  # Let the timeout handle it, but log below
 
                 if fill_status == "Filled":
                     # Compute weighted average from actual execution reports
@@ -527,28 +531,39 @@ class IBKRBroker(BaseBroker):
                     log.warning(f"Order {fill_status}: {symbol} | Order ID: {order_id}")
                     return None
 
-            # If not fully filled after timeout, ALWAYS cancel the remainder.
-            # Critical: without this, unfilled shares keep working at IBKR
-            # but the bot only tracks the partial fill — creating ghost positions.
+            # If not fully filled after timeout, decide: cancel or treat as deferred.
+            # An order outside RTH that is still PreSubmitted has been *accepted* by
+            # IBKR and queued for the next regular session (Warning 399). Cancelling
+            # it would throw away a valid working order. Anything else (Submitted,
+            # Inactive, etc.) is genuinely stalled and gets cancelled to avoid ghost
+            # positions where the bot only tracks the partial fill.
             if fill_status != "Filled":
-                remaining = int(quantity) - filled_qty
-                if filled_qty == 0:
-                    log.warning(
-                        f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
-                        f"(status={fill_status}). Cancelling unfilled order."
+                if outside_rth and fill_status == "PreSubmitted" and filled_qty == 0:
+                    deferred = True
+                    log.info(
+                        f"Order DEFERRED by IBKR: {action} {quantity} {symbol} accepted but "
+                        f"queued until next regular session (status=PreSubmitted). "
+                        f"Order ID: {order_id} — leaving working at broker."
                     )
                 else:
-                    log.warning(
-                        f"PARTIAL FILL TIMEOUT: {action} {symbol} filled {filled_qty}/{quantity} "
-                        f"after {fill_timeout}s. Cancelling remaining {remaining} shares."
-                    )
-                try:
-                    self.ib.cancelOrder(trade.order)
-                    self.ib.sleep(1)
-                except Exception:
-                    pass
-                if filled_qty == 0:
-                    return None
+                    remaining = int(quantity) - filled_qty
+                    if filled_qty == 0:
+                        log.warning(
+                            f"Order NOT FILLED after {fill_timeout}s: {action} {quantity} {symbol} "
+                            f"(status={fill_status}). Cancelling unfilled order."
+                        )
+                    else:
+                        log.warning(
+                            f"PARTIAL FILL TIMEOUT: {action} {symbol} filled {filled_qty}/{quantity} "
+                            f"after {fill_timeout}s. Cancelling remaining {remaining} shares."
+                        )
+                    try:
+                        self.ib.cancelOrder(trade.order)
+                        self.ib.sleep(1)
+                    except Exception:
+                        pass
+                    if filled_qty == 0:
+                        return None
                 # Recompute avg from fills for the partial
                 if trade.fills:
                     total_qty = sum(f.execution.shares for f in trade.fills)
@@ -572,6 +587,7 @@ class IBKRBroker(BaseBroker):
                 "stop_price": stop_price,
                 "status": fill_status,
                 "avg_fill_price": avg_fill_price if avg_fill_price > 0 else None,
+                "deferred": deferred,
                 "time": datetime.now().isoformat(),
             }
 
