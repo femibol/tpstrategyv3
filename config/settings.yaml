@@ -31,9 +31,10 @@ risk:
   stop_loss_pct: 0.03             # 3% stop loss fallback
   trailing_stop_pct: 0.015        # 1.5% trailing stop — aggressive, ratchets up every 3 seconds
   take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners
-  max_slippage_pct: 0.008         # Max 0.8% slippage - small caps have wider spreads
-  max_spread_pct: 0.02            # Max 2% bid-ask spread — reject illiquid names BEFORE placing order
-  max_signal_deviation_pct: 0.03  # Max 3% price drift from signal to live — reject if stale (prevents upside-down trades)
+  max_slippage_pct: 0.008                  # Post-fill: fill within 0.8% of signal — small caps have wider spreads
+  max_spread_pct: 0.02                     # Max 2% bid-ask spread — reject illiquid names BEFORE placing order
+  max_signal_deviation_pct: 0.05           # Pre-order RTH: signal-vs-live drift cap (5% matches risk_manager.Rule 6)
+  max_signal_deviation_pct_extended: 0.12  # Pre-order extended hours: 12% — pre-market gappers routinely drift 8-12%
 
   # --- New-entry safety gates (block buys, never block exits) ---
   max_total_trades_per_day: 25      # Hard cap on entries across ALL strategies per day (0 = disabled)

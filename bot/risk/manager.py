@@ -117,7 +117,12 @@ class RiskManager:
         if symbol in positions:
             return False, f"Already in position: {symbol}"
 
-        # --- Rule 3: Signal age - reject stale signals (>60 seconds old) ---
+        # --- Rule 3: Signal age - reject stale signals ---
+        # During pre/post market the bot generates a burst of signals across many
+        # strategies that can queue behind execution; 60s rejected most of them
+        # at ~100s old. Wider 180s window outside RTH keeps the entries flowing.
+        extended_hours = bool(signal.get("_extended_hours"))
+        max_signal_age = 180 if extended_hours else 60
         signal_time = signal.get("timestamp") or signal.get("received_at")
         if signal_time:
             if isinstance(signal_time, str):
@@ -129,8 +134,8 @@ class RiskManager:
             if signal_time:
                 now = datetime.now(signal_time.tzinfo) if signal_time.tzinfo else datetime.now()
                 age_seconds = (now - signal_time).total_seconds()
-                if age_seconds > 60:
-                    return False, f"Stale signal: {age_seconds:.0f}s old (max 60s)"
+                if age_seconds > max_signal_age:
+                    return False, f"Stale signal: {age_seconds:.0f}s old (max {max_signal_age}s)"
 
         # --- Rule 4: Min price (skip for options) ---
         if signal.get("asset_type") != "option" and price > 0 and price < self.min_price:
@@ -140,14 +145,21 @@ class RiskManager:
         if signal.get("asset_type") != "option" and price > self.max_price:
             return False, f"Price ${price:.2f} above maximum ${self.max_price}"
 
-        # --- Rule 6: Price reasonableness (reject if signal price is >5% from market) ---
+        # --- Rule 6: Price reasonableness (reject if signal price too far from market) ---
+        # 5% is the right ceiling in RTH but rejects 80% of pre-market gappers,
+        # which routinely drift 8-12% between signal generation and execution
+        # because they're, by definition, moving fast. 12% during extended hours
+        # catches real chasers (PIII $5→$7.34 = 28% case) while letting normal
+        # gap-up entries through. Engine recalibrates stop/target to fill price
+        # at engine.py:_execute_buy, so wider entries are stop-loss-safe.
+        max_price_diff = 0.12 if extended_hours else 0.05
         market_price = signal.get("market_price") or signal.get("current_price")
         if market_price and price and market_price > 0:
             price_diff_pct = abs(price - market_price) / market_price
-            if price_diff_pct > 0.05:
+            if price_diff_pct > max_price_diff:
                 return False, (
                     f"Price ${price:.2f} is {price_diff_pct:.1%} away from "
-                    f"market ${market_price:.2f} (max 5%)"
+                    f"market ${market_price:.2f} (max {max_price_diff:.0%})"
                 )
 
         # --- Rule 7: Position size limit (crypto gets smaller cap) ---
