@@ -30,6 +30,26 @@ cd "$REPO_DIR"
 
 echo "$LOG_PREFIX $(date '+%Y-%m-%d %H:%M:%S') Checking for updates on $BRANCH..."
 
+# Ensure we're on the deploy branch BEFORE checking. If a session left the
+# working tree on a feature branch (e.g., after a hand-off from terminal
+# Claude or local debugging), `git pull origin main` either no-ops or
+# creates a wrong-branch merge — and every 5-min tick re-triggers the
+# pull and a recreate, infinite-looping the container. The 2026-05-15
+# session hit this for ~40 minutes before catching it. Stash-checkout-pop
+# preserves any local edits (.env tweaks, etc.).
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+    echo "$LOG_PREFIX On branch '$CURRENT_BRANCH', switching to '$BRANCH'"
+    STASHED=false
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        git stash push -m "auto-deploy-$(date +%s)" --quiet && STASHED=true
+    fi
+    git checkout "$BRANCH" --quiet
+    if [ "$STASHED" = true ]; then
+        git stash pop --quiet || echo "$LOG_PREFIX Warning: stash pop conflict — manual review needed"
+    fi
+fi
+
 # Fetch latest from remote
 git fetch origin "$BRANCH" --quiet
 
@@ -53,40 +73,27 @@ git log --oneline "$LOCAL..$REMOTE"
 # Pull the changes
 git pull origin "$BRANCH" --quiet
 
-# Check if Dockerfile or requirements.txt changed (needs rebuild)
-CHANGED_FILES=$(git diff --name-only "$LOCAL" "$REMOTE")
-NEEDS_REBUILD=false
-
-if echo "$CHANGED_FILES" | grep -qE "^(Dockerfile|requirements\.txt)$"; then
-    NEEDS_REBUILD=true
-    echo "$LOG_PREFIX Dockerfile or requirements.txt changed — full rebuild needed"
-fi
-
-# Restart the bot. Prefer systemctl if the unit is installed — that way
-# the stack stays under systemd's control and the watchdog sees consistent state.
+# Always rebuild the image, even for code-only changes. The old script only
+# rebuilt on Dockerfile / requirements.txt changes and used --force-recreate
+# otherwise — but Python source is BAKED INTO the image at build time, so
+# without --build the running container ran whatever code was in the image at
+# its last build, NOT what was just pulled. The 2026-05-15 session saw
+# multiple "Bot restarted successfully! New version: <sha>" lines while the
+# container kept running stale code for hours. Docker's layer cache makes
+# code-only rebuilds fast (~3-5s).
 USE_SYSTEMD=false
 if systemctl list-unit-files trading-bot.service >/dev/null 2>&1; then
     USE_SYSTEMD=true
 fi
 
-if [ "$NEEDS_REBUILD" = true ]; then
-    echo "$LOG_PREFIX Rebuilding trading-bot image..."
-    docker compose build trading-bot --quiet
-    if [ "$USE_SYSTEMD" = true ]; then
-        echo "$LOG_PREFIX Restarting via systemctl..."
-        systemctl restart trading-bot
-    else
-        docker compose up -d trading-bot
-    fi
+echo "$LOG_PREFIX Building and restarting trading-bot..."
+docker compose build trading-bot --quiet
+if [ "$USE_SYSTEMD" = true ]; then
+    # Systemd-managed: bounce just the bot container via compose so we
+    # don't take down IB Gateway (avoids the slow cold-start login).
+    docker compose up -d --force-recreate trading-bot
 else
-    echo "$LOG_PREFIX Restarting trading-bot (no rebuild needed)..."
-    if [ "$USE_SYSTEMD" = true ]; then
-        # Systemd-managed: bounce just the bot container via compose so we
-        # don't take down IB Gateway (avoids the slow cold-start login).
-        docker compose up -d --force-recreate trading-bot
-    else
-        docker compose up -d --force-recreate trading-bot
-    fi
+    docker compose up -d --force-recreate trading-bot
 fi
 
 # Verify it's running
