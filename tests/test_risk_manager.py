@@ -61,12 +61,52 @@ def test_max_price_ceiling_rejects(config_factory, base_signal):
 
 
 def test_price_drift_over_5pct_rejects(config, base_signal):
+    """Signal at $150 vs market $100 = -33% (setup broke since signal).
+    Directional check (Rule 6): a buy signal where price has dropped 33%
+    since generation is a broken bullish setup and must be rejected."""
     rm = RiskManager(config)
     base_signal["price"] = 150.0
-    base_signal["market_price"] = 100.0  # 50% drift
+    base_signal["market_price"] = 100.0
     approved = rm.filter_signals([base_signal], {}, current_balance=100_000)
     assert approved == []
-    assert "away from" in base_signal["_rejection_reason"]
+    reason = base_signal["_rejection_reason"]
+    # Directional rejection wording: "Setup broke" (chase down) or "Chase-up"
+    assert "Setup broke" in reason or "Chase-up" in reason
+    # Both prices show up in the reason for debuggability
+    assert "150" in reason and "100" in reason
+
+
+def test_chase_up_within_rth_limit_passes(config, base_signal):
+    """Buy signal at $100 vs market $103 = +3% chase up (under 5% RTH cap)
+    should pass — trend strengthened, entry still valid."""
+    rm = RiskManager(config)
+    base_signal["price"] = 100.0
+    base_signal["market_price"] = 103.0
+    approved = rm.filter_signals([base_signal], {}, current_balance=100_000)
+    assert approved == [base_signal]
+
+
+def test_chase_up_over_rth_limit_rejects(config, base_signal):
+    """Buy signal at $100 vs market $110 = +10% chase up (over 5% RTH cap)
+    should reject — entry too extended for RTH."""
+    rm = RiskManager(config)
+    base_signal["price"] = 100.0
+    base_signal["market_price"] = 110.0
+    approved = rm.filter_signals([base_signal], {}, current_balance=100_000)
+    assert approved == []
+    assert "Chase-up" in base_signal["_rejection_reason"]
+
+
+def test_chase_up_in_extended_hours_allows_wider_drift(config, base_signal):
+    """Buy signal at $100 vs market $110 = +10% chase up in extended hours
+    (under 12% extended cap) should pass — pre-market gappers routinely
+    drift this much, the whole point of the wider session cap."""
+    rm = RiskManager(config)
+    base_signal["price"] = 100.0
+    base_signal["market_price"] = 110.0
+    base_signal["_extended_hours"] = True
+    approved = rm.filter_signals([base_signal], {}, current_balance=100_000)
+    assert approved == [base_signal]
 
 
 def test_position_size_exceeds_max_rejects(config, base_signal):

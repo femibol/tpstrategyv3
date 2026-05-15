@@ -145,22 +145,41 @@ class RiskManager:
         if signal.get("asset_type") != "option" and price > self.max_price:
             return False, f"Price ${price:.2f} above maximum ${self.max_price}"
 
-        # --- Rule 6: Price reasonableness (reject if signal price too far from market) ---
-        # 5% is the right ceiling in RTH but rejects 80% of pre-market gappers,
-        # which routinely drift 8-12% between signal generation and execution
-        # because they're, by definition, moving fast. 12% during extended hours
-        # catches real chasers (PIII $5→$7.34 = 28% case) while letting normal
-        # gap-up entries through. Engine recalibrates stop/target to fill price
-        # at engine.py:_execute_buy, so wider entries are stop-loss-safe.
-        max_price_diff = 0.12 if extended_hours else 0.05
+        # --- Rule 6: Price reasonableness — DIRECTIONAL ---
+        # For BUY signals we treat the two directions of drift asymmetrically:
+        #   chase UP (market > signal): trend strengthened since signal; entering
+        #     higher is normal for momentum/gap plays. Wider cap (5% RTH / 12% ext).
+        #   chase DOWN (market < signal): the bullish setup broke between signal
+        #     generation and execution. This is "buying a fade" — tight cap
+        #     (3% RTH / 5% ext) regardless of session.
+        # Non-buy actions keep the symmetric cap.
         market_price = signal.get("market_price") or signal.get("current_price")
         if market_price and price and market_price > 0:
-            price_diff_pct = abs(price - market_price) / market_price
-            if price_diff_pct > max_price_diff:
-                return False, (
-                    f"Price ${price:.2f} is {price_diff_pct:.1%} away from "
-                    f"market ${market_price:.2f} (max {max_price_diff:.0%})"
-                )
+            signed_diff = (market_price - price) / price  # +: market above signal (chase up); -: below (chase down)
+            if action == "buy":
+                if signed_diff >= 0:
+                    max_drift = 0.12 if extended_hours else 0.05
+                    if signed_diff > max_drift:
+                        return False, (
+                            f"Chase-up: signal ${price:.2f} → market ${market_price:.2f} "
+                            f"({signed_diff:+.1%}, max {max_drift:.0%} "
+                            f"{'ext' if extended_hours else 'RTH'})"
+                        )
+                else:
+                    # Price moved DOWN since signal — setup broke. Tight cap.
+                    max_drop = 0.05 if extended_hours else 0.03
+                    if abs(signed_diff) > max_drop:
+                        return False, (
+                            f"Setup broke: signal ${price:.2f} → market ${market_price:.2f} "
+                            f"({signed_diff:+.1%}, max -{max_drop:.0%})"
+                        )
+            else:
+                max_price_diff = 0.12 if extended_hours else 0.05
+                if abs(signed_diff) > max_price_diff:
+                    return False, (
+                        f"Price ${price:.2f} is {abs(signed_diff):.1%} away from "
+                        f"market ${market_price:.2f} (max {max_price_diff:.0%})"
+                    )
 
         # --- Rule 7: Position size limit (crypto gets smaller cap) ---
         is_crypto = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
