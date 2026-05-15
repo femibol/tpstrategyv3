@@ -226,6 +226,12 @@ class MeanReversionStrategy(BaseStrategy):
 
         # --- SELL Signal (Overbought - for existing positions) ---
         if zscore >= abs(self.entry_zscore) and rsi > self.rsi_overbought:
+            # Only fire exits for symbols the bot actually holds. Without this
+            # gate, scanner-discovered overbought stocks generate sells that the
+            # risk manager rejects ("No position to exit") — burning the
+            # signal slot and crowding the rejection log.
+            if self._held_symbols is not None and symbol not in self._held_symbols:
+                return None
             signal = {
                 "symbol": symbol,
                 "action": "sell",
