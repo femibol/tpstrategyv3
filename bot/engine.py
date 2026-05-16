@@ -2159,11 +2159,19 @@ class TradingEngine:
             return
 
         if approved:
-            log.info(
-                f"CRYPTO FAST LANE: {len(approved)}/{len(fast_signals)} signals approved "
-                f"on {available}"
-            )
+            # One-line per-signal detail so we can see WHAT is approved
+            # (symbol + action + strategy + confidence) and trace why an
+            # apparent "approval" isn't producing a trade.
             for sig in approved:
+                log.info(
+                    "CRYPTO FAST LANE: approved %s %s from %s conf=%.2f price=%s reason=%s",
+                    sig.get("action"),
+                    sig.get("symbol"),
+                    sig.get("strategy"),
+                    sig.get("confidence", 0.0),
+                    sig.get("market_price") or sig.get("price"),
+                    sig.get("reason"),
+                )
                 try:
                     self._execute_signal(sig)
                 except Exception as e:
