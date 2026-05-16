@@ -5,9 +5,47 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
-2026-05-16 (late UTC) — **`c26dad3`: three real blockers behind "no organic crypto trade".** (1) DNS broken inside `trading-bot` container — netns linkage to `ib-gateway` had drifted (different `net:` inodes despite `network_mode: "service:ib-gateway"`); fixed by `docker compose down && up -d` rather than per-service recreate. (2) `risk_manager` Rule 7 was rejecting every BTC signal at "Position $77962 exceeds max $3000" — `signal.quantity` was defaulting to 1 → 1 BTC notional vs the 10%-of-balance crypto cap. (3) `position_sizer.calculate` returned 0 shares for BTC (`math.floor(3000/77000)`); added a crypto branch that keeps quantity as a float quantized to 5 decimals. Plus: mean_reversion heartbeat verdict now mirrors the real `entry_ready` path (it was saying "BUY SIGNAL" for 30+ minutes while the real entry waited on a green reversal candle). Fixes deployed via manual `docker compose down && up -d` at 15:05 UTC; auto-deploy will catch the SHA on the next 5-min tick. **Not yet validated live** — first post-boot heartbeats at 11:11–11:12 ET still show `<no scan_results>` / `WAIT (no_data)` because the slow `_update_data` cycle had not yet completed its first crypto bar fetch when this was written.
+2026-05-16 (late UTC, session 3) — **Crypto pipeline complete: 45-name universe on Binance.US real-time bars, fast lane firing every 3s, fractional sizing through risk_manager, truthful heartbeat — and all of it validated live as `universe=45 | neutral=45` at 11:50:53 ET.** Four commits since the prior handoff: `75789b9` (universe 3→46 + fast-lane reads config + bucketed heartbeat), `8bb89bf` (Binance.US adapter primary, Yahoo fallback for MKR/TON, MATIC→POL + RNDR→RENDER alias map, STX dropped), `108cb91` (heartbeat WAIT verdict bucketed as no_data, `LOG_LEVEL` env var so future sessions aren't blind to `log.debug` like this one was). Bot is now in the "waiting for a real signal" state for the first time — pipeline works end-to-end, market is just quiet on a Saturday afternoon.
+
+2026-05-16 (late UTC, session 2) — **`c26dad3`: three real blockers behind "no organic crypto trade".** (1) DNS broken inside `trading-bot` container — netns linkage to `ib-gateway` had drifted (different `net:` inodes despite `network_mode: "service:ib-gateway"`); fixed by `docker compose down && up -d` rather than per-service recreate. (2) `risk_manager` Rule 7 was rejecting every BTC signal at "Position $77962 exceeds max $3000" — `signal.quantity` was defaulting to 1 → 1 BTC notional vs the 10%-of-balance crypto cap. (3) `position_sizer.calculate` returned 0 shares for BTC (`math.floor(3000/77000)`); added a crypto branch that keeps quantity as a float quantized to 5 decimals. Plus: mean_reversion heartbeat verdict now mirrors the real `entry_ready` path (it was saying "BUY SIGNAL" for 30+ minutes while the real entry waited on a green reversal candle). **Validated live during the same session** — heartbeats showed `universe=46 | neutral=46` post-deploy with all 46 crypto symbols loaded.
 
 2026-05-16 (mid UTC) — **Crypto follow-up shipped: looser mean_reversion thresholds + crypto fast lane + auto-deploy `HEAD ≠ deployed SHA` fix.** All three commits manually deployed at 07:42:53 UTC after the VPS-push gotcha (below) blocked auto-deploy. Container healthy on `05ca7b5` (or newer if this commit landed); fast lane wired and silent (logs only on signal approval).
+
+### `108cb91` — heartbeat truthfulness + `LOG_LEVEL` env var
+
+Two follow-ups that came out of session-3 debugging.
+
+1. **Heartbeat `WAIT` was masquerading as `NEUTRAL`.** The new bucketed heartbeat from `75789b9` had `verdict=="WAIT"` falling through to the `else: neutral` arm at `engine.py:2129`. mean_reversion sets `verdict="WAIT"` when bars haven't loaded (`{"status":"no_data","verdict":"WAIT"}`), so a freshly-booted bot with zero crypto bars would heartbeat `universe=45 | neutral=45` and look healthy. New explicit `elif verdict == "WAIT"` branch bumps `no_data` instead.
+
+2. **`LOG_LEVEL` env var support.** `bot/utils/logger.py:24` was hardcoded to set the logger level to INFO regardless of the file handler being DEBUG — which means every `log.debug(...)` was being dropped at the logger level before reaching any handler. This wasted ~15 min of session-3 debugging trying to find Yahoo/Binance fetch failures that weren't actually being logged. Now `setup_logger` reads `LOG_LEVEL` env (defaults to INFO). To debug a future bar-fetch issue: set `LOG_LEVEL=DEBUG` in `.env`, recreate the container, the file gets the firehose. Console handler still pinned to INFO so foreground stays readable. `docker-compose.yml` updated to thread the env var through.
+
+### `8bb89bf` — crypto data: Binance.US primary, Yahoo fallback
+
+Previous crypto bar source was Yahoo-direct, which silently returned 0 bars for ~22% of the new universe (PEPE, APT, MATIC, RNDR, SUI, WIF, BONK, FLOKI, JUP, SEI) and got them stuck in the `_bars_fail_cache` 120s loop. Plus Yahoo crypto data is ~5s delayed.
+
+New `_fetch_bars` flow for crypto symbols (`bot/data/market_data.py:249-273`):
+1. **Binance.US klines API** — real-time, ~60ms median, no auth, 1200 req/min budget. Covers 43/45 of the universe. The `_BINANCE_ALIASES` dict translates rebrands at the API boundary (`MATIC → POL`, `RNDR → RENDER`) so the universe yaml keeps the common ticker names. Tries `{base}USDT` first, then `{base}USD`, then `{base}BUSD` so we don't have to per-symbol-configure the quote currency.
+2. **Yahoo Finance direct** — fallback for MKR-USD and TON-USD (Binance.US doesn't list them).
+3. **None** — let the bar-fail cache backoff kick in.
+
+`binance.com` is geo-blocked from the Linode block this VPS runs on (HTTP 451); `api.binance.us` works fine. End-to-end test from inside the container before deploy: **45/45 symbols loaded, 0 failures, ~9s total** for full universe fetch. Live post-deploy verification: `universe=45 | neutral=45` at 11:50:53 ET.
+
+### `75789b9` — crypto universe 3 → 46 + fast lane reads from config
+
+Two changes that go together. The user wanted "the crypto universe" — concerned a random altcoin going parabolic would slip past a 3-name list.
+
+1. **`config/settings.yaml`** — `crypto.symbols` grew from `[BTC, ETH, SOL]` to a 46-name "fat list" covering L1s, L2s, DeFi, memes, AI/RWA. Risk is bounded by `max_crypto_positions` and the 10% crypto position-size cap, not by the symbol count, so growing the list doesn't increase capital exposure. (Later trimmed to 45 in `8bb89bf` after STX was found unsupported by both data sources.)
+
+2. **`bot/engine.py:2087`** — `_quick_scan_crypto`'s crypto symbol set was hardcoded to `("BTC-USD", "ETH-USD", "SOL-USD")`. **Even after expanding the yaml the fast lane would have stayed at 3** — silent universe gap. Now reads from `self.config.settings["crypto"]["symbols"]`.
+
+3. **`engine.py:2103` heartbeat reformat** — per-symbol rows × 46 would be a 5KB log line every 60s. New format buckets by verdict and only spells out `BUY SIGNAL` + `WAIT:*` near-misses; collapses NEUTRAL / WARMING UP / no_data into counts:
+   ```
+   CRYPTO FAST LANE HEARTBEAT: universe=46 | BUY[2]: SOL-USD(z=-1.1 rsi=38 bb=MIDDLE), AVAX-USD(...)
+                                | WAIT[3]: ETH-USD(needs green bar), ...
+                                | warming=8 | neutral=33
+   ```
+
+**Open follow-up (next session):** replace the static yaml list with a CoinGecko `/coins/markets?order=volume_desc&per_page=100` hot-movers lane that injects symbols into the same `_fetch_bars` path (no second adapter needed thanks to `8bb89bf`). Mirror of the equity hot-mover pattern at `_quick_scan_hot_movers`.
 
 ### `c26dad3` — crypto: fractional sizing + truthful heartbeat verdict
 
