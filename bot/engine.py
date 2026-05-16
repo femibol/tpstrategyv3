@@ -2083,6 +2083,32 @@ class TradingEngine:
         if not available:
             return
 
+        # Heartbeat every ~60s so we can SEE the fast lane is alive and what
+        # mean_reversion is computing — without this, the lane is invisible
+        # until something fires, and we can't tell broken-from-quiet.
+        now_ts = datetime.now(self.tz)
+        last_hb = getattr(self, "_crypto_fast_lane_hb", None)
+        if last_hb is None or (now_ts - last_hb).total_seconds() >= 60:
+            self._crypto_fast_lane_hb = now_ts
+            try:
+                mr = self.strategies.get("mean_reversion")
+                rows = []
+                for sym in available:
+                    sr = getattr(mr, "scan_results", {}).get(sym) if mr else None
+                    if sr:
+                        rows.append(
+                            f"{sym}: z={sr.get('zscore')} rsi={sr.get('rsi')} "
+                            f"bb={sr.get('bb_zone')} verdict={sr.get('verdict')}"
+                        )
+                    else:
+                        rows.append(f"{sym}: <no scan_results>")
+                log.info(
+                    "CRYPTO FAST LANE HEARTBEAT (mean_reversion): %s",
+                    " | ".join(rows),
+                )
+            except Exception as _e:
+                log.debug(f"CRYPTO FAST LANE heartbeat failed: {_e}")
+
         fast_lane_strats = ("mean_reversion", "momentum")
         fast_signals = []
         for name in fast_lane_strats:
