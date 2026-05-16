@@ -241,12 +241,21 @@ class MarketDataFeed:
         """Fetch real bars from available sources (no fake data)."""
         bars = None
 
-        # Crypto: short-circuit to Yahoo. IBKR's stock-contract path errors
-        # on BTC-USD/ETH-USD/SOL-USD, and the standard _yahoo_gate refuses
-        # Yahoo while IBKR is connected (a sensible rule for equities where
-        # we'd be double-paying for live data). Crypto doesn't compete for
-        # IBKR streaming lines and Yahoo's crypto bars are ~5s age, 24/7.
+        # Crypto: Binance.US first (real-time, ~60ms latency, no auth,
+        # 1200 req/min budget — plenty for 50 symbols / 5min cadence).
+        # Falls back to Yahoo (~5s delay, covers the few names Binance.US
+        # doesn't list like MKR/TON). IBKR's stock-contract path errors on
+        # USD-quoted crypto symbols, so we don't go through it. The standard
+        # _yahoo_gate refuses Yahoo while IBKR is connected (sensible for
+        # equities where we'd be double-paying for live data), but crypto
+        # bypasses that gate — crypto doesn't compete for IBKR streaming lines.
         if self._is_crypto(symbol):
+            try:
+                bars = self._fetch_binance_us_klines(symbol)
+                if bars is not None and len(bars) > 0:
+                    return bars
+            except Exception as e:
+                log.debug(f"Binance.US crypto bars failed for {symbol}: {e}")
             try:
                 bars = self._fetch_yahoo_direct(symbol)
                 if bars is not None and len(bars) > 0:
@@ -300,6 +309,70 @@ class MarketDataFeed:
                 log.debug(f"yfinance lib failed for {symbol}: {e}")
 
         return bars
+
+    # =========================================================================
+    # Binance.US (real-time crypto bars, no auth)
+    # =========================================================================
+
+    # Symbols Binance lists under a different name than the rest of the
+    # world. Keep our internal universe using the common ticker (MATIC,
+    # RNDR) and translate at the API boundary.
+    _BINANCE_ALIASES = {
+        "MATIC": "POL",
+        "RNDR": "RENDER",
+    }
+
+    def _fetch_binance_us_klines(self, symbol):
+        """Fetch 5-min crypto bars from the Binance.US public klines API.
+
+        Symbol mapping: BTC-USD → BTCUSDT (Binance.US lists most pairs vs
+        USDT; some only vs USD; tries both). Returns the same OHLCV DataFrame
+        shape as `_fetch_yahoo_direct` (open/high/low/close/volume indexed by
+        UTC timestamp). Returns None if the pair isn't listed — caller falls
+        back to Yahoo.
+
+        Binance.com is geo-blocked (HTTP 451) from many IPs including the
+        Linode block this VPS runs on, so we use api.binance.us only.
+        Unauthenticated rate limit is 1200 req/min — 46 symbols every 30s
+        is ~92 req/min, well inside that. No API key required.
+        """
+        if not self._is_crypto(symbol):
+            return None
+        base = symbol.upper().split("-")[0]
+        base = self._BINANCE_ALIASES.get(base, base)
+        # Try USDT first (covers the long tail), then USD, then BUSD
+        interval_map = {
+            "1 min": "1m", "5 mins": "5m", "15 mins": "15m",
+            "30 mins": "30m", "1 hour": "1h", "1 day": "1d",
+        }
+        interval = interval_map.get(self.bar_size, "5m")
+        # Fetch ~5 days of 5-min bars to match Yahoo's lookback
+        limit = min(1000, 24 * 12 * self.lookback_days)
+        for quote in ("USDT", "USD", "BUSD"):
+            try:
+                resp = _requests.get(
+                    "https://api.binance.us/api/v3/klines",
+                    params={"symbol": f"{base}{quote}", "interval": interval, "limit": limit},
+                    timeout=8,
+                )
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                if not data:
+                    continue
+                df = pd.DataFrame(
+                    data,
+                    columns=["open_time", "open", "high", "low", "close", "volume",
+                             "close_time", "qav", "trades", "tbv", "tqv", "ignore"]
+                )
+                for col in ("open", "high", "low", "close", "volume"):
+                    df[col] = df[col].astype(float)
+                df.index = pd.to_datetime(df["open_time"], unit="ms")
+                return df[["open", "high", "low", "close", "volume"]]
+            except Exception as e:
+                log.debug(f"Binance.US {base}{quote} fetch failed: {e}")
+                continue
+        return None
 
     # =========================================================================
     # Yahoo Finance Direct API (fallback - ~15 minute delay)

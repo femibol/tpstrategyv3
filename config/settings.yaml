@@ -248,11 +248,12 @@ crypto:
   # to scale the universe; risk is bounded by max_crypto_positions and
   # crypto.risk.max_position_size_pct, not the symbol count.
   #
-  # 46-name "fat list" covering L1s, L2s, DeFi, memes, AI/RWA — anything
-  # with real Yahoo bar coverage and meaningful 24h volume. Wider net so
-  # a random mover doesn't get missed; the fast lane evaluates the whole
-  # set every 3s. A proper top-by-volume scanner (CoinGecko) is the next
-  # iteration so the list stops being static.
+  # 45-name "fat list" covering L1s, L2s, DeFi, memes, AI/RWA. Data flow:
+  # Binance.US first (~60ms, real-time, no auth, 43/45 covered including
+  # MATIC→POL and RNDR→RENDER rebrands handled in _BINANCE_ALIASES), Yahoo
+  # second (~5s delay, covers MKR-USD and TON-USD which Binance.US doesn't
+  # list). STX dropped — neither source serves it. A proper top-by-volume
+  # scanner (CoinGecko) is the next iteration so the list stops being static.
   symbols: [
     "AAVE-USD", "ADA-USD", "ALGO-USD", "APT-USD", "ARB-USD", "ATOM-USD",
     "AVAX-USD", "BCH-USD", "BONK-USD", "BTC-USD", "COMP-USD", "CRV-USD",
@@ -260,7 +261,7 @@ crypto:
     "FLOKI-USD", "GRT-USD", "HBAR-USD", "ICP-USD", "IMX-USD", "INJ-USD",
     "JUP-USD", "LINK-USD", "LTC-USD", "MATIC-USD", "MKR-USD", "NEAR-USD",
     "OP-USD", "PEPE-USD", "RNDR-USD", "SEI-USD", "SHIB-USD", "SNX-USD",
-    "SOL-USD", "STX-USD", "SUI-USD", "TIA-USD", "TON-USD", "TRX-USD",
+    "SOL-USD", "SUI-USD", "TIA-USD", "TON-USD", "TRX-USD",
     "UNI-USD", "WIF-USD", "XLM-USD", "XRP-USD"
   ]
   # Which strategies fire on crypto bars. Equity-scanner-dependent
