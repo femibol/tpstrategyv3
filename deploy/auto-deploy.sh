@@ -25,6 +25,14 @@ set -euo pipefail
 REPO_DIR="${REPO_DIR:-/opt/trading-bot}"
 BRANCH="${DEPLOY_BRANCH:-main}"
 LOG_PREFIX="[auto-deploy]"
+# Minimum seconds between successful container recreates. A burst of
+# commits (typical during active dev — 3 commits in 15 min on 2026-05-16
+# wiped warmup state 3x) only causes ONE recreate; subsequent ticks log
+# "Debounced" and exit until the window passes, then deploy the latest
+# tip in a single recreate. Override with DEPLOY_DEBOUNCE_SECONDS=0
+# to disable.
+DEBOUNCE_SECONDS="${DEPLOY_DEBOUNCE_SECONDS:-600}"
+LAST_DEPLOY_FILE="${REPO_DIR}/.last-deploy"
 
 cd "$REPO_DIR"
 
@@ -65,22 +73,51 @@ fi
 # Fetch latest from remote
 git fetch origin "$BRANCH" --quiet
 
-# Check if local is behind remote
+# Check if local is BEHIND remote (not just unequal). On 2026-05-15 a
+# session committed directly to local main (45318e4) while auto-deploy
+# had checked the tree out from a feature branch. That local-only
+# commit made local main perpetually a descendant of origin/main:
+# LOCAL != REMOTE, but `git pull` was a no-op (nothing to merge), so
+# the script recreated the container every 5 min for ~30 min while
+# HEAD never moved. Counting commits in REMOTE-but-not-LOCAL handles
+# all three topologies: equal (0 behind → exit), local-ahead
+# (0 behind → exit, warn), and truly-behind (deploy).
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse "origin/$BRANCH")
+BEHIND=$(git rev-list --count "$LOCAL..$REMOTE")
+AHEAD=$(git rev-list --count "$REMOTE..$LOCAL")
 
-if [ "$LOCAL" = "$REMOTE" ]; then
-    echo "$LOG_PREFIX No changes detected. Bot is up to date."
+if [ "$BEHIND" -eq 0 ]; then
+    if [ "$AHEAD" -gt 0 ]; then
+        echo "$LOG_PREFIX Local is $AHEAD commit(s) AHEAD of origin/$BRANCH (HEAD=$(git rev-parse --short HEAD)) — local-only work not pushed. Skipping deploy."
+    else
+        echo "$LOG_PREFIX No changes detected. Bot is up to date."
+    fi
     exit 0
 fi
 
-echo "$LOG_PREFIX Changes detected!"
+echo "$LOG_PREFIX Changes detected! ($BEHIND commit(s) behind, $AHEAD ahead)"
 echo "$LOG_PREFIX   Local:  $LOCAL"
 echo "$LOG_PREFIX   Remote: $REMOTE"
 
 # Show what changed
 echo "$LOG_PREFIX Changes:"
 git log --oneline "$LOCAL..$REMOTE"
+
+# Debounce: collapse rapid-fire commits into one recreate. Skip the
+# pull too — if we pulled now but skipped the recreate, the container
+# would run stale code AND the next tick would see "no changes" and
+# never recreate.
+if [ "$DEBOUNCE_SECONDS" -gt 0 ] && [ -f "$LAST_DEPLOY_FILE" ]; then
+    LAST_DEPLOY_TS=$(stat -c %Y "$LAST_DEPLOY_FILE" 2>/dev/null || echo 0)
+    NOW_TS=$(date +%s)
+    AGE=$((NOW_TS - LAST_DEPLOY_TS))
+    if [ "$AGE" -lt "$DEBOUNCE_SECONDS" ]; then
+        WAIT=$((DEBOUNCE_SECONDS - AGE))
+        echo "$LOG_PREFIX Debounced — last deploy was ${AGE}s ago (window ${DEBOUNCE_SECONDS}s). Will deploy in ~${WAIT}s."
+        exit 0
+    fi
+fi
 
 # Pull the changes
 git pull origin "$BRANCH" --quiet
@@ -113,6 +150,7 @@ sleep 5
 if docker compose ps trading-bot | grep -q "Up"; then
     echo "$LOG_PREFIX Bot restarted successfully!"
     echo "$LOG_PREFIX   New version: $(git rev-parse --short HEAD)"
+    touch "$LAST_DEPLOY_FILE"
 else
     echo "$LOG_PREFIX ERROR: Bot failed to start! Check logs:"
     echo "$LOG_PREFIX   docker compose logs --tail 50 trading-bot"
