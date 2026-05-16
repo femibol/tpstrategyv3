@@ -2122,6 +2122,13 @@ class TradingEngine:
                         # one bar away from firing.
                         short = verdict.replace("WAIT: ", "")
                         buckets["wait_near"].append(f"{sym}({short})")
+                    elif verdict == "WAIT":
+                        # _analyze_symbol's no-bars early-return sets verdict="WAIT"
+                        # without zscore/rsi/etc. — that's "no data", NOT a true
+                        # neutral verdict. Bucket it correctly so the heartbeat
+                        # doesn't claim 45 symbols are NEUTRAL when really their
+                        # bars never loaded.
+                        buckets["no_data"] += 1
                     elif verdict == "WARMING UP":
                         buckets["warming"] += 1
                     else:

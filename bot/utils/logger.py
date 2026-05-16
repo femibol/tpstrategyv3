@@ -1,6 +1,7 @@
 """
 Logging setup for the trading bot.
 """
+import os
 import sys
 import logging
 import logging.handlers
@@ -18,8 +19,19 @@ class SafeStreamHandler(logging.StreamHandler):
             super().emit(record)
 
 
-def setup_logger(name="trading_bot", log_file="logs/trading.log", level="INFO"):
-    """Configure and return a logger with file and console handlers."""
+def setup_logger(name="trading_bot", log_file="logs/trading.log", level=None):
+    """Configure and return a logger with file and console handlers.
+
+    The logger's level gates ALL records before they reach any handler. If
+    this is set to INFO (the old hardcoded default), every `log.debug(...)`
+    call is silently dropped — which means the file handler's "DEBUG level"
+    setting below was a no-op, hiding diagnostic info during the 2026-05-16
+    crypto-bar-fetch debugging. Now respects a `LOG_LEVEL` env var so
+    verbosity can be cranked without a code change (`LOG_LEVEL=DEBUG`
+    surfaces every `log.debug` to the file; console stays at INFO).
+    """
+    if level is None:
+        level = os.getenv("LOG_LEVEL", "INFO")
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 

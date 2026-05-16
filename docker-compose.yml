@@ -135,6 +135,12 @@ services:
       # Mode
       TRADING_MODE: ${TRADING_MODE:-paper}
 
+      # Logger verbosity — defaults to INFO. Set LOG_LEVEL=DEBUG in .env
+      # to surface every log.debug(...) call to logs/trading.log without
+      # a code change. Useful for debugging bar-fetch failures, strategy
+      # exceptions, and other paths that are noisy by design.
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
       # IBKR — sole broker. Connecting via localhost (we share
       # ib-gateway's network namespace via network_mode above), so
       # our source IP is 127.0.0.1 — already in IB Gateway's default
