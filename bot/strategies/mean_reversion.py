@@ -176,9 +176,17 @@ class MeanReversionStrategy(BaseStrategy):
         near_lower_bb = current_price <= bb_lower * 1.005  # Within 0.5% of lower BB
 
         # Strict entry: require reversal evidence to avoid catching falling knives
-        # Small caps trend hard — only buy when buying pressure is confirmed
+        # Small caps trend hard — only buy when buying pressure is confirmed.
+        # Crypto exception: Yahoo's in-progress 1-min bar often has close==open
+        # because the tick hasn't written yet (true doji or just lag). Use a
+        # 2-bar lookback for crypto so we look at the LAST COMPLETED bar's
+        # color, not the in-progress bar's. Same "not red" semantics either way.
         buy_signal = False
-        reversal_candle = closes[-1] > bars["open"].values[-1]  # Green candle
+        if _is_crypto and len(closes) >= 2:
+            # Last completed bar (closes[-2]) vs its open (bars open[-2])
+            reversal_candle = closes[-2] >= bars["open"].values[-2]
+        else:
+            reversal_candle = closes[-1] > bars["open"].values[-1]  # Green candle
 
         if zscore_trigger and rsi_trigger and reversal_candle:
             buy_signal = True  # Classic: Z-score + RSI oversold + reversal candle
