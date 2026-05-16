@@ -5,7 +5,37 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-16 (late UTC) — **`c26dad3`: three real blockers behind "no organic crypto trade".** (1) DNS broken inside `trading-bot` container — netns linkage to `ib-gateway` had drifted (different `net:` inodes despite `network_mode: "service:ib-gateway"`); fixed by `docker compose down && up -d` rather than per-service recreate. (2) `risk_manager` Rule 7 was rejecting every BTC signal at "Position $77962 exceeds max $3000" — `signal.quantity` was defaulting to 1 → 1 BTC notional vs the 10%-of-balance crypto cap. (3) `position_sizer.calculate` returned 0 shares for BTC (`math.floor(3000/77000)`); added a crypto branch that keeps quantity as a float quantized to 5 decimals. Plus: mean_reversion heartbeat verdict now mirrors the real `entry_ready` path (it was saying "BUY SIGNAL" for 30+ minutes while the real entry waited on a green reversal candle). Fixes deployed via manual `docker compose down && up -d` at 15:05 UTC; auto-deploy will catch the SHA on the next 5-min tick. **Not yet validated live** — first post-boot heartbeats at 11:11–11:12 ET still show `<no scan_results>` / `WAIT (no_data)` because the slow `_update_data` cycle had not yet completed its first crypto bar fetch when this was written.
+
 2026-05-16 (mid UTC) — **Crypto follow-up shipped: looser mean_reversion thresholds + crypto fast lane + auto-deploy `HEAD ≠ deployed SHA` fix.** All three commits manually deployed at 07:42:53 UTC after the VPS-push gotcha (below) blocked auto-deploy. Container healthy on `05ca7b5` (or newer if this commit landed); fast lane wired and silent (logs only on signal approval).
+
+### `c26dad3` — crypto: fractional sizing + truthful heartbeat verdict
+
+Three independent reasons "no organic crypto trade has fired" despite the fast lane being wired up + active for ~14h:
+
+1. **`risk_manager` Rule 7 (`bot/risk/manager.py:184–202`)** was rejecting every BTC signal at "Position $77962 exceeds max $3000". `mean_reversion`'s signal dict has no `quantity` field, so `signal.get("quantity", 1)` defaulted to **1 BTC = $77K** vs the 10%-of-balance crypto cap. Fix: when `signal.quantity` is missing AND the symbol is crypto, set `position_value = max_position` (true-by-construction — the downstream sizer is guaranteed not to exceed it). Concrete proof from log: at 09:04 UTC we logged 10 back-to-back `REJECTED: buy BTC-USD | Position $77962 exceeds max $3000` rejections in 30 seconds.
+
+2. **`position_sizer.calculate` (`bot/risk/position_sizer.py:280+`)** would have returned 0 shares for BTC anyway: `math.floor(3000 / 77000) = 0`. Added an early crypto branch that keeps quantity as a float quantized to 5 decimals (the precision TradersPost's crypto subscriptions accept), with a $10 dust filter. Returns `0.03896` for a $3K cap on $77K BTC, etc. Non-crypto integer path unchanged.
+
+3. **mean_reversion heartbeat verdict was lying.** Old code: `verdict = "BUY SIGNAL"` iff 2 of {zscore_ok, rsi_oversold, at_lower_bb} passed. Real entry path (`buy_signal` block at ~line 199) additionally requires a green/doji *reversal candle* and, for some paths, `vol_ratio > 1.3`. Observed today: heartbeat said `BTC-USD verdict=BUY SIGNAL` for 30+ consecutive minutes (10:20–10:59 ET) with zero signals fired. Fix: compute `reversal_candle` + an `entry_ready` boolean BEFORE the verdict block, then the buy_signal branch reuses `entry_ready` (single source of truth). New verdict labels for the "close but not firing" cases: `WAIT: needs green bar`, `WAIT: needs vol>1.3x`, `WAIT: combo mismatch`.
+
+### DNS / netns gotcha (worth a follow-up — not solved structurally)
+
+**The actual reason the heartbeat was stuck on `z=-1.47 rsi=36.2` for 40+ minutes:** DNS was broken inside the `trading-bot` container. `getent hosts query1.finance.yahoo.com` returned empty → every `_fetch_yahoo_direct(BTC-USD/...)` call dropped into the `_bars_fail_cache` 120s-backoff loop forever → the bars in `_bars_cache` were frozen at boot-time data (hours old).
+
+Root cause: `docker exec ... readlink /proc/self/ns/net` showed the two containers in **different netns inodes** (`4026532448` for gateway, `4026532627` for bot) despite `docker-compose.yml` declaring `network_mode: "service:ib-gateway"`. Most likely a per-service `--force-recreate` (auto-deploy does this) restarted the bot while leaving its `container:<id>` link pointing at a now-dead gateway container, and the kernel handed it an empty netns instead of erroring. After a clean `docker compose down && up -d` the inode matched (`4026532506` for both) and DNS resolved instantly.
+
+**Tried + rejected:** adding `dns: [8.8.8.8, 1.1.1.1]` to the `trading-bot` service in `docker-compose.yml`. Docker rejects this combination with `conflicting options: dns and the network mode` because `network_mode: service:...` requires inheriting the target's resolv.conf. The bot must rely on `ib-gateway`'s DNS pins.
+
+**Open structural fix (NOT in this PR):** auto-deploy's `docker compose up -d --force-recreate trading-bot` should either also recreate `ib-gateway`, or `auto-deploy.sh` should verify `readlink /proc/self/ns/net` matches between the two containers post-deploy and re-link if not. Right now this can silently break the bot's external connectivity any time `ib-gateway` restarts between `trading-bot` deploys (DNS, Yahoo crypto bars, Discord notifications, all dead — only IBKR still works because that's 127.0.0.1 inside the shared netns, which the kernel resolves locally regardless).
+
+### What the next session should expect to see
+
+The fixes are committed (`c26dad3`) and pushed; the container has been manually recreated. First post-boot heartbeats (11:11–11:12 ET) still showed `<no scan_results>` / `verdict=WAIT (no_data)` because `_update_data`'s first cycle hadn't yet fetched crypto bars when this handoff was written. By the time you read this, expect one of two outcomes:
+
+- **Healthy:** heartbeats show changing z-score/RSI values across consecutive minutes, with verdict cycling between `NEUTRAL` / `WARMING UP` / `WAIT: needs green bar` / `BUY SIGNAL`. If a `BUY SIGNAL` lands, look for `Position size (crypto): 0.0389 BTC-USD @ $77962.00 = $3,033.21` from the sizer, then `CRYPTO FAST LANE: approved buy BTC-USD ...`, then `TradersPost SUBMITTED: BTC-USD qty=0.0389`.
+
+- **Still broken (DNS again):** heartbeats stuck on identical z-score/RSI values for many minutes. Reproduce with `docker exec trading-bot-trading-bot-1 getent hosts query1.finance.yahoo.com` — empty means netns drifted again. Fix: `docker compose down && docker compose up -d` (not `up -d --force-recreate trading-bot` alone).
 
 ### `cb11360` — `mean_reversion` crypto thresholds loosened
 After 14h of 24/7 BTC/ETH/SOL injection with code defaults (`entry_zscore_crypto=-1.2`, `rsi_oversold_crypto=45`) producing zero `mean_reversion` fires, dropped overrides into `config/strategies.yaml`:
