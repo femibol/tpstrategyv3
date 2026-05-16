@@ -34,6 +34,9 @@ mean_reversion:
   exit_zscore: 0.0
   rsi_oversold: 32               # Was 28. Loosened in tandem with zscore so oversold conditions trigger more often.
   rsi_overbought: 68             # Symmetric loosen from 72
+  entry_zscore_crypto: -1.0      # Was -1.2 (code default). 14h of 24/7 BTC/ETH/SOL chop produced zero fires.
+  rsi_oversold_crypto: 40        # Was 45 (code default). Loosened alongside zscore for the same reason.
+  rsi_overbought_crypto: 55      # Code default — left as-is; symmetric short trigger.
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5
