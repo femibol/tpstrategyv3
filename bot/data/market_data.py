@@ -205,12 +205,21 @@ class MarketDataFeed:
                 continue
 
             # Per-cycle fetch cap (see comment at top of update()).
-            if fetched >= fetch_budget:
-                break
+            # Crypto fetches go to Yahoo (~200ms), NOT IBKR's paced
+            # historical endpoint. Exempt them from the budget so a long
+            # tail of equity symbols can't starve BTC/ETH/SOL.
+            # Use `continue` not `break`: if we `break` here, crypto symbols
+            # that happen to be ordered AFTER the budget-exhausting equity
+            # never get evaluated. The remaining loop iterations are cheap
+            # (skip-and-continue lookups) so the perf cost is negligible.
+            _is_crypto_sym = self._is_crypto(symbol)
+            if not _is_crypto_sym and fetched >= fetch_budget:
+                continue
 
             try:
                 bars = self._fetch_bars(symbol)
-                fetched += 1
+                if not _is_crypto_sym:
+                    fetched += 1
                 if bars is not None and len(bars) > 0:
                     self._bars_cache[symbol] = bars
                     if symbol not in self._subscribed_symbols:

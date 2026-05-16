@@ -8024,10 +8024,24 @@ class TradingEngine:
             crypto_symbols = crypto_cfg.get("symbols", [])
             allowed = crypto_cfg.get("allowed_strategies", ["mean_reversion", "momentum"])
             if crypto_symbols:
+                _injected_to = []
                 for strat_name in allowed:
                     strat = self.strategies.get(strat_name)
                     if strat and hasattr(strat, "add_dynamic_symbols"):
                         strat.add_dynamic_symbols(crypto_symbols)
+                        _injected_to.append(
+                            f"{strat_name}({len(strat._dynamic_symbols)} dyn)"
+                        )
+                # Log every ~25 scanner cycles so the entry stays visible
+                # in the log without spamming. First cycle always logs.
+                if not hasattr(self, "_crypto_inject_count"):
+                    self._crypto_inject_count = 0
+                if self._crypto_inject_count % 25 == 0:
+                    log.info(
+                        f"CRYPTO INJECT: {len(crypto_symbols)} symbols "
+                        f"({', '.join(crypto_symbols)}) → {', '.join(_injected_to)}"
+                    )
+                self._crypto_inject_count += 1
         if not any([rvol_strat, scalp_strat, mr_strat, pb_strat, gap_strat, squeeze_strat, pead_strat, runner_strat, momentum_strat]):
             return
 
