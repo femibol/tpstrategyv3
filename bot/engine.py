@@ -1312,6 +1312,12 @@ class TradingEngine:
                     if overnight_positions:
                         self._monitor_overnight_stops(overnight_positions)
 
+                    # Crypto fast lane runs 24/7 — it must fire here too, otherwise
+                    # weekends + after-hours = no crypto evaluation at all (which is
+                    # exactly the state that produced "no organic crypto trades" for
+                    # 14+ hours). Internally guarded on crypto.enabled config.
+                    self._quick_scan_crypto()
+
                     # Still run scanner so dashboard shows live data
                     scan_timer += 1
                     if scan_timer >= 4:  # Every ~2 minutes (4 x 30s sleep)
