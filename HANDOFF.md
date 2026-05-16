@@ -5,7 +5,35 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
-2026-05-16 (early UTC) — **`62c7d17` auto-deploy hardening: debounce + topology check.** Diagnosed "why no crypto trade yet" → wires verified, only 1 organic algo crypto signal in 14h (ETH momentum lost mid-cycle to a 132s scan); side-investigation surfaced auto-deploy bouncing the bot constantly during active dev. Shipped two targeted fixes to `deploy/auto-deploy.sh`, all five paths validated in sandbox.
+2026-05-16 (mid UTC) — **Crypto follow-up shipped: looser mean_reversion thresholds + crypto fast lane + auto-deploy `HEAD ≠ deployed SHA` fix.** All three commits manually deployed at 07:42:53 UTC after the VPS-push gotcha (below) blocked auto-deploy. Container healthy on `05ca7b5` (or newer if this commit landed); fast lane wired and silent (logs only on signal approval).
+
+### `cb11360` — `mean_reversion` crypto thresholds loosened
+After 14h of 24/7 BTC/ETH/SOL injection with code defaults (`entry_zscore_crypto=-1.2`, `rsi_oversold_crypto=45`) producing zero `mean_reversion` fires, dropped overrides into `config/strategies.yaml`:
+- `entry_zscore_crypto: -1.0` (was -1.2)
+- `rsi_oversold_crypto: 40` (was 45)
+- `rsi_overbought_crypto: 55` (left at code default; no inflated-short noise to justify symmetric move yet)
+
+### `05ca7b5` — crypto fast lane (`_quick_scan_crypto`)
+Mirrors `_quick_scan_hot_movers`. Runs every 3s alongside `_fast_scalp_monitor` + the hot-mover lane. Narrows `mean_reversion` + `momentum`'s `_dynamic_symbols` to `{BTC-USD, ETH-USD, SOL-USD} - held`, runs `generate_signals`, stamps `timestamp`/`market_price`/`_extended_hours`/`_fast_lane=True`/`_crypto_fast_lane=True`, filters via `risk_manager`, pushes straight to `_execute_signal`. No RTH gate (crypto is 24/7). Bar data reused from the last slow cycle — Yahoo crypto fetches are exempt from the 20/cycle IBKR equity budget, so freshness matches what `_run_strategies` sees. The win is purely in evaluation cadence: the slow ~132s cycle that overwrote the 02:05 ET ETH signal in its 02:07 batch can no longer happen for crypto.
+
+### `_update_data` profile (static analysis, no instrumentation needed)
+`market_data.py:181` caps non-crypto bar fetches at `max_bar_fetches_per_cycle=20`. With IBKR pacing ~5s/fetch, that's the 102.5s. Crypto fetches bypass the budget (`market_data.py:213-219`) and run ~200ms each on Yahoo — they contribute ~600ms to `_update_data`, not the 102s. So crypto bar freshness was NEVER the cycle-time blocker; the ageing-out symptom was purely a strategy-evaluation cadence problem, which the fast lane fixes structurally. The 20-fetch equity budget can be lowered to 10 (cycle ~50s) or replaced with bulk Polygon aggregates later if equity-side cycle time matters more.
+
+### Auto-deploy `HEAD ≠ deployed SHA` fix (this commit)
+**Gotcha:** the `62c7d17` topology check correctly handles `BEHIND>0` and `AHEAD>0`, but missed the case where a session running on the VPS itself makes a commit + pushes — LOCAL=REMOTE the instant after push, so BEHIND=0 and the script logs `No changes detected` forever, while the running container is still on the older image. We hit this end-to-end this session — the 07:40 UTC cron tick saw `cb11360` + `05ca7b5` already on origin/main, BEHIND=0, AHEAD=0, exited cleanly. Had to manually `docker compose build && up -d --force-recreate` at 07:42:53.
+
+**Fix:** `.last-deploy` body is now `git rev-parse HEAD` of what was actually built (was just `touch`ed). The script reads it as `LAST_DEPLOYED_SHA` and adds a third deploy trigger: if `BEHIND=0 AND AHEAD=0 AND HEAD ≠ LAST_DEPLOYED_SHA` → deploy. Backward-compatible: empty body reads as "" → don't second-guess (won't blind-deploy on first run). Seeded `.last-deploy` with `05ca7b5` so this commit will be picked up by the first post-merge tick.
+
+### Stale-doc cleanup
+The earlier HANDOFF note "Auto-deploy also doesn't pass `--build`, so code-only changes don't actually reach the running image..." was true at the time but is now stale. Current `deploy/auto-deploy.sh:124` calls `docker compose build trading-bot --quiet` before `up -d --force-recreate`, and the inline comment explicitly explains why ("Python source is BAKED INTO the image at build time"). The note can be removed from any local notes.
+
+### Open follow-ups
+- **First organic CRYPTO FAST LANE: log line.** The fast lane only logs on signal approval. Silent so far (~1 min of post-restart runtime when this was written, plus crypto is quiet at 03:43 ET). Worth grepping `logs/trading.log` for `CRYPTO FAST LANE:` after the next Asian/European session to confirm both the looser thresholds AND the 3s cadence have produced fires.
+- **Cycle-time relief for equities** (if anyone asks). Drop `data.max_bar_fetches_per_cycle` to 10 in `config/settings.yaml` → cycle drops to ~50s, equity bars refresh every 2 cycles instead of 1 (streaming keeps prices fresh). Or bulk Polygon aggregates as the proper fix (~1hr).
+- **`vwap.py:201` + `smc_forever.py:347`** still need `action="sell"` → `action="short"` (carry-over).
+- **`max_price` ceiling at $500** still blocks META etc. (carry-over).
+
+### Prior cycle (`62c7d17` — auto-deploy debounce + topology) — KEPT FOR REFERENCE
 
 ### `62c7d17` — auto-deploy debounce + skip local-only commits
 **Bug 1 (debounce):** every commit triggered an immediate `docker compose up -d --force-recreate`. Three commits in 15 minutes (`dd715d7` 04:16 UTC → `21f6257` 04:18 UTC → `2cf51d1` 04:38 UTC) wiped warmup state 3×. Each recreate eats ~1 full strategy cycle (~2 min) of in-flight signals.

@@ -86,23 +86,40 @@ LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse "origin/$BRANCH")
 BEHIND=$(git rev-list --count "$LOCAL..$REMOTE")
 AHEAD=$(git rev-list --count "$REMOTE..$LOCAL")
+# What did we last actually deploy into the container? When commits are
+# pushed FROM this VPS (a Claude/dev session running here), LOCAL=REMOTE
+# the moment after push, so the BEHIND check below sees nothing new even
+# though the running container is on an older image. Track the deployed
+# SHA in the file body so we can detect that case. Backward-compatible:
+# files written by the old script were empty (just used for mtime),
+# which reads back as "" and we treat as "unknown / don't second-guess".
+LAST_DEPLOYED_SHA=$(head -n1 "$LAST_DEPLOY_FILE" 2>/dev/null || true)
 
 if [ "$BEHIND" -eq 0 ]; then
     if [ "$AHEAD" -gt 0 ]; then
         echo "$LOG_PREFIX Local is $AHEAD commit(s) AHEAD of origin/$BRANCH (HEAD=$(git rev-parse --short HEAD)) — local-only work not pushed. Skipping deploy."
+        exit 0
+    fi
+    # In sync with origin. Normal case: nothing to do. Exception: this
+    # VPS made the commits and pushed them itself, so origin and local
+    # are equal but the running container hasn't been rebuilt yet.
+    # Recognize this by comparing HEAD to the SHA we last deployed.
+    if [ -n "$LAST_DEPLOYED_SHA" ] && [ "$LAST_DEPLOYED_SHA" != "$LOCAL" ]; then
+        echo "$LOG_PREFIX HEAD=$(git rev-parse --short HEAD) differs from last-deployed=$(echo "$LAST_DEPLOYED_SHA" | cut -c1-7) — VPS-local commits already pushed; deploying."
+        echo "$LOG_PREFIX Changes since last deploy:"
+        git log --oneline "$LAST_DEPLOYED_SHA..$LOCAL" 2>/dev/null || true
+        # fall through to debounce + build + recreate
     else
         echo "$LOG_PREFIX No changes detected. Bot is up to date."
+        exit 0
     fi
-    exit 0
+else
+    echo "$LOG_PREFIX Changes detected! ($BEHIND commit(s) behind, $AHEAD ahead)"
+    echo "$LOG_PREFIX   Local:  $LOCAL"
+    echo "$LOG_PREFIX   Remote: $REMOTE"
+    echo "$LOG_PREFIX Changes:"
+    git log --oneline "$LOCAL..$REMOTE"
 fi
-
-echo "$LOG_PREFIX Changes detected! ($BEHIND commit(s) behind, $AHEAD ahead)"
-echo "$LOG_PREFIX   Local:  $LOCAL"
-echo "$LOG_PREFIX   Remote: $REMOTE"
-
-# Show what changed
-echo "$LOG_PREFIX Changes:"
-git log --oneline "$LOCAL..$REMOTE"
 
 # Debounce: collapse rapid-fire commits into one recreate. Skip the
 # pull too — if we pulled now but skipped the recreate, the container
@@ -119,7 +136,8 @@ if [ "$DEBOUNCE_SECONDS" -gt 0 ] && [ -f "$LAST_DEPLOY_FILE" ]; then
     fi
 fi
 
-# Pull the changes
+# Pull the changes (no-op when BEHIND=0; only matters in the
+# remote-newer-than-local path)
 git pull origin "$BRANCH" --quiet
 
 # Always rebuild the image, even for code-only changes. The old script only
@@ -150,7 +168,9 @@ sleep 5
 if docker compose ps trading-bot | grep -q "Up"; then
     echo "$LOG_PREFIX Bot restarted successfully!"
     echo "$LOG_PREFIX   New version: $(git rev-parse --short HEAD)"
-    touch "$LAST_DEPLOY_FILE"
+    # Body = deployed SHA (HEAD ≠ deployed SHA check needs this); mtime
+    # = debounce baseline.
+    git rev-parse HEAD > "$LAST_DEPLOY_FILE"
 else
     echo "$LOG_PREFIX ERROR: Bot failed to start! Check logs:"
     echo "$LOG_PREFIX   docker compose logs --tail 50 trading-bot"
