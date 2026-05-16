@@ -98,6 +98,9 @@ services:
   trading-bot:
     build: .
     restart: unless-stopped
+    # NOTE: this service intentionally has no `dns:` block — Docker rejects
+    # `dns` together with `network_mode: service:...`. DNS comes from
+    # ib-gateway's resolv.conf (which has the 8.8.8.8 / 1.1.1.1 pins).
     # Share ib-gateway's network namespace. Two reasons:
     #
     # 1. IB Gateway's TrustedIPs setting can only be reliably configured

@@ -144,8 +144,30 @@ class MeanReversionStrategy(BaseStrategy):
             "vol_surge": vol_ratio > 1.3,
         }
         passed = sum(1 for v in [checks["zscore_ok"], checks["rsi_oversold"], checks["at_lower_bb"]] if v)
-        if passed >= 2:
+
+        # Mirror the actual entry-path reversal_candle gate so the verdict
+        # tells the truth. The old verdict said "BUY SIGNAL" the moment any 2
+        # of {zscore, rsi, BB} passed — but the real signal also needs a
+        # green/doji last bar (and for some paths a volume surge), so the
+        # heartbeat regularly said BUY SIGNAL for 30+ minutes without firing.
+        if _is_crypto and len(closes) >= 2:
+            reversal_candle = closes[-2] >= bars["open"].values[-2]
+        else:
+            reversal_candle = closes[-1] > bars["open"].values[-1]
+        entry_ready = (
+            (checks["zscore_ok"] and checks["rsi_oversold"] and reversal_candle)
+            or (checks["zscore_ok"] and checks["at_lower_bb"] and reversal_candle and vol_ratio > 1.3)
+            or (checks["rsi_oversold"] and checks["at_lower_bb"] and vol_ratio > 1.5 and reversal_candle)
+        )
+
+        if entry_ready:
             verdict = "BUY SIGNAL"
+        elif passed >= 2 and not reversal_candle:
+            verdict = "WAIT: needs green bar"
+        elif passed >= 2 and checks["at_lower_bb"] and vol_ratio <= 1.3:
+            verdict = "WAIT: needs vol>1.3x"
+        elif passed >= 2:
+            verdict = "WAIT: combo mismatch"
         elif checks["rsi_overbought"] and zscore >= abs(entry_zscore):
             verdict = "SELL SIGNAL"
         elif passed == 1:
@@ -169,32 +191,14 @@ class MeanReversionStrategy(BaseStrategy):
         }
 
         # --- BUY Signal (Oversold) ---
-        # Multi-confirmation: need z-score OR (RSI oversold + at lower BB)
-        zscore_trigger = zscore <= entry_zscore
-        rsi_trigger = rsi < rsi_oversold
-        at_lower_bb = current_price <= bb_lower
+        # Multi-confirmation: need z-score OR (RSI oversold + at lower BB).
+        # The reversal_candle gate is identical to the one computed above for
+        # the verdict — single source of truth, so heartbeat can't lie.
+        zscore_trigger = checks["zscore_ok"]
+        rsi_trigger = checks["rsi_oversold"]
+        at_lower_bb = checks["at_lower_bb"]
         near_lower_bb = current_price <= bb_lower * 1.005  # Within 0.5% of lower BB
-
-        # Strict entry: require reversal evidence to avoid catching falling knives
-        # Small caps trend hard — only buy when buying pressure is confirmed.
-        # Crypto exception: Yahoo's in-progress 1-min bar often has close==open
-        # because the tick hasn't written yet (true doji or just lag). Use a
-        # 2-bar lookback for crypto so we look at the LAST COMPLETED bar's
-        # color, not the in-progress bar's. Same "not red" semantics either way.
-        buy_signal = False
-        if _is_crypto and len(closes) >= 2:
-            # Last completed bar (closes[-2]) vs its open (bars open[-2])
-            reversal_candle = closes[-2] >= bars["open"].values[-2]
-        else:
-            reversal_candle = closes[-1] > bars["open"].values[-1]  # Green candle
-
-        if zscore_trigger and rsi_trigger and reversal_candle:
-            buy_signal = True  # Classic: Z-score + RSI oversold + reversal candle
-        elif zscore_trigger and at_lower_bb and reversal_candle and vol_ratio > 1.3:
-            buy_signal = True  # Z-score + BB + reversal + volume confirmation
-        elif rsi_trigger and at_lower_bb and vol_ratio > 1.5 and reversal_candle:
-            buy_signal = True  # RSI + BB + strong volume + reversal
-        # REMOVED: relaxed entry (zscore*1.3) — caught falling knives
+        buy_signal = entry_ready
 
         if buy_signal:
             confidence = min(1.0, abs(zscore) / 3.0 * 0.5 + (1 - rsi / 100) * 0.5)

@@ -278,6 +278,30 @@ class PositionSizer:
         if per_share_risk <= 0:
             return 0
 
+        # --- Crypto: fractional sizing ---
+        # BTC at $77K with a $3K cap floors to 0 whole units; the integer-share
+        # math below makes high-priced crypto un-tradable. Take a separate path
+        # that keeps quantity as a float quantized to 5 decimals (the precision
+        # TradersPost's crypto subscriptions accept for BTC/ETH/SOL).
+        if self._is_crypto(symbol):
+            qty_by_risk = risk_dollars / per_share_risk
+            qty_by_max = max_position / price
+            qty = round(min(qty_by_risk, qty_by_max), 5)
+            # Dust filter: don't bother trading <$10 notional
+            if qty * price < 10:
+                log.warning(
+                    f"Position size ~0 for crypto {symbol} @ ${price:.2f}: "
+                    f"qty={qty} × price={price:.2f} < $10 dust threshold "
+                    f"(risk ${risk_dollars:.2f}, max_pos ${max_position:.2f})"
+                )
+                return 0
+            log.info(
+                f"Position size (crypto): {qty} {symbol} @ ${price:.2f} = "
+                f"${qty * price:,.2f} | Risk: ${qty * per_share_risk:.2f} "
+                f"({qty * per_share_risk / balance:.1%} of account)"
+            )
+            return qty
+
         # Calculate shares based on risk
         shares_by_risk = math.floor(risk_dollars / per_share_risk)
 

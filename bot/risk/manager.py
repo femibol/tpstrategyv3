@@ -185,7 +185,18 @@ class RiskManager:
         is_crypto = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
         pos_pct = self.crypto_max_position_pct if is_crypto else self.max_position_pct
         max_position = balance * pos_pct
-        position_value = price * signal.get("quantity", 1)
+        explicit_qty = signal.get("quantity")
+        # When a strategy signal has no explicit quantity, the downstream
+        # position_sizer will compute it (and for crypto, it sizes FRACTIONALLY
+        # against the same cap). Don't reject those signals here on the
+        # default-of-1 placeholder — for BTC at $77K, that placeholder fakes a
+        # $77K position vs a $3K cap and kills every signal. We use
+        # `max_position` as a stand-in: the sizer is guaranteed not to exceed
+        # it, so by construction this signal will fit.
+        if explicit_qty is None and is_crypto:
+            position_value = max_position
+        else:
+            position_value = price * (explicit_qty or 1)
         if position_value > max_position:
             return False, f"Position ${position_value:.0f} exceeds max ${max_position:.0f}"
 
