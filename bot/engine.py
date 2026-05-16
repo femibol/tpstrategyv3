@@ -2129,6 +2129,13 @@ class TradingEngine:
                 if hasattr(strat, "set_held_symbols"):
                     strat.set_held_symbols(set(self.positions.keys()))
                 sigs = strat.generate_signals(self.market_data) or []
+                # Hard filter: the fast lane MUST only surface crypto signals.
+                # Overriding `_dynamic_symbols` doesn't narrow the strategy's
+                # universe — `get_symbols()` is `self.symbols | _dynamic_symbols`,
+                # so the strategy still iterates its base equity list and we
+                # were silently approving AMZN etc. from the crypto lane.
+                available_set = set(available)
+                sigs = [s for s in sigs if s.get("symbol") in available_set]
                 for sig in sigs:
                     sig["strategy"] = name
                     sig["timestamp"] = datetime.now(self.tz)
