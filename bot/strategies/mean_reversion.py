@@ -32,6 +32,14 @@ class MeanReversionStrategy(BaseStrategy):
         self.exit_zscore = config.get("exit_zscore", 0.0)
         self.rsi_oversold = config.get("rsi_oversold", 30)
         self.rsi_overbought = config.get("rsi_overbought", 70)
+        # Crypto-specific (looser) thresholds. Crypto's volatility profile and
+        # 24/7 trading mean its RSI rarely dips below 30 the way thin-float
+        # equities do (only in panic crashes). Z-scores also compress because
+        # the 5-min mean shifts with the trend. Looser defaults: Z≤-1.2 + RSI<45.
+        # Applied per-symbol via _is_crypto check in _analyze_symbol.
+        self.entry_zscore_crypto = config.get("entry_zscore_crypto", -1.2)
+        self.rsi_oversold_crypto = config.get("rsi_oversold_crypto", 45)
+        self.rsi_overbought_crypto = config.get("rsi_overbought_crypto", 55)
         self.bb_period = config.get("bollinger_period", 20)
         self.bb_std = config.get("bollinger_std", 2.0)
         self.max_hold = config.get("max_holding_periods", 20)
@@ -84,6 +92,16 @@ class MeanReversionStrategy(BaseStrategy):
             self.scan_results[symbol] = {"status": "no_data", "verdict": "WAIT"}
             return None
 
+        # Pick the right threshold set: crypto gets the looser one (its
+        # volatility/RSI profile makes the equity thresholds basically
+        # never fire).
+        _is_crypto = any(
+            symbol.upper().endswith(s) for s in ("-USD", "-USDT", "-BTC", "-ETH")
+        )
+        entry_zscore = self.entry_zscore_crypto if _is_crypto else self.entry_zscore
+        rsi_oversold = self.rsi_oversold_crypto if _is_crypto else self.rsi_oversold
+        rsi_overbought = self.rsi_overbought_crypto if _is_crypto else self.rsi_overbought
+
         closes = bars["close"].values
         volumes = bars["volume"].values
         current_price = closes[-1]
@@ -119,16 +137,16 @@ class MeanReversionStrategy(BaseStrategy):
 
         # Build verdict
         checks = {
-            "zscore_ok": zscore <= self.entry_zscore,
-            "rsi_oversold": rsi < self.rsi_oversold,
-            "rsi_overbought": rsi > self.rsi_overbought,
+            "zscore_ok": zscore <= entry_zscore,
+            "rsi_oversold": rsi < rsi_oversold,
+            "rsi_overbought": rsi > rsi_overbought,
             "at_lower_bb": current_price <= bb_lower,
             "vol_surge": vol_ratio > 1.3,
         }
         passed = sum(1 for v in [checks["zscore_ok"], checks["rsi_oversold"], checks["at_lower_bb"]] if v)
         if passed >= 2:
             verdict = "BUY SIGNAL"
-        elif checks["rsi_overbought"] and zscore >= abs(self.entry_zscore):
+        elif checks["rsi_overbought"] and zscore >= abs(entry_zscore):
             verdict = "SELL SIGNAL"
         elif passed == 1:
             verdict = "WARMING UP"
@@ -152,8 +170,8 @@ class MeanReversionStrategy(BaseStrategy):
 
         # --- BUY Signal (Oversold) ---
         # Multi-confirmation: need z-score OR (RSI oversold + at lower BB)
-        zscore_trigger = zscore <= self.entry_zscore
-        rsi_trigger = rsi < self.rsi_oversold
+        zscore_trigger = zscore <= entry_zscore
+        rsi_trigger = rsi < rsi_oversold
         at_lower_bb = current_price <= bb_lower
         near_lower_bb = current_price <= bb_lower * 1.005  # Within 0.5% of lower BB
 
@@ -225,7 +243,7 @@ class MeanReversionStrategy(BaseStrategy):
             return signal
 
         # --- SELL Signal (Overbought - for existing positions) ---
-        if zscore >= abs(self.entry_zscore) and rsi > self.rsi_overbought:
+        if zscore >= abs(entry_zscore) and rsi > rsi_overbought:
             # Only fire exits for symbols the bot actually holds. Without this
             # gate, scanner-discovered overbought stocks generate sells that the
             # risk manager rejects ("No position to exit") — burning the
