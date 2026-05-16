@@ -5,7 +5,41 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
-2026-05-15 (afternoon session) — **PR #157 + #160: ghost-sell gate, manual signal path, signal-staleness fix.** Live-traded 10 events (5 entries + 5 exits) end-to-end through dashboard → IBKR → TradersPost mirror.
+2026-05-16 (early UTC) — **`62c7d17` auto-deploy hardening: debounce + topology check.** Diagnosed "why no crypto trade yet" → wires verified, only 1 organic algo crypto signal in 14h (ETH momentum lost mid-cycle to a 132s scan); side-investigation surfaced auto-deploy bouncing the bot constantly during active dev. Shipped two targeted fixes to `deploy/auto-deploy.sh`, all five paths validated in sandbox.
+
+### `62c7d17` — auto-deploy debounce + skip local-only commits
+**Bug 1 (debounce):** every commit triggered an immediate `docker compose up -d --force-recreate`. Three commits in 15 minutes (`dd715d7` 04:16 UTC → `21f6257` 04:18 UTC → `2cf51d1` 04:38 UTC) wiped warmup state 3×. Each recreate eats ~1 full strategy cycle (~2 min) of in-flight signals.
+**Fix:** new `DEPLOY_DEBOUNCE_SECONDS` env (default 600s). After each successful recreate, `touch ${REPO_DIR}/.last-deploy`; subsequent ticks within the window log `Debounced — last deploy was Xs ago` and exit *without* pulling (pulling-but-not-recreating would leave the container on stale code AND make the next tick see "no changes" forever). A burst of commits collapses into one recreate at the latest tip once the window passes.
+
+**Bug 2 (same-SHA loop):** `if [ "$LOCAL" = "$REMOTE" ]` only catches the in-sync case. On 2026-05-15 ~03:50-04:00 ET and again 16:35-17:20 ET, the script recreated the container every 5 min for ~30 min while HEAD never moved. Root cause: a session committed directly to local main (`45318e4`, earlier `a1c462c`) and never pushed. Local main was a *descendant* of `origin/main`, so they were unequal but `git pull` was a no-op. Every tick re-detected the same "change."
+**Fix:** topology check via `git rev-list --count`:
+- `BEHIND > 0` → real changes, deploy
+- `BEHIND = 0, AHEAD > 0` → local-only work not pushed, log warning, skip (was the loop)
+- `BEHIND = 0, AHEAD = 0` → in sync, exit (was already handled)
+
+**Sandbox validation** (`/tmp/auto-deploy-exercise` with mocked `docker`/`systemctl`, since cleaned up):
+| Case | Result |
+|---|---|
+| In sync | `No changes detected` ✅ |
+| BEHIND > 0 | Deploy + `.last-deploy` created ✅ |
+| 2nd commit 0s later | `Debounced — last deploy was 0s ago` ✅ |
+| Window expired | Deploy latest tip ✅ |
+| AHEAD > 0 (local-only) | `Local is N commit(s) AHEAD … Skipping deploy` ✅ |
+
+### Crypto observation — "no autonomous crypto trade yet" (open follow-up)
+The wires from yesterday's PRs (`c0c2e9d`, `dd611635`-ish — `mean_reversion` + `momentum` injecting BTC/ETH/SOL via dynamic symbols, TradersPost CRYPTO webhook routing) are confirmed working: manual `/api/signal` BTC trade at 00:16 ET went end-to-end (TP CRYPTO 200, mirror confirmed). But in the 14 hours since the wires landed, **exactly one organic algo crypto signal fired** (`momentum: buy ETH-USD @ $2225.41 conf=0.65` at 02:05:29 ET). It was queued in the 02:07:18 ET batch of 9 signals — and never reached risk_manager. The 02:10 ET batch was 20 fresh signals (no ETH); the 132.5s slow cycle (`update_data=102.5s`) caused the next iteration to overwrite the ETH batch before it was processed.
+
+- **`mean_reversion` crypto thresholds** (from PR `21f6257`, code defaults — not overridden in `config/`): `entry_zscore_crypto = -1.2`, `rsi_oversold_crypto = 45`, `rsi_overbought_crypto = 55`. Reasonably loose, but BTC/ETH have been chopping. Looser-than-stocks but still needs an actual pullback bar.
+- **132s cycle is the real cost driver**, not strategy conservatism. `update_data=102.5s` per cycle = a 2-min window where any signal can be silently aged out by the next batch. Worth profiling: is it the IBKR historical-bars fetch (`PR #155`-style cap may need tightening), or downstream `_update_scalp` (25.6s)?
+- **Practical next step:** monitor the *current* run (started 04:30:53 UTC, now protected by debounce) across an Asian/European crypto session. If mean_reversion still hasn't fired in 24h, drop `entry_zscore_crypto` to `-1.0` and `rsi_oversold_crypto` to `40` — that's still tighter than equity defaults.
+
+### Open follow-ups (carry-over + new)
+- **Profile the 132s cycle.** Per-strategy `time.perf_counter()` around each `generate_signals` would localize the long pole. `update_data=102.5s` suggests it's a data-fetch issue, not strategy code.
+- **Test paths NOT exercised live yet** in the new auto-deploy:
+  - The very next commit-push will be the first real BEHIND > 0 deploy — `.last-deploy` doesn't exist yet, so it'll deploy immediately (correct).
+  - Debounce path is sandbox-only so far; will activate on the *second* push within 10 min.
+- **`vwap.py:201` + `smc_forever.py:347`** still need `action="sell"` → `action="short"` (from yesterday's session).
+- **`max_price` ceiling at $500** still blocks META etc. (carry-over).
 
 ### PR #157 — `mean_reversion` SELL signals gated on ownership
 - Diagnosed from morning logs: 115 of 210 rejections were "No position to exit" — mean_reversion firing sells against scanner-discovered overbought stocks (SQQQ, SOXS, ZSL, PIII, etc.) that the bot didn't own.
