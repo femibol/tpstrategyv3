@@ -1370,6 +1370,14 @@ class TradingEngine:
                 # fresh, current-priced signal can fire and fill.
                 self._quick_scan_hot_movers()
 
+                # --- CRYPTO FAST LANE (every 3 seconds) ---
+                # Mirror of the hot-mover lane for BTC/ETH/SOL: the slow
+                # 132s cycle was ageing out crypto signals before they
+                # reached risk_manager. Re-runs mean_reversion + momentum
+                # on the 3 crypto symbols every 3s and executes any fresh
+                # signal directly.
+                self._quick_scan_crypto()
+
                 # --- FULL CYCLE (every ~10 seconds = 3 fast ticks) ---
                 if scalp_tick >= 3:
                     scalp_tick = 0
@@ -2046,6 +2054,89 @@ class TradingEngine:
                 except Exception as e:
                     log.error(
                         f"FAST LANE: execute failed for {sig.get('symbol')}: {e}",
+                        exc_info=True,
+                    )
+
+    def _quick_scan_crypto(self):
+        """Fast-lane crypto signal generation (runs every 3 seconds).
+
+        Crypto trades 24/7 but the slow ~132s main cycle was ageing out
+        crypto signals before risk_manager processed them — only 1
+        organic crypto signal fired in 14h post-wires (ETH momentum
+        2026-05-16 02:05 ET, queued in the 02:07 batch, overwritten by
+        the 02:10 batch). This re-evaluates mean_reversion + momentum on
+        BTC/ETH/SOL every 3s and pushes any resulting signal straight to
+        risk_manager + execute — same pattern as the equity hot-mover
+        fast lane, just with a fixed symbol set and no RTH gate.
+
+        Cheap by construction: bar data is reused from the last slow
+        cycle (Yahoo crypto fetches are exempt from the equity budget),
+        and strategies iterate over only 3 symbols.
+        """
+        if not self.strategies or not self.market_data:
+            return
+        if not self._is_crypto_enabled():
+            return
+
+        crypto_syms = ("BTC-USD", "ETH-USD", "SOL-USD")
+        available = [s for s in crypto_syms if s not in self.positions]
+        if not available:
+            return
+
+        fast_lane_strats = ("mean_reversion", "momentum")
+        fast_signals = []
+        for name in fast_lane_strats:
+            strat = self.strategies.get(name)
+            if strat is None or not hasattr(strat, "generate_signals"):
+                continue
+            original_dyn = getattr(strat, "_dynamic_symbols", None)
+            if original_dyn is None:
+                continue
+            try:
+                strat._dynamic_symbols = set(available)
+                if hasattr(strat, "set_held_symbols"):
+                    strat.set_held_symbols(set(self.positions.keys()))
+                sigs = strat.generate_signals(self.market_data) or []
+                for sig in sigs:
+                    sig["strategy"] = name
+                    sig["timestamp"] = datetime.now(self.tz)
+                    sym = sig.get("symbol")
+                    if sym and self.market_data:
+                        sig["market_price"] = self.market_data.get_price(sym)
+                    sig["_extended_hours"] = bool(
+                        getattr(self, "_in_premarket", False)
+                        or getattr(self, "_in_postmarket", False)
+                    )
+                    sig["_fast_lane"] = True
+                    sig["_crypto_fast_lane"] = True
+                fast_signals.extend(sigs)
+            except Exception as e:
+                log.debug(f"CRYPTO FAST LANE: strategy {name} error: {e}")
+            finally:
+                strat._dynamic_symbols = original_dyn
+
+        if not fast_signals:
+            return
+
+        try:
+            approved = self.risk_manager.filter_signals(
+                fast_signals, self.positions, self.current_balance
+            )
+        except Exception as e:
+            log.error(f"CRYPTO FAST LANE: risk_manager error: {e}", exc_info=True)
+            return
+
+        if approved:
+            log.info(
+                f"CRYPTO FAST LANE: {len(approved)}/{len(fast_signals)} signals approved "
+                f"on {available}"
+            )
+            for sig in approved:
+                try:
+                    self._execute_signal(sig)
+                except Exception as e:
+                    log.error(
+                        f"CRYPTO FAST LANE: execute failed for {sig.get('symbol')}: {e}",
                         exc_info=True,
                     )
 
