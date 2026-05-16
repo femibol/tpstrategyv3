@@ -26,6 +26,8 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 | Window expired | Deploy latest tip ✅ |
 | AHEAD > 0 (local-only) | `Local is N commit(s) AHEAD … Skipping deploy` ✅ |
 
+**Live validation (2026-05-16 07:25 UTC):** simulated BEHIND > 0 by `git reset --hard HEAD~1` on the VPS (HEAD `62c7d17`, origin at `2977e59`). The 07:25:01 tick logged `Changes detected! (1 commit(s) behind, 0 ahead)`, pulled, recreated the container (`StartedAt` advanced `04:30:53Z → 07:25:07Z`, healthy), created `/opt/trading-bot/.last-deploy`, advanced HEAD to `2977e59`. The simulation works because we're committing *from* the same VPS the cron runs on — `git push` leaves LOCAL=REMOTE, so a real external push from a laptop/PR-merge is the only normal way to trigger BEHIND; resetting back one commit reproduces the same state safely (we end at the same SHA we started). Three of five paths now confirmed live (in-sync ×2 ticks, BEHIND > 0 ×1). Debounce + AHEAD > 0 remain sandbox-only — they'll fire naturally on the next 2-commits-in-10-min burst, or any local-only commit left unpushed.
+
 ### Crypto observation — "no autonomous crypto trade yet" (open follow-up)
 The wires from yesterday's PRs (`c0c2e9d`, `dd611635`-ish — `mean_reversion` + `momentum` injecting BTC/ETH/SOL via dynamic symbols, TradersPost CRYPTO webhook routing) are confirmed working: manual `/api/signal` BTC trade at 00:16 ET went end-to-end (TP CRYPTO 200, mirror confirmed). But in the 14 hours since the wires landed, **exactly one organic algo crypto signal fired** (`momentum: buy ETH-USD @ $2225.41 conf=0.65` at 02:05:29 ET). It was queued in the 02:07:18 ET batch of 9 signals — and never reached risk_manager. The 02:10 ET batch was 20 fresh signals (no ETH); the 132.5s slow cycle (`update_data=102.5s`) caused the next iteration to overwrite the ETH batch before it was processed.
 
@@ -36,8 +38,8 @@ The wires from yesterday's PRs (`c0c2e9d`, `dd611635`-ish — `mean_reversion` +
 ### Open follow-ups (carry-over + new)
 - **Profile the 132s cycle.** Per-strategy `time.perf_counter()` around each `generate_signals` would localize the long pole. `update_data=102.5s` suggests it's a data-fetch issue, not strategy code.
 - **Test paths NOT exercised live yet** in the new auto-deploy:
-  - The very next commit-push will be the first real BEHIND > 0 deploy — `.last-deploy` doesn't exist yet, so it'll deploy immediately (correct).
-  - Debounce path is sandbox-only so far; will activate on the *second* push within 10 min.
+  - Debounce — will fire on the *second* push within 10 min. Sandbox-validated only.
+  - AHEAD > 0 — only triggers if a session commits locally without pushing. Sandbox-validated only.
 - **`vwap.py:201` + `smc_forever.py:347`** still need `action="sell"` → `action="short"` (from yesterday's session).
 - **`max_price` ceiling at $500** still blocks META etc. (carry-over).
 
