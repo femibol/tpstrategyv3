@@ -2084,7 +2084,11 @@ class TradingEngine:
         if not self._is_crypto_enabled():
             return
 
-        crypto_syms = ("BTC-USD", "ETH-USD", "SOL-USD")
+        # Source of truth: config/settings.yaml crypto.symbols. Was
+        # hardcoded to ("BTC-USD","ETH-USD","SOL-USD") and silently
+        # capped the fast lane at 3 names even after the yaml grew —
+        # which would have hidden any moon trade outside that trio.
+        crypto_syms = self.config.settings.get("crypto", {}).get("symbols", [])
         available = [s for s in crypto_syms if s not in self.positions]
         if not available:
             return
@@ -2098,19 +2102,44 @@ class TradingEngine:
             self._crypto_fast_lane_hb = now_ts
             try:
                 mr = self.strategies.get("mean_reversion")
-                rows = []
+                # With ~46 crypto symbols, per-symbol rows would make a single
+                # 5KB log line every minute. Bucket by verdict and only spell
+                # out the interesting ones (BUY SIGNAL + any WAIT:* near-miss);
+                # collapse NEUTRAL / WARMING UP / no_data into counts.
+                buckets = {"buy": [], "wait_near": [], "neutral": 0, "warming": 0, "no_data": 0}
                 for sym in available:
                     sr = getattr(mr, "scan_results", {}).get(sym) if mr else None
-                    if sr:
-                        rows.append(
-                            f"{sym}: z={sr.get('zscore')} rsi={sr.get('rsi')} "
-                            f"bb={sr.get('bb_zone')} verdict={sr.get('verdict')}"
+                    if not sr:
+                        buckets["no_data"] += 1
+                        continue
+                    verdict = sr.get("verdict") or ""
+                    if verdict == "BUY SIGNAL":
+                        buckets["buy"].append(
+                            f"{sym}(z={sr.get('zscore')} rsi={sr.get('rsi')} bb={sr.get('bb_zone')})"
                         )
+                    elif verdict.startswith("WAIT:"):
+                        # Near-misses worth seeing — the user wants to know what's
+                        # one bar away from firing.
+                        short = verdict.replace("WAIT: ", "")
+                        buckets["wait_near"].append(f"{sym}({short})")
+                    elif verdict == "WARMING UP":
+                        buckets["warming"] += 1
                     else:
-                        rows.append(f"{sym}: <no scan_results>")
+                        buckets["neutral"] += 1
+                parts = [f"universe={len(available)}"]
+                if buckets["buy"]:
+                    parts.append(f"BUY[{len(buckets['buy'])}]: {', '.join(buckets['buy'])}")
+                if buckets["wait_near"]:
+                    parts.append(f"WAIT[{len(buckets['wait_near'])}]: {', '.join(buckets['wait_near'])}")
+                if buckets["warming"]:
+                    parts.append(f"warming={buckets['warming']}")
+                if buckets["neutral"]:
+                    parts.append(f"neutral={buckets['neutral']}")
+                if buckets["no_data"]:
+                    parts.append(f"no_data={buckets['no_data']}")
                 log.info(
                     "CRYPTO FAST LANE HEARTBEAT (mean_reversion): %s",
-                    " | ".join(rows),
+                    " | ".join(parts),
                 )
             except Exception as _e:
                 log.debug(f"CRYPTO FAST LANE heartbeat failed: {_e}")
