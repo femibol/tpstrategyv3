@@ -4437,12 +4437,16 @@ class TradingEngine:
             # the symbol consciously. The legit "quote present + change ≤ threshold"
             # block below still fires for manual — that protection is preserved.
             is_manual = signal.get("source") == "manual" or strategy == "manual"
-            # Crypto fast-lane signals (BTC-USD, ETH-USD, ...) have no IBKR
-            # streaming quote — Binance.US/Yahoo bars feed mean_reversion
-            # directly, but `get_quote()` only knows about equity quote sources,
-            # so it always returns None for crypto. Without this bypass every
-            # approved crypto buy is killed by the "no quote" branch below.
-            is_crypto = bool(signal.get("_crypto_fast_lane"))
+            # Crypto symbols (BTC-USD, ETH-USD, ...) have no IBKR streaming
+            # quote — Binance.US/Yahoo bars feed strategies directly, but
+            # `get_quote()` only knows about equity quote sources, so it
+            # always returns None for crypto. Check the symbol directly
+            # rather than the fast-lane flag: the slow cycle emits crypto
+            # signals too (momentum/mean_reversion's dynamic universes include
+            # crypto post the pinning fix), and those signals don't carry
+            # `_crypto_fast_lane=True` — without this they fail-close even
+            # though the fast lane is firing the same signal seconds later.
+            is_crypto = self._is_crypto_symbol(symbol)
             fail_open = (
                 in_extended
                 or signal.get("source") in premarket_sources
