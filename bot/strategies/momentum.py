@@ -53,13 +53,25 @@ class MomentumStrategy(BaseStrategy):
                 s = sym.upper()
                 self._dynamic_symbols.add(s)
                 self._dynamic_symbol_timestamps[s] = now
-        # Bound the set — keep the N most recently seen
+        # Bound the set — keep the N most recently seen, but always pin crypto.
+        # Equity discovery runs after crypto injection in the same engine cycle,
+        # so equity timestamps are always newer and a plain newest-wins cap
+        # silently evicts the entire crypto universe every cycle.
         if len(self._dynamic_symbols) > self._max_dynamic_symbols:
-            sorted_syms = sorted(
-                self._dynamic_symbol_timestamps.items(),
+            crypto_suffixes = ("-USD", "-USDT", "-BTC", "-ETH")
+            crypto_pinned = {
+                s for s in self._dynamic_symbols
+                if any(s.endswith(suf) for suf in crypto_suffixes)
+            }
+            equity_cap = max(0, self._max_dynamic_symbols - len(crypto_pinned))
+            equity_sorted = sorted(
+                (
+                    (s, t) for s, t in self._dynamic_symbol_timestamps.items()
+                    if s not in crypto_pinned
+                ),
                 key=lambda x: -x[1],
             )
-            keep = {s for s, _ in sorted_syms[: self._max_dynamic_symbols]}
+            keep = crypto_pinned | {s for s, _ in equity_sorted[:equity_cap]}
             self._dynamic_symbols = keep
             self._dynamic_symbol_timestamps = {
                 s: t for s, t in self._dynamic_symbol_timestamps.items() if s in keep

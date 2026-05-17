@@ -59,11 +59,25 @@ class MeanReversionStrategy(BaseStrategy):
                 self._dynamic_symbols.add(s)
                 self._dynamic_symbol_timestamps[s] = now
         if len(self._dynamic_symbols) > self._max_dynamic_symbols:
-            sorted_syms = sorted(
-                self._dynamic_symbol_timestamps.items(),
+            # Crypto symbols are pinned: equity discovery runs after crypto
+            # injection in the same cycle, so equity timestamps are always
+            # newer than crypto, and a plain newest-wins eviction silently
+            # drops the entire crypto universe whenever it can. Keep crypto
+            # unconditionally; the cap applies to equity only.
+            crypto_suffixes = ("-USD", "-USDT", "-BTC", "-ETH")
+            crypto_pinned = {
+                s for s in self._dynamic_symbols
+                if any(s.endswith(suf) for suf in crypto_suffixes)
+            }
+            equity_cap = max(0, self._max_dynamic_symbols - len(crypto_pinned))
+            equity_sorted = sorted(
+                (
+                    (s, t) for s, t in self._dynamic_symbol_timestamps.items()
+                    if s not in crypto_pinned
+                ),
                 key=lambda x: -x[1],
             )
-            keep = {s for s, _ in sorted_syms[: self._max_dynamic_symbols]}
+            keep = crypto_pinned | {s for s, _ in equity_sorted[:equity_cap]}
             self._dynamic_symbols = keep
             self._dynamic_symbol_timestamps = {
                 s: t for s, t in self._dynamic_symbol_timestamps.items() if s in keep
