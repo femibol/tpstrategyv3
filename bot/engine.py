@@ -4437,11 +4437,18 @@ class TradingEngine:
             # the symbol consciously. The legit "quote present + change ≤ threshold"
             # block below still fires for manual — that protection is preserved.
             is_manual = signal.get("source") == "manual" or strategy == "manual"
+            # Crypto fast-lane signals (BTC-USD, ETH-USD, ...) have no IBKR
+            # streaming quote — Binance.US/Yahoo bars feed mean_reversion
+            # directly, but `get_quote()` only knows about equity quote sources,
+            # so it always returns None for crypto. Without this bypass every
+            # approved crypto buy is killed by the "no quote" branch below.
+            is_crypto = bool(signal.get("_crypto_fast_lane"))
             fail_open = (
                 in_extended
                 or signal.get("source") in premarket_sources
                 or strategy in premarket_sources
                 or is_manual
+                or is_crypto
             )
             try:
                 quote = self.market_data.get_quote(symbol) if self.market_data else None
