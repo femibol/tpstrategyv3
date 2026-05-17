@@ -51,7 +51,7 @@ class TradersPostBroker(BaseBroker):
     RATE_LIMIT_MAX = 3       # max signals per symbol per window (was 2)
     GLOBAL_MIN_INTERVAL = 3  # minimum seconds between ANY webhook call (was 5)
 
-    def __init__(self, config, webhook_url_override=None):
+    def __init__(self, config, webhook_url_override=None, min_interval_override=None):
         self.config = config
         # webhook_url_override lets us instantiate a second TradersPostBroker
         # for mirror-only mode (engine.tp_mirror) without touching the
@@ -65,9 +65,17 @@ class TradersPostBroker(BaseBroker):
         self._connected = bool(self.webhook_url)
         self.signal_history = []
         self.dual_mode = bool(self.webhook_url and self.webhook_url_secondary)
-        # Rate limiting state
+        # Rate limiting state — per-instance so the crypto broker, equity
+        # broker, and mirror have independent cooldowns. min_interval_override
+        # lets the crypto broker disable the global cooldown entirely (set to
+        # 0): every approved crypto signal already passed risk_manager and the
+        # per-symbol cap (3/min) below still guards against runaway loops.
         self._symbol_signals = {}  # {symbol: [timestamp, ...]}
         self._last_webhook_time = 0
+        self.min_interval = (
+            min_interval_override if min_interval_override is not None
+            else self.GLOBAL_MIN_INTERVAL
+        )
         if self.dual_mode:
             log.info("TradersPost DUAL MODE: signals sent to both live and paper webhooks")
         if self.webhook_url_crypto:
@@ -156,12 +164,14 @@ class TradersPostBroker(BaseBroker):
         # --- Rate Limiting (entries only, NEVER block exits) ---
         now = time.time()
         if not is_exit:
-            # Global minimum interval between webhook calls
+            # Per-instance minimum interval between webhook calls. Crypto
+            # broker is configured with 0 so simultaneously-approved crypto
+            # signals all fire — the per-symbol cap below remains the floor.
             since_last = now - self._last_webhook_time
-            if since_last < self.GLOBAL_MIN_INTERVAL:
+            if self.min_interval > 0 and since_last < self.min_interval:
                 log.warning(
                     f"RATE LIMIT: Global cooldown - {since_last:.1f}s since last webhook "
-                    f"(min {self.GLOBAL_MIN_INTERVAL}s). Blocking {action} {symbol}"
+                    f"(min {self.min_interval}s). Blocking {action} {symbol}"
                 )
                 return {"success": False, "reason": "rate_limited", "status_code": 429}
 

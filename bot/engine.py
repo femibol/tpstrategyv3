@@ -292,8 +292,15 @@ class TradingEngine:
         crypto_url = getattr(self.config, 'traderspost_webhook_url_crypto', '') or ''
         self.tp_crypto_broker = None
         if crypto_url:
+            # min_interval=0: crypto bursts (3-5 simultaneous approvals from
+            # the fast lane) should all fire. The per-symbol cap (3/min)
+            # still guards against runaway loops; the 3s global cooldown
+            # was a default-safe value for the equity webhook and isn't
+            # needed on the dedicated crypto webhook.
             self.tp_crypto_broker = TradersPostBroker(
-                self.config, webhook_url_override=crypto_url
+                self.config,
+                webhook_url_override=crypto_url,
+                min_interval_override=0,
             )
             log.info(
                 f"TradersPost CRYPTO broker enabled — crypto signals route "
