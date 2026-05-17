@@ -5207,7 +5207,10 @@ class TradingEngine:
         # webhook (TRADERSPOST_MIRROR_WEBHOOK_URL) whose subscription should
         # use TradersPost's built-in Paper Trading broker, so this can never
         # double-fill on IBKR.
-        if self.tp_mirror:
+        # Crypto entries already went to tp_crypto_broker (the dedicated
+        # crypto subscription) — mirroring them to the IBKR mirror webhook
+        # cross-contaminates the IBKR/equity book with crypto positions.
+        if self.tp_mirror and not self._is_crypto_symbol(symbol):
             try:
                 self.tp_mirror.notify_trade({
                     "symbol": symbol,
@@ -5468,7 +5471,10 @@ class TradingEngine:
             )
 
         # Mirror the close to TradersPost (visualization only).
-        if self.tp_mirror:
+        # Crypto exits already went through tp_crypto_broker; mirroring them
+        # to the IBKR/equity mirror webhook would close a phantom position
+        # there or worse, route the exit to the IBKR-attached subscription.
+        if self.tp_mirror and not self._is_crypto_symbol(symbol):
             try:
                 self.tp_mirror.notify_trade({
                     "symbol": symbol,
