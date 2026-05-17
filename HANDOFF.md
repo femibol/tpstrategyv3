@@ -5,7 +5,51 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-17 (late UTC, session 4) — **FIRST AUTONOMOUS CRYPTO TRADE FIRED.** Three commits this session unblocked the entire crypto path end-to-end: `7c04107` (falling-knife bypass), `07f4a3f` (crypto pinning in dynamic-symbols cap — the actual root cause of `no_data=45` heartbeats), `d3e2d75` (separate IBKR mirror from crypto). Live validation at 17:33:01 UTC: `TradersPost SUBMITTED: BTC-USD qty=0.03693 @ $78,439` via the CRYPTO webhook (HTTP 200), full SL/TP set, momentum-strategy entry. Also: 87/87 tests pass after fixing the long-broken `test_ibkr_outside_rth_cancel_policy.py` fixture (`_FakeContract` was missing `(exchange, currency)` positional args, and the test asserted `queued` when the broker actually returns `deferred`).
+
 2026-05-16 (late UTC, session 3) — **Crypto pipeline complete: 45-name universe on Binance.US real-time bars, fast lane firing every 3s, fractional sizing through risk_manager, truthful heartbeat — and all of it validated live as `universe=45 | neutral=45` at 11:50:53 ET.** Four commits since the prior handoff: `75789b9` (universe 3→46 + fast-lane reads config + bucketed heartbeat), `8bb89bf` (Binance.US adapter primary, Yahoo fallback for MKR/TON, MATIC→POL + RNDR→RENDER alias map, STX dropped), `108cb91` (heartbeat WAIT verdict bucketed as no_data, `LOG_LEVEL` env var so future sessions aren't blind to `log.debug` like this one was). Bot is now in the "waiting for a real signal" state for the first time — pipeline works end-to-end, market is just quiet on a Saturday afternoon.
+
+### `07f4a3f` — crypto pinning against dynamic-symbols cap (the actual blocker)
+
+The hidden bug that ate session 3's "pipeline works" claim: `mean_reversion` and `momentum` cap `_dynamic_symbols` at 50 with a plain newest-wins eviction. `_discover_dynamic_symbols` injects crypto FIRST, then equity discovery runs — so equity timestamps are always strictly newer, and the cap silently dropped the entire crypto universe every cycle. `_bars_cache` stayed empty for crypto → `mean_reversion._analyze_symbol`'s no-bars early-return wrote `{"status":"no_data","verdict":"WAIT"}` for all 45 symbols → heartbeat sat on `universe=45 | no_data=45` for 18+ hours.
+
+The diagnostic that nailed it: temporary `log.info(f"DIAG strat {sname}: get_symbols={len(syms)}, crypto_in={...}, dyn_attr={len(...)}")` inside `_update_data`'s iteration. Result: `DIAG strat mean_reversion: get_symbols=50, crypto_in=0, dyn_attr=50` immediately after a `CRYPTO INJECT: 45 symbols (...) → mean_reversion(45 dyn), momentum(45 dyn)` log line. 45 in, 0 out — the cap had already evicted them by the next equity-discovery cycle.
+
+Fix: in `bot/strategies/mean_reversion.py:54-83` and `bot/strategies/momentum.py:48-77`, the cap-eviction branch now unconditionally keeps any symbol ending in `-USD`/`-USDT`/`-BTC`/`-ETH` and only applies the cap to non-crypto entries. The crypto universe is bounded by config (45 names) so pinning can't blow up the dynamic set. Validated live: 16 min after deploy the heartbeat showed `BUY[4]: ADA-USD(z=-1.24 rsi=18.0), FLOKI-USD..., HBAR-USD..., XLM-USD... | warming=11 | neutral=17 | no_data=13` — real z-scores and RSI across the universe.
+
+### `7c04107` — crypto fast lane: bypass falling-knife "no quote" block
+
+Independent of the pinning bug. Once crypto bars DID flow earlier today (11:20–12:42 ET, before IBKR disconnected and reconnect re-shuffled the dynamic set), every approved crypto buy was killed by the falling-knife guard's fail-CLOSED no-quote branch. Crypto has no IBKR streaming quote source — `market_data.get_quote()` only knows about equity sources, so it always returned None for crypto and the gate blocked the entry as a "precaution." Pattern in logs 12:38:09–12:38:21 ET: back-to-back `APPROVED: buy BCH-USD` immediately followed by `FALLING KNIFE BLOCK (no quote): BCH-USD — cannot verify day change, blocking entry as precaution`, repeating every 3s for ATOM/INJ/BCH all session.
+
+Fix at `bot/engine.py:4440-4451`: same shape as the PR #160 manual-signal fix. Add `is_crypto = bool(signal.get("_crypto_fast_lane"))` to the `fail_open` set. The legit "quote present + day_change ≤ threshold" branch above still fires for crypto if a quote ever does materialize, so the protection isn't lost — just stops fail-closing when the quote source doesn't exist.
+
+### `d3e2d75` — IBKR mirror skips crypto entries/exits
+
+User caught immediately after the first crypto trade landed: `TP MIRROR: BUY BTC-USD qty=0.03693 ... → primary webhook (200)`. The `tp_mirror` instance is wired to `TRADERSPOST_MIRROR_WEBHOOK_URL` whose subscription visualizes IBKR/equity fills, so mirroring crypto there cross-contaminates the equity book with a phantom crypto position. Crypto already goes through `tp_crypto_broker` (separate TradersPost subscription on crypto venues), so the mirror call is pure duplication.
+
+Fix: both `tp_mirror.notify_trade()` call sites (`bot/engine.py:5213` entry, `bot/engine.py:5477` close) gate on `not self._is_crypto_symbol(symbol)`. Equities still mirror to the IBKR visualization webhook unchanged.
+
+**Manual cleanup performed:** the 17:33:01 BTC-USD trade leaked into the IBKR mirror before this fix landed. Curled the exit directly to the mirror webhook (`{"ticker":"BTC-USD","action":"exit","quantity":0.03693}` → HTTP 200, log ID `3573d50b-bcc7-4a43-aa1d-db0db545eb1d`) and user confirmed the position closed on the TradersPost dashboard. No standing phantom crypto position remains.
+
+### Tests: `tests/test_ibkr_outside_rth_cancel_policy.py` un-broken
+
+The file was untracked + the module errored at collection time (`_FakeContract.__init__() takes from 1 to 2 positional arguments but 4 were given`), blocking all 3 tests in it. Two fixes:
+1. `_FakeContract` now accepts `(symbol, exchange, currency, **kw)` matching the real `Stock(symbol, "SMART", "USD")` call shape in `bot/brokers/ibkr.py`.
+2. `test_outside_rth_presubmitted_is_not_cancelled` was asserting `result.get("queued") is True` and `quantity == 0`, but the broker actually returns `{"deferred": True, "quantity": <requested>, ...}` — the engine reads `order.get("deferred")` BEFORE position tracking so no phantom position is recorded (HANDOFF PR #152 / followup). Updated the assertions to match the actual contract.
+
+Result: 87/87 pass.
+
+### Live state at handoff time
+- Bot on `d3e2d75`, container started 17:34 UTC, healthy.
+- `LOG_LEVEL=INFO` restored (was bumped to DEBUG mid-session for the cap-eviction diagnostic — `.env` does NOT have it set, so it defaults).
+- Heartbeat steady-state: real z-score/RSI values, periodic `CRYPTO FAST LANE: approved buy ...` lines, signals routed to `tp_crypto_broker` (CRYPTO webhook). XRP/ETH/SOL approvals at 17:33:02 were rate-limited by the 3s global TP cooldown — that's the limiter doing its job, not a bug.
+- Yahoo crypto path is currently HTTP 429 (rate-limited). Binance.US is the de-facto sole source. MKR-USD and TON-USD (the two names Binance.US doesn't list) will silently no-data until Yahoo's 429 clears — non-blocking for the other 43 names.
+
+### Open follow-ups (carry-over + new)
+- **First crypto fill confirmation.** TradersPost RESPONSE was HTTP 200 with `success:true` — confirming the webhook was accepted, not that the connected broker filled. User confirmed the BTC-USD position landed and was manually closed on the IBKR-mirror side. Next session should grep for the FIRST `TradersPost SUBMITTED: ... -USD` post-handoff and verify the trade appears in the CRYPTO TradersPost subscription's history (not the IBKR mirror).
+- **TradersPost rate limiter (3s global cooldown) vs burst crypto signals.** At 17:33:02 three crypto signals (XRP/ETH/SOL) fired in the same second and only the first (BTC) got through — the rest were `RATE LIMIT: Global cooldown - 0.5s since last webhook (min 3s). Blocking buy XRP-USD` and then `NO EXECUTION PATH AVAILABLE`. The cooldown is intentional but the "NO EXECUTION PATH AVAILABLE" follow-up message is misleading for the crypto path. Worth queueing rate-limited signals for retry instead of just logging "no path" and dropping.
+- **`api.binance.us` returns IPv6-only addresses** (`2600:9000:...`) and the container has IPv6 routing. If a future deploy lands on a host without v6, Binance.US fetches will fail silently — Yahoo is the only fallback and it's been rate-limited all afternoon. Consider forcing IPv4 with `curl -4` equivalent in `_fetch_binance_us_klines`.
+- **Carry-over from session 3:** the DNS / netns gotcha (auto-deploy `--force-recreate trading-bot` can drift the bot's netns away from `ib-gateway`, killing all external DNS), the `max_price=$500` ceiling, `vwap.py:201` + `smc_forever.py:347` `action="sell"`→`"short"`. All still un-shipped.
 
 2026-05-16 (late UTC, session 2) — **`c26dad3`: three real blockers behind "no organic crypto trade".** (1) DNS broken inside `trading-bot` container — netns linkage to `ib-gateway` had drifted (different `net:` inodes despite `network_mode: "service:ib-gateway"`); fixed by `docker compose down && up -d` rather than per-service recreate. (2) `risk_manager` Rule 7 was rejecting every BTC signal at "Position $77962 exceeds max $3000" — `signal.quantity` was defaulting to 1 → 1 BTC notional vs the 10%-of-balance crypto cap. (3) `position_sizer.calculate` returned 0 shares for BTC (`math.floor(3000/77000)`); added a crypto branch that keeps quantity as a float quantized to 5 decimals. Plus: mean_reversion heartbeat verdict now mirrors the real `entry_ready` path (it was saying "BUY SIGNAL" for 30+ minutes while the real entry waited on a green reversal candle). **Validated live during the same session** — heartbeats showed `universe=46 | neutral=46` post-deploy with all 46 crypto symbols loaded.
 
