@@ -5989,6 +5989,11 @@ class TradingEngine:
         if self.tp_broker:
             return False
 
+        # Crypto symbols don't exist on IBKR — they're traded on the crypto
+        # broker and protected by the in-process trailing stop only.
+        if self._is_crypto_symbol(symbol):
+            return False
+
         if not self.broker or not self.broker.is_connected():
             return False
 
@@ -6080,6 +6085,12 @@ class TradingEngine:
                 positions_snapshot = dict(self.positions)
 
             for symbol, pos in positions_snapshot.items():
+                # Crypto positions live on the crypto broker, not IBKR, so a
+                # broker-side stop here is impossible. The in-process trailing
+                # stop in _monitor_positions is the only protection.
+                if self._is_crypto_symbol(symbol):
+                    continue
+
                 pos_qty = int(pos.get("quantity", 0) or 0)
                 covered_qty = stop_qty_by_symbol.get(symbol, 0)
 
