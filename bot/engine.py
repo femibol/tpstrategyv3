@@ -2700,8 +2700,19 @@ class TradingEngine:
 
             else:
                 # === ORIGINAL TRAILING LOGIC for non-momentum-runner positions ===
+                # Crypto floor: trail can never be tighter than 1.5%, regardless of
+                # tighten_trail/HOLD EXPIRING/RUNNER MODE paths that progressively
+                # shrink trailing_stop_pct. Pre-fix, BTC and LINK exited at trail=0.1%
+                # for -$15.80 combined on tiny pullbacks.
+                _is_crypto = self._is_crypto_symbol(symbol)
+                if _is_crypto:
+                    _trail_floor = 0.015
+                    if pos.get("trailing_stop_pct", 0) and pos["trailing_stop_pct"] < _trail_floor:
+                        pos["trailing_stop_pct"] = _trail_floor
                 base_trail = pos.get("trailing_stop_pct",
                                      self.config.risk_config.get("trailing_stop_pct", 0.02))
+                if _is_crypto and base_trail < 0.015:
+                    base_trail = 0.015
 
                 # NEWS PROFIT PROTECTION OVERRIDE:
                 # If _check_news_profit_protection() flagged this position,
@@ -2753,9 +2764,18 @@ class TradingEngine:
                 trailing_pct += momentum_buffer
 
                 if direction == "long":
-                    new_trail = current_price * (1 - trailing_pct)
-                    # Only move stop UP, never down
-                    if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+                    # Trail can never lock in a loss: floor at entry_price.
+                    # Pre-fix, the trail engaged at tick #1 below entry and
+                    # exited every losing crypto trade for -1.5%/-3%, costing
+                    # ~$120 across 6 trades vs. the 4% hard stop that would
+                    # have either held or hit cleanly.
+                    new_trail = max(current_price * (1 - trailing_pct), entry_price)
+                    # Only move stop UP, never down — and only ratchet while in profit
+                    # so we don't set the floor at entry on every losing tick.
+                    if current_price > entry_price and (
+                        "trailing_stop" not in pos
+                        or new_trail > pos.get("trailing_stop", 0)
+                    ):
                         pos["trailing_stop"] = new_trail
                         # SYNC TO BROKER: Update broker-side stop to match
                         # Uses the higher of trailing_stop and stop_loss
@@ -2765,7 +2785,7 @@ class TradingEngine:
                         )
                         if broker_stop > 0:
                             self._update_broker_stop(symbol, broker_stop)
-                    if current_price <= pos.get("trailing_stop", 0):
+                    if pos.get("trailing_stop", 0) > 0 and current_price <= pos["trailing_stop"]:
                         positions_to_close.append(
                             (symbol, "trailing_stop",
                              f"Trail stop at ${current_price:.2f} | "

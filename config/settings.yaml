@@ -255,11 +255,16 @@ crypto:
   # second (~5s delay, covers MKR-USD and TON-USD which Binance.US doesn't
   # list). STX dropped — neither source serves it. A proper top-by-volume
   # scanner (CoinGecko) is the next iteration so the list stops being static.
+  # BCH, FIL, INJ removed 2026-05-18: combined -$100 across 10 trades in the
+  # session-5 trade review (BCH -$32 / FIL -$20 / INJ -$46). All three blew up
+  # on trailing-stop exits because their ATR is large relative to entry size.
+  # Revisit if the trailing-stop gate fix (engine.py:2755) reduces the leak
+  # enough that these are net-profitable on the new behavior.
   symbols: [
     "AAVE-USD", "ADA-USD", "ALGO-USD", "APT-USD", "ARB-USD", "ATOM-USD",
-    "AVAX-USD", "BCH-USD", "BONK-USD", "BTC-USD", "COMP-USD", "CRV-USD",
-    "DOGE-USD", "DOT-USD", "ETC-USD", "ETH-USD", "FET-USD", "FIL-USD",
-    "FLOKI-USD", "GRT-USD", "HBAR-USD", "ICP-USD", "IMX-USD", "INJ-USD",
+    "AVAX-USD", "BONK-USD", "BTC-USD", "COMP-USD", "CRV-USD",
+    "DOGE-USD", "DOT-USD", "ETC-USD", "ETH-USD", "FET-USD",
+    "FLOKI-USD", "GRT-USD", "HBAR-USD", "ICP-USD", "IMX-USD",
     "JUP-USD", "LINK-USD", "LTC-USD", "MATIC-USD", "MKR-USD", "NEAR-USD",
     "OP-USD", "PEPE-USD", "RNDR-USD", "SEI-USD", "SHIB-USD", "SNX-USD",
     "SOL-USD", "SUI-USD", "TIA-USD", "TON-USD", "TRX-USD",
