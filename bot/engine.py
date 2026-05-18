@@ -4311,9 +4311,80 @@ class TradingEngine:
             reason = self._gate_strategy_drawdown(strategy_name)
             if reason:
                 return reason
+            reason = self._gate_daily_drawdown()
+            if reason:
+                return reason
         except Exception as e:
             log.debug(f"safety gate error: {e}")
         return ""
+
+    def _gate_daily_drawdown(self):
+        """Tiered daily drawdown circuit breaker (crypto + equity).
+
+        Pros do this because losing streaks cluster in regime changes — once
+        you're down 3% intraday, the same broken regime is still active and
+        the next 5 trades have skewed-negative expectancy. Pausing for hours
+        is cheaper than fighting it. EOD reset at _end_of_day clears all
+        tiers via `self.daily_pnl = 0`, no manual intervention.
+
+        Tiers (against realized intraday P&L, not unrealized):
+          -2.0%  → 1h pause (mirrors existing _check_daily_loss_soft_stop)
+          -3.5%  → 4h pause
+          -5.0%  → halt rest of day
+
+        Independent of `_check_daily_loss_soft_stop` which fires post-trade.
+        This runs on every entry signal so it triggers even if losses come
+        from unrealized swings recognized later.
+        """
+        sod_bal = getattr(self, "start_of_day_balance", 0)
+        if sod_bal <= 0:
+            return ""
+        dd_pct = self.daily_pnl / sod_bal
+        if dd_pct >= -0.02:
+            return ""
+
+        now = datetime.now(self.tz)
+        block_until = getattr(self, "_dd_block_until", None)
+        if block_until and now < block_until:
+            mins = (block_until - now).total_seconds() / 60
+            return f"daily drawdown circuit breaker active ({mins:.0f}m left, DD {dd_pct:.1%})"
+
+        if dd_pct <= -0.05:
+            # Halt for the rest of the day. EOD reset at 16:30 ET clears it.
+            eod = now.replace(hour=23, minute=59, second=59, microsecond=0)
+            self._dd_block_until = eod
+            log.warning(
+                f"DAILY DRAWDOWN HALT: DD {dd_pct:.1%} — blocking all new entries "
+                f"until EOD (-{-dd_pct*100:.1f}% vs -5.0% trigger)"
+            )
+            if getattr(self, "notifier", None):
+                self.notifier.risk_alert(
+                    f"DAILY DRAWDOWN HALT — Down {dd_pct:.1%} today. "
+                    f"All new entries blocked until end of day."
+                )
+            return f"daily drawdown halt ({dd_pct:.1%})"
+
+        if dd_pct <= -0.035:
+            self._dd_block_until = now + timedelta(hours=4)
+            log.warning(
+                f"DAILY DRAWDOWN PAUSE (4h): DD {dd_pct:.1%} "
+                f"— blocking new entries until {self._dd_block_until.strftime('%H:%M')}"
+            )
+            if getattr(self, "notifier", None):
+                self.notifier.risk_alert(
+                    f"DAILY DRAWDOWN PAUSE — Down {dd_pct:.1%}. "
+                    f"Blocking entries for 4h."
+                )
+            return f"daily drawdown 4h pause ({dd_pct:.1%})"
+
+        # -2% to -3.5%: 1h pause (covers the gap where _check_daily_loss_soft_stop
+        # hasn't fired yet because no trade has closed since hitting the threshold)
+        self._dd_block_until = now + timedelta(hours=1)
+        log.warning(
+            f"DAILY DRAWDOWN PAUSE (1h): DD {dd_pct:.1%} "
+            f"— blocking new entries until {self._dd_block_until.strftime('%H:%M')}"
+        )
+        return f"daily drawdown 1h pause ({dd_pct:.1%})"
 
     def _gate_spy_circuit_breaker(self):
         """Block new entries if SPY dropped >2% in the last 30 min.
@@ -7195,6 +7266,9 @@ class TradingEngine:
         self.daily_pnl = 0.0
         self.daily_trades = []
         self.paused = False
+        # Reset drawdown circuit breaker for the new session
+        self._dd_block_until = None
+        self._daily_soft_stop_active = False
 
         # Run trade analyzer to get adjusted strategy weights
         base_alloc = self.config.strategy_allocation
