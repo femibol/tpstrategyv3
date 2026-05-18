@@ -5,6 +5,8 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-18 (mid UTC, session 5 (7)) — **Six new defensive features shipped in one batch + trail-migration saga (3 buggy commits before the right answer).** Pipeline: `6a7f403` gate-hit telemetry, `ff3871e` vol-regime sizing dampener, `ae4606f` correlation cluster cap (max 5 concurrent crypto), `a2bbc54` crypto funding-rate filter (OKX), `856ee14` tiered drawdown circuit breaker (-2/-3.5/-5%), `47cca53` volume floor on mean_reversion path 1. As of HANDOFF write time, **`47cca53` is the live deploy and the other 5 are queued behind the 600s auto-deploy debounce** — next eligible cycle is the 08:45 UTC `*/5` cron. **Trail-migration incident:** while live-verifying the `18ae5f2` trail-floor fix, found 5 positions (FIL/SUI/DOT/BCH/RNDR) entered pre-deploy with stale trails at entry × 0.985 — the new `max(..., entry_price)` ratchet only writes when `current > entry`, so stale below-entry trails never self-healed for positions sitting flat. Shipped `cf938ce` per-tick migration → didn't fire for 4/5 positions because `_fast_scalp_monitor` continues at line 2400-2423 when `market_data.get_price()` returns None (which is the steady state for crypto post-restart). Shipped `f5481cf` startup migration (price-independent). **Both migrations had a second bug**: raising `trailing_stop` to `entry_price` while `current_price < entry_price` instantly triggers the exit gate at the next tick. Fired live at 04:19:41 EDT: FIL closed $0.00 (breakeven), BCH -$3.97, RNDR -$1.03 — **the migration itself caused the exits.** Final fix in `034731f`: set trail to **0**, not entry. With trail=0 the exit gate `if trailing_stop > 0 and current <= trailing_stop` stays inactive; the natural ratchet installs a proper trail once price moves above entry. Net today: realized +$10.19 (LINK +3.41 via time_exit clean win on the trail-floor fix; DOT +6.78 via raised stop_loss) − $5.00 (migration bug) = **+$5.19**. SUI is the only open position at HANDOFF write time, sitting at trail = entry (self-healed via natural ratchet when price went +1.2%).
+
 2026-05-18 (mid UTC, session 5 (6)) — **Biggest crypto leak killed: trailing stop can no longer lock in a loss (`18ae5f2`) + self-improvement loop audit (blocker is API credit, not code).** Trade review of 79 crypto rows: mean_reversion is the only viable strategy (+$35.76, 64% wr), partial targets 1-5 are a 100%-wr profit engine (+$103), and the 5-60 min hold bucket is the sweet spot (66% wr). The single biggest leak was `trailing_stop` exits — 8 trades, -$122.75 net, 25% wr — because `_check_position_exits`'s else branch (`engine.py:2755`) set `new_trail = current_price * (1 - trailing_pct)` on tick #1, putting the trail ~1.5% below entry before profit ever existed. Every losing trailing exit (INJ -$46, BCH -$37/-$22, FIL -$21, BTC -$12, LINK -$4) matched this pattern: exited at entry - trail %, the trail had never ratcheted up. Fix in `18ae5f2`: `new_trail = max(current_price * (1 - trailing_pct), entry_price)` and only stored when `current_price > entry_price`. Also added crypto trail floor of 1.5% to block the BTC/LINK 0.1%-trail path (cumulative `min()` chains in `tighten_trail` / HOLD EXPIRING / RUNNER MODE were squeezing the trail too tight). Dropped BCH/FIL/INJ from `crypto.symbols` (combined -$100). Universe now 42. 87/87 tests pass. Auto-deploy due ~05:00 UTC. **Separately:** audited the self-improvement loop — `_claude_pre_trade()` (every signal), `_claude_post_trade_learning()` (every close), `AIInsights.get_quick_insight()` (every 5 trades), `AutoTuner.run_auto_tune()` (cron 12:30 + 16:30 ET Mon-Fri), `WeeklyReview.run()` (Sat 10am ET) — all wired, all silently no-op because `ANTHROPIC_API_KEY` is at $0 balance (confirmed live via container exec: `Error code: 400: Your credit balance is too low`). User opted to top up the API ($20 covers weeks at haiku/sonnet pricing) rather than wire Max via CLI subprocess — the CLI path was reviewed but ToS gray area + Max weekly caps + CLI latency on the hot path made it worse than just paying API. No code change for the AI loop; it resumes the moment the balance is positive.
 
 2026-05-18 (early UTC, session 5 (5)) — **Trade-review improvements shipped (`41b2776`) + every session-5 fix now verified live.** Trade review of 29 deduped logical crypto trades (+$36.26, 33% win, 3 outsized winners carrying it all) surfaced: (1) `momentum` strategy is 1/9 wins (11%) on crypto — disabled it for crypto in `generate_signals` (still gets crypto in `_dynamic_symbols` for `mean_reversion`'s parallel use); (2) `mean_reversion` SELL threshold tightened to z>=1.5 for crypto (was z>=1.0) — z=1.0 was firing on chop and pinging back near break-even; (3) added 5-min min-hold on mean_reversion's own SELL signal for crypto via new `set_held_symbols(symbols, entry_times=...)` kwarg on BaseStrategy. Engine passes `positions[sym]["entry_time"]` at all 3 call sites. Stop-loss + TP unchanged. Deployed at 04:05:15 UTC after the 04:00 cron debounced; survives-restart fix held a **second** time (6 positions restored: SUI, AVAX, LINK, DOT, SOL, ICP — one more than the 03:50 restart proved). First live test of the new SELL guards fired at 00:08:39 EDT: mean_reversion SELL on ICP at z=3.12, RSI=100 — 6:18 after entry (clears 5-min hold), z=3.12 (clears z>=1.5). Engine routed via webhook_exit, closed at +$1.41. 7 positions still open, net unrealized +$5.87.
@@ -22,6 +24,146 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 2026-05-17 (late UTC, session 4) — **FIRST AUTONOMOUS CRYPTO TRADE FIRED.** Three commits this session unblocked the entire crypto path end-to-end: `7c04107` (falling-knife bypass), `07f4a3f` (crypto pinning in dynamic-symbols cap — the actual root cause of `no_data=45` heartbeats), `d3e2d75` (separate IBKR mirror from crypto). Live validation at 17:33:01 UTC: `TradersPost SUBMITTED: BTC-USD qty=0.03693 @ $78,439` via the CRYPTO webhook (HTTP 200), full SL/TP set, momentum-strategy entry. Also: 87/87 tests pass after fixing the long-broken `test_ibkr_outside_rth_cancel_policy.py` fixture (`_FakeContract` was missing `(exchange, currency)` positional args, and the test asserted `queued` when the broker actually returns `deferred`).
 
 2026-05-16 (late UTC, session 3) — **Crypto pipeline complete: 45-name universe on Binance.US real-time bars, fast lane firing every 3s, fractional sizing through risk_manager, truthful heartbeat — and all of it validated live as `universe=45 | neutral=45` at 11:50:53 ET.** Four commits since the prior handoff: `75789b9` (universe 3→46 + fast-lane reads config + bucketed heartbeat), `8bb89bf` (Binance.US adapter primary, Yahoo fallback for MKR/TON, MATIC→POL + RNDR→RENDER alias map, STX dropped), `108cb91` (heartbeat WAIT verdict bucketed as no_data, `LOG_LEVEL` env var so future sessions aren't blind to `log.debug` like this one was). Bot is now in the "waiting for a real signal" state for the first time — pipeline works end-to-end, market is just quiet on a Saturday afternoon.
+
+### `6a7f403` — gate-hit telemetry
+
+Six new defensive gates were shipped this sub-session and we had no way
+to measure if they actually fired or which symbols triggered them.
+
+In-engine counters: `self._gate_hits` (per-gate per-symbol), `self._gate_hits_total`
+(per-gate totals), `self._gate_recent` (last 50 hits with reason + ts). All
+six gates in `_entry_safety_gates` call `_record_gate_hit(name, symbol, reason)`
+on a block — `spy_circuit_breaker`, `daily_trade_cap`, `strategy_drawdown`,
+`daily_drawdown`, `crypto_funding`, `correlation_cluster`.
+
+Exposed via `/api/status` under `gate_hits` with `totals`, `by_symbol`, and
+`recent` (last 20 for the dashboard tail). Daily reset lives in
+`_pre_market_scan`. The volume floor in `mean_reversion.py` is a strategy
+verdict not a gate, so it's NOT instrumented here — add separately if hit
+counts on that matter.
+
+### `ff3871e` — vol-regime sizing dampener
+
+The existing sizer at `bot/risk/position_sizer.py:202` already vol-targets
+implicitly: `qty = risk_dollars / per_share_risk` where `per_share_risk = 2 × ATR`.
+But ATR is computed over 14 bars; when the vol REGIME shifts (flash event,
+news, outage), ATR lags by several bars and stop-distance understates
+current risk. Dollar risk per trade ends up 1.5-2x intended exactly when
+you can least afford it.
+
+`_compute_vol_regime_mult(symbol)` at `engine.py` (right before `_execute_signal`)
+compares short-window realized vol (last 10 5-min log returns ≈ 50 min) to
+a longer baseline (last 60 ≈ 5 hours). Ratio < 1.5 → 1.0 (neutral). Ratio
+1.5-3.0 → linear 1.0 → 0.5. Ratio > 3.0 → 0.4 floor. Multiplier is clamped
+`[0.4, 1.0]` in `position_sizer.calculate` — protective only, never sizes UP.
+
+Passed as new `vol_regime_mult` kwarg through the main entry path at
+`engine.py:5165`. Secondary call site at line 9765 (partial-close rebuy)
+is NOT wired yet — less relevant there, can add if needed.
+
+### `ae4606f` — correlation cluster cap (max 5 concurrent crypto)
+
+Generic `max_positions=7` doesn't prevent a "diversified" book that's
+really 1 position on BTC beta — alts trade ~0.7+ correlated with BTC most
+regimes, so a 3% BTC drop hits all 7 stops simultaneously.
+
+`_gate_correlation_cluster(symbol)` in `_entry_safety_gates` at engine.py:4316.
+First-pass version uses asset-class clustering (all crypto = one bucket);
+true pairwise correlation over rolling windows is a follow-up. Equity not
+capped yet — only 9 equity rows in history, not enough to define sector
+clusters. Config knob at `config/settings.yaml` `crypto.max_concurrent_positions`
+(default 5).
+
+### `a2bbc54` — crypto funding-rate filter (OKX)
+
+Mean reversion breaks down when perpetual funding is heavily one-sided —
+that's the market saying "this is a real directional move, not noise" via
+perp/spot premium. Long mean-revert in heavy negative funding is fighting
+both price and carry.
+
+Source: **OKX public API** — Bybit is 403 from this VPS, Binance.com perp
+is 451 geo-blocked. Tested 42/42 symbols and 40 have OKX perpetual coverage;
+FET-USD and MKR-USD fail open (no block on missing data, trade normally).
+Symbol map: `BTC-USD` → `BTC-USDT-SWAP`, reuses the existing POL/RENDER
+alias map from `_BINANCE_ALIASES`.
+
+`_get_crypto_funding_rate(symbol)` 5-min per-symbol cache. `_gate_crypto_funding_extreme(symbol)`
+blocks when `|funding| > 0.0005` (0.05%/8h = ~55%/yr annualized — already
+extreme regime where carry dwarfs mean-reversion targets of ~0.5-1.5%/trade).
+Fail-open on any error so a network blip doesn't block trading. Wired
+into `_entry_safety_gates` AFTER drawdown gate. Equity entries unaffected
+(short-circuit on `not self._is_crypto_symbol(symbol)`).
+
+### `856ee14` — tiered daily drawdown circuit breaker (crypto + equity)
+
+Existing `_check_daily_loss_soft_stop` fires only AFTER a trade closes —
+gap means if losses come from unrealized swings recognized later, no pause
+triggers. New `_gate_daily_drawdown()` runs on every BUY signal (covers
+both crypto and equity, since both go through `_execute_signal` at line
+4596 → `_entry_safety_gates` → this gate).
+
+Tiers against realized daily P&L pct vs `start_of_day_balance`:
+- **-2.0%** → 1h entry pause (mirrors existing soft-stop)
+- **-3.5%** → 4h entry pause
+- **-5.0%** → halt for rest of day
+
+State (`_dd_block_until`, `_daily_soft_stop_active`) reset in `_pre_market_scan`.
+Hard `stop_loss` + `risk_manager` still handle position-level risk; this is
+the portfolio-level brake. Why pros use this: losing streaks cluster in
+regime changes — once you're down 3% intraday, the regime hasn't shifted
+yet and the next 5 trades have skewed-negative expectancy.
+
+### `47cca53` — volume floor on mean_reversion path 1
+
+Trade review found path 1 of `entry_ready` (`zscore_ok AND rsi_oversold AND
+reversal_candle`) had **no volume gate** while paths 2 and 3 required
+`vol_ratio > 1.3` and `> 1.5`. Path 1 is the most common entry trigger and
+lets through low-volume "chop" signals that ping back to entry.
+
+Added `vol_ratio >= 1.1` to path 1 at `bot/strategies/mean_reversion.py:171-175`.
+1.1x is a soft floor — well under paths 2/3 so we don't choke off real
+signals, but blocks thin-volume z=-2 chop. Applies equally to crypto and
+equity (single strategy, both venues). Verdict adds a "WAIT: needs vol>=1.1x"
+branch so the heartbeat tells the truth when volume is the only missing
+piece.
+
+### Trail-migration saga (`cf938ce` → `f5481cf` → `034731f`)
+
+Three commits, two bugs, one $5 lesson. Order of events on 2026-05-18:
+
+1. **`cf938ce` per-tick migration** — Added a block at the top of the long
+   branch in `_fast_scalp_monitor` (engine.py:2766+) that detected stale
+   below-entry trails and raised them to entry. Worked for SUI (the only
+   position with a fresh `current_price`) — log line at 04:19:41 EDT:
+   `TRAIL MIGRATION: FIL-USD trail $0.9131 → $0.9270 (entry floor)`.
+2. **First bug surfaced immediately:** raising trail to entry while
+   `current_price < entry_price` instantly triggers the exit gate at the
+   same tick. **FIL closed $0.00**, **BCH closed -$3.97**, **RNDR closed
+   -$1.03**. The migration itself was the cause. DOT survived because
+   `current` ticked above entry between migration and exit-check.
+3. **`f5481cf` startup migration** — Moved the migration to
+   `_init_broker_and_sync` so it didn't depend on price availability. Same
+   `pos["trailing_stop"] = entry_price` logic — would have caused the same
+   instant-exits on any future restart of below-entry positions.
+4. **`034731f` final fix** — Set trail to **0**, not `entry_price`. The
+   new exit gate is `if trailing_stop > 0 and current <= trailing_stop`,
+   so trail=0 leaves the gate inactive. Natural ratchet installs a proper
+   trail once price moves above entry. Hard `stop_loss` (~4-5% for crypto)
+   handles downside in the meantime — which is exactly the behavior a
+   fresh post-18ae5f2 entry would have.
+
+**Lesson for future trail logic:** never raise a stop ABOVE current price.
+"Migrate stale trail" semantically means "treat as if it never existed,"
+not "preserve at entry." When in doubt, unset and let the natural code
+rebuild.
+
+Also surfaced: the per-tick migration's `current_price is None` early-
+`continue` at engine.py:2400-2423 was why FIL/DOT/BCH/RNDR didn't migrate
+on cf938ce alone — their crypto symbols don't have IBKR security definitions,
+so `market_data.get_price()` returns None until Binance.US/Yahoo feeders
+warm. SUI was the only position with a fresh price the first 4 minutes
+post-restart. The startup migration in f5481cf (kept in 034731f) is
+price-independent and is the durable answer.
 
 ### `18ae5f2` — trailing-stop gate + crypto trail floor + drop BCH/FIL/INJ
 
