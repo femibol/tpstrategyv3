@@ -137,12 +137,20 @@ class RiskManager:
                 if age_seconds > max_signal_age:
                     return False, f"Stale signal: {age_seconds:.0f}s old (max {max_signal_age}s)"
 
-        # --- Rule 4: Min price (skip for options) ---
-        if signal.get("asset_type") != "option" and price > 0 and price < self.min_price:
+        # --- Rule 4: Min price (skip for options + crypto) ---
+        # Crypto routinely trades sub-$1 (MATIC $0.09, FLOKI/PEPE/BONK/SHIB
+        # in the micro-cents). The $0.50 floor exists to keep equity penny
+        # junk out — it has no meaning for crypto where price is just a
+        # function of supply.
+        _is_crypto_sym = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
+        if signal.get("asset_type") != "option" and not _is_crypto_sym and price > 0 and price < self.min_price:
             return False, f"Price ${price:.2f} below minimum ${self.min_price}"
 
-        # --- Rule 5: Max price (skip for options) ---
-        if signal.get("asset_type") != "option" and price > self.max_price:
+        # --- Rule 5: Max price (skip for options + crypto) ---
+        # BTC at $78K would trip an equity max_price ceiling; same reasoning
+        # as min_price — crypto sizing is bounded by crypto_max_position_pct,
+        # not nominal price.
+        if signal.get("asset_type") != "option" and not _is_crypto_sym and price > self.max_price:
             return False, f"Price ${price:.2f} above maximum ${self.max_price}"
 
         # --- Rule 6: Price reasonableness — DIRECTIONAL ---

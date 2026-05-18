@@ -4514,6 +4514,25 @@ class TradingEngine:
                 log.info(f"DUPLICATE BLOCKED: {symbol} already in position")
                 return
 
+            # Crypto re-entry cooldown: mean_reversion fires the same crypto
+            # BUY every 3s as long as Z-score / RSI stay in oversold territory.
+            # Without a cooldown, any close (stop, trailing, rotation, manual)
+            # triggers an immediate re-buy on the same name, which (a) leaves
+            # multiple TradersPost orders if the engine's exit-tracking races
+            # with the next BUY (observed live for SUI/ICP/LINK 2026-05-17 —
+            # 3 entries of each in ~30 min) and (b) chops capital on noise.
+            # Equities have their own duplicate-check via broker.get_positions
+            # below; this only fires for crypto on the tp_crypto_broker path.
+            if self._is_crypto_symbol(symbol) and symbol in self._recently_closed:
+                _elapsed = (datetime.now(self.tz) - self._recently_closed[symbol]).total_seconds()
+                _crypto_cooldown = 600  # 10 min
+                if _elapsed < _crypto_cooldown:
+                    log.info(
+                        f"CRYPTO RE-ENTRY COOLDOWN: {symbol} closed {_elapsed:.0f}s ago "
+                        f"(cooldown {_crypto_cooldown}s) — skipping new entry"
+                    )
+                    return
+
             # Broker-level duplicate check — catches cases where bot positions
             # dict is out of sync with actual broker holdings (e.g., after restart)
             if self.broker and self.broker.is_connected():
@@ -4692,15 +4711,25 @@ class TradingEngine:
                 stop_pct = self.config.stop_loss_pct
             stop_loss_price = current_price * (1 - stop_pct)  # Long-only: stop is always below
 
-        # STOP VALIDATION: Reject signals where stop is too close to entry
-        # This prevents instant stop triggers from near-zero ATR estimates
+        # STOP VALIDATION: Reject signals where stop is too close to entry.
+        # Prevents instant stop triggers from near-zero ATR estimates.
+        # Crypto gets a wider floor (5%) and INFO-level log because crypto
+        # ATR is tiny relative to price (e.g. MATIC ATR ≈ $0.0001 on a $0.09
+        # entry = 0.1% stop), so the near-zero stop is expected, not anomalous.
         stop_distance_pct = (current_price - stop_loss_price) / current_price if current_price > 0 else 0
-        if stop_distance_pct < 0.01:  # Stop must be at least 1% below entry
-            log.warning(
-                f"STOP TOO CLOSE: {symbol} entry=${current_price:.2f} stop=${stop_loss_price:.2f} "
-                f"({stop_distance_pct:.2%} gap). Forcing 2% minimum stop."
+        _is_crypto_entry = self._is_crypto_symbol(symbol)
+        _min_stop_pct = 0.05 if _is_crypto_entry else 0.01
+        _floor_pct = 0.05 if _is_crypto_entry else 0.02
+        if stop_distance_pct < _min_stop_pct:
+            _msg = (
+                f"STOP FLOOR APPLIED: {symbol} entry=${current_price:.4f} stop=${stop_loss_price:.4f} "
+                f"({stop_distance_pct:.2%} gap). Setting {_floor_pct:.0%} minimum stop."
             )
-            stop_loss_price = current_price * 0.98  # Force 2% stop minimum
+            if _is_crypto_entry:
+                log.info(_msg)
+            else:
+                log.warning(_msg)
+            stop_loss_price = current_price * (1 - _floor_pct)
 
         # Get current hour for session-based sizing
         current_hour = datetime.now(self.tz).hour
@@ -4805,13 +4834,20 @@ class TradingEngine:
             _reward = take_profit_price - current_price
             if _risk > 0 and _reward < 2.0 * _risk:
                 new_tp = current_price + 2.0 * _risk
-                log.warning(
-                    f"R/R ENFORCE: {symbol} entry=${current_price:.2f} "
-                    f"stop=${stop_loss_price:.2f} (risk=${_risk:.2f}) "
-                    f"target=${take_profit_price:.2f} (reward=${_reward:.2f}, "
+                _msg = (
+                    f"R/R STRETCH: {symbol} entry=${current_price:.4f} "
+                    f"stop=${stop_loss_price:.4f} (risk=${_risk:.4f}) "
+                    f"target=${take_profit_price:.4f} (reward=${_reward:.4f}, "
                     f"R/R={_reward/_risk:.2f}) — stretching target to "
-                    f"${new_tp:.2f} for 2:1 minimum."
+                    f"${new_tp:.4f} for 2:1 minimum."
                 )
+                # Crypto strategies routinely emit target = mean (small reward
+                # vs ATR-sized stop). The stretch is expected, not anomalous —
+                # log at INFO so the file isn't full of false WARNINGs.
+                if self._is_crypto_symbol(symbol):
+                    log.info(_msg)
+                else:
+                    log.warning(_msg)
                 take_profit_price = new_tp
 
         # --- Broker Execution ---
@@ -7107,9 +7143,19 @@ class TradingEngine:
         if len(self.positions) < max_pos - 1:
             return
 
-        # Score all current positions by momentum
+        # Score all current positions by momentum. Crypto is excluded because:
+        # (a) it routes through tp_crypto_broker, not the equity broker that
+        #     `rejected_signals` are aimed at — closing a crypto slot doesn't
+        #     free equity capacity in any meaningful sense;
+        # (b) mean_reversion keeps re-firing the same crypto signal every 3s,
+        #     so a rotate-out is immediately followed by a fast-lane re-entry —
+        #     observed live 2026-05-17: SUI/ICP/LINK each entered+rotated 3x in
+        #     ~30 min, leaving an orphan on TradersPost when the cycle didn't
+        #     close out cleanly.
         scored_positions = []
         for symbol, pos in self.positions.items():
+            if self._is_crypto_symbol(symbol):
+                continue
             score = 0
             pnl_pct = pos.get("unrealized_pnl_pct", 0)
 
