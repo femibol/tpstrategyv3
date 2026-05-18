@@ -649,6 +649,113 @@ class TradingEngine:
                             f"likely closed while bot was offline. Skipping."
                         )
 
+        # Crypto reconciliation: TradersPost crypto subscriptions don't expose
+        # positions via API, so the bot can't broker-sync them like it does
+        # equity at IBKR. Walk signal_log.json instead — sum buy webhooks vs
+        # exit webhooks per crypto symbol over the last 48h to derive what
+        # the bot believes is open broker-side. Any symbol with net open qty
+        # that isn't in the engine's positions is an orphan from a previous
+        # session and gets a WARNING + Discord risk_alert so the operator
+        # can decide to manually close.
+        try:
+            self._reconcile_crypto_orphans()
+        except Exception as e:
+            log.debug(f"crypto orphan reconciliation failed: {e}")
+
+    def _reconcile_crypto_orphans(self, lookback_hours=48):
+        """Detect crypto positions on TradersPost that the engine doesn't track.
+
+        Walks ``data/signal_log.json`` and nets buy-quantity against
+        exit-quantity per crypto symbol. Compares against ``self.positions``
+        (already populated by ``_load_persisted_positions`` and broker sync)
+        and surfaces any non-zero net deltas as orphans.
+
+        Why: TradersPost crypto subscriptions are webhook-only — there is no
+        REST endpoint to query open broker positions. When the bot crashes
+        between an entry and the next ``_persist_positions`` tick, or when an
+        edge case (like the rotation→re-entry loop fixed in dbe19bf) creates
+        broker fills the engine never tracked, those orphans accumulate
+        silently. Surfacing them at boot turns a slow leak into a loud one.
+        """
+        import json as _json
+        signal_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "data", "signal_log.json"
+        )
+        if not os.path.exists(signal_file):
+            return
+        try:
+            with open(signal_file, "r") as f:
+                sigs = _json.load(f)
+        except Exception as e:
+            log.debug(f"signal_log read failed: {e}")
+            return
+
+        from datetime import timedelta as _td, timezone as _tz
+        cutoff = datetime.now(_tz.utc) - _td(hours=lookback_hours)
+        from collections import defaultdict as _dd
+        net_qty = _dd(float)
+        for s in sigs:
+            try:
+                t = datetime.fromisoformat(s.get("time", ""))
+                if t.tzinfo is None:
+                    t = t.replace(tzinfo=_tz.utc)
+                else:
+                    t = t.astimezone(_tz.utc)
+            except Exception:
+                continue
+            if t < cutoff:
+                continue
+            if not s.get("success") or int(s.get("status_code", 0)) >= 300:
+                continue
+            sym = s.get("symbol", "")
+            if not sym or not self._is_crypto_symbol(sym):
+                continue
+            qty = float(s.get("quantity", 0) or 0)
+            tp_action = (s.get("tp_action", "") or "").lower()
+            if tp_action == "buy":
+                net_qty[sym] += qty
+            elif tp_action == "exit":
+                net_qty[sym] -= qty
+
+        orphans = []
+        with self._positions_lock:
+            for sym, qty in net_qty.items():
+                # Negative net = the bot signaled more exits than buys for this
+                # symbol over the lookback window. Can't be short on a spot
+                # crypto account — this means signal_log over-records exits
+                # (TradersPost returns 200 even when the broker rejects the
+                # exit for "no position to close"). Treat as zero, not orphan.
+                if qty < 0.0001:
+                    continue
+                if sym in self.positions:
+                    continue  # Engine knows about it — not an orphan
+                orphans.append((sym, qty))
+
+        if not orphans:
+            log.info(
+                f"CRYPTO RECONCILE: clean — no broker-side orphans in the "
+                f"last {lookback_hours}h"
+            )
+            return
+
+        # Sort biggest-qty-first so the alert lead with the biggest exposure.
+        orphans.sort(key=lambda x: -abs(x[1]))
+        orphan_summary = ", ".join(f"{s}={q:.4f}" for s, q in orphans)
+        log.warning(
+            f"CRYPTO RECONCILE: {len(orphans)} ORPHAN crypto position(s) "
+            f"likely open on TradersPost but NOT tracked by engine: "
+            f"{orphan_summary}. The bot will not manage stops/exits on these."
+        )
+        try:
+            self.notifier.risk_alert(
+                f"⚠️ CRYPTO ORPHAN POSITIONS DETECTED at boot: "
+                f"{len(orphans)} symbol(s) on TradersPost without engine "
+                f"tracking. {orphan_summary}. Check TradersPost UI and "
+                f"close manually if unwanted."
+            )
+        except Exception as e:
+            log.debug(f"orphan notifier alert failed: {e}")
+
     def _start_background_reconnect(self):
         """Background thread that retries IBKR connection forever.
 
@@ -4095,7 +4202,7 @@ class TradingEngine:
     # long-term parameter drift).
     # =====================================================================
 
-    def _entry_safety_gates(self, strategy_name):
+    def _entry_safety_gates(self, strategy_name, symbol=None):
         """Run all entry gates. Returns "" to allow, or a reason string to block.
 
         Each gate is independent; first one that fires wins. Order is cheap-to-
@@ -4106,7 +4213,7 @@ class TradingEngine:
             reason = self._gate_spy_circuit_breaker()
             if reason:
                 return reason
-            reason = self._gate_global_daily_trade_cap()
+            reason = self._gate_global_daily_trade_cap(symbol=symbol)
             if reason:
                 return reason
             reason = self._gate_strategy_drawdown(strategy_name)
@@ -4185,18 +4292,29 @@ class TradingEngine:
             log.debug(f"SPY breaker error: {e}")
         return ""
 
-    def _gate_global_daily_trade_cap(self):
+    def _gate_global_daily_trade_cap(self, symbol=None):
         """Hard cap on total entries per day across ALL strategies.
 
         Per-strategy max_trades_per_day exists already, but on wild days
         the bot can stack 50+ entries across strategies. This is the
         portfolio-level governor — independent of per-strategy caps.
+
+        Crypto and equity are counted into separate buckets with separate
+        caps. Crypto trades 24/7, so an equity-tuned cap (25) gets hit by
+        evening and locks crypto out for the rest of the day. Defaults:
+        equity 25, crypto 50. Either can be set to 0 to disable.
         """
-        cap = int(self.config.risk_config.get("max_total_trades_per_day", 25))
+        equity_cap = int(self.config.risk_config.get("max_total_trades_per_day", 25))
+        crypto_cap = int(self.config.risk_config.get("max_total_crypto_trades_per_day", 50))
+        is_crypto_signal = bool(symbol and self._is_crypto_symbol(symbol))
+        cap = crypto_cap if is_crypto_signal else equity_cap
+        bucket_label = "crypto" if is_crypto_signal else "equity"
         if cap <= 0:
             return ""
 
-        # Count today's entries from trade_history (each trade = 1 entry)
+        # Count today's entries from trade_history (each trade = 1 entry),
+        # bucketed by asset class so equity activity doesn't crowd out crypto
+        # and vice-versa.
         today = datetime.now(self.tz).date()
         entries_today = 0
         try:
@@ -4211,27 +4329,33 @@ class TradingEngine:
                         continue
                 else:
                     et_dt = et
-                if et_dt.date() == today:
+                if et_dt.date() != today:
+                    continue
+                t_is_crypto = self._is_crypto_symbol(t.get("symbol", ""))
+                if t_is_crypto == is_crypto_signal:
                     entries_today += 1
-            # Plus currently-open positions opened today
-            for p in self.positions.values():
+            # Plus currently-open positions opened today (same bucket)
+            for sym_p, p in self.positions.items():
                 pet = p.get("entry_time")
                 if pet and hasattr(pet, "date") and pet.date() == today:
-                    entries_today += 1
+                    p_is_crypto = self._is_crypto_symbol(sym_p)
+                    if p_is_crypto == is_crypto_signal:
+                        entries_today += 1
         except Exception as e:
             log.debug(f"daily trade cap counting error: {e}")
             return ""
 
         if entries_today >= cap:
-            # Throttle the alert: only post once per day at the cap moment
-            cap_state_key = f"_daily_cap_alerted_{today.isoformat()}"
+            # Throttle the alert: only post once per day per bucket at the
+            # cap moment so a chatty cap doesn't spam Discord every cycle.
+            cap_state_key = f"_daily_cap_alerted_{bucket_label}_{today.isoformat()}"
             if not getattr(self, cap_state_key, False):
                 self.notifier.risk_alert(
-                    f"DAILY TRADE CAP HIT: {entries_today}/{cap} entries today. "
-                    f"Blocking further entries until tomorrow."
+                    f"DAILY {bucket_label.upper()} TRADE CAP HIT: {entries_today}/{cap} "
+                    f"entries today. Blocking further {bucket_label} entries until tomorrow."
                 )
                 setattr(self, cap_state_key, True)
-            return f"Global daily trade cap reached ({entries_today}/{cap})"
+            return f"Global daily {bucket_label} trade cap reached ({entries_today}/{cap})"
         return ""
 
     def _gate_strategy_drawdown(self, strategy_name):
@@ -4377,7 +4501,7 @@ class TradingEngine:
 
         # SAFETY GATES — only apply to NEW entries (let exits through always).
         if action == "buy":
-            block_reason = self._entry_safety_gates(strategy)
+            block_reason = self._entry_safety_gates(strategy, symbol=symbol)
             if block_reason:
                 log.info(f"SAFETY GATE BLOCK: {symbol} via {strategy} — {block_reason}")
                 return
@@ -5216,6 +5340,16 @@ class TradingEngine:
                 "broker_stop_order_id": (order.get("sl_order_id") if order.get("bracket") else None),
                 "broker_stop_price": stop_loss_price if order.get("bracket") else 0,
             }
+
+        # Persist position immediately after add so a crash/restart before the
+        # next 3s scalp-monitor tick doesn't lose this entry. (Observed live
+        # 2026-05-17: SUI/ICP entries at 18:09-18:46 EDT never landed in
+        # positions_state.json before the 19:40 restart, creating $58K of
+        # untracked broker-side orphans.)
+        try:
+            self._persist_positions()
+        except Exception as e:
+            log.debug(f"persist-on-entry failed for {symbol}: {e}")
 
         # Bump the originating strategy's daily-trade counter. Counter only
         # increments AFTER a successful entry — previously strategies bumped
