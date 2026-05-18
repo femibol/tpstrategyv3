@@ -386,8 +386,29 @@ class IBKRBroker(BaseBroker):
                 log.error(f"Contract qualification failed for {symbol}: {qe}")
                 return None
 
-            # Check if contract resolution failed (e.g. delisted, bad symbol)
+            # Check if contract resolution failed (e.g. delisted, bad symbol).
+            # GUARD: if the broker holds shares, the symbol is by definition
+            # tradeable — a conId==0 here is a transient API glitch, not a
+            # real delisting. Blacklisting in that case strands us with no
+            # way to close (saw this with SHOP 2026-05-14: qualifyContracts
+            # glitched, SHOP blacklisted, bot couldn't close for 12h while
+            # the position bled an extra ~$20/share).
             if contract.conId == 0:
+                broker_holds = False
+                try:
+                    for pos in self.ib.positions():
+                        if pos.contract.symbol == symbol and pos.position != 0:
+                            broker_holds = True
+                            break
+                except Exception as e:
+                    log.debug(f"position check for blacklist guard failed: {e}")
+                if broker_holds:
+                    log.error(
+                        f"Contract qualification returned conId=0 for '{symbol}' "
+                        f"but broker holds the position — treating as transient, "
+                        f"NOT blacklisting. Retry on next cycle."
+                    )
+                    return None
                 self._invalid_symbols.add(symbol)
                 log.warning(
                     f"No security definition for '{symbol}' — added to invalid list. "

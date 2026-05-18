@@ -36,6 +36,20 @@ class RiskManager:
 
         # Current tier settings (updated via scaling)
         self.max_positions = self.risk.get("max_positions", 12)
+        # Per-asset-class sub-caps so 24/7 crypto can't monopolize the
+        # shared slot budget and starve equity at RTH open. Optional —
+        # if unset, both default to max_positions (no sub-cap effect).
+        # Observed live 2026-05-18: AMZN entry signals rejected for ~45
+        # minutes overnight with "Max positions reached (7)" while 7
+        # crypto orphans held every slot. Sub-caps prevent that class
+        # of starvation without changing behaviour when only one asset
+        # class is active.
+        self.max_crypto_positions = self.risk.get(
+            "max_crypto_positions", self.max_positions
+        )
+        self.max_equity_positions = self.risk.get(
+            "max_equity_positions", self.max_positions
+        )
         self.max_position_pct = self.risk.get("max_position_size_pct", 0.15)
         self.risk_per_trade = self.risk.get("risk_per_trade_pct", 0.01)
         self.min_volume = self.risk.get("min_volume", 50000)
@@ -109,9 +123,30 @@ class RiskManager:
         if self.long_only and action in ("sell", "short"):
             return False, f"BLOCKED: {action} {symbol} - long_only mode (no short/bearish entries)"
 
-        # --- Rule 1: Max positions ---
+        # --- Rule 1: Max positions (global, then per asset class) ---
         if len(positions) >= self.max_positions:
             return False, f"Max positions reached ({self.max_positions})"
+        _is_crypto_for_cap = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
+        if _is_crypto_for_cap and self.max_crypto_positions < self.max_positions:
+            crypto_held = sum(
+                1 for s in positions
+                if any(s.upper().endswith(suf) for suf in self.crypto_suffixes)
+            )
+            if crypto_held >= self.max_crypto_positions:
+                return False, (
+                    f"Crypto sub-cap reached ({crypto_held}/"
+                    f"{self.max_crypto_positions})"
+                )
+        elif not _is_crypto_for_cap and self.max_equity_positions < self.max_positions:
+            equity_held = sum(
+                1 for s in positions
+                if not any(s.upper().endswith(suf) for suf in self.crypto_suffixes)
+            )
+            if equity_held >= self.max_equity_positions:
+                return False, (
+                    f"Equity sub-cap reached ({equity_held}/"
+                    f"{self.max_equity_positions})"
+                )
 
         # --- Rule 2: Already in position ---
         if symbol in positions:
