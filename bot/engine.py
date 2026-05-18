@@ -576,10 +576,33 @@ class TradingEngine:
                                 f"will close on first cycle"
                             )
 
+                    # SYNC fake-stop guard: if current price is already at/below
+                    # the intended stop, priming stop_loss here fires the exit
+                    # on the very next monitor tick and locks in a bigger loss
+                    # than stop_pct intended. Use a recovery stop at
+                    # current_price*(1-stop_pct) and arm the real stop once
+                    # price climbs back above it. Same hazard as the SHOP exit.
+                    sync_stop = use_stop
+                    sync_stop_armed = True
+                    sync_stop_target = use_stop
+                    try:
+                        cur = self.market_data.get_price(sym) if self.market_data else None
+                    except Exception:
+                        cur = None
+                    if cur is not None and cur <= use_stop and not is_overnight:
+                        sync_stop = cur * (1 - stop_pct)
+                        sync_stop_armed = False
+                        log.warning(
+                            f"IBKR SYNC FAKE-STOP GUARD: {sym} entry ${entry:.2f}, "
+                            f"current ${cur:.2f} already at/below intended stop "
+                            f"${use_stop:.2f}. Using recovery stop ${sync_stop:.2f}; "
+                            f"intended stop arms once price climbs above ${use_stop:.2f}."
+                        )
+
                     self.positions[sym] = {
                         **pos,
                         "entry_time": now,
-                        "stop_loss": use_stop,
+                        "stop_loss": sync_stop,
                         "take_profit": use_tp,
                         "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                         "strategy": use_strategy,
@@ -589,6 +612,8 @@ class TradingEngine:
                         "max_hold_bars": 40,
                         "bar_seconds": 300,
                         "max_hold_days": 5,
+                        "_entry_stop_armed": sync_stop_armed,
+                        "_entry_stop_target": sync_stop_target,
                     }
 
                 # Check: if we have more positions than max_overnight and overnight state exists,
@@ -2664,6 +2689,21 @@ class TradingEngine:
 
             pos["unrealized_pnl_pct"] = pnl_pct
             pos["current_price"] = current_price
+
+            # --- SYNC FAKE-STOP ARMING ---
+            # Positions synced from IBKR mid-drawdown got a loosened recovery
+            # stop (see broker-sync blocks). Once price climbs back above the
+            # original entry-based stop, swap in the entry stop so we don't
+            # sit with a permanently loose stop on a recovered position.
+            if not pos.get("_entry_stop_armed", True):
+                target = pos.get("_entry_stop_target")
+                if target is not None and current_price > target:
+                    pos["stop_loss"] = max(pos.get("stop_loss", 0), target)
+                    pos["_entry_stop_armed"] = True
+                    log.info(
+                        f"SYNC STOP ARMED: {symbol} price ${current_price:.2f} "
+                        f"crossed entry-stop ${target:.2f} — stop tightened"
+                    )
 
             # --- BREAK-EVEN CHECK (every 3 seconds, not just slow monitor) ---
             be_cfg = self.config.risk_config.get("breakeven", {})
@@ -5257,16 +5297,41 @@ class TradingEngine:
                             entry = pos_data.get("entry_price", pos_data.get("avg_cost", 0))
                             stop_pct = self.config.risk_config.get("stop_loss_pct", 0.03)
                             tp_pct = self.config.risk_config.get("take_profit_pct", 0.20)
+                            entry_stop = entry * (1 - stop_pct)
+                            # Fake-stop guard: if current price is already at/below
+                            # the entry-based stop (sync happened after a drawdown),
+                            # priming stop_loss at entry_stop locks in an immediate
+                            # loss the next monitor tick. Drop to current*(1-stop_pct)
+                            # so the position has room to recover; arm the entry stop
+                            # once price climbs back above it. Same hazard as SHOP.
+                            cur = None
+                            try:
+                                cur = self.market_data.get_price(symbol) if self.market_data else None
+                            except Exception:
+                                cur = None
+                            sync_stop = entry_stop
+                            sync_stop_armed = True
+                            if cur is not None and cur <= entry_stop:
+                                sync_stop = cur * (1 - stop_pct)
+                                sync_stop_armed = False
+                                log.warning(
+                                    f"SYNC FAKE-STOP GUARD: {symbol} entry ${entry:.2f}, "
+                                    f"current ${cur:.2f} already at/below entry-stop "
+                                    f"${entry_stop:.2f}. Using recovery stop ${sync_stop:.2f}; "
+                                    f"entry stop arms once price climbs above ${entry_stop:.2f}."
+                                )
                             with self._positions_lock:
                                 self.positions[symbol] = {
                                     **pos_data,
                                     "entry_time": datetime.now(self.tz),
-                                    "stop_loss": entry * (1 - stop_pct),
+                                    "stop_loss": sync_stop,
                                     "take_profit": entry * (1 + tp_pct),
                                     "trailing_stop_pct": self.config.risk_config.get("trailing_stop_pct", 0.02),
                                     "strategy": "synced_from_ibkr",
                                     "executed_via": "IBKR",
                                     "sync_flagged": reject_reason if not is_valid else "",
+                                    "_entry_stop_armed": sync_stop_armed,
+                                    "_entry_stop_target": entry_stop,
                                 }
                             # If flagged, schedule immediate close
                             if not is_valid:

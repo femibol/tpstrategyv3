@@ -178,6 +178,13 @@ services:
       # `cat data/trade_history.json` work directly from /opt/trading-bot.
       - ./data:/app/data
       - ./logs:/app/logs
+      # Bind-mount config so the auto-tuner's writes to settings.yaml take
+      # effect on next restart without a rebuild + image push, and so
+      # operator edits on the VPS (`vim config/strategies.yaml`) propagate
+      # to the container the same way. Without this the image-baked copy
+      # wins, the auto-tuner's writes are invisible, and every config
+      # tweak needs a docker cp workaround.
+      - ./config:/app/config
       # Read-write access to Docker socket so the bot can self-heal by
       # restarting the ib-gateway container when its API wedges (TCP open
       # but handshake dead). Gated by safety caps in engine.py:
