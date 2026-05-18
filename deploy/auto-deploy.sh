@@ -121,6 +121,42 @@ else
     git log --oneline "$LOCAL..$REMOTE"
 fi
 
+# Docs-only changes don't need a rebuild — the running container only
+# cares about code, configs, and dependencies. A HANDOFF.md push that
+# triggers a full container recreate drops in-memory bot state (live
+# positions, scalp monitors, streaming subscriptions, IBKR connections)
+# for no functional benefit. Skip if the only files changed since the
+# last deploy are docs.
+#
+# Concrete cost observed 2026-05-18 03:35 UTC: two consecutive
+# HANDOFF-only commits each triggered a rebuild + recreate, dropping
+# 3 live crypto positions (AVAX/DOT/XRP) that became broker-side
+# orphans on TradersPost.
+DOC_ONLY=true
+if [ -n "$LAST_DEPLOYED_SHA" ]; then
+    DIFF_FILES=$(git diff --name-only "$LAST_DEPLOYED_SHA..HEAD" 2>/dev/null || echo "")
+    if [ -z "$DIFF_FILES" ]; then
+        DOC_ONLY=false  # Couldn't compute diff — fall through to deploy
+    else
+        while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+                *.md|README|LICENSE|CHANGELOG|HANDOFF*|docs/*)
+                    : ;;  # doc file, keep DOC_ONLY=true
+                *)
+                    DOC_ONLY=false; break ;;
+            esac
+        done <<< "$DIFF_FILES"
+    fi
+else
+    DOC_ONLY=false  # First-ever deploy — go through full path
+fi
+if [ "$DOC_ONLY" = true ]; then
+    echo "$LOG_PREFIX Docs-only change since $(echo "$LAST_DEPLOYED_SHA" | cut -c1-7) — skipping rebuild, marking deployed."
+    git rev-parse HEAD > "$LAST_DEPLOY_FILE"
+    exit 0
+fi
+
 # Debounce: collapse rapid-fire commits into one recreate. Skip the
 # pull too — if we pulled now but skipped the recreate, the container
 # would run stale code AND the next tick would see "no changes" and

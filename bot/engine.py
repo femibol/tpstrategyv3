@@ -642,12 +642,26 @@ class TradingEngine:
                                 live_pos[key] = saved_pos[key]
                         log.debug(f"Restored persisted state for {symbol}")
                     elif symbol not in self.positions:
-                        # Position in saved state but not at broker — may have been
-                        # closed while bot was down. Skip it.
-                        log.info(
-                            f"Persisted position {symbol} not found at broker — "
-                            f"likely closed while bot was offline. Skipping."
-                        )
+                        # Crypto path: TradersPost has no positions API, so
+                        # IBKR's broker-sync never sees crypto holdings. Trust
+                        # the persisted state and re-insert. The orphan
+                        # reconciliation walk below catches the inverse case
+                        # (broker holds it, persisted state doesn't).
+                        if self._is_crypto_symbol(symbol):
+                            self.positions[symbol] = saved_pos
+                            log.info(
+                                f"Restored persisted CRYPTO position {symbol} "
+                                f"qty={saved_pos.get('quantity')} entry="
+                                f"${saved_pos.get('entry_price')} (TP has no "
+                                f"positions API; trusting persisted state)"
+                            )
+                        else:
+                            # Equity: position in saved state but not at IBKR —
+                            # may have been closed while bot was down. Skip.
+                            log.info(
+                                f"Persisted position {symbol} not found at broker — "
+                                f"likely closed while bot was offline. Skipping."
+                            )
 
         # Crypto reconciliation: TradersPost crypto subscriptions don't expose
         # positions via API, so the bot can't broker-sync them like it does
