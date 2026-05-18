@@ -4318,8 +4318,41 @@ class TradingEngine:
                 reason = self._gate_crypto_funding_extreme(symbol)
                 if reason:
                     return reason
+                reason = self._gate_correlation_cluster(symbol)
+                if reason:
+                    return reason
         except Exception as e:
             log.debug(f"safety gate error: {e}")
+        return ""
+
+    def _gate_correlation_cluster(self, symbol):
+        """Cap concurrent positions per correlation cluster.
+
+        Why: a "diversified" book of 7 long crypto positions is really 1
+        position on BTC beta — all alts trade ~0.7+ correlated with BTC most
+        regimes, so a 3% BTC drop hits all 7 stops simultaneously. Pros size
+        by factor exposure, not name count. This is the first-pass version
+        using asset-class clustering; future upgrade can compute real
+        pairwise correlation over rolling windows.
+
+        Caps (configurable via config/settings.yaml):
+          - crypto cluster: 5 concurrent (vs 7 generic max_positions)
+
+        Equity isn't capped here yet because we have only 9 equity rows in
+        history — not enough data to calibrate sector clusters. Add later.
+        """
+        if not self.positions:
+            return ""
+        if not self._is_crypto_symbol(symbol):
+            return ""
+
+        cap = self.config.settings.get("crypto", {}).get("max_concurrent_positions", 5)
+        crypto_open = sum(1 for s in self.positions if self._is_crypto_symbol(s))
+        if crypto_open >= cap:
+            return (
+                f"crypto concurrent cap: {crypto_open}/{cap} positions already open "
+                f"(all share BTC-beta cluster)"
+            )
         return ""
 
     def _gate_crypto_funding_extreme(self, symbol):

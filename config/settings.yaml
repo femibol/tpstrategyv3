@@ -278,6 +278,12 @@ crypto:
   schedule:
     trading_24h: true             # Crypto markets are 24/7
     trading_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+  # Concurrent crypto position cap (correlation cluster). A 7-name "diversified"
+  # crypto book is really 1 position on BTC beta — alts trade ~0.7+ correlated
+  # with BTC most regimes, so a 3% BTC drop hits all 7 stops simultaneously.
+  # Enforced in engine._gate_correlation_cluster; works alongside the generic
+  # max_positions cap.
+  max_concurrent_positions: 5
   risk:
     max_position_size_pct: 0.12
     stop_loss_pct: 0.04
