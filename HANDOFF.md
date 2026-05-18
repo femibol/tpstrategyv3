@@ -5,6 +5,8 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-18 (mid UTC, session 5 (6)) — **Biggest crypto leak killed: trailing stop can no longer lock in a loss (`18ae5f2`) + self-improvement loop audit (blocker is API credit, not code).** Trade review of 79 crypto rows: mean_reversion is the only viable strategy (+$35.76, 64% wr), partial targets 1-5 are a 100%-wr profit engine (+$103), and the 5-60 min hold bucket is the sweet spot (66% wr). The single biggest leak was `trailing_stop` exits — 8 trades, -$122.75 net, 25% wr — because `_check_position_exits`'s else branch (`engine.py:2755`) set `new_trail = current_price * (1 - trailing_pct)` on tick #1, putting the trail ~1.5% below entry before profit ever existed. Every losing trailing exit (INJ -$46, BCH -$37/-$22, FIL -$21, BTC -$12, LINK -$4) matched this pattern: exited at entry - trail %, the trail had never ratcheted up. Fix in `18ae5f2`: `new_trail = max(current_price * (1 - trailing_pct), entry_price)` and only stored when `current_price > entry_price`. Also added crypto trail floor of 1.5% to block the BTC/LINK 0.1%-trail path (cumulative `min()` chains in `tighten_trail` / HOLD EXPIRING / RUNNER MODE were squeezing the trail too tight). Dropped BCH/FIL/INJ from `crypto.symbols` (combined -$100). Universe now 42. 87/87 tests pass. Auto-deploy due ~05:00 UTC. **Separately:** audited the self-improvement loop — `_claude_pre_trade()` (every signal), `_claude_post_trade_learning()` (every close), `AIInsights.get_quick_insight()` (every 5 trades), `AutoTuner.run_auto_tune()` (cron 12:30 + 16:30 ET Mon-Fri), `WeeklyReview.run()` (Sat 10am ET) — all wired, all silently no-op because `ANTHROPIC_API_KEY` is at $0 balance (confirmed live via container exec: `Error code: 400: Your credit balance is too low`). User opted to top up the API ($20 covers weeks at haiku/sonnet pricing) rather than wire Max via CLI subprocess — the CLI path was reviewed but ToS gray area + Max weekly caps + CLI latency on the hot path made it worse than just paying API. No code change for the AI loop; it resumes the moment the balance is positive.
+
 2026-05-18 (early UTC, session 5 (5)) — **Trade-review improvements shipped (`41b2776`) + every session-5 fix now verified live.** Trade review of 29 deduped logical crypto trades (+$36.26, 33% win, 3 outsized winners carrying it all) surfaced: (1) `momentum` strategy is 1/9 wins (11%) on crypto — disabled it for crypto in `generate_signals` (still gets crypto in `_dynamic_symbols` for `mean_reversion`'s parallel use); (2) `mean_reversion` SELL threshold tightened to z>=1.5 for crypto (was z>=1.0) — z=1.0 was firing on chop and pinging back near break-even; (3) added 5-min min-hold on mean_reversion's own SELL signal for crypto via new `set_held_symbols(symbols, entry_times=...)` kwarg on BaseStrategy. Engine passes `positions[sym]["entry_time"]` at all 3 call sites. Stop-loss + TP unchanged. Deployed at 04:05:15 UTC after the 04:00 cron debounced; survives-restart fix held a **second** time (6 positions restored: SUI, AVAX, LINK, DOT, SOL, ICP — one more than the 03:50 restart proved). First live test of the new SELL guards fired at 00:08:39 EDT: mean_reversion SELL on ICP at z=3.12, RSI=100 — 6:18 after entry (clears 5-min hold), z=3.12 (clears z>=1.5). Engine routed via webhook_exit, closed at +$1.41. 7 positions still open, net unrealized +$5.87.
 
 2026-05-18 (early UTC, session 5 (4)) — **Two follow-on bugs caught LIVE by Improvement A; both fixed in `6205589`.** While verifying session 5 (3), the auto-deploy thrashed on the back-to-back HANDOFF.md commits (`0587ae9`, `8b5754f`) — full rebuild + container recreate each time. The 03:35 UTC restart dropped 3 live crypto positions (AVAX 157.42, DOT 1175.58, XRP 867.04) from `self.positions` because `_load_persisted_positions`'s "not found at broker" check uses IBKR's `get_positions()` — which never knows about crypto. The orphan reconciliation walk (Improvement A from `9855406`) fired correctly at 23:35:19 EDT with `CRYPTO RECONCILE: 3 ORPHAN crypto position(s) likely open on TradersPost` + Discord risk_alert — proving its value in exactly the scenario it was designed for. **3 orphans closed manually via webhook** (logIds: `8729d741`, `930a6575`, `e5bac8f7`). Then shipped `6205589`: (1) `_load_persisted_positions` now trusts persisted state for crypto symbols (since TradersPost has no positions API to confirm against, and Improvement A catches the inverse case); (2) `auto-deploy.sh` computes `git diff --name-only LAST_DEPLOYED..HEAD` and skips the rebuild + recreate if every changed file matches `*.md` / `README` / `LICENSE` / `CHANGELOG` / `HANDOFF*` / `docs/*` — `.last-deploy` still gets updated so the next code-bearing commit triggers a normal deploy. Dry-run confirmed the two HANDOFF commits that caused today's incident classify as DOC_ONLY=true.
@@ -20,6 +22,88 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 2026-05-17 (late UTC, session 4) — **FIRST AUTONOMOUS CRYPTO TRADE FIRED.** Three commits this session unblocked the entire crypto path end-to-end: `7c04107` (falling-knife bypass), `07f4a3f` (crypto pinning in dynamic-symbols cap — the actual root cause of `no_data=45` heartbeats), `d3e2d75` (separate IBKR mirror from crypto). Live validation at 17:33:01 UTC: `TradersPost SUBMITTED: BTC-USD qty=0.03693 @ $78,439` via the CRYPTO webhook (HTTP 200), full SL/TP set, momentum-strategy entry. Also: 87/87 tests pass after fixing the long-broken `test_ibkr_outside_rth_cancel_policy.py` fixture (`_FakeContract` was missing `(exchange, currency)` positional args, and the test asserted `queued` when the broker actually returns `deferred`).
 
 2026-05-16 (late UTC, session 3) — **Crypto pipeline complete: 45-name universe on Binance.US real-time bars, fast lane firing every 3s, fractional sizing through risk_manager, truthful heartbeat — and all of it validated live as `universe=45 | neutral=45` at 11:50:53 ET.** Four commits since the prior handoff: `75789b9` (universe 3→46 + fast-lane reads config + bucketed heartbeat), `8bb89bf` (Binance.US adapter primary, Yahoo fallback for MKR/TON, MATIC→POL + RNDR→RENDER alias map, STX dropped), `108cb91` (heartbeat WAIT verdict bucketed as no_data, `LOG_LEVEL` env var so future sessions aren't blind to `log.debug` like this one was). Bot is now in the "waiting for a real signal" state for the first time — pipeline works end-to-end, market is just quiet on a Saturday afternoon.
+
+### `18ae5f2` — trailing-stop gate + crypto trail floor + drop BCH/FIL/INJ
+
+Trade review of 79 crypto rows in `data/trade_history.json` (51 full closes + 28 partial-fill rows, net +$21.89 all-in). Strip the noise and the data is loud about three things:
+
+**What's working (keep):**
+- `mean_reversion`: 67 trades, +$35.76, **64% wr** — only viable crypto strategy.
+- Partial targets 1-5: 28 trades, +$103, **100% wr** by construction — the lock-in mechanism is the profit engine.
+- `time_exit`: 16 trades, +$58, 56% wr — letting winners ride to the hold cap pays.
+- 5-60 min hold window: 49 trades, +$34, 66% wr — entries that work, work fast.
+- AAVE, ETC, NEAR, ICP, XRP, SOL combined +$144.
+
+**What's bleeding (fix):**
+- `trailing_stop` exits: 8 trades, **-$122.75 net, 25% wr.** The single biggest leak. Root cause below.
+- `rotation` exits: 13 trades, -$38.39, 7.7% wr. **Already fixed** in `dbe19bf` (session 5 #1). Last rotation exit: 2026-05-17 19:00 EDT. Holding.
+- `momentum` on crypto: 10 trades, -$13.87. **Already fixed** in `41b2776` (session 5 (5)). Zero momentum crypto entries since.
+- INJ -$46, BCH -$32, FIL -$20 (10 trades, all `trailing_stop`).
+- 1-4h hold bucket: -$12.73 — symptom of the trailing-stop bug catching positions before `time_exit` fires.
+
+**The trailing-stop bug (root cause).** `bot/engine.py:2755` in the non-momentum-runner else branch (which is every `mean_reversion` crypto position):
+
+```python
+new_trail = current_price * (1 - trailing_pct)
+if "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0):
+    pos["trailing_stop"] = new_trail
+```
+
+On tick #1 of a fresh entry, `current_price ≈ entry_price`, so `new_trail ≈ entry - trailing_pct`. The trail is stored at ~1.5% BELOW entry before profit ever existed. Any tiny dip then triggers `current_price <= pos["trailing_stop"]` and the position exits for a small loss. The pattern is exact:
+
+```
+INJ  entry 4.6750 → trail 1.5% → exit 4.6000 (-1.60%)   -$46.47
+BCH  entry 385.80 → trail 1.5% → exit 373.90 (-3.08%)   -$37.23
+BCH  entry 379.50 → trail 1.5% → exit 372.60 (-1.82%)   -$21.94
+FIL  entry 0.9390 → trail 1.5% → exit 0.9270 (-1.28%)   -$21.29
+BTC  entry 78400  → trail 0.1% → exit 78079  (-0.41%)   -$11.87
+LINK entry 9.5740 → trail 0.1% → exit 9.5480 (-0.27%)   -$ 3.93
+```
+
+The only two winning trailing exits (ETC +$10, ICP +$10) were the ones where price ran far enough to ratchet the trail above entry first. The momentum_runner branch above (`engine.py:2622+`) already handles this correctly — Phase 1 (`pnl_pct < 2%`) sets `trailing_pct = 0` so no trail until profit. The else branch had no such gate.
+
+**Fix.** `engine.py:2767`:
+
+```python
+new_trail = max(current_price * (1 - trailing_pct), entry_price)
+if current_price > entry_price and (
+    "trailing_stop" not in pos or new_trail > pos.get("trailing_stop", 0)
+):
+    pos["trailing_stop"] = new_trail
+```
+
+The `max(..., entry_price)` floor means the trail can never lock in a loss. The `current_price > entry_price` gate means the trail isn't written on every losing tick (which would otherwise cause an exit at breakeven on the next downtick). Exit gate also strengthened: `if pos.get("trailing_stop", 0) > 0 and current_price <= pos["trailing_stop"]` — the > 0 check matters because the post-fix unset state must not trigger a spurious exit.
+
+Applies to all non-runner positions (equity too). The bug isn't crypto-specific; crypto just had the volume to expose it. Equity has its own hard `stop_loss` at entry (engine.py:2562-2570), so downside protection is unchanged.
+
+**Crypto trail floor.** Added at `engine.py:2706`: clamps `trailing_stop_pct` to ≥1.5% for crypto, regardless of what `tighten_trail` / HOLD EXPIRING / RUNNER MODE paths did to it. Blocks the BTC/LINK 0.1%-trail pattern without unwinding the offending paths. Hard-coded for now; the right long-term move is per-asset-class bounds in `auto_tuner.PARAM_BOUNDS`.
+
+**Dropped from `config/settings.yaml` `crypto.symbols`:** BCH-USD, FIL-USD, INJ-USD. Universe 45 → 42. These three combined for -$100 across 10 trades, all `trailing_stop` blowups — ATR is large relative to entry size. Revisit if the gate fix makes them net-profitable on new behavior.
+
+**News-trail branch (engine.py:2706-2724) NOT changed.** It's reactive to news events and the "lock in profit fast even at a small loss" semantic is intentional there. Left alone.
+
+87/87 tests pass. Auto-deploy due ~05:00 UTC.
+
+### Self-improvement loop audit (session 5 (6))
+
+User asked: "always self improve depending on trades. you can use Claude also for decision taking finding the best exit and entry." Investigation confirms the loop is already fully built; the only blocker is API credit.
+
+| Component | When | Source |
+|---|---|---|
+| `_claude_pre_trade()` | Every signal | `bot/engine.py:6434` — returns `skip` / `reduce_size` / `aggressive` verdicts |
+| `_claude_post_trade_learning()` | Every trade close | `bot/engine.py:6669` |
+| `AIInsights.get_quick_insight()` | Every 5 trades | `bot/learning/ai_insights.py` |
+| `AutoTuner.run_auto_tune()` | 12:30 + 16:30 ET, Mon-Fri | `bot/engine.py:1232`; bounds in `bot/learning/auto_tuner.py:PARAM_BOUNDS` |
+| `WeeklyReview.run()` | Sat 10am ET | `bot/learning/weekly_review.py` |
+
+All five hooks call `self.ai_insights.is_available()` first and silently return if not. Live test inside the container confirms `ANTHROPIC_API_KEY` returns 400 "credit balance too low" — so every hook is currently a no-op. Top up at https://console.anthropic.com/settings/billing and the entire loop resumes with zero code change.
+
+**Claude Max via CLI considered + rejected.** User asked if their Max subscription could replace the API. Technically possible (mount `/root/.local/bin/claude` + `~/.claude/.credentials.json` into the container, replace `_call_claude()` with subprocess to `claude -p`), but: (1) Max weekly caps would conflict with Claude Code sessions; (2) ToS gray area for high-volume programmatic use; (3) ~1-3s CLI startup vs ~500ms API on the pre-trade hot path. User opted for API top-up. Don't re-litigate unless asked.
+
+**Real gaps to keep in mind (not fixed this session):**
+- Auto-tuner only runs Mon-Fri weekdays — crypto is 24/7 and never gets a crypto-specific tune cycle.
+- `PARAM_BOUNDS` in `auto_tuner.py` are global, not per-asset-class. The 1.5% crypto trail floor I just hard-coded should eventually live there.
+- Pre-trade Claude prompt is generic in `ai_insights.py:SYSTEM_PROMPT`; could feed crypto signals their z-score / RSI / recent same-symbol exits for sharper entry calls.
 
 ### `9855406` — boot-time crypto reconciliation + separate trade caps
 
