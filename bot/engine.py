@@ -4314,9 +4314,93 @@ class TradingEngine:
             reason = self._gate_daily_drawdown()
             if reason:
                 return reason
+            if symbol:
+                reason = self._gate_crypto_funding_extreme(symbol)
+                if reason:
+                    return reason
         except Exception as e:
             log.debug(f"safety gate error: {e}")
         return ""
+
+    def _gate_crypto_funding_extreme(self, symbol):
+        """Skip crypto entries when perpetual funding rate is extreme.
+
+        Mean reversion breaks down when funding is heavily one-sided — that's
+        the market saying "this is a real directional move, not noise" via
+        the perp/spot premium. Long shorts in heavy negative funding (or vice
+        versa) and you're fighting both price and carry.
+
+        Source: OKX public API (no auth; Bybit is 403 from this VPS,
+        Binance.com perp is 451 geo-blocked). Cached 5 min per symbol.
+
+        Threshold: |funding| > 0.05%/8h = ~0.15%/day = ~55%/yr annualized.
+        That's already an extreme regime where carry alone dwarfs the
+        average mean-reversion target.
+        """
+        if not self._is_crypto_symbol(symbol):
+            return ""
+
+        try:
+            funding = self._get_crypto_funding_rate(symbol)
+        except Exception as e:
+            log.debug(f"funding fetch failed for {symbol}: {e}")
+            return ""  # fail-open: don't block on data outage
+
+        if funding is None:
+            return ""
+
+        threshold = 0.0005  # 0.05% per 8h
+        if abs(funding) > threshold:
+            return (
+                f"funding rate extreme: {funding*100:+.3f}%/8h "
+                f"(threshold ±{threshold*100:.2f}%)"
+            )
+        return ""
+
+    def _get_crypto_funding_rate(self, symbol):
+        """Fetch current funding rate for a crypto symbol from OKX.
+
+        Returns funding rate as a decimal (0.0001 = 0.01% per 8h), or None
+        if the symbol isn't listed on OKX perpetuals (e.g., very low-cap
+        names). Cached 5 minutes per symbol.
+        """
+        import requests as _requests
+        now_ts = time.time()
+        cache = getattr(self, "_funding_cache", None)
+        if cache is None:
+            cache = {}
+            self._funding_cache = cache
+        entry = cache.get(symbol)
+        if entry and now_ts - entry["ts"] < 300:
+            return entry["funding"]
+
+        # Symbol mapping: BTC-USD → BTC-USDT-SWAP (OKX perpetual format)
+        base = symbol.upper().split("-")[0]
+        # Reuse the Binance alias map for the same rebrands (POL, RENDER)
+        aliases = getattr(self.market_data, "_BINANCE_ALIASES", {}) if self.market_data else {}
+        base = aliases.get(base, base)
+        okx_inst = f"{base}-USDT-SWAP"
+
+        try:
+            resp = _requests.get(
+                "https://www.okx.com/api/v5/public/funding-rate",
+                params={"instId": okx_inst},
+                timeout=5,
+            )
+            if resp.status_code != 200:
+                cache[symbol] = {"ts": now_ts, "funding": None}
+                return None
+            data = resp.json().get("data", [])
+            if not data:
+                cache[symbol] = {"ts": now_ts, "funding": None}
+                return None
+            funding = float(data[0].get("fundingRate", 0))
+            cache[symbol] = {"ts": now_ts, "funding": funding}
+            return funding
+        except Exception as e:
+            log.debug(f"OKX funding fetch failed for {okx_inst}: {e}")
+            cache[symbol] = {"ts": now_ts, "funding": None}
+            return None
 
     def _gate_daily_drawdown(self):
         """Tiered daily drawdown circuit breaker (crypto + equity).
