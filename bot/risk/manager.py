@@ -5,6 +5,7 @@ Protects capital at all costs. No trade gets through without approval.
 from datetime import datetime
 from collections import defaultdict
 
+from bot.risk.cost_model import CostModel
 from bot.utils.logger import get_logger
 
 log = get_logger("risk.manager")
@@ -72,6 +73,12 @@ class RiskManager:
         self.crypto_suffixes = config.settings.get("crypto", {}).get(
             "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
         )
+
+        # Transaction-cost gate. Rejects entries whose take_profit edge
+        # can't clear round-trip cost (fee + spread×mult) by ratio×.
+        # Ratio-based so cheap-stock momentum scalps with big % moves
+        # still pass even when the absolute bps cost looks scary.
+        self.cost_model = CostModel(config)
 
         # Tracking
         self.rejected_signals = []
@@ -247,6 +254,21 @@ class RiskManager:
                         f"Price ${price:.2f} is {abs(signed_diff):.1%} away from "
                         f"market ${market_price:.2f} (max {max_price_diff:.0%})"
                     )
+
+        # --- Rule 6.5: Cost-vs-edge gate (entries only) ---
+        # Rejects signals whose take_profit edge can't clear round-trip
+        # fee+spread by a configured ratio. Buy-only path — exits already
+        # bypassed the rule via the early return at the top of this method.
+        if action == "buy":
+            _is_crypto_for_cost = any(
+                symbol.upper().endswith(s) for s in self.crypto_suffixes
+            )
+            _asset_class = "crypto" if _is_crypto_for_cost else "equity"
+            _passed_cost, _cost_reason = self.cost_model.passes(
+                signal, _asset_class
+            )
+            if not _passed_cost:
+                return False, _cost_reason
 
         # --- Rule 7: Position size limit (crypto gets smaller cap) ---
         is_crypto = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)

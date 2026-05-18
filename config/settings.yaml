@@ -36,6 +36,19 @@ risk:
   max_signal_deviation_pct: 0.05           # Pre-order RTH: signal-vs-live drift cap (5% matches risk_manager.Rule 6)
   max_signal_deviation_pct_extended: 0.12  # Pre-order extended hours: 12% — pre-market gappers routinely drift 8-12%
 
+# Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
+# take_profit edge can't clear estimated round-trip cost by ratio×.
+# Ratio-based so cheap-stock momentum scalps with big % moves still
+# pass even when absolute bps cost looks scary.
+cost_model:
+  enabled: true
+  equity_fee_bps: 2.0           # IBKR Pro round-trip avg on order sizes this bot runs
+  crypto_fee_bps: 30.0          # TradersPost → Alpaca crypto taker ~15bp × 2 sides
+  equity_spread_bps_default: 5.0
+  crypto_spread_bps_default: 10.0
+  spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
+  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
+
   # --- New-entry safety gates (block buys, never block exits) ---
   max_total_trades_per_day: 25      # Hard cap on equity entries per day across all strategies (0 = disabled)
   max_total_crypto_trades_per_day: 50  # Separate cap for crypto — 24/7 market needs more headroom than RTH equity (0 = disabled)
