@@ -656,6 +656,39 @@ class TradingEngine:
                         # reconciliation walk below catches the inverse case
                         # (broker holds it, persisted state doesn't).
                         if self._is_crypto_symbol(symbol):
+                            # GHOST CHECK: Verify the position is still open per
+                            # signal_log. The persistence path can fail to write
+                            # a removal (saw this 2026-05-18: SUI closed +$8.65
+                            # at 04:40:59 EDT, restart at 04:45:14 EDT restored
+                            # the pre-close state because positions_state.json
+                            # hadn't updated yet). Walk signal_log from this
+                            # position's entry_time forward; if net qty <= 0,
+                            # the position was actually closed — skip restore.
+                            entry_time = saved_pos.get("entry_time")
+                            if isinstance(entry_time, str):
+                                try:
+                                    entry_time = datetime.fromisoformat(entry_time)
+                                except Exception:
+                                    entry_time = None
+                            try:
+                                signal_net = self._signal_log_net_qty(
+                                    symbol, since_dt=entry_time
+                                )
+                            except Exception as e:
+                                log.debug(f"signal_log ghost check failed for {symbol}: {e}")
+                                signal_net = None
+                            persisted_qty = float(saved_pos.get("quantity", 0) or 0)
+                            if (signal_net is not None
+                                    and persisted_qty > 0
+                                    and signal_net <= 0.01):
+                                log.warning(
+                                    f"GHOST CRYPTO POSITION SKIPPED: {symbol} "
+                                    f"persisted qty={persisted_qty:.4f} but "
+                                    f"signal_log net since entry={signal_net:.4f} "
+                                    f"— position was closed before restart, not "
+                                    f"restoring"
+                                )
+                                continue
                             self.positions[symbol] = saved_pos
                             log.info(
                                 f"Restored persisted CRYPTO position {symbol} "
@@ -707,6 +740,67 @@ class TradingEngine:
             self._reconcile_crypto_orphans()
         except Exception as e:
             log.debug(f"crypto orphan reconciliation failed: {e}")
+
+    def _signal_log_net_qty(self, symbol, since_dt=None, lookback_hours=48):
+        """Compute net qty (buys - exits) for a crypto symbol from signal_log.
+
+        Used by `_load_persisted_positions` to detect ghost positions (engine
+        thinks it owns X but signal_log shows the position was closed). Returns
+        a float clamped at 0 (spot can't be short; negative net just means
+        signal_log over-records exits when TP returns 200 on rejected closes).
+
+        Args:
+            symbol: ticker like "SUI-USD"
+            since_dt: datetime to start the walk from. If None, walks the last
+                `lookback_hours`. Pass the persisted position's entry_time to
+                check if the position has been closed since it opened.
+            lookback_hours: max lookback when since_dt is None.
+
+        Returns:
+            float: net qty since since_dt (or last lookback_hours), clamped to 0.
+        """
+        import json as _json
+        from datetime import timedelta as _td, timezone as _tz
+        signal_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "data", "signal_log.json"
+        )
+        if not os.path.exists(signal_file):
+            return 0.0
+        try:
+            with open(signal_file, "r") as f:
+                sigs = _json.load(f)
+        except Exception:
+            return 0.0
+        if since_dt is None:
+            since_dt = datetime.now(_tz.utc) - _td(hours=lookback_hours)
+        elif since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=_tz.utc)
+        else:
+            since_dt = since_dt.astimezone(_tz.utc)
+
+        net = 0.0
+        for s in sigs:
+            if s.get("symbol") != symbol:
+                continue
+            if not s.get("success") or int(s.get("status_code", 0)) >= 300:
+                continue
+            try:
+                t = datetime.fromisoformat(s.get("time", ""))
+                if t.tzinfo is None:
+                    t = t.replace(tzinfo=_tz.utc)
+                else:
+                    t = t.astimezone(_tz.utc)
+            except Exception:
+                continue
+            if t < since_dt:
+                continue
+            qty = float(s.get("quantity", 0) or 0)
+            action = (s.get("tp_action", "") or "").lower()
+            if action == "buy":
+                net += qty
+            elif action == "exit":
+                net -= qty
+        return max(0.0, net)
 
     def _reconcile_crypto_orphans(self, lookback_hours=48):
         """Detect crypto positions on TradersPost that the engine doesn't track.
