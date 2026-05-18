@@ -777,6 +777,14 @@ class TradingEngine:
             since_dt = since_dt.replace(tzinfo=_tz.utc)
         else:
             since_dt = since_dt.astimezone(_tz.utc)
+        # Grace window for the order-completion race: the signal_log entry
+        # is written when TradersPost returns HTTP 200, but the engine
+        # records `entry_time` a few ms later when it materializes the
+        # position dict. Without this slack, the at-entry buy lands ~7ms
+        # before entry_time and gets filtered out — exact failure mode
+        # behind the 2026-05-18 ATOM/ICP/RNDR ghost flagging once the tz
+        # bug above was fixed.
+        since_dt = since_dt - _td(seconds=5)
 
         net = 0.0
         for s in sigs:
@@ -787,7 +795,13 @@ class TradingEngine:
             try:
                 t = datetime.fromisoformat(s.get("time", ""))
                 if t.tzinfo is None:
-                    t = t.replace(tzinfo=_tz.utc)
+                    # Legacy entries (pre-fix) used datetime.now().isoformat()
+                    # — naive *local* time, NOT UTC. Mislabeling them as UTC
+                    # shifted them by self.tz's offset, which on EDT caused
+                    # legitimate just-opened positions to fail the
+                    # `t < since_dt` filter and be flagged as ghosts
+                    # (observed 2026-05-18 with ATOM/ICP/RNDR).
+                    t = self.tz.localize(t).astimezone(_tz.utc)
                 else:
                     t = t.astimezone(_tz.utc)
             except Exception:
@@ -838,7 +852,10 @@ class TradingEngine:
             try:
                 t = datetime.fromisoformat(s.get("time", ""))
                 if t.tzinfo is None:
-                    t = t.replace(tzinfo=_tz.utc)
+                    # Same fix as _signal_log_net_qty: legacy naive entries
+                    # are local time, not UTC. See that helper for the
+                    # 2026-05-18 incident detail.
+                    t = self.tz.localize(t).astimezone(_tz.utc)
                 else:
                     t = t.astimezone(_tz.utc)
             except Exception:

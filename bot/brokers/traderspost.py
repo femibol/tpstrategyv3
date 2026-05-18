@@ -11,7 +11,7 @@ Bot Signal -> TradersPost Webhook -> Broker
 """
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -94,7 +94,11 @@ class TradersPostBroker(BaseBroker):
                     existing = []
 
             entry = {
-                "time": datetime.now().isoformat(),
+                # UTC tz-aware so downstream readers (e.g. _signal_log_net_qty)
+                # don't have to guess the local zone. Naive datetime.now() here
+                # caused ghost-position misfires when compared against
+                # tz-aware entry_time from positions_state.json (2026-05-18).
+                "time": datetime.now(timezone.utc).isoformat(),
                 "symbol": signal.get("symbol", ""),
                 "action": signal.get("action", ""),
                 "strategy": signal.get("strategy", signal.get("source", "unknown")),
@@ -301,7 +305,7 @@ class TradersPostBroker(BaseBroker):
                 "payload": payload,
                 "strategy": signal.get("strategy", signal.get("source", "unknown")),
                 "webhook": "crypto" if (is_crypto and self.webhook_url_crypto) else "primary",
-                "time": datetime.now().isoformat(),
+                "time": datetime.now(timezone.utc).isoformat(),
             }
 
             self.signal_history.append(result)
