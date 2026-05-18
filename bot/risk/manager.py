@@ -58,6 +58,23 @@ class RiskManager:
         self.max_price = self.risk.get("max_price", 99999.0)  # No hard ceiling - runners can go past scanner range
         self.max_correlated = self.risk.get("max_correlated_positions", 2)
         self.min_confidence = 0.35  # Was 0.40. Mean-reversion math lands at 0.35-0.40 on typical setups; 0.40 was silently rejecting valid signals.
+        # Per-strategy confidence floors. Default falls back to
+        # self.min_confidence (above) when the strategy isn't listed.
+        # Conservative dial 2026-05-18: scalp/momentum get higher bars
+        # since their low-conf entries are the noise that drives losses;
+        # mean-reversion stays at the global floor because its math
+        # naturally lands lower. Runner-safe: only blocks marginal-conf
+        # entries, never closes a position already running.
+        self.min_confidence_per_strategy = self.risk.get(
+            "min_confidence_per_strategy",
+            {
+                "rvol_scalp": 0.55,
+                "rvol_momentum": 0.55,
+                "momentum": 0.50,
+                "momentum_runner": 0.50,
+                "mean_reversion": 0.40,
+            },
+        )
         self.long_only = self.risk.get("long_only", False)
 
         # Portfolio-level risk limits
@@ -302,8 +319,14 @@ class RiskManager:
 
         # --- Rule 9: Confidence threshold ---
         confidence = signal.get("confidence", 0)
-        if confidence < self.min_confidence:
-            return False, f"Confidence {confidence:.2f} below threshold {self.min_confidence}"
+        # Per-strategy floor wins over global if specified for this strategy.
+        _strategy = (signal.get("strategy", "") or "").lower()
+        _floor = self.min_confidence_per_strategy.get(_strategy, self.min_confidence)
+        if confidence < _floor:
+            return False, (
+                f"Confidence {confidence:.2f} below {_strategy or 'global'} "
+                f"threshold {_floor:.2f}"
+            )
 
         # --- Rule 10: Must have stop loss for entries ---
         if not signal.get("stop_loss"):

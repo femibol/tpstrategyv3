@@ -5346,8 +5346,25 @@ class TradingEngine:
         # entry = 0.1% stop), so the near-zero stop is expected, not anomalous.
         stop_distance_pct = (current_price - stop_loss_price) / current_price if current_price > 0 else 0
         _is_crypto_entry = self._is_crypto_symbol(symbol)
-        _min_stop_pct = 0.05 if _is_crypto_entry else 0.01
-        _floor_pct = 0.05 if _is_crypto_entry else 0.02
+        # Stop floor by asset class and price tier. Cheap equities need a
+        # wider floor — a $1 stock with a 2% stop sits 2¢ away, which is
+        # one bid-ask cross. Conservative tiers below (2026-05-18 review):
+        #   crypto:         5% (unchanged — ATR ratios at crypto prices)
+        #   equity < $5:    6% — penny scalps survive normal noise
+        #   equity $5-$50:  3% (was 2% — mid-caps still get a real stop)
+        #   equity > $50:   2% — liquid majors, tight bid-ask
+        if _is_crypto_entry:
+            _min_stop_pct = 0.05
+            _floor_pct = 0.05
+        elif current_price < 5.0:
+            _min_stop_pct = 0.05
+            _floor_pct = 0.06
+        elif current_price < 50.0:
+            _min_stop_pct = 0.02
+            _floor_pct = 0.03
+        else:
+            _min_stop_pct = 0.01
+            _floor_pct = 0.02
         if stop_distance_pct < _min_stop_pct:
             _msg = (
                 f"STOP FLOOR APPLIED: {symbol} entry=${current_price:.4f} stop=${stop_loss_price:.4f} "
