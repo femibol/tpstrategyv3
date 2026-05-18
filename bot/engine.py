@@ -664,12 +664,12 @@ class TradingEngine:
                             )
 
         # STARTUP TRAIL MIGRATION: positions persisted before 18ae5f2 have
-        # `trailing_stop` set below entry by the old code. Ratchet them up to
-        # entry_price once at boot. The per-tick migration in _fast_scalp_monitor
-        # only fires when current_price is available, which fails on crypto
-        # symbols whose data feeders haven't refreshed yet — leaving them
-        # vulnerable to the very bug 18ae5f2 fixed. Doing it here is
-        # price-independent and runs exactly once per position.
+        # `trailing_stop` set below entry by the old code. UNSET the stale
+        # trail — raising it to entry_price when current_price < entry_price
+        # would instantly trigger the exit gate at the next tick (saw this
+        # fire 3 unnecessary exits on 2026-05-18). With trail=0, the new
+        # code's natural ratchet will install a proper trail once price
+        # moves above entry. Hard stop_loss remains as downside protection.
         with self._positions_lock:
             for symbol, pos in self.positions.items():
                 if pos.get("direction", "long") != "long":
@@ -679,11 +679,12 @@ class TradingEngine:
                 if (entry_price > 0 and trail > 0
                         and trail < entry_price
                         and not pos.get("_trail_migrated")):
-                    pos["trailing_stop"] = entry_price
+                    pos["trailing_stop"] = 0
                     pos["_trail_migrated"] = True
                     log.info(
-                        f"TRAIL MIGRATION (startup): {symbol} trail "
-                        f"${trail:.4f} → ${entry_price:.4f} (entry floor)"
+                        f"TRAIL MIGRATION (startup): {symbol} stale trail "
+                        f"${trail:.4f} unset (entry ${entry_price:.4f}, "
+                        f"will re-arm on first ratchet above entry)"
                     )
 
         # Crypto reconciliation: TradersPost crypto subscriptions don't expose
@@ -2788,18 +2789,23 @@ class TradingEngine:
 
                 if direction == "long":
                     # MIGRATION: positions entered before 18ae5f2 have a stale
-                    # trail set below entry by the old code. Raise it once so the
-                    # post-fix exit gate doesn't fire the old behavior on a down-tick
-                    # before any uptick gets a chance to ratchet it up.
+                    # trail set below entry by the old code. UNSET the stale trail
+                    # rather than raise it — raising to entry_price when
+                    # current_price < entry_price would instantly trigger the exit
+                    # gate (saw this fire 3 unnecessary exits on 2026-05-18).
+                    # With trail=0, the new code's natural ratchet will install a
+                    # proper trail once price moves above entry. Hard stop_loss
+                    # remains in place as the downside protection.
                     if (pos.get("trailing_stop", 0) > 0
                             and pos["trailing_stop"] < entry_price
                             and not pos.get("_trail_migrated")):
                         old_trail = pos["trailing_stop"]
-                        pos["trailing_stop"] = entry_price
+                        pos["trailing_stop"] = 0
                         pos["_trail_migrated"] = True
                         log.info(
-                            f"TRAIL MIGRATION: {symbol} trail "
-                            f"${old_trail:.4f} → ${entry_price:.4f} (entry floor)"
+                            f"TRAIL MIGRATION: {symbol} stale trail "
+                            f"${old_trail:.4f} unset (entry ${entry_price:.4f}, "
+                            f"will re-arm on first ratchet above entry)"
                         )
                     # Trail can never lock in a loss: floor at entry_price.
                     # Pre-fix, the trail engaged at tick #1 below entry and
