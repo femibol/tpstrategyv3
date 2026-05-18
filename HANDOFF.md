@@ -5,11 +5,51 @@ Brief for the next Claude Code session. Read this first, then `git log --oneline
 ---
 
 ## Last Updated
+2026-05-18 (early UTC, session 5) — **Crypto churn fixed: rotation no longer rotates out crypto for equity signals, mean_reversion can't immediately re-buy after any close, min_price/max_price no longer reject crypto, STOP TOO CLOSE noise demoted to INFO for crypto.** Single commit `dbe19bf` bundles all four. Surfaced from reviewing today's 39 crypto trades (~$40 reported P&L) and the user's observation that SUI + ICP were still open on TradersPost while the engine reported 0 positions. Orphans closed manually via webhook before the commit landed (SUI 2725.97628, ICP 1101.25468 + 1123.15719, all HTTP 200 with logIds in the commit message). Also confirmed: the multi-row ETC/BCH/AAVE history entries (6 ETC closes for one entry) are legit partial-profit fills via `_partial_close_inner`, not a bug.
+
 2026-05-17 (late UTC, session 4 (2)) — **Two crypto trades shipped + slow-cycle FALLING KNIFE noise silenced + per-broker rate-limit so crypto bursts all fire.** Two more commits after the initial session-4 push: `c237aa9` (falling-knife fail-open now keys on `is_crypto_symbol(symbol)`, not the `_crypto_fast_lane` flag — fixes slow-cycle WARNING noise that the 7c04107 fix didn't cover), `397c78e` (`GLOBAL_MIN_INTERVAL` is now per-instance via `min_interval_override`; crypto broker set to 0, so 3-5 simultaneous fast-lane approvals all fire instead of N-1 dropping with `NO EXECUTION PATH AVAILABLE`). Second live trade landed at 17:50:04: `TradersPost SUBMITTED: ETH-USD qty=1.32102 @ $2,192` (SL $2148.87 / TP $2280.43). 87/87 tests still pass.
 
 2026-05-17 (late UTC, session 4) — **FIRST AUTONOMOUS CRYPTO TRADE FIRED.** Three commits this session unblocked the entire crypto path end-to-end: `7c04107` (falling-knife bypass), `07f4a3f` (crypto pinning in dynamic-symbols cap — the actual root cause of `no_data=45` heartbeats), `d3e2d75` (separate IBKR mirror from crypto). Live validation at 17:33:01 UTC: `TradersPost SUBMITTED: BTC-USD qty=0.03693 @ $78,439` via the CRYPTO webhook (HTTP 200), full SL/TP set, momentum-strategy entry. Also: 87/87 tests pass after fixing the long-broken `test_ibkr_outside_rth_cancel_policy.py` fixture (`_FakeContract` was missing `(exchange, currency)` positional args, and the test asserted `queued` when the broker actually returns `deferred`).
 
 2026-05-16 (late UTC, session 3) — **Crypto pipeline complete: 45-name universe on Binance.US real-time bars, fast lane firing every 3s, fractional sizing through risk_manager, truthful heartbeat — and all of it validated live as `universe=45 | neutral=45` at 11:50:53 ET.** Four commits since the prior handoff: `75789b9` (universe 3→46 + fast-lane reads config + bucketed heartbeat), `8bb89bf` (Binance.US adapter primary, Yahoo fallback for MKR/TON, MATIC→POL + RNDR→RENDER alias map, STX dropped), `108cb91` (heartbeat WAIT verdict bucketed as no_data, `LOG_LEVEL` env var so future sessions aren't blind to `log.debug` like this one was). Bot is now in the "waiting for a real signal" state for the first time — pipeline works end-to-end, market is just quiet on a Saturday afternoon.
+
+### `dbe19bf` — four crypto fixes from the session-5 trade review
+
+Triggered by user reporting "Sui and icp are still open. review each trade and improve." Engine had 0 positions per `/api/positions` and `positions_state.json` (stale, last write 00:56 UTC); TradersPost CRYPTO subscription had residual SUI + ICP from re-entries that the engine had lost track of. Trade review surfaced four overlapping bugs all in one commit.
+
+1. **`_momentum_rotation_check` excludes crypto.** `bot/engine.py:7110-7120` — crypto positions are skipped in the scoring loop, so they can never be the "weakest" candidate to rotate out. Equity rotation was killing crypto slots ("Momentum rotation: replaced by stronger signal MLGO") to make room for equity signals, then mean_reversion immediately re-fired the same crypto buy on the 3s fast lane. Observed live 2026-05-17 18:09-18:46 EDT: SUI/ICP/LINK each entered+rotated 3x in ~30 min, leaving orphans when the cycle landed on a re-entry with no follow-up close. Crypto routes through `tp_crypto_broker` (separate subscription, separate venues), so closing a crypto slot doesn't free capacity on the equity broker that rejected_signals are targeting anyway.
+
+2. **`risk_manager` min_price/max_price skip crypto.** `bot/risk/manager.py:140-156` adds `_is_crypto_sym` bypass next to the existing `asset_type != "option"` bypass. The $0.50 floor was rejecting MATIC ($0.09), FLOKI/PEPE/BONK/SHIB every 3s on the fast lane — log was full of `REJECTED: buy MATIC-USD | Price $0.09 below minimum $0.5`. Crypto sizing is bounded by `crypto_max_position_pct` (10%), not by nominal price; the rule has no asset-class meaning here.
+
+3. **Crypto-aware stop floor + INFO log.** `bot/engine.py:4695-4715` — crypto floor is now 5% (matches `crypto.risk.stop_loss_pct`) instead of 2%, and the log demotes to INFO for crypto. Crypto ATR is tiny relative to price (MATIC ATR ≈ $0.0001 on a $0.09 entry = 0.1% stop), so the near-zero stop is expected, not anomalous. Same treatment for R/R STRETCH at lines 4808-4820.
+
+4. **Crypto re-entry cooldown (10 min) on duplicate-entry guard.** `bot/engine.py:4516-4530` — symmetric to the existing 5-min `_exit_cooldown_secs` (which only blocks re-CLOSES). Without it, any close on a crypto symbol whose Z-score / RSI is still oversold triggers an immediate mean_reversion re-buy, and that re-buy can race with the close's exit-tracking → orphan position on TradersPost. Equities aren't affected; they already have the `broker.get_positions()` IBKR sync check.
+
+**Manual orphan cleanup performed before this commit:**
+- `SUI-USD exit qty=2725.97628` → log `0c5a7713-8df3-4469-b54a-e58d6291e485` (HTTP 200)
+- `ICP-USD exit qty=1101.25468` → log `a62b7149-da9d-4831-b8b8-3820d041c672`
+- `ICP-USD exit qty=1123.15719` → log `4df84acd-6d81-4853-8854-992decda5425`
+
+87/87 tests pass. Deployed via auto-deploy on the next 5-min tick (push at ~02:50 UTC).
+
+### Session-5 trade review snapshot
+
+- 39 closed crypto trades (incl. partial-fill duplicates), reported total +$40.19. Real number is lower after deduping the 5-6 ETC partial-target rows.
+- Per-symbol non-trivial loss: INJ-USD -$46.47 on 65m hold (only crypto trade > $20 loss).
+- All entries flagged STOP TOO CLOSE + R/R ENFORCE — now silenced for crypto per #3 above. The stops themselves weren't broken; just noisy.
+- 39x `exit_reason` field is empty in trade_history.json — `_close_position` writes `reason: <type>` and `reason_detail: <msg>` instead. Display side just hadn't been updated to read either. Worth a follow-up: pick a field name and have the analyzer use it consistently. Open follow-up.
+- The ETC pattern (1 entry → 6 history rows) was `_partial_close_inner` calling `trade_analyzer.persist_trade` on every partial profit target. Records have `partial: True` set but analytics views weren't filtering it. Cosmetic, not a real bug.
+
+### Live state at handoff time (session 5)
+- Bot on `dbe19bf` (auto-deploy due ~02:55 UTC). Latest log line before push: `22:41:58 EDT — CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=45 | BUY[1]: MATIC-USD(...) | warming=14 | neutral=27 | no_data=3`.
+- Engine has 0 positions per `/api/positions` (AAVE + XRP closed at 21:02:54 EDT with +$45.16 and +$4.03; positions_state.json is stale).
+- Orphan crypto on TradersPost is now zero (manual closes confirmed HTTP 200).
+- Anthropic API key on the bot is out of credit: `Claude API error 400: ... Your credit balance is too low` — AI insights/post-trade learning are off until topped up. Trading itself is unaffected.
+
+### Open follow-ups (session 5 net-new + carry-over)
+- **Persist crypto positions across restart.** SUI/ICP entries at 18:09-18:46 EDT never made it into the post-19:40-restart `positions_state.json`. Either the restart loaded a pre-18:09 snapshot, or the saver was filtering crypto. Worth instrumenting the load + save paths around `data/positions_state.json` to confirm crypto is included.
+- **`exit_reason` field in trade_history.json is empty.** `_close_position` writes `reason` + `reason_detail`; analyzer/reader sites should pick one and use it.
+- **Carry-over (session 4 (2)):** Yahoo crypto path HTTP 429, `api.binance.us` IPv6-only, per-symbol cap (`RATE_LIMIT_MAX=3/60s`) is the crypto-broker floor now that `min_interval=0`, DNS/netns gotcha, `max_price=$500` config ceiling, `vwap.py:201` + `smc_forever.py:347` `action="sell"`→`"short"`. All still un-shipped.
 
 ### `397c78e` — per-instance webhook cooldown; crypto broker set to 0
 
