@@ -2764,6 +2764,20 @@ class TradingEngine:
                 trailing_pct += momentum_buffer
 
                 if direction == "long":
+                    # MIGRATION: positions entered before 18ae5f2 have a stale
+                    # trail set below entry by the old code. Raise it once so the
+                    # post-fix exit gate doesn't fire the old behavior on a down-tick
+                    # before any uptick gets a chance to ratchet it up.
+                    if (pos.get("trailing_stop", 0) > 0
+                            and pos["trailing_stop"] < entry_price
+                            and not pos.get("_trail_migrated")):
+                        old_trail = pos["trailing_stop"]
+                        pos["trailing_stop"] = entry_price
+                        pos["_trail_migrated"] = True
+                        log.info(
+                            f"TRAIL MIGRATION: {symbol} trail "
+                            f"${old_trail:.4f} → ${entry_price:.4f} (entry floor)"
+                        )
                     # Trail can never lock in a loss: floor at entry_price.
                     # Pre-fix, the trail engaged at tick #1 below entry and
                     # exited every losing crypto trade for -1.5%/-3%, costing
