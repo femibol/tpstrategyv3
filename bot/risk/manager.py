@@ -51,6 +51,12 @@ class RiskManager:
         self.max_equity_positions = self.risk.get(
             "max_equity_positions", self.max_positions
         )
+        # Low-float catalyst gets its own reserved slot pool so the lane is
+        # available even when momentum/crypto have filled normal slots.
+        # Detection is by strategy="low_float_catalyst" on the position.
+        self.max_low_float_positions = self.risk.get(
+            "max_low_float_positions", 0
+        )
         self.max_position_pct = self.risk.get("max_position_size_pct", 0.15)
         self.risk_per_trade = self.risk.get("risk_per_trade_pct", 0.01)
         self.min_volume = self.risk.get("min_volume", 50000)
@@ -151,7 +157,18 @@ class RiskManager:
         if len(positions) >= self.max_positions:
             return False, f"Max positions reached ({self.max_positions})"
         _is_crypto_for_cap = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
-        if _is_crypto_for_cap and self.max_crypto_positions < self.max_positions:
+        _is_low_float_for_cap = (signal.get("strategy") == "low_float_catalyst")
+        if _is_low_float_for_cap and self.max_low_float_positions > 0:
+            low_float_held = sum(
+                1 for p in positions.values()
+                if isinstance(p, dict) and p.get("strategy") == "low_float_catalyst"
+            )
+            if low_float_held >= self.max_low_float_positions:
+                return False, (
+                    f"Low-float sub-cap reached ({low_float_held}/"
+                    f"{self.max_low_float_positions})"
+                )
+        elif _is_crypto_for_cap and self.max_crypto_positions < self.max_positions:
             crypto_held = sum(
                 1 for s in positions
                 if any(s.upper().endswith(suf) for suf in self.crypto_suffixes)

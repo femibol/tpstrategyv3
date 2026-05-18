@@ -36,6 +36,7 @@ from bot.strategies.rvol_momentum import RvolMomentumStrategy
 from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
+from bot.strategies.low_float_catalyst import LowFloatCatalystStrategy
 from bot.strategies.options_momentum import OptionsMomentumStrategy
 from bot.strategies.short_squeeze import ShortSqueezeStrategy
 from bot.strategies.pead import PEADStrategy
@@ -1242,6 +1243,7 @@ class TradingEngine:
             "pead": PEADStrategy,
             "momentum_runner": MomentumRunnerStrategy,
             "daily_trend_rider": DailyTrendRiderStrategy,
+            "low_float_catalyst": LowFloatCatalystStrategy,
         }
 
         allocation = self.config.strategy_allocation
@@ -1332,6 +1334,11 @@ class TradingEngine:
             trend_rider_strat.add_dynamic_symbols(self.universe)
             log.info(f"Injected {universe_count} universe symbols into daily trend rider")
 
+        low_float_strat = self.strategies.get("low_float_catalyst")
+        if low_float_strat and hasattr(low_float_strat, "add_dynamic_symbols"):
+            low_float_strat.add_dynamic_symbols(self.universe)
+            log.info(f"Injected {universe_count} universe symbols into low_float_catalyst")
+
         # Momentum strategy uses static symbols, so we extend the list directly
         if momentum_strat:
             existing = set(s.upper() for s in momentum_strat.symbols)
@@ -1401,6 +1408,18 @@ class TradingEngine:
             id="premarket_news_check"
         )
 
+        # Low-float catalyst pre-open flush: 09:25 ET.
+        # Premarket micro-cap runners almost always whipsaw on the open as
+        # daytraders dump. Close any low_float_catalyst positions before the
+        # bell so we don't ride the gap-down. The strategy can re-enter at
+        # 09:35+ if RVOL/trend still hold (open_dead_zone in the strategy
+        # config blocks 9:25-9:35 entries).
+        self.scheduler.add_job(
+            self._flush_low_float_before_open,
+            "cron", day_of_week="mon-fri", hour=9, minute=25,
+            id="low_float_preopen_flush"
+        )
+
         # Trend rider pre-open scan: 9:00 AM ET, 30 min before the bell.
         # Pre-populates `_qualified` candidates so the breakout-of-yesterday's-high
         # entry can fire on the open instead of waiting for the lazy first scan
@@ -1411,6 +1430,28 @@ class TradingEngine:
             "cron", day_of_week="mon-fri", hour=9, minute=0,
             id="trend_rider_prescan"
         )
+
+    def _flush_low_float_before_open(self):
+        """Close any low_float_catalyst positions at 09:25 ET to dodge the
+        open-bell whipsaw. Strategy's own dead-zone gates re-entry until 09:35,
+        at which point conditions can be reassessed."""
+        to_close = []
+        with self._positions_lock:
+            for sym, pos in list(self.positions.items()):
+                if isinstance(pos, dict) and pos.get("strategy") == "low_float_catalyst":
+                    to_close.append(sym)
+        if not to_close:
+            log.info("LOW-FLOAT PREOPEN FLUSH: no positions to close")
+            return
+        log.warning(
+            f"LOW-FLOAT PREOPEN FLUSH: closing {len(to_close)} positions before "
+            f"open whipsaw: {to_close}"
+        )
+        for sym in to_close:
+            try:
+                self._close_position(sym, "preopen_flush", "Low-float preopen flush")
+            except Exception as e:
+                log.error(f"Preopen flush failed for {sym}: {e}")
 
     def _run_trend_rider_prescan(self):
         """Force the daily-trend-rider daily-bar scan at 9 AM ET so candidates are
@@ -2293,6 +2334,7 @@ class TradingEngine:
         # mean-reversion / pairs / etc. have no reason to re-fire on hot movers
         fast_lane_strats = (
             "momentum_runner", "premarket_gap", "rvol_momentum", "daily_trend_rider",
+            "low_float_catalyst",
         )
 
         fast_signals = []
@@ -5672,8 +5714,17 @@ class TradingEngine:
                 and strategy in midprice_strats
                 and current_price and current_price > 0
             )
-            entry_order_type = "MIDPRICE" if use_midprice else "MARKET"
-            entry_limit_price = round(current_price * 1.005, 2) if use_midprice else None
+            # Signals that explicitly request a server-side bracket (low_float_catalyst)
+            # need a LIMIT entry — broker's bracket attachment only fires for
+            # LIMIT/MIDPRICE in ibkr.py:426. Use a 2% above-market cap so fast
+            # micro-cap runners still fill, while keeping fill price bounded.
+            use_server_bracket = bool(signal.get("use_server_bracket")) and current_price and current_price > 0
+            if use_server_bracket and not use_midprice:
+                entry_order_type = "LIMIT"
+                entry_limit_price = round(current_price * 1.02, 2)
+            else:
+                entry_order_type = "MIDPRICE" if use_midprice else "MARKET"
+                entry_limit_price = round(current_price * 1.005, 2) if use_midprice else None
 
             if action == "buy":
                 order = self.broker.place_order(
@@ -9419,6 +9470,9 @@ class TradingEngine:
                         squeeze_strat.add_dynamic_symbols(runner_symbols)
                     if pead_strat:
                         pead_strat.add_dynamic_symbols(runner_symbols)
+                    lfc_strat = self.strategies.get("low_float_catalyst")
+                    if lfc_strat:
+                        lfc_strat.add_dynamic_symbols(runner_symbols)
                     log.info(f"Injected {len(runner_symbols)} runners into all strategies")
 
         except Exception as e:

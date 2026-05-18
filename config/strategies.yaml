@@ -21,6 +21,7 @@ allocation:
   short_squeeze: 0.00
   pead: 0.00
   daily_trend_rider: 0.15           # 15% — swing trades on multi-day runners
+  low_float_catalyst: 0.05          # 5% — micro-cap catalyst runners (GOVX/VRAX/SBFM-style), reserved 5-slot pool
 
 # --- Mean Reversion Strategy ---
 # Earns in sideways markets when momentum strategies idle.
@@ -310,6 +311,30 @@ daily_trend_rider:
   rotation_score_ratio: 1.25        # When at capacity, swap weakest if new candidate scores ≥1.25× higher
   rotation_min_hold_days: 1         # Don't rotate a position that's been held < 1 day (prevents thrash)
   symbols: []                       # Empty — uses dynamically discovered symbols from IBKR scanner
+
+# --- Low-Float Catalyst Strategy ---
+# Micro-cap catalyst runners (GOVX/VRAX/SBFM/WGRX-class names).
+# Asymmetric upside, accepts higher per-trade loss probability. Server-side
+# bracket at entry (hard stop, hard target) — no trailing, no partials.
+# Engine flushes any open positions at 09:25 ET (open-dip dodge); re-entry
+# from 09:35+ if conditions still hold.
+low_float_catalyst:
+  enabled: true
+  min_price: 0.50
+  max_price: 10.00
+  max_float_m: 75.0                 # Catches GOVX 2.9M, VRAX 19.6M, SBFM 4.9M, WGRX 62.7M
+  min_rvol: 5.0                     # 5x average volume — catalyst already firing
+  max_spread_pct: 0.03              # Reject anything wider than 3% spread
+  min_day_change_pct: 15.0          # Today's move ≥ 15% — confirmed catalyst, not pre-speculation
+  hard_stop_pct: 0.08               # -8% server-side stop, no trailing
+  hard_target_pct: 0.20             # +20% server-side target
+  max_hold_minutes: 30              # 30-min time stop
+  max_trades_per_day: 8             # Cap daily attempts
+  open_dead_zone_start_min: 25      # No new entries 9:25-9:35 (open chop)
+  open_dead_zone_end_min: 35
+  require_known_float: true         # Reject if Finviz fetch failed (safer default)
+  max_position_pct: 0.05            # ~$1.2K @ $24K account
+  symbols: []                       # Uses scanner-injected dynamic symbols only
 
 # --- TradingView Signal Strategy ---
 tradingview_signals:
