@@ -3101,14 +3101,21 @@ class TradingEngine:
                     return
 
                 # --- RATCHET TRAILING STOP UP ON NEW HIGHS ---
+                # Mirror of the crypto trail fix in _fast_scalp_monitor
+                # (commit 18ae5f2): only ratchet while in profit and floor
+                # at entry_price. Without the floor, a brief wick above
+                # entry sets trail just below entry (e.g. entry $4.99, wick
+                # $5.00, trail $4.92) and the position exits at -1.5% on
+                # the first pullback. Cost TZA -$22 / SCCG -$20 on
+                # 2026-05-18 via this path.
                 hwm = pos.get("_high_water_mark", entry)
                 if price > hwm:
                     pos["_high_water_mark"] = price
-                    # Recalculate trail from new high
-                    trail_pct = pos.get("trailing_stop_pct", 0.02)
-                    new_trail = price * (1 - trail_pct)
-                    if new_trail > pos.get("trailing_stop", 0):
-                        pos["trailing_stop"] = new_trail
+                    if price > entry:
+                        trail_pct = pos.get("trailing_stop_pct", 0.02)
+                        new_trail = max(price * (1 - trail_pct), entry)
+                        if new_trail > pos.get("trailing_stop", 0):
+                            pos["trailing_stop"] = new_trail
 
                 # --- MOMENTUM TRACKING ---
                 prev = pos.get("_last_tick_price", entry)
@@ -3195,13 +3202,18 @@ class TradingEngine:
                 return
 
             # --- RATCHET TRAILING STOP UP ON NEW HIGHS ---
+            # Same floor-at-entry guard as _on_5sec_bar (see commit 18ae5f2
+            # for the original crypto fix). Tick path is the most aggressive
+            # ratchet — fires on every print — so the unguarded version
+            # locked in losses fastest.
             hwm = pos.get("_high_water_mark", entry)
             if price > hwm:
                 pos["_high_water_mark"] = price
-                trail_pct = pos.get("trailing_stop_pct", 0.02)
-                new_trail = price * (1 - trail_pct)
-                if new_trail > pos.get("trailing_stop", 0):
-                    pos["trailing_stop"] = new_trail
+                if price > entry:
+                    trail_pct = pos.get("trailing_stop_pct", 0.02)
+                    new_trail = max(price * (1 - trail_pct), entry)
+                    if new_trail > pos.get("trailing_stop", 0):
+                        pos["trailing_stop"] = new_trail
 
             # --- MOMENTUM TRACKING (per-trade resolution) ---
             prev = pos.get("_last_tick_price", entry)
@@ -3911,10 +3923,16 @@ class TradingEngine:
             trailing_pct += momentum_buffer
 
             if direction == "long":
-                new_trail = current_price * (1 - trailing_pct)
-                if "trailing_stop" not in pos or new_trail > pos["trailing_stop"]:
+                # Floor at entry: trail can never lock in a loss. Mirror of
+                # the crypto fix in _fast_scalp_monitor (commit 18ae5f2).
+                # Only ratchet while in profit so a losing tick doesn't set
+                # the floor at entry and immediately fire on the next dip.
+                new_trail = max(current_price * (1 - trailing_pct), entry_price)
+                if current_price > entry_price and (
+                    "trailing_stop" not in pos or new_trail > pos["trailing_stop"]
+                ):
                     pos["trailing_stop"] = new_trail
-                if current_price <= pos.get("trailing_stop", 0):
+                if pos.get("trailing_stop", 0) > 0 and current_price <= pos["trailing_stop"]:
                     positions_to_close.append(
                         (symbol, "trailing_stop",
                          f"Trailing stop at ${current_price:.2f} (trail {trailing_pct:.1%})")

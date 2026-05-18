@@ -121,7 +121,10 @@ cost_model:
 
   # --- Blocked Symbols ---
   # Inverse and leveraged ETFs that appear as "gainers" but are directionally wrong
-  # for a long-only momentum bot (going long SQQQ = betting against Nasdaq)
+  # for a long-only momentum bot (going long SQQQ = betting against Nasdaq).
+  # Also includes crypto pairs the bot has structurally lost on — gate enforced
+  # in _execute_signal so dynamic-scanner injection can't sneak them back in
+  # (the static crypto.symbols list cleanup was bypassed by _dynamic_symbols).
   blocked_symbols:
     - "SQQQ"   # 3x inverse Nasdaq
     - "TQQQ"   # 3x leveraged Nasdaq (extreme slippage risk)
@@ -137,6 +140,12 @@ cost_model:
     - "VIXY"   # VIX short-term futures
     - "UVIX"   # 2x leveraged VIX
     - "SH"     # 1x inverse S&P 500
+    - "TZA"    # 3x inverse small-cap (-$22 on 2026-05-18 premarket momo, trail bug + wrong-direction)
+    - "TNA"    # 3x leveraged small-cap (paired with TZA — both inverse pairs blocked)
+    # Crypto blacklist — these symbols re-entered today via dynamic scanner
+    # injection even though removed from the static crypto.symbols list.
+    - "BCH-USD"  # 3/3 losses today, -$63 — single worst symbol; high ATR vs entry size
+    - "FIL-USD"  # 1/4 win, -$20 today (combined with -$20 historical)
     - "SDS"    # 2x inverse S&P 500
     - "PSQ"    # 1x inverse Nasdaq
     - "QID"    # 2x inverse Nasdaq
