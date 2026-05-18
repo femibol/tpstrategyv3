@@ -663,6 +663,29 @@ class TradingEngine:
                                 f"likely closed while bot was offline. Skipping."
                             )
 
+        # STARTUP TRAIL MIGRATION: positions persisted before 18ae5f2 have
+        # `trailing_stop` set below entry by the old code. Ratchet them up to
+        # entry_price once at boot. The per-tick migration in _fast_scalp_monitor
+        # only fires when current_price is available, which fails on crypto
+        # symbols whose data feeders haven't refreshed yet — leaving them
+        # vulnerable to the very bug 18ae5f2 fixed. Doing it here is
+        # price-independent and runs exactly once per position.
+        with self._positions_lock:
+            for symbol, pos in self.positions.items():
+                if pos.get("direction", "long") != "long":
+                    continue
+                entry_price = pos.get("entry_price", 0)
+                trail = pos.get("trailing_stop", 0)
+                if (entry_price > 0 and trail > 0
+                        and trail < entry_price
+                        and not pos.get("_trail_migrated")):
+                    pos["trailing_stop"] = entry_price
+                    pos["_trail_migrated"] = True
+                    log.info(
+                        f"TRAIL MIGRATION (startup): {symbol} trail "
+                        f"${trail:.4f} → ${entry_price:.4f} (entry floor)"
+                    )
+
         # Crypto reconciliation: TradersPost crypto subscriptions don't expose
         # positions via API, so the bot can't broker-sync them like it does
         # equity at IBKR. Walk signal_log.json instead — sum buy webhooks vs
