@@ -411,6 +411,13 @@ class Dashboard:
             self.engine._run_auto_tune()
             return jsonify({"status": "Auto-tune cycle triggered"})
 
+        @self.app.route("/api/preopen-flush/run", methods=["POST"])
+        def run_preopen_flush():
+            """Manually trigger the low-float pre-open flush. Same code path
+            the 09:25 ET cron uses — closes any low_float_catalyst positions."""
+            self.engine._flush_low_float_before_open()
+            return jsonify({"status": "Pre-open flush triggered"})
+
         @self.app.route("/api/hedging")
         def hedging():
             if self.engine.hedging_manager:
