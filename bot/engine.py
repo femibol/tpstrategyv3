@@ -2147,7 +2147,12 @@ class TradingEngine:
             try:
                 strat._dynamic_symbols = set(hot_symbols)
                 if hasattr(strat, "set_held_symbols"):
-                    strat.set_held_symbols(set(self.positions.keys()))
+                    _entry_times = {
+                        sym: pos.get("entry_time")
+                        for sym, pos in self.positions.items()
+                        if pos.get("entry_time") is not None
+                    }
+                    strat.set_held_symbols(set(self.positions.keys()), entry_times=_entry_times)
                 sigs = strat.generate_signals(self.market_data) or []
                 for sig in sigs:
                     sig["strategy"] = name
@@ -2291,7 +2296,12 @@ class TradingEngine:
             try:
                 strat._dynamic_symbols = set(available)
                 if hasattr(strat, "set_held_symbols"):
-                    strat.set_held_symbols(set(self.positions.keys()))
+                    _entry_times = {
+                        sym: pos.get("entry_time")
+                        for sym, pos in self.positions.items()
+                        if pos.get("entry_time") is not None
+                    }
+                    strat.set_held_symbols(set(self.positions.keys()), entry_times=_entry_times)
                 sigs = strat.generate_signals(self.market_data) or []
                 # Hard filter: the fast lane MUST only surface crypto signals.
                 # Overriding `_dynamic_symbols` doesn't narrow the strategy's
@@ -3816,9 +3826,14 @@ class TradingEngine:
         # scanner-discovered symbols (risk_manager would reject as "No position
         # to exit" — wastes a slot and crowds the rejection log).
         held_symbols = set(self.positions.keys())
+        held_entry_times = {
+            sym: pos.get("entry_time")
+            for sym, pos in self.positions.items()
+            if pos.get("entry_time") is not None
+        }
         for strategy in self.strategies.values():
             if hasattr(strategy, "set_held_symbols"):
-                strategy.set_held_symbols(held_symbols)
+                strategy.set_held_symbols(held_symbols, entry_times=held_entry_times)
 
         for name, strategy in self.strategies.items():
             try:

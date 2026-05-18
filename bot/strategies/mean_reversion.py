@@ -269,13 +269,36 @@ class MeanReversionStrategy(BaseStrategy):
             return signal
 
         # --- SELL Signal (Overbought - for existing positions) ---
-        if zscore >= abs(entry_zscore) and rsi > rsi_overbought:
+        # Crypto sell threshold is tighter than the entry threshold: requires
+        # z >= 1.5 (not just z >= abs(entry_zscore)=1.0) AND respects a 5-min
+        # minimum hold from entry. Trade review 2026-05-18: 9/18 mean_reversion
+        # crypto closes were near-instant `webhook_exit` after entry — the
+        # symbol z-score swung from oversold to slightly-overbought within
+        # 2-3 minutes and the bot exited at near-break-even, paying the spread
+        # on each ping-pong. min-hold + tighter threshold filter those.
+        sell_zscore_threshold = 1.5 if _is_crypto else abs(entry_zscore)
+        if zscore >= sell_zscore_threshold and rsi > rsi_overbought:
             # Only fire exits for symbols the bot actually holds. Without this
             # gate, scanner-discovered overbought stocks generate sells that the
             # risk manager rejects ("No position to exit") — burning the
             # signal slot and crowding the rejection log.
             if self._held_symbols is not None and symbol not in self._held_symbols:
                 return None
+
+            # Crypto min-hold time: block exit if entry was < 5 min ago. Stop-
+            # loss + take-profit still work normally (they live in the engine);
+            # this only blocks the strategy's own reverse-direction exit signal.
+            if _is_crypto:
+                from datetime import datetime as _dt
+                entry_time = self._held_entry_times.get(symbol)
+                if entry_time is not None:
+                    try:
+                        elapsed = (_dt.now(entry_time.tzinfo) - entry_time).total_seconds()
+                        if elapsed < 300:
+                            return None
+                    except Exception:
+                        pass
+
             signal = {
                 "symbol": symbol,
                 "action": "sell",

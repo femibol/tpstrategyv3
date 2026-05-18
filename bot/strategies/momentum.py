@@ -84,7 +84,19 @@ class MomentumStrategy(BaseStrategy):
     def generate_signals(self, market_data):
         signals = []
 
+        # Skip crypto. Live trade review 2026-05-18 (29 logical crypto trades):
+        # momentum was 1/9 wins (11%) on crypto and net -$15.28. EMA / ADX /
+        # breakout signals are calibrated for trending equities; on crypto's
+        # 24/7 chop they fire false signals into shallow bounces and exit on
+        # the bounce-back. mean_reversion is the appropriate crypto strategy
+        # here. Crypto still gets injected into _dynamic_symbols (the cap
+        # pinning in add_dynamic_symbols must keep them for mean_reversion's
+        # parallel call to add_dynamic_symbols), but momentum skips them at
+        # signal-generation time.
+        crypto_suffixes = ("-USD", "-USDT", "-BTC", "-ETH")
         for symbol in self.get_symbols():
+            if any(symbol.upper().endswith(suf) for suf in crypto_suffixes):
+                continue
             try:
                 sig = self._analyze_symbol(symbol, market_data)
                 if sig:

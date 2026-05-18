@@ -41,6 +41,9 @@ class BaseStrategy(ABC):
         # action="sell" for an unheld symbol burns a slot for a guaranteed
         # risk_manager rejection. None = unset → treat as no filtering (legacy).
         self._held_symbols: set | None = None
+        # Per-symbol entry-time map for strategies that need to enforce
+        # min-hold-time on their own exit signals.
+        self._held_entry_times: dict = {}
 
     @abstractmethod
     def generate_signals(self, market_data):
@@ -103,11 +106,18 @@ class BaseStrategy(ABC):
             self._dynamic_symbols.clear()
         self._dynamic_symbol_timestamps.clear()
 
-    def set_held_symbols(self, symbols):
+    def set_held_symbols(self, symbols, entry_times=None):
         """Engine sets this before each scan so strategies can gate exit signals
         on actual position ownership. Defaults to None (no filtering) so
-        strategies that never get this called keep their legacy behavior."""
+        strategies that never get this called keep their legacy behavior.
+
+        `entry_times`: optional dict {symbol: datetime} of when each currently
+        held position was entered. Strategies that need a min-hold-time guard
+        on their own exit signals (mean_reversion, where ping-pong webhook_exit
+        closes were 9/18 of crypto trades on 2026-05-18) can read this.
+        """
         self._held_symbols = set(symbols) if symbols is not None else None
+        self._held_entry_times = dict(entry_times) if entry_times else {}
 
     def record_entry_filled(self, symbol):
         """Engine callback: called AFTER a successful entry to bump the daily
