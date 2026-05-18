@@ -1778,18 +1778,31 @@ class TradingEngine:
                         min_score = pm_config.get("min_score", 60)
                         if allowed:
                             approved = [s for s in approved if s.get("strategy") in allowed]
-                        # Quality gate: reject weak signals in thin premarket liquidity
+                        # Quality gate: reject weak signals in thin premarket
+                        # liquidity. Fall OPEN when rvol/score fields aren't
+                        # present — not all strategies stamp those keys on
+                        # every emit path, and reading the default 0 was
+                        # silently killing every equity entry during premarket
+                        # (observed 2026-05-18 ~07:12 EDT: SG/AMZN/NOK/QNCX
+                        # all approved by risk_manager, then dropped here
+                        # with `score=0` despite the strategy logging score 75-80).
                         pre_filtered = []
                         for sig in approved:
                             if sig.get("action") != "buy":
                                 pre_filtered.append(sig)
                                 continue
-                            sig_rvol = sig.get("rvol", 0)
-                            sig_score = sig.get("score", 0)
-                            if sig_rvol < min_rvol or sig_score < min_score:
+                            sig_rvol = sig.get("rvol")
+                            sig_score = sig.get("score")
+                            if sig_rvol is not None and sig_rvol < min_rvol:
                                 log.info(
                                     f"PREMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
-                                    f"score={sig_score} (need RVOL>={min_rvol} score>={min_score})"
+                                    f"(need RVOL>={min_rvol})"
+                                )
+                                continue
+                            if sig_score is not None and sig_score < min_score:
+                                log.info(
+                                    f"PREMARKET REJECT: {sig['symbol']} score={sig_score} "
+                                    f"(need score>={min_score})"
                                 )
                                 continue
                             pre_filtered.append(sig)
@@ -1806,18 +1819,25 @@ class TradingEngine:
                         min_score = pm_config.get("min_score", 60)
                         if allowed:
                             approved = [s for s in approved if s.get("strategy") in allowed]
-                        # Quality gate: reject weak signals in thin postmarket liquidity
+                        # Quality gate: same fall-open-on-missing semantics
+                        # as the premarket branch above.
                         post_filtered = []
                         for sig in approved:
                             if sig.get("action") != "buy":
                                 post_filtered.append(sig)
                                 continue
-                            sig_rvol = sig.get("rvol", 0)
-                            sig_score = sig.get("score", 0)
-                            if sig_rvol < min_rvol or sig_score < min_score:
+                            sig_rvol = sig.get("rvol")
+                            sig_score = sig.get("score")
+                            if sig_rvol is not None and sig_rvol < min_rvol:
                                 log.info(
                                     f"POSTMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
-                                    f"score={sig_score} (need RVOL>={min_rvol} score>={min_score})"
+                                    f"(need RVOL>={min_rvol})"
+                                )
+                                continue
+                            if sig_score is not None and sig_score < min_score:
+                                log.info(
+                                    f"POSTMARKET REJECT: {sig['symbol']} score={sig_score} "
+                                    f"(need score>={min_score})"
                                 )
                                 continue
                             post_filtered.append(sig)
