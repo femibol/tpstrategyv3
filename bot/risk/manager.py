@@ -201,13 +201,37 @@ class RiskManager:
             signed_diff = (market_price - price) / price  # +: market above signal (chase up); -: below (chase down)
             if action == "buy":
                 if signed_diff >= 0:
-                    max_drift = 0.12 if extended_hours else 0.05
-                    if signed_diff > max_drift:
-                        return False, (
-                            f"Chase-up: signal ${price:.2f} → market ${market_price:.2f} "
-                            f"({signed_diff:+.1%}, max {max_drift:.0%} "
-                            f"{'ext' if extended_hours else 'RTH'})"
-                        )
+                    # Momentum strategies are explicitly meant to chase — a
+                    # rising tape AFTER signal is the strategy, not a stale
+                    # signal. Disable chase-up here so cheap-stock breakout
+                    # scalps don't get rejected for being 7-12% above signal
+                    # (saw this overnight on CRCD/SMST/QNCX 2026-05-18).
+                    # Note: the chase-DOWN check below still applies — even
+                    # momentum shouldn't buy a falling tape.
+                    strategy = (signal.get("strategy", "") or "").lower()
+                    if "momentum" in strategy:
+                        pass  # no chase-up cap for momentum
+                    elif price < 5.0:
+                        # Penny / low-priced stocks: 5% can be a single tick
+                        # (a $1 stock with $0.05 drift is already at the
+                        # cap). Use an absolute $/share cap so normal
+                        # first-candle thrust on cheap names isn't rejected.
+                        max_abs = 0.50
+                        abs_diff = market_price - price
+                        if abs_diff > max_abs:
+                            return False, (
+                                f"Chase-up: signal ${price:.2f} → market "
+                                f"${market_price:.2f} (+${abs_diff:.2f}, max "
+                                f"+${max_abs:.2f} for sub-$5 stocks)"
+                            )
+                    else:
+                        max_drift = 0.12 if extended_hours else 0.05
+                        if signed_diff > max_drift:
+                            return False, (
+                                f"Chase-up: signal ${price:.2f} → market ${market_price:.2f} "
+                                f"({signed_diff:+.1%}, max {max_drift:.0%} "
+                                f"{'ext' if extended_hours else 'RTH'})"
+                            )
                 else:
                     # Price moved DOWN since signal — setup broke. Tight cap.
                     max_drop = 0.05 if extended_hours else 0.03

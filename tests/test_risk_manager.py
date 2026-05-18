@@ -88,8 +88,11 @@ def test_chase_up_within_rth_limit_passes(config, base_signal):
 
 def test_chase_up_over_rth_limit_rejects(config, base_signal):
     """Buy signal at $100 vs market $110 = +10% chase up (over 5% RTH cap)
-    should reject — entry too extended for RTH."""
+    should reject — entry too extended for RTH. Uses mean_reversion
+    strategy because momentum now bypasses chase-up (see
+    test_risk_manager_chase_up_tiers.py)."""
     rm = RiskManager(config)
+    base_signal["strategy"] = "mean_reversion"
     base_signal["price"] = 100.0
     base_signal["market_price"] = 110.0
     approved = rm.filter_signals([base_signal], {}, current_balance=100_000)
@@ -102,6 +105,7 @@ def test_chase_up_in_extended_hours_allows_wider_drift(config, base_signal):
     (under 12% extended cap) should pass — pre-market gappers routinely
     drift this much, the whole point of the wider session cap."""
     rm = RiskManager(config)
+    base_signal["strategy"] = "mean_reversion"
     base_signal["price"] = 100.0
     base_signal["market_price"] = 110.0
     base_signal["_extended_hours"] = True
