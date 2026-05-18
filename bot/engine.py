@@ -4734,6 +4734,62 @@ class TradingEngine:
 
         return True, ""
 
+    def _compute_vol_regime_mult(self, symbol):
+        """Compare short-window realized vol to a longer baseline. Returns
+        a multiplier in [0.4, 1.0] — never sizes UP, only down when vol
+        spikes vs the symbol's own baseline.
+
+        Why this is needed even though ATR-based stops already vol-scale:
+        ATR is computed over a single window (typically 14 bars). When
+        vol regime SHIFTS — flash crash, major news, exchange outage —
+        ATR lags by several bars and stop-distance underestimates current
+        risk. Dollar risk per trade ends up 1.5-2x intended exactly when
+        you can least afford it. This multiplier catches the regime shift
+        on a shorter window and dampens sizing before ATR catches up.
+
+        Logic:
+          short_vol = std of last 10 5-min log returns (~50 min)
+          long_vol  = std of last 60 5-min log returns (~5 hours)
+          ratio     = short_vol / long_vol
+          ratio < 1.5  → mult = 1.0 (normal)
+          ratio 1.5-3  → linear from 1.0 → 0.5
+          ratio > 3    → mult = 0.4 (floor)
+
+        Returns 1.0 (neutral) on any data error so a bad fetch doesn't
+        block a trade.
+        """
+        try:
+            if not self.market_data:
+                return 1.0
+            bars = self.market_data.get_data(symbol)
+            if bars is None or len(bars) < 60:
+                return 1.0
+            import numpy as _np
+            closes = bars["close"].values[-60:]
+            returns = _np.diff(_np.log(closes))
+            if len(returns) < 50:
+                return 1.0
+            short_vol = float(_np.std(returns[-10:]))
+            long_vol = float(_np.std(returns))
+            if long_vol <= 0:
+                return 1.0
+            ratio = short_vol / long_vol
+            if ratio < 1.5:
+                return 1.0
+            if ratio >= 3.0:
+                mult = 0.4
+            else:
+                # Linear from 1.0 (ratio=1.5) → 0.5 (ratio=3.0)
+                mult = 1.0 - ((ratio - 1.5) / 1.5) * 0.5
+            log.info(
+                f"VOL REGIME: {symbol} short={short_vol:.4f} long={long_vol:.4f} "
+                f"ratio={ratio:.2f}x → sizing mult {mult:.2f}x"
+            )
+            return mult
+        except Exception as e:
+            log.debug(f"vol regime mult failed for {symbol}: {e}")
+            return 1.0
+
     def _execute_signal(self, signal):
         """Execute a trading signal through broker chain (IBKR -> TradersPost fallback)."""
         symbol = signal["symbol"]
@@ -5162,6 +5218,7 @@ class TradingEngine:
             except Exception as e:
                 log.debug(f"Regime multiplier lookup failed for {strategy}: {e}")
 
+        vol_regime_mult = self._compute_vol_regime_mult(symbol)
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
@@ -5176,6 +5233,9 @@ class TradingEngine:
             # New: confidence-scaled + regime-aware sizing
             confidence=signal.get("confidence", 0.6),
             regime_multiplier=regime_mult,
+            # Vol-regime dampener: cuts size when realized vol spikes
+            # vs symbol's own baseline. Protective only (max 1.0x).
+            vol_regime_mult=vol_regime_mult,
         )
 
         if qty <= 0:

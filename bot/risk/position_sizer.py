@@ -201,7 +201,7 @@ class PositionSizer:
 
     def calculate(self, balance, price, stop_loss, strategy_allocation=1.0, symbol=None,
                   trade_history=None, peak_balance=None, session_stats=None, current_hour=None,
-                  confidence=None, regime_multiplier=1.0):
+                  confidence=None, regime_multiplier=1.0, vol_regime_mult=1.0):
         """
         Calculate position size using Kelly + drawdown + session + confidence
         + regime multipliers stacked on top of base risk_per_trade_pct.
@@ -221,6 +221,10 @@ class PositionSizer:
             regime_multiplier: Per-strategy regime affinity (from
                 REGIME_STRATEGY_AFFINITY) — already used for EOD allocation,
                 now applied per-signal so live conditions move sizing.
+            vol_regime_mult: Realized-vol regime dampener. Clamped to
+                [0.4, 1.0] — can size DOWN when vol spikes vs baseline,
+                never UP. Caller computes from short/long realized-vol
+                ratio (engine._compute_vol_regime_mult).
 
         Returns:
             int: Number of shares/contracts (0 if trade doesn't meet criteria)
@@ -251,9 +255,12 @@ class PositionSizer:
         # Clamp regime multiplier to [0.3, 2.0] so a bad lookup or extreme regime
         # affinity can't push sizing outside sane bounds.
         regime_mult = max(0.3, min(2.0, regime_multiplier or 1.0))
+        # Vol regime dampener: 0.4 floor (extreme vol → 60% size cut max),
+        # 1.0 ceiling (never sizes UP, only down — protective only).
+        vol_mult = max(0.4, min(1.0, vol_regime_mult or 1.0))
 
         adjusted_risk_pct = (
-            base_risk * kelly_mult * dd_mult * session_mult * conf_mult * regime_mult
+            base_risk * kelly_mult * dd_mult * session_mult * conf_mult * regime_mult * vol_mult
         )
 
         # Safety floor: never risk more than 3% per trade even if Kelly says more
@@ -262,12 +269,13 @@ class PositionSizer:
         adjusted_risk_pct = max(adjusted_risk_pct, 0.0025)
 
         if (kelly_mult != 1.0 or dd_mult != 1.0 or session_mult != 1.0
-                or conf_mult != 1.0 or regime_mult != 1.0):
+                or conf_mult != 1.0 or regime_mult != 1.0 or vol_mult != 1.0):
             log.info(
                 f"ADAPTIVE SIZING: base={base_risk:.2%} → "
                 f"Kelly {kelly_mult:.2f}x × DD {dd_mult:.2f}x × "
                 f"Session {session_mult:.2f}x × Conf {conf_mult:.2f}x × "
-                f"Regime {regime_mult:.2f}x = {adjusted_risk_pct:.2%} risk"
+                f"Regime {regime_mult:.2f}x × Vol {vol_mult:.2f}x "
+                f"= {adjusted_risk_pct:.2%} risk"
             )
 
         # Risk per trade in dollars
