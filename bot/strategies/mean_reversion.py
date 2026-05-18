@@ -168,8 +168,13 @@ class MeanReversionStrategy(BaseStrategy):
             reversal_candle = closes[-2] >= bars["open"].values[-2]
         else:
             reversal_candle = closes[-1] > bars["open"].values[-1]
+        # Volume floor: path 1 (z+rsi+reversal) was the only path without a
+        # volume gate. Trade review found low-volume entries on this path
+        # tended to chop back to entry. 1.1x is a soft floor — well below
+        # paths 2/3 (1.3/1.5) but blocks the "z=-2 on thin volume" chop.
+        # Applies equally to crypto and equity (single strategy, both venues).
         entry_ready = (
-            (checks["zscore_ok"] and checks["rsi_oversold"] and reversal_candle)
+            (checks["zscore_ok"] and checks["rsi_oversold"] and reversal_candle and vol_ratio >= 1.1)
             or (checks["zscore_ok"] and checks["at_lower_bb"] and reversal_candle and vol_ratio > 1.3)
             or (checks["rsi_oversold"] and checks["at_lower_bb"] and vol_ratio > 1.5 and reversal_candle)
         )
@@ -180,6 +185,8 @@ class MeanReversionStrategy(BaseStrategy):
             verdict = "WAIT: needs green bar"
         elif passed >= 2 and checks["at_lower_bb"] and vol_ratio <= 1.3:
             verdict = "WAIT: needs vol>1.3x"
+        elif checks["zscore_ok"] and checks["rsi_oversold"] and reversal_candle and vol_ratio < 1.1:
+            verdict = "WAIT: needs vol>=1.1x"
         elif passed >= 2:
             verdict = "WAIT: combo mismatch"
         elif checks["rsi_overbought"] and zscore >= abs(entry_zscore):
