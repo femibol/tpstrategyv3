@@ -280,7 +280,11 @@ class MomentumStrategy(BaseStrategy):
                 "max_hold_bars": self.max_hold,
                 "bar_seconds": self._timeframe_to_seconds(),
                 "max_hold_days": self.config.get("max_hold_days", 5),  # Swing: max 5 days
-                "trailing_stop_pct": atr / current_price,  # ATR-based trail
+                # ATR-based trail with 1.5% floor. On low-priced names (TZA
+                # $4.99, SCCG $25) thin ATR gave 0.4-0.6% trails that fired
+                # 20 min after entry for -$22/-$20 losses on 2026-05-18.
+                # Mirror of the engine.py crypto trail floor (line ~2914).
+                "trailing_stop_pct": max(atr / current_price, 0.015),
             }
 
             log.info(f"SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f}")

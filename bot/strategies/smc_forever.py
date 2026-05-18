@@ -307,7 +307,7 @@ class SMCForeverStrategy(BaseStrategy):
                 "max_hold_bars": 80,
                 "bar_seconds": self._timeframe_to_seconds(),
                 "max_hold_days": 7,  # SMC setups can hold up to 7 days
-                "trailing_stop_pct": atr / current_price if atr else 0.02,
+                "trailing_stop_pct": max(atr / current_price, 0.015) if atr else 0.02,
             }
 
             log.info(f"A+ SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f} | R:R={reward/risk:.1f}")
@@ -353,7 +353,7 @@ class SMCForeverStrategy(BaseStrategy):
                 "max_hold_bars": 80,
                 "bar_seconds": self._timeframe_to_seconds(),
                 "max_hold_days": 7,  # SMC setups can hold up to 7 days
-                "trailing_stop_pct": atr / current_price if atr else 0.02,
+                "trailing_stop_pct": max(atr / current_price, 0.015) if atr else 0.02,
             }
 
             log.info(f"A+ SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f} | R:R={reward/risk:.1f}")

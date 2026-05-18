@@ -4527,7 +4527,15 @@ class TradingEngine:
                     self._record_gate_hit("correlation_cluster", symbol, reason)
                     return reason
         except Exception as e:
-            log.debug(f"safety gate error: {e}")
+            # Fail CLOSED: any gate raising silently used to return "" and
+            # let the entry through, bypassing SPY breaker, daily trade cap,
+            # drawdown gates, crypto funding, and correlation cluster all
+            # at once. A KeyError or one bad network call could nullify
+            # every defensive feature shipped this past week.
+            log.warning(
+                f"SAFETY GATE ERROR — blocking entry to fail closed: {e}"
+            )
+            return "safety_gate_error"
         return ""
 
     def _record_gate_hit(self, gate_name, symbol, reason):
@@ -6368,6 +6376,15 @@ class TradingEngine:
             else:
                 # Full close: remove position entirely
                 self.positions.pop(symbol, None)
+
+        # Persist immediately after mutating positions. A crash between here
+        # and the next 3-second cycle would resurrect the pre-close quantity
+        # on restart and re-close already-filled shares (duplicate exit
+        # rejections at the broker).
+        try:
+            self._persist_positions()
+        except Exception as e:
+            log.debug(f"persist-on-close failed for {symbol}: {e}")
 
         # Clean up tick-by-tick subscription for closed position (only on full close)
         if partial_fill_remaining == 0 and self.broker and hasattr(self.broker, 'unsubscribe_tick_by_tick'):
