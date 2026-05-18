@@ -132,6 +132,14 @@ class TradingEngine:
         # Signal deduplication - prevent duplicate entries
         self._signal_cooldowns = {}  # {symbol: last_signal_datetime}
         self._signal_cooldown_secs = 30  # Min seconds between signals for same symbol (was 60, too tight for ~60s scan cycle)
+
+        # Gate-hit telemetry: counts per gate, per symbol, per day. Lets the
+        # user / Claude see which defenses actually fire and which symbols
+        # trigger them most. Reset at _pre_market_scan. Exposed via /api/status.
+        from collections import defaultdict
+        self._gate_hits = defaultdict(lambda: defaultdict(int))  # {gate_name: {symbol: count}}
+        self._gate_hits_total = defaultdict(int)  # {gate_name: total_today}
+        self._gate_recent = []  # last 50 (gate, symbol, reason, ts) for the dashboard tail
         self._pending_orders = set()  # Symbols with orders currently in-flight
 
         # Exit cooldown - prevent re-closing recently closed positions
@@ -4304,26 +4312,55 @@ class TradingEngine:
         try:
             reason = self._gate_spy_circuit_breaker()
             if reason:
+                self._record_gate_hit("spy_circuit_breaker", symbol, reason)
                 return reason
             reason = self._gate_global_daily_trade_cap(symbol=symbol)
             if reason:
+                self._record_gate_hit("daily_trade_cap", symbol, reason)
                 return reason
             reason = self._gate_strategy_drawdown(strategy_name)
             if reason:
+                self._record_gate_hit("strategy_drawdown", symbol, reason)
                 return reason
             reason = self._gate_daily_drawdown()
             if reason:
+                self._record_gate_hit("daily_drawdown", symbol, reason)
                 return reason
             if symbol:
                 reason = self._gate_crypto_funding_extreme(symbol)
                 if reason:
+                    self._record_gate_hit("crypto_funding", symbol, reason)
                     return reason
                 reason = self._gate_correlation_cluster(symbol)
                 if reason:
+                    self._record_gate_hit("correlation_cluster", symbol, reason)
                     return reason
         except Exception as e:
             log.debug(f"safety gate error: {e}")
         return ""
+
+    def _record_gate_hit(self, gate_name, symbol, reason):
+        """Increment counters + record recent hit for the gate-hit dashboard.
+
+        Why: without this we can't measure whether the defensive gates
+        actually fire and prevent losses, or whether they're choking off
+        good trades. Counts reset daily in _pre_market_scan so the dashboard
+        shows "today" only; longer-term aggregation is a follow-up.
+        """
+        try:
+            self._gate_hits[gate_name][symbol or "_unknown_"] += 1
+            self._gate_hits_total[gate_name] += 1
+            self._gate_recent.append({
+                "gate": gate_name,
+                "symbol": symbol or "",
+                "reason": reason,
+                "ts": datetime.now(self.tz).isoformat(timespec="seconds"),
+            })
+            # Cap the tail at 50
+            if len(self._gate_recent) > 50:
+                self._gate_recent = self._gate_recent[-50:]
+        except Exception as e:
+            log.debug(f"_record_gate_hit failed: {e}")
 
     def _gate_correlation_cluster(self, symbol):
         """Cap concurrent positions per correlation cluster.
@@ -7446,6 +7483,10 @@ class TradingEngine:
         # Reset drawdown circuit breaker for the new session
         self._dd_block_until = None
         self._daily_soft_stop_active = False
+        # Reset gate-hit counters for the new session (recent tail kept)
+        from collections import defaultdict
+        self._gate_hits = defaultdict(lambda: defaultdict(int))
+        self._gate_hits_total = defaultdict(int)
 
         # Run trade analyzer to get adjusted strategy weights
         base_alloc = self.config.strategy_allocation
@@ -8607,6 +8648,14 @@ class TradingEngine:
             "data_source": self._get_data_source_info(),
             # IBKR enhanced features status
             "ibkr_features": self._get_ibkr_features_status(),
+            # Gate-hit telemetry: how often each defensive gate fired today
+            # and which symbols/strategies triggered them. Lets the operator
+            # measure whether the new defensive layer is working.
+            "gate_hits": {
+                "totals": dict(self._gate_hits_total),
+                "by_symbol": {gate: dict(syms) for gate, syms in self._gate_hits.items()},
+                "recent": list(self._gate_recent[-20:]),
+            },
         }
         return status
 
