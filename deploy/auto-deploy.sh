@@ -34,9 +34,50 @@ LOG_PREFIX="[auto-deploy]"
 DEBOUNCE_SECONDS="${DEPLOY_DEBOUNCE_SECONDS:-600}"
 LAST_DEPLOY_FILE="${REPO_DIR}/.last-deploy"
 
+# trading-bot uses `network_mode: service:ib-gateway` — both containers must
+# share a netns or the bot's 127.0.0.1:4002 connect to IBKR fails silently
+# (`SIGNALS SUPPRESSED`, every cycle, no Discord alert). Drift accumulates
+# whenever ib-gateway is replaced with a new container ID (autoheal recreate,
+# crash + Docker re-create, manual `up -d --force-recreate ib-gateway`) while
+# this script's per-service `--force-recreate trading-bot` re-binds the bot
+# to its own stale `container:<old-id>` — kernel hands it an empty netns.
+# Only `docker compose down && up -d` rebuilds the link.
+# Incidents: HANDOFF.md sessions 2 (2026-05-16), 5 (4) (2026-05-18),
+# and 2026-05-19 (which is why this guard exists).
+verify_netns_sync() {
+    local gw_ns bot_ns
+    gw_ns=$(docker exec trading-bot-ib-gateway-1 readlink /proc/self/ns/net 2>/dev/null || true)
+    bot_ns=$(docker exec trading-bot-trading-bot-1 readlink /proc/self/ns/net 2>/dev/null || true)
+    if [ -z "$gw_ns" ] || [ -z "$bot_ns" ]; then
+        echo "$LOG_PREFIX netns check skipped — container(s) unreachable (gw='$gw_ns' bot='$bot_ns')"
+        return 0
+    fi
+    if [ "$gw_ns" = "$bot_ns" ]; then
+        return 0
+    fi
+    echo "$LOG_PREFIX NETNS DRIFT — gateway=$gw_ns bot=$bot_ns. Full compose down/up to relink."
+    docker compose down
+    docker compose up -d
+    # ib-gateway needs a few seconds to spawn its java process; netns is set
+    # at container start (well before healthy), so 15s is generous.
+    sleep 15
+    gw_ns=$(docker exec trading-bot-ib-gateway-1 readlink /proc/self/ns/net 2>/dev/null || true)
+    bot_ns=$(docker exec trading-bot-trading-bot-1 readlink /proc/self/ns/net 2>/dev/null || true)
+    if [ -n "$gw_ns" ] && [ "$gw_ns" = "$bot_ns" ]; then
+        echo "$LOG_PREFIX netns relink OK — both at $gw_ns"
+    else
+        echo "$LOG_PREFIX ERROR: netns relink failed (gw='$gw_ns' bot='$bot_ns')"
+        exit 1
+    fi
+}
+
 cd "$REPO_DIR"
 
 echo "$LOG_PREFIX $(date '+%Y-%m-%d %H:%M:%S') Checking for updates on $BRANCH..."
+
+# Self-heal first so drift doesn't sit unnoticed between commits. Runs every
+# tick (~200ms when in sync, expensive only on the rare recovery path).
+verify_netns_sync
 
 # Ensure we're on the deploy branch BEFORE checking. If a session left the
 # working tree on a feature branch (e.g., after a hand-off from terminal
@@ -212,3 +253,9 @@ else
     echo "$LOG_PREFIX   docker compose logs --tail 50 trading-bot"
     exit 1
 fi
+
+# `--force-recreate trading-bot` is the canonical trigger for netns drift
+# (it re-binds the bot, but only to its stored `container:<id>` which is
+# stale whenever ib-gateway has been replaced since the last bot start).
+# Re-check immediately so we don't wait the next 5-min tick to notice.
+verify_netns_sync
