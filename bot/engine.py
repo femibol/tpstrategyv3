@@ -7087,15 +7087,39 @@ class TradingEngine:
                 "reason": f"AUTO-SKIP: '{strategy}' flagged avoid {avoided[strategy]}x by learning"
             }
 
-        # Context for Claude
-        recent_trades = self.trade_history[-15:] if self.trade_history else []
-        wins = sum(1 for t in recent_trades if t.get("pnl", 0) > 0)
-        losses = len(recent_trades) - wins
-        win_rate = (wins / len(recent_trades) * 100) if recent_trades else 0
+        # Context for Claude. Two corrections vs. naive accounting:
+        # 1. |P&L| < $1 → scratch, not a loss. Crypto wash exits at $0.00 were
+        #    otherwise inflating the "loss" count and locking out fresh entries.
+        # 2. Compare like-with-like: judge an equity candidate against equity
+        #    history, crypto against crypto. Mixing them lets a crypto losing
+        #    streak veto every equity entry (and vice versa).
+        is_crypto = self._is_crypto_symbol(symbol)
+        asset_pool = [
+            t for t in self.trade_history
+            if self._is_crypto_symbol(t.get("symbol", "")) == is_crypto
+        ]
+        recent_trades = asset_pool[-15:]
+
+        def _outcome(t):
+            pnl = t.get("pnl", 0)
+            if abs(pnl) < 1.0:
+                return "scratch"
+            return "win" if pnl > 0 else "loss"
+
+        outcomes = [_outcome(t) for t in recent_trades]
+        wins = outcomes.count("win")
+        losses = outcomes.count("loss")
+        scratches = outcomes.count("scratch")
+        decisive = wins + losses
+        win_rate = (wins / decisive * 100) if decisive else 0
 
         strat_trades = [t for t in recent_trades if t.get("strategy") == strategy]
-        strat_wins = sum(1 for t in strat_trades if t.get("pnl", 0) > 0)
-        strat_wr = (strat_wins / len(strat_trades) * 100) if strat_trades else 0
+        strat_outcomes = [_outcome(t) for t in strat_trades]
+        strat_wins = strat_outcomes.count("win")
+        strat_losses = strat_outcomes.count("loss")
+        strat_scratches = strat_outcomes.count("scratch")
+        strat_decisive = strat_wins + strat_losses
+        strat_wr = (strat_wins / strat_decisive * 100) if strat_decisive else 0
 
         open_count = len(self.positions)
         regime = getattr(self, 'current_regime', 'unknown')
@@ -7133,8 +7157,11 @@ class TradingEngine:
             f"BUY {symbol} via {strategy} @ ${signal.get('price', 0):.2f}\n"
             f"Stop: ${signal.get('stop_loss', 0):.2f} | Target: ${signal.get('take_profit', 0):.2f}\n"
             f"Score: {score} | RVOL: {rvol:.1f}x | Confidence: {signal.get('confidence', 0):.2f}\n"
-            f"Recent: {wins}W/{losses}L ({win_rate:.0f}%)\n"
-            f"Strategy '{strategy}': {strat_wins}W/{len(strat_trades)-strat_wins}L ({strat_wr:.0f}%)"
+            f"Recent ({'crypto' if is_crypto else 'equity'} only): "
+            f"{wins}W/{losses}L/{scratches}scratch "
+            f"({win_rate:.0f}% on {decisive} decisive)\n"
+            f"Strategy '{strategy}': {strat_wins}W/{strat_losses}L/"
+            f"{strat_scratches}scratch ({strat_wr:.0f}% on {strat_decisive} decisive)"
             f"{f' | LEARNED BOOST x{boosted}' if boosted else ''}\n"
             f"Open positions: {open_count}/10 | Regime: {regime}"
             f"{trend_rider_block}\n\n"
@@ -7143,7 +7170,9 @@ class TradingEngine:
             f"- AGGRESSIVE if: strategy has LEARNED BOOST and score>=70\n"
             f"- TAKE if setup is solid\n"
             f"- REDUCE if: >7 open positions or strategy win rate <40%\n"
-            f"- SKIP if: strategy win rate <25% on 5+ trades or bad regime"
+            f"- SKIP if: strategy win rate <25% on 5+ DECISIVE trades or bad regime\n"
+            f"- Scratches (|P&L|<$1) are noise, NOT losses — don't count them as evidence of failure\n"
+            f"- 'Recent' and 'Strategy' stats above only cover {('crypto' if is_crypto else 'equity')} trades; do not extrapolate from the other asset class"
         )
 
         try:
