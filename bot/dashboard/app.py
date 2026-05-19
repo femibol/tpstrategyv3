@@ -8,6 +8,9 @@ import os
 import io
 import csv
 import json
+import threading
+import time
+import urllib.request
 from datetime import datetime, timedelta
 
 from flask import Flask, render_template, jsonify, request
@@ -16,6 +19,43 @@ from flask_cors import CORS
 from bot.utils.logger import get_logger
 
 log = get_logger("dashboard")
+
+
+# TradersPost's paper crypto feed shows $0 / -100% on positions while the
+# live market is fine (recurring incident, documented in user memory).
+# Pull spot prices straight from Coinbase so the dashboard has a trusted
+# view that doesn't depend on the broker UI or the bot's own market_data
+# feed (which can be stale on a just-entered symbol). Cached 20s to keep
+# the per-position fanout cheap; Coinbase rate-limits unauth'd at ~10rps.
+_COINBASE_PRICE_CACHE: dict = {}  # symbol -> (price_float, fetched_ts)
+_COINBASE_PRICE_TTL = 20.0
+_COINBASE_PRICE_LOCK = threading.Lock()
+
+
+def _coinbase_spot_price(symbol: str):
+    """Return spot USD price for a crypto symbol like 'ICP-USD', or None on
+    failure. Failures are logged once per minute per symbol — a flaky
+    upstream shouldn't spam the dashboard log on every page render."""
+    now = time.time()
+    with _COINBASE_PRICE_LOCK:
+        cached = _COINBASE_PRICE_CACHE.get(symbol)
+        if cached and (now - cached[1]) < _COINBASE_PRICE_TTL:
+            return cached[0]
+    url = f"https://api.coinbase.com/v2/prices/{symbol}/spot"
+    try:
+        with urllib.request.urlopen(url, timeout=2.0) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        price = float(data["data"]["amount"])
+    except Exception as e:
+        with _COINBASE_PRICE_LOCK:
+            last_err = _COINBASE_PRICE_CACHE.get(f"__err_{symbol}", (0, 0))[1]
+            if (now - last_err) > 60:
+                log.warning(f"Coinbase spot fetch failed for {symbol}: {e}")
+                _COINBASE_PRICE_CACHE[f"__err_{symbol}"] = (0, now)
+        return None
+    with _COINBASE_PRICE_LOCK:
+        _COINBASE_PRICE_CACHE[symbol] = (price, now)
+    return price
 
 
 class Dashboard:
@@ -105,17 +145,37 @@ class Dashboard:
                 current = pos.get("current_price", entry)
                 qty = pos.get("quantity", 0)
                 direction = pos.get("direction", "long")
+                # For crypto, override the bot's internal current_price with
+                # the live Coinbase spot. Two failure modes this fixes:
+                # (1) TradersPost paper UI showing $0/-100% — user looks at
+                #     the dashboard and sees the same wrong number; (2) the
+                #     bot's own current_price stays pinned to entry until
+                #     the first tick arrives on a fresh entry (5sec bar
+                #     cadence + occasional fast-lane delay). Live Coinbase
+                #     is the same venue TradersPost routes to, so it's the
+                #     authoritative mark.
+                price_source = "engine"
+                if symbol.upper().endswith("-USD"):
+                    live = _coinbase_spot_price(symbol.upper())
+                    if live is not None:
+                        current = live
+                        price_source = "coinbase_live"
                 if direction == "long":
                     pnl_dollars = (current - entry) * qty
                 else:
                     pnl_dollars = (entry - current) * qty
+                pnl_pct = ((current / entry) - 1.0) * 100 if entry else 0.0
+                if direction != "long":
+                    pnl_pct = -pnl_pct
                 result.append({
                     "symbol": symbol,
                     "direction": direction,
                     "quantity": qty,
                     "entry_price": entry,
                     "current_price": current,
-                    "pnl_pct": pos.get("unrealized_pnl_pct", 0) * 100,
+                    "price_source": price_source,
+                    "pnl_pct": pnl_pct if price_source == "coinbase_live"
+                               else pos.get("unrealized_pnl_pct", 0) * 100,
                     "pnl_dollars": round(pnl_dollars, 2),
                     "strategy": pos.get("strategy", "unknown"),
                     "stop_loss": pos.get("stop_loss", 0),

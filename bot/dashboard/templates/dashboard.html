@@ -1959,9 +1959,11 @@ async function update() {
             var beBadge = p.breakeven_hit ? '<span class="wl-be-tag">BE STOP</span>' : '';
             var targetsStr = p.targets_hit && p.targets_hit.length > 0 ?
                 '<span class="wl-pos-tag">T' + p.targets_hit.length + ' HIT</span>' : '';
+            var liveBadge = p.price_source === 'coinbase_live' ?
+                ' <span class="wl-pos-tag" style="background:#0a3d2a;color:#5dd39e;border-color:#1b6b46" title="Live Coinbase spot — ignore the broker UI for this symbol">LIVE</span>' : '';
             return '<div class="pos-card">' +
                 '<div class="pos-header">' +
-                    '<span class="pos-symbol">' + tvLink(p.symbol) + ' <span style="font-size:0.7em;color:var(--muted)">' + p.direction.toUpperCase() + '</span>' + beBadge + targetsStr + '</span>' +
+                    '<span class="pos-symbol">' + tvLink(p.symbol) + ' <span style="font-size:0.7em;color:var(--muted)">' + p.direction.toUpperCase() + '</span>' + beBadge + targetsStr + liveBadge + '</span>' +
                     '<span class="pos-pnl ' + pnlCls(p.pnl_pct) + '">' + fmt(p.pnl_pct) + '% ($' + fmt(p.pnl_dollars) + ')</span>' +
                 '</div>' +
                 '<div class="pos-details">' +
