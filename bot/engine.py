@@ -5756,8 +5756,11 @@ class TradingEngine:
             stop_loss=stop_loss_price,
             strategy_allocation=self.config.strategy_allocation.get(strategy, 0.25),
             symbol=symbol,
-            # Adaptive sizing inputs: Kelly, drawdown, session-based
+            # Adaptive sizing inputs: Kelly, drawdown, session-based.
+            # strategy → per-strategy Kelly (proven strategies size up on
+            # their own edge instead of being dragged down by the blend).
             trade_history=self.trade_history,
+            strategy=strategy,
             peak_balance=self.peak_balance,
             session_stats=getattr(self, '_session_stats', None),
             current_hour=current_hour,

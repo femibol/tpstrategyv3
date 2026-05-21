@@ -74,7 +74,7 @@ class PositionSizer:
             return False
         return any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
 
-    def _kelly_adjustment(self, trade_history, base_risk_pct):
+    def _kelly_adjustment(self, trade_history, base_risk_pct, strategy=None):
         """Calculate risk multiplier using Risk-Constrained Kelly Criterion.
 
         Kelly = (W*B - L) / B
@@ -83,13 +83,33 @@ class PositionSizer:
         We use HALF-KELLY (k/2) for safety — full Kelly is too volatile.
         Bounded to [0.25x, 2.0x] of base risk to prevent extreme sizing.
 
+        Per-strategy: when ``strategy`` is given, Kelly is computed on that
+        strategy's OWN trade record. A blended portfolio history lets one
+        strategy's losers drag a proven winner down to the 0.25x floor —
+        on 2026-05-21 the blended last-100 was 46% WR / negative edge
+        (→ 0.25x for everything) while mean_reversion alone ran 61% WR with
+        a positive edge (→ 2.0x). Per-strategy Kelly is the mechanism for
+        "more aggressive on what works, defensive on what doesn't." A
+        strategy with fewer than 20 of its own trades is treated as
+        unproven and sized neutral (1.0x).
+
         Returns: multiplier (float) to apply to base risk_per_trade_pct.
         """
-        if not trade_history or len(trade_history) < 20:
+        if not trade_history:
+            return 1.0
+
+        hist = list(trade_history)
+        if strategy:
+            strat_hist = [t for t in hist if t.get("strategy") == strategy]
+            if len(strat_hist) < 20:
+                # Unproven strategy — neither reward nor penalize.
+                return 1.0
+            hist = strat_hist
+        elif len(hist) < 20:
             # Need at least 20 trades for statistical significance
             return 1.0
 
-        recent = list(trade_history)[-100:]  # Last 100 trades for rolling Kelly
+        recent = hist[-100:]  # Last 100 trades for rolling Kelly
         wins = [t for t in recent if t.get("pnl", 0) > 0]
         losses = [t for t in recent if t.get("pnl", 0) < 0]
 
@@ -201,7 +221,7 @@ class PositionSizer:
 
     def calculate(self, balance, price, stop_loss, strategy_allocation=1.0, symbol=None,
                   trade_history=None, peak_balance=None, session_stats=None, current_hour=None,
-                  confidence=None, regime_multiplier=1.0, vol_regime_mult=1.0):
+                  confidence=None, regime_multiplier=1.0, vol_regime_mult=1.0, strategy=None):
         """
         Calculate position size using Kelly + drawdown + session + confidence
         + regime multipliers stacked on top of base risk_per_trade_pct.
@@ -225,6 +245,9 @@ class PositionSizer:
                 [0.4, 1.0] — can size DOWN when vol spikes vs baseline,
                 never UP. Caller computes from short/long realized-vol
                 ratio (engine._compute_vol_regime_mult).
+            strategy: Strategy name. When set, Kelly is computed on that
+                strategy's own trade record instead of the blended
+                portfolio (see _kelly_adjustment).
 
         Returns:
             int: Number of shares/contracts (0 if trade doesn't meet criteria)
@@ -248,7 +271,7 @@ class PositionSizer:
         # Base risk, then apply Kelly + drawdown + session multipliers
         base_risk = self.risk_per_trade_pct
 
-        kelly_mult = self._kelly_adjustment(trade_history, base_risk) if trade_history else 1.0
+        kelly_mult = self._kelly_adjustment(trade_history, base_risk, strategy) if trade_history else 1.0
         dd_mult = self._drawdown_adjustment(balance, peak_balance) if peak_balance else 1.0
         session_mult = self._session_adjustment(session_stats, current_hour) if session_stats else 1.0
         conf_mult = self._confidence_multiplier(confidence)
@@ -263,16 +286,19 @@ class PositionSizer:
             base_risk * kelly_mult * dd_mult * session_mult * conf_mult * regime_mult * vol_mult
         )
 
-        # Safety floor: never risk more than 3% per trade even if Kelly says more
-        adjusted_risk_pct = min(adjusted_risk_pct, 0.03)
-        # Safety ceiling: always risk at least 0.25% (don't trade tiny)
+        # Safety ceiling: never risk more than 2% per trade even if the
+        # stacked multipliers say more. With base 1% and per-strategy Kelly
+        # capped at 2.0x, a proven strategy reaches exactly 2% on its own
+        # edge; the remaining multipliers can only trim from there.
+        adjusted_risk_pct = min(adjusted_risk_pct, 0.02)
+        # Safety floor: always risk at least 0.25% (don't trade tiny)
         adjusted_risk_pct = max(adjusted_risk_pct, 0.0025)
 
         if (kelly_mult != 1.0 or dd_mult != 1.0 or session_mult != 1.0
                 or conf_mult != 1.0 or regime_mult != 1.0 or vol_mult != 1.0):
             log.info(
                 f"ADAPTIVE SIZING: base={base_risk:.2%} → "
-                f"Kelly {kelly_mult:.2f}x × DD {dd_mult:.2f}x × "
+                f"Kelly[{strategy or 'all'}] {kelly_mult:.2f}x × DD {dd_mult:.2f}x × "
                 f"Session {session_mult:.2f}x × Conf {conf_mult:.2f}x × "
                 f"Regime {regime_mult:.2f}x × Vol {vol_mult:.2f}x "
                 f"= {adjusted_risk_pct:.2%} risk"
