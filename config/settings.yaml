@@ -28,7 +28,7 @@ risk:
   max_crypto_positions: 6         # Per-class sub-cap; 4 slots always reserved for equity when crypto fills
   max_low_float_positions: 5      # Reserved pool for low_float_catalyst — high-asymmetry catalyst plays only
   risk_per_trade_pct: 0.01        # Risk 1% per trade (~$470) — spec: never risk more than 1%
-  kelly_max_mult: 1.0             # Per-strategy Kelly ceiling — RAMP: start 1.0 (proven strategy = base risk), raise toward 2.0 once trusted live
+  kelly_max_mult: 2.0             # Per-strategy Kelly ceiling — full aggression: a proven strategy sizes up to 2.0x base (capped at 2% by the risk ceiling)
   max_correlated_positions: 2     # Max 2 in same sector - stay diversified across runners
   stop_loss_pct: 0.03             # 3% stop loss fallback
   trailing_stop_pct: 0.015        # 1.5% trailing stop — aggressive, ratchets up every 3 seconds
