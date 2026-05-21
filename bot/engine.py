@@ -148,6 +148,14 @@ class TradingEngine:
         self._recently_closed = {}  # {symbol: datetime when closed}
         self._exit_cooldown_secs = 300  # 5 minutes: don't re-add/re-close within this window
 
+        # Equity re-entry guard — tracks the LAST close per symbol with its
+        # reason + P&L so a momentum BUY can't immediately re-fire a name that
+        # just lost money. {symbol: {"time": dt, "reason": str, "pnl": float}}.
+        # Cleared each session in _pre_market_scan. See the duplicate-entry
+        # guard for how slippage_reject vs ordinary losses are treated.
+        self._recent_close_info = {}
+        self._equity_loss_cooldown_secs = 1800  # 30 min after an ordinary losing close
+
         # Performance tracking
         self.trade_history = []
         self.equity_curve = []
@@ -5269,6 +5277,36 @@ class TradingEngine:
                     )
                     return
 
+            # Equity re-entry guard. A momentum BUY keeps re-firing the same
+            # equity name every scan cycle while its EMA/ADX trend persists, so
+            # a name that just lost money gets bought right back before the
+            # quality gate has enough history to skip it. Two cases:
+            #   * slippage_reject — the fill slipped past max_slippage_pct, i.e.
+            #     a structural liquidity problem (wide spread on a thin name),
+            #     not a timing one. Re-entering only repeats the loss. Block it
+            #     for the rest of the session. (FBYD did this 3x on 2026-05-19,
+            #     −$43.40 each, before the quality gate engaged.)
+            #   * ordinary losing close — short cooldown so the bot stops
+            #     chopping the same name on noise.
+            # Cleared each session in _pre_market_scan.
+            if not self._is_crypto_symbol(symbol) and symbol in self._recent_close_info:
+                _info = self._recent_close_info[symbol]
+                _elapsed = (datetime.now(self.tz) - _info["time"]).total_seconds()
+                if _info.get("reason") == "slippage_reject":
+                    log.info(
+                        f"SLIPPAGE BLOCK: {symbol} had a slippage_reject close "
+                        f"{_elapsed:.0f}s ago — blocked for the rest of the session "
+                        f"(structural liquidity problem, not timing)"
+                    )
+                    return
+                if _info.get("pnl", 0) < 0 and _elapsed < self._equity_loss_cooldown_secs:
+                    log.info(
+                        f"EQUITY RE-ENTRY COOLDOWN: {symbol} closed at a loss "
+                        f"(${_info['pnl']:+.2f}) {_elapsed:.0f}s ago "
+                        f"(cooldown {self._equity_loss_cooldown_secs}s) — skipping new entry"
+                    )
+                    return
+
             # Broker-level duplicate check — catches cases where bot positions
             # dict is out of sync with actual broker holdings (e.g., after restart)
             if self.broker and self.broker.is_connected():
@@ -5698,7 +5736,14 @@ class TradingEngine:
         # extended hours and sub-$5 names get wider headroom because their normal
         # spreads are structurally wider — a 2% cap rejects the whole low-float runner
         # universe pre-market.
-        if action == "buy" and not self.tp_broker and self.broker and self.broker.is_connected():
+        # Runs for every equity entry regardless of execution routing: the quote
+        # comes from the IBKR data broker, which is connected even when a
+        # tp_broker mirror handles the fill. Previously gated on `not self.tp_broker`,
+        # so a thin name (FBYD, 2026-05-19) skipped the gate, filled MARKET, and
+        # tripped the post-fill slippage_reject for a realized −$43 loss instead.
+        # Crypto routes through tp_crypto_broker and has no IBKR quote — skip it.
+        if (action == "buy" and not self._is_crypto_symbol(symbol)
+                and self.broker and self.broker.is_connected()):
             max_spread_pct = self.config.risk_config.get("max_spread_pct", 0.02)
             if outside_rth:
                 max_spread_pct *= 2.0      # extended hours: double the spread budget
@@ -6461,7 +6506,14 @@ class TradingEngine:
         # Record exit cooldown — prevents broker sync from re-adding this
         # position during settlement delay (causes duplicate exit rejections)
         if partial_fill_remaining == 0:
-            self._recently_closed[symbol] = datetime.now(self.tz)
+            _now = datetime.now(self.tz)
+            self._recently_closed[symbol] = _now
+            # Record reason + P&L for the equity re-entry guard.
+            self._recent_close_info[symbol] = {
+                "time": _now,
+                "reason": reason_type,
+                "pnl": pnl,
+            }
 
     def _partial_close(self, symbol, qty_to_close, target_idx, target):
         """Close part of a position (profit taking)."""
@@ -7811,6 +7863,9 @@ class TradingEngine:
         # Reset drawdown circuit breaker for the new session
         self._dd_block_until = None
         self._daily_soft_stop_active = False
+        # Clear the equity re-entry guard — slippage blocks and loss cooldowns
+        # are session-scoped (a thin spread / bad fill is a same-day condition).
+        self._recent_close_info = {}
         # Reset gate-hit counters for the new session (recent tail kept)
         from collections import defaultdict
         self._gate_hits = defaultdict(lambda: defaultdict(int))
