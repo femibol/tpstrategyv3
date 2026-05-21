@@ -482,8 +482,43 @@ class TradingEngine:
                     )
                 else:
                     log.warning("IBKR returned $0 equity — keeping config starting_balance as fallback")
-            # Sync existing positions
-            raw_positions = self.broker.get_positions()
+            # Sync existing positions. IBKR's positions() list is populated
+            # asynchronously after connect — a single call right after
+            # connection routinely returns empty or partial. On 2026-05-21
+            # this left PLTR/RIOT/FBYD as unmanaged orphans: boot logged
+            # "Synced 0 LONG positions" while the broker held three longs,
+            # and nothing monitored their stops until a fresh signal happened
+            # to re-trigger the per-symbol duplicate-block resync.
+            # Poll until the list settles (two identical non-empty reads) or
+            # the budget runs out. A genuinely flat account simply polls out
+            # the full budget once at boot (~10s) and is treated as flat.
+            import time as _sync_time
+            raw_positions = {}
+            _prev_keys = None
+            for _attempt in range(1, 7):
+                raw_positions = self.broker.get_positions() or {}
+                _keys = frozenset(raw_positions)
+                if raw_positions and _keys == _prev_keys:
+                    log.info(
+                        f"IBKR SYNC: position list settled on poll {_attempt} "
+                        f"— {len(raw_positions)} position(s): {sorted(_keys)}"
+                    )
+                    break
+                _prev_keys = _keys
+                if _attempt < 6:
+                    _sync_time.sleep(2)
+            else:
+                if raw_positions:
+                    log.warning(
+                        f"IBKR SYNC: position list did not stabilise after 6 "
+                        f"polls — proceeding with last read "
+                        f"({len(raw_positions)}): {sorted(raw_positions)}"
+                    )
+                else:
+                    log.info(
+                        "IBKR SYNC: no open positions at IBKR after 6 polls "
+                        "— treating account as flat."
+                    )
             if raw_positions:
                 now = datetime.now(self.tz)
 
@@ -5765,6 +5800,41 @@ class TradingEngine:
                         self._pending_orders.discard(symbol)
                         return
 
+        # === PRE-FILL STALENESS GATE (equity buys) ===
+        # A momentum signal can sit in the execution queue for 30-60s (serial
+        # processing, Claude pre-trade calls) before the order is placed. On a
+        # fast runner the price drifts well past the signal price in that
+        # window — the MARKET order fills high and the post-fill
+        # slippage_reject round-trips the position at a loss (RGTX/RGTU/RL,
+        # 2026-05-21: signal $23.40 → order placed 53s later → fill $25.06).
+        # Catch it BEFORE crossing the spread: if the live ask has already
+        # drifted past the signal price by more than the slippage budget, the
+        # entry's R:R is already invalid — skip instead of buy-then-dump.
+        if (action == "buy" and not self._is_crypto_symbol(symbol)
+                and self.broker and self.broker.is_connected()):
+            signal_price = signal.get("price", 0)
+            max_drift = self.config.risk_config.get("max_slippage_pct", 0.008)
+            if outside_rth:
+                max_drift *= 2.0           # extended hours: wider budget
+            quote = self.broker.get_live_price(symbol) if hasattr(self.broker, 'get_live_price') else None
+            live_ref = None
+            if quote:
+                if quote.get("ask") and quote["ask"] > 0:
+                    live_ref = quote["ask"]
+                elif quote.get("bid") and quote.get("ask"):
+                    live_ref = (quote["bid"] + quote["ask"]) / 2
+            if signal_price > 0 and live_ref and live_ref > 0:
+                drift = (live_ref - signal_price) / signal_price
+                if drift > max_drift:
+                    log.warning(
+                        f"STALE SIGNAL SKIP: {symbol} live ask ${live_ref:.2f} "
+                        f"has drifted {drift:.1%} above signal ${signal_price:.2f} "
+                        f"(max {max_drift:.1%}) — entry R:R already invalid, "
+                        f"skipping order."
+                    )
+                    self._pending_orders.discard(symbol)
+                    return
+
         # === EXECUTION ROUTING: TradersPost-primary ===
         # TradersPost webhook is the PRIMARY execution path. It is a plain
         # HTTPS POST — it never touches ib_async / nest_asyncio, so it is
@@ -6253,6 +6323,9 @@ class TradingEngine:
         # webhook is configured.
         order = None
         partial_fill_remaining = 0
+        # Exit price for P&L: defaults to the current_price reference, but the
+        # IBKR-direct close path below overrides it with the real avg_fill_price.
+        exit_price = current_price
         # Wall-clock outside-RTH: same logic as the entry path. Exits must also
         # work overnight (close a position bought in pre-market at 23:00 ET).
         # Without this, a manual SELL after 20:00 builds a plain MARKET order
@@ -6304,6 +6377,14 @@ class TradingEngine:
             )
             if order:
                 close_broker = "IBKR"
+                # Use the actual broker fill price for P&L, not the stale
+                # current_price reference. On a fast/thin name the market-data
+                # quote can be seconds stale (e.g. RGTX 2026-05-21: reference
+                # $23.84 vs real fill $25.05 — recorded a fictional −$61 on a
+                # round-trip that really cost ~$0.50). avg_fill_price is the
+                # cash truth; fall back to current_price only if absent.
+                if order.get("avg_fill_price"):
+                    exit_price = order["avg_fill_price"]
                 # Detect partial fill. Don't block the monitor thread retrying
                 # here — the remaining qty is handled by leaving the position
                 # tracked with a reduced quantity, so the next monitor cycle
@@ -6340,11 +6421,12 @@ class TradingEngine:
         if partial_fill_remaining > 0:
             closed_qty = pos["quantity"] - partial_fill_remaining
 
-        # Calculate P&L only on the shares actually closed
+        # Calculate P&L only on the shares actually closed, against the real
+        # exit fill price (see exit_price assignment in the IBKR close block).
         if pos["direction"] == "long":
-            pnl = (current_price - pos["entry_price"]) * closed_qty
+            pnl = (exit_price - pos["entry_price"]) * closed_qty
         else:
-            pnl = (pos["entry_price"] - current_price) * closed_qty
+            pnl = (pos["entry_price"] - exit_price) * closed_qty
 
         self.daily_pnl += pnl
         # Update internal balance tracking
@@ -6373,7 +6455,7 @@ class TradingEngine:
                     "symbol": symbol,
                     "action": action,
                     "quantity": closed_qty,
-                    "price": current_price,
+                    "price": exit_price,
                     "source": "mirror_exit",
                 })
             except Exception as e:
@@ -6388,7 +6470,7 @@ class TradingEngine:
             direction=pos["direction"],
             qty=closed_qty,
             entry_price=pos["entry_price"],
-            exit_price=current_price,
+            exit_price=exit_price,
             pnl=pnl,
             pnl_pct=pnl_pct * 100,
             reason_type=reason_type,
@@ -6401,7 +6483,7 @@ class TradingEngine:
             "symbol": symbol,
             "direction": pos["direction"],
             "entry_price": pos["entry_price"],
-            "exit_price": current_price,
+            "exit_price": exit_price,
             "quantity": closed_qty,
             "pnl": pnl,
             "pnl_pct": pnl_pct,
