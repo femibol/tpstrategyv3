@@ -2431,7 +2431,7 @@ class TradingEngine:
         # Include watchlist symbols for live prices
         all_symbols.update(self.watchlist)
 
-        # Prioritize: positions first, then top movers by change%, then rest
+        # Prioritize: positions first, then crypto, then top movers, then rest
         priority_symbols = []
 
         # 1. Open positions (always first — need accurate prices for stops)
@@ -2439,7 +2439,14 @@ class TradingEngine:
             if sym in all_symbols:
                 priority_symbols.append(sym)
 
-        # 2. Top movers from Polygon (sorted by change% desc — Money Machine priority)
+        # 2. Crypto — the crypto fast lane needs bars for the whole crypto
+        #    universe, and crypto uses a separate (non-IBKR) data feed, so it
+        #    isn't the slow part. Always kept ahead of the universe cap.
+        for sym in all_symbols:
+            if self._is_crypto_symbol(sym) and sym not in priority_symbols:
+                priority_symbols.append(sym)
+
+        # 3. Top movers from Polygon (sorted by change% desc — Money Machine priority)
         if getattr(self, "polygon", None) and self.polygon.enabled:
             top_movers = self.polygon.get_top_movers(limit=50)
             for m in top_movers:
@@ -2447,9 +2454,29 @@ class TradingEngine:
                 if sym and sym in all_symbols and sym not in priority_symbols:
                     priority_symbols.append(sym)
 
-        # 3. Everything else
+        # 4. Everything else
         remaining = [s for s in all_symbols if s not in priority_symbols]
         ordered_symbols = priority_symbols + remaining
+
+        # --- UNIVERSE CAP ---
+        # The IBKR scanner injects ~120 symbols/cycle; left uncapped the
+        # working universe hit 190 and _update_data's IBKR historical-bar
+        # fetch ran ~180s — blocking _fast_scalp_monitor (and therefore
+        # position-stop checks) for minutes every cycle. Cap the set that
+        # gets a bar refresh: positions + crypto lead the list and are never
+        # trimmed; only the low-priority equity-discovery tail is dropped.
+        # The bot holds at most a handful of equity positions — it does not
+        # need fresh bars for 120 scanner movers.
+        max_universe = self.config.risk_config.get("max_universe_symbols", 90)
+        if len(ordered_symbols) > max_universe:
+            trimmed = len(ordered_symbols) - max_universe
+            ordered_symbols = ordered_symbols[:max_universe]
+            log.info(
+                f"UNIVERSE CAP: working set {len(ordered_symbols)} symbols "
+                f"(trimmed {trimmed} low-priority equity names; max {max_universe})"
+            )
+        # Keep coverage diagnostics + stream pruning consistent with the cap.
+        all_symbols = set(ordered_symbols)
 
         # Prune IBKR streams for symbols no longer being tracked
         # This frees slots for newly discovered movers
