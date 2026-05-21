@@ -47,6 +47,10 @@ class PositionSizer:
         self.risk_per_trade_pct = config.risk_per_trade
         self.max_position_pct = config.risk_config.get("max_position_size_pct", 0.15)
         self.reserve_pct = config.reserve_cash_pct
+        # Upper bound on the per-strategy Kelly multiplier. Ramp knob: start
+        # at 1.0 (a proven strategy sizes at base risk, no Kelly boost) and
+        # raise toward 2.0 once the per-strategy edge is trusted live.
+        self.kelly_max_mult = config.risk_config.get("kelly_max_mult", 2.0)
 
         # Crypto-specific limits
         crypto_risk = config.settings.get("crypto", {}).get("risk", {})
@@ -138,8 +142,9 @@ class PositionSizer:
 
         multiplier = safe_kelly / base_risk_pct
 
-        # Bound: never above 2x, never below 0.25x
-        return max(0.25, min(2.0, multiplier))
+        # Bound: never below 0.25x, never above the configured ramp ceiling
+        # (kelly_max_mult — 1.0 while ramping in, up to 2.0 once trusted).
+        return max(0.25, min(self.kelly_max_mult, multiplier))
 
     def _drawdown_adjustment(self, current_balance, peak_balance):
         """Reduce size during drawdowns to prevent death spiral.
