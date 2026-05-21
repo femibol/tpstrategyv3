@@ -1015,9 +1015,11 @@ class TradingEngine:
         filled. An orphan whose phantom-success exits net it to zero in the
         log (HTTP 200 on a rejected close) is invisible here — only a real
         positions API on the connected broker could catch that case.
+
+        Detection is a pure signal_log walk and needs no broker object — it
+        runs at boot before ``tp_mirror`` is constructed. Only ``close=True``
+        needs the mirror webhook.
         """
-        if not self.tp_mirror:
-            return []
         import json as _json
         signal_file = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "data", "signal_log.json"
@@ -1097,7 +1099,12 @@ class TradingEngine:
         except Exception as e:
             log.debug(f"mirror orphan notifier alert failed: {e}")
 
-        if close:
+        if close and not self.tp_mirror:
+            log.warning(
+                "MIRROR RECONCILE: close requested but the mirror webhook is "
+                "not configured — orphans reported only, not flattened."
+            )
+        elif close:
             for sym, qty in orphans:
                 try:
                     self.tp_mirror.notify_trade({
