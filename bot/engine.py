@@ -2774,6 +2774,28 @@ class TradingEngine:
                         exc_info=True,
                     )
 
+    # Profit level (as a P&L fraction) at which a plain `momentum` position's
+    # trailing stop is allowed to engage. Momentum is a runner strategy — a
+    # noise-width trail that arms at entry strangles the breakout before it
+    # develops. 2026-05-21 review: plain momentum trailed from tick #1 and
+    # produced 10 trailing_stop exits, 0 wins, all within ±1% of entry.
+    # Below this level only the hard stop_loss protects the trade; above it
+    # the normal profit-tiered trail takes over. momentum_runner is unaffected
+    # — it has its own 4-phase ATR trail.
+    MOMENTUM_TRAIL_ARM_PCT = 0.02
+
+    def _trail_arm_allowed(self, pos, pnl_pct):
+        """Whether a position's trailing stop may be ARMED/ratcheted now.
+
+        Returns False only for a plain `momentum` position still below
+        MOMENTUM_TRAIL_ARM_PCT — its trail stays un-armed so the breakout has
+        room. The exit check against an already-set trail is never gated by
+        this (a trail armed earlier, after the position ran, is still honored).
+        """
+        if pos.get("strategy") != "momentum" or pos.get("momentum_runner"):
+            return True
+        return pnl_pct >= self.MOMENTUM_TRAIL_ARM_PCT
+
     def _fast_scalp_monitor(self):
         """AGGRESSIVE universal position monitor (runs every 3 seconds).
 
@@ -3219,10 +3241,13 @@ class TradingEngine:
                     new_trail = max(current_price * (1 - trailing_pct), entry_price)
                     # Only move stop UP, never down — and only ratchet while in profit
                     # so we don't set the floor at entry on every losing tick.
-                    if current_price > entry_price and (
+                    # _trail_arm_allowed keeps a plain-momentum trail un-armed
+                    # until the breakout has run past MOMENTUM_TRAIL_ARM_PCT.
+                    if (self._trail_arm_allowed(pos, pnl_pct)
+                            and current_price > entry_price and (
                         "trailing_stop" not in pos
                         or new_trail > pos.get("trailing_stop", 0)
-                    ):
+                    )):
                         pos["trailing_stop"] = new_trail
                         # SYNC TO BROKER: Update broker-side stop to match
                         # Uses the higher of trailing_stop and stop_loss
@@ -3334,7 +3359,9 @@ class TradingEngine:
                 hwm = pos.get("_high_water_mark", entry)
                 if price > hwm:
                     pos["_high_water_mark"] = price
-                    if price > entry:
+                    # _trail_arm_allowed: plain-momentum trail stays un-armed
+                    # below MOMENTUM_TRAIL_ARM_PCT so the breakout has room.
+                    if price > entry and self._trail_arm_allowed(pos, pnl_pct):
                         trail_pct = pos.get("trailing_stop_pct", 0.02)
                         new_trail = max(price * (1 - trail_pct), entry)
                         if new_trail > pos.get("trailing_stop", 0):
@@ -3432,7 +3459,9 @@ class TradingEngine:
             hwm = pos.get("_high_water_mark", entry)
             if price > hwm:
                 pos["_high_water_mark"] = price
-                if price > entry:
+                # _trail_arm_allowed: plain-momentum trail stays un-armed
+                # below MOMENTUM_TRAIL_ARM_PCT so the breakout has room.
+                if price > entry and self._trail_arm_allowed(pos, pnl_pct):
                     trail_pct = pos.get("trailing_stop_pct", 0.02)
                     new_trail = max(price * (1 - trail_pct), entry)
                     if new_trail > pos.get("trailing_stop", 0):
@@ -4151,9 +4180,12 @@ class TradingEngine:
                 # Only ratchet while in profit so a losing tick doesn't set
                 # the floor at entry and immediately fire on the next dip.
                 new_trail = max(current_price * (1 - trailing_pct), entry_price)
-                if current_price > entry_price and (
+                # _trail_arm_allowed keeps a plain-momentum trail un-armed until
+                # the breakout has run past MOMENTUM_TRAIL_ARM_PCT (see helper).
+                if (self._trail_arm_allowed(pos, pnl_pct)
+                        and current_price > entry_price and (
                     "trailing_stop" not in pos or new_trail > pos["trailing_stop"]
-                ):
+                )):
                     pos["trailing_stop"] = new_trail
                 if pos.get("trailing_stop", 0) > 0 and current_price <= pos["trailing_stop"]:
                     positions_to_close.append(
