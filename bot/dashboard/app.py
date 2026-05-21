@@ -478,6 +478,24 @@ class Dashboard:
             self.engine._flush_low_float_before_open()
             return jsonify({"status": "Pre-open flush triggered"})
 
+        @self.app.route("/api/reconcile/mirror/run", methods=["POST"])
+        def run_mirror_reconcile():
+            """Run the TradersPost mirror-account orphan reconciliation.
+
+            Walks signal_log, nets equity buys vs exits, and reports any
+            positive net the engine isn't tracking. Pass ?close=true to also
+            send a mirror EXIT webhook flattening each orphan."""
+            close = request.args.get("close", "").lower() in ("1", "true", "yes")
+            try:
+                orphans = self.engine._reconcile_mirror_orphans(close=close)
+            except Exception as e:
+                return jsonify({"error": f"reconcile failed: {e}"}), 500
+            return jsonify({
+                "status": "Mirror reconcile complete",
+                "closed": close,
+                "orphans": [{"symbol": s, "quantity": q} for s, q in orphans],
+            })
+
         @self.app.route("/api/hedging")
         def hedging():
             if self.engine.hedging_manager:

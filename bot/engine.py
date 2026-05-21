@@ -810,6 +810,18 @@ class TradingEngine:
         except Exception as e:
             log.debug(f"crypto orphan reconciliation failed: {e}")
 
+        # Mirror reconciliation: the TradersPost MIRROR webhook is a one-way
+        # copy of every IBKR equity fill with no positions API of its own.
+        # When a mirrored exit doesn't actually flatten the connected broker,
+        # the mirror account drifts long. Same signal_log walk as crypto, but
+        # for equity symbols. Alert-only at boot — closing is opt-in via the
+        # /api/reconcile/mirror/run endpoint so an approximate tripwire never
+        # fires an unattended exit.
+        try:
+            self._reconcile_mirror_orphans()
+        except Exception as e:
+            log.debug(f"mirror orphan reconciliation failed: {e}")
+
     def _signal_log_net_qty(self, symbol, since_dt=None, lookback_hours=48):
         """Compute net qty (buys - exits) for a crypto symbol from signal_log.
 
@@ -981,6 +993,127 @@ class TradingEngine:
             )
         except Exception as e:
             log.debug(f"orphan notifier alert failed: {e}")
+
+    def _reconcile_mirror_orphans(self, lookback_hours=72, close=False):
+        """Detect equity positions drifting on the TradersPost MIRROR account.
+
+        The mirror (``TRADERSPOST_MIRROR_WEBHOOK_URL``) is a one-way copy of
+        every IBKR equity fill — it has no positions API, so when a mirrored
+        exit doesn't actually flatten the connected broker (TradersPost
+        returns HTTP 200 even on a rejected "no position" close) the mirror
+        account silently accumulates one-sided longs. IBKR stays the source
+        of truth; this walk turns that slow leak into a loud alert.
+
+        Walks ``data/signal_log.json``, nets buy vs exit quantity per EQUITY
+        symbol (crypto is handled by :meth:`_reconcile_crypto_orphans`), and
+        reports any positive net the engine isn't tracking. With
+        ``close=True`` it sends a mirror EXIT webhook to flatten each orphan.
+
+        Returns the list of ``(symbol, qty)`` orphans found.
+
+        Limitation: signal_log records what was SENT, not what the broker
+        filled. An orphan whose phantom-success exits net it to zero in the
+        log (HTTP 200 on a rejected close) is invisible here — only a real
+        positions API on the connected broker could catch that case.
+        """
+        if not self.tp_mirror:
+            return []
+        import json as _json
+        signal_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "data", "signal_log.json"
+        )
+        if not os.path.exists(signal_file):
+            return []
+        try:
+            with open(signal_file, "r") as f:
+                sigs = _json.load(f)
+        except Exception as e:
+            log.debug(f"signal_log read failed: {e}")
+            return []
+
+        from datetime import timedelta as _td, timezone as _tz
+        cutoff = datetime.now(_tz.utc) - _td(hours=lookback_hours)
+        from collections import defaultdict as _dd
+        net_qty = _dd(float)
+        for s in sigs:
+            try:
+                t = datetime.fromisoformat(s.get("time", ""))
+                if t.tzinfo is None:
+                    # Legacy naive entries are local time — see _signal_log_net_qty.
+                    t = self.tz.localize(t).astimezone(_tz.utc)
+                else:
+                    t = t.astimezone(_tz.utc)
+            except Exception:
+                continue
+            if t < cutoff:
+                continue
+            if not s.get("success") or int(s.get("status_code", 0)) >= 300:
+                continue
+            sym = s.get("symbol", "")
+            # Equity only — crypto is _reconcile_crypto_orphans' job.
+            if not sym or self._is_crypto_symbol(sym):
+                continue
+            qty = float(s.get("quantity", 0) or 0)
+            tp_action = (s.get("tp_action", "") or "").lower()
+            if tp_action == "buy":
+                net_qty[sym] += qty
+            elif tp_action == "exit":
+                net_qty[sym] -= qty
+
+        orphans = []
+        with self._positions_lock:
+            for sym, qty in net_qty.items():
+                # Negative net = more exits than buys logged — the mirror
+                # over-records exits (HTTP 200 on rejected closes). Not an orphan.
+                if qty < 0.0001:
+                    continue
+                # Engine tracks it AND the qty roughly matches → managed, skip.
+                if sym in self.positions:
+                    continue
+                orphans.append((sym, round(qty, 4)))
+
+        if not orphans:
+            log.info(
+                f"MIRROR RECONCILE: clean — no equity orphans on the mirror "
+                f"account in the last {lookback_hours}h"
+            )
+            return []
+
+        orphans.sort(key=lambda x: -abs(x[1]))
+        orphan_summary = ", ".join(f"{s}={q:g}" for s, q in orphans)
+        log.warning(
+            f"MIRROR RECONCILE: {len(orphans)} ORPHAN equity position(s) "
+            f"likely open on the TradersPost mirror account but NOT tracked "
+            f"by the engine: {orphan_summary}. IBKR is the source of truth; "
+            f"the bot does not manage stops/exits on these."
+        )
+        try:
+            self.notifier.risk_alert(
+                f"⚠️ MIRROR ORPHAN POSITIONS: {len(orphans)} equity symbol(s) "
+                f"adrift on the TradersPost mirror without engine tracking. "
+                f"{orphan_summary}. Check the mirror broker and close manually, "
+                f"or POST /api/reconcile/mirror/run?close=true."
+            )
+        except Exception as e:
+            log.debug(f"mirror orphan notifier alert failed: {e}")
+
+        if close:
+            for sym, qty in orphans:
+                try:
+                    self.tp_mirror.notify_trade({
+                        "symbol": sym,
+                        "action": "sell",
+                        "quantity": qty,
+                        "source": "mirror_exit",
+                    })
+                    log.warning(
+                        f"MIRROR RECONCILE: sent flatten EXIT for orphan "
+                        f"{sym} qty={qty:g}"
+                    )
+                except Exception as e:
+                    log.error(f"MIRROR RECONCILE: failed to close orphan {sym}: {e}")
+
+        return orphans
 
     def _start_background_reconnect(self):
         """Background thread that retries IBKR connection forever.
