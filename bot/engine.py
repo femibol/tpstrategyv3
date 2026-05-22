@@ -5187,6 +5187,14 @@ class TradingEngine:
             for t in self.trade_history:
                 if t.get("strategy") != strategy_name:
                     continue
+                # slippage_reject trades never held real market exposure —
+                # they're opened and closed within ~3s by the post-fill
+                # slippage gate, and their recorded P&L is computed off the
+                # stale signal price (not the real fill), so it's noise.
+                # Counting them would let an entry-time slippage event pause
+                # the whole strategy for the day on a loss it never took.
+                if (t.get("reason") or t.get("exit_reason")) == "slippage_reject":
+                    continue
                 xt = t.get("exit_time")
                 if not xt:
                     continue
