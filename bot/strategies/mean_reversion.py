@@ -44,11 +44,13 @@ class MeanReversionStrategy(BaseStrategy):
         self.bb_std = config.get("bollinger_std", 2.0)
         self.max_hold = config.get("max_holding_periods", 20)
         # Crypto-only trend gate: skip new entries when the symbol's been flat
-        # or down over a longer lookback. Mean-reversion on crypto is really
+        # or down over the lookback window. Mean-reversion on crypto is really
         # "buy dip and ride to time_exit" — wins in uptrends, bleeds in flat
-        # tapes. The 14d window separates trending alts from range-bound ones
-        # cleanly; the 24h-prior window has the sign backwards (winners are
-        # deeper dips). Equity behavior unchanged.
+        # tapes. Window default is 3d (cap-bound — Binance.US klines max 1000
+        # bars per fetch ≈ 3.5d on 5m; see market_data.py:350 + strategies.yaml
+        # for the pagination follow-up). The 24h-prior window has the sign
+        # backwards (winners are deeper dips); 3d+ separates cleanly. Equity
+        # behavior unchanged.
         self.crypto_trend_filter_enabled = config.get(
             "crypto_trend_filter_enabled", True
         )
@@ -216,7 +218,8 @@ class MeanReversionStrategy(BaseStrategy):
 
         if _is_crypto and not trend_ok:
             trend_str = f"{trend_pct:+.1%}" if trend_pct is not None else "n/a"
-            verdict = f"WAIT: weak 14d trend ({trend_str})"
+            days = max(1, self.crypto_trend_lookback_bars // 288)
+            verdict = f"WAIT: weak {days}d trend ({trend_str})"
         elif entry_ready:
             verdict = "BUY SIGNAL"
         elif passed >= 2 and not reversal_candle:

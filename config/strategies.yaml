@@ -39,13 +39,17 @@ mean_reversion:
   rsi_oversold_crypto: 40        # Was 45 (code default). Loosened alongside zscore for the same reason.
   rsi_overbought_crypto: 55      # Code default — left as-is; symmetric short trigger.
   # Crypto-only trend gate. Skip mean-reversion entries on alts that have been
-  # flat or down over the prior 14 days. Trade review of 163 crypto closes
-  # (2026-05-15 → 2026-05-24) found NEAR (+60% over 14d) carried +$522 of the
-  # +$436 book while ICP/DOT/BCH/LINK/SUI/AVAX/LTC (all flat or down 14d) bled
-  # –$200. Filter at +2% over 14d cleanly separates them. Equity unaffected.
+  # flat or down over the recent past. Trade review of 163 crypto closes
+  # (2026-05-15 → 2026-05-24) found NEAR carried +$522 of the +$436 book while
+  # ICP/DOT/BCH/LINK/SUI/AVAX/LTC bled –$200; a trend filter cleanly separates.
+  # Lookback is 3 days, not 14, because `_fetch_binance_us_klines` caps at 1000
+  # 5m bars (≈3.5d) per request (market_data.py:350) — the cache literally
+  # cannot deliver longer history without pagination. Backtest at 3d/+10% is
+  # equivalent to 14d/+2% on the May 15–24 sample (both keep +$540-ish, both
+  # filter every losing symbol). See HANDOFF for the planned pagination follow-up.
   crypto_trend_filter_enabled: true
-  crypto_trend_lookback_bars: 4032   # 14d × 24h × 12 bars/h on 5m timeframe
-  crypto_trend_min_pct: 0.02         # require ≥ +2% over the lookback window
+  crypto_trend_lookback_bars: 864    # 3d × 24h × 12 bars/h on 5m (within the 1000-bar Binance cap)
+  crypto_trend_min_pct: 0.10         # require ≥ +10% over the lookback window
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5
