@@ -43,6 +43,21 @@ class MeanReversionStrategy(BaseStrategy):
         self.bb_period = config.get("bollinger_period", 20)
         self.bb_std = config.get("bollinger_std", 2.0)
         self.max_hold = config.get("max_holding_periods", 20)
+        # Crypto-only trend gate: skip new entries when the symbol's been flat
+        # or down over a longer lookback. Mean-reversion on crypto is really
+        # "buy dip and ride to time_exit" — wins in uptrends, bleeds in flat
+        # tapes. The 14d window separates trending alts from range-bound ones
+        # cleanly; the 24h-prior window has the sign backwards (winners are
+        # deeper dips). Equity behavior unchanged.
+        self.crypto_trend_filter_enabled = config.get(
+            "crypto_trend_filter_enabled", True
+        )
+        self.crypto_trend_lookback_bars = int(
+            config.get("crypto_trend_lookback_bars", 4032)
+        )
+        self.crypto_trend_min_pct = float(
+            config.get("crypto_trend_min_pct", 0.02)
+        )
 
         # Dynamic symbols from IBKR scanner (losers + active). Mean reversion
         # on a static 13-symbol list rarely fires; live-discovered pullback
@@ -116,6 +131,22 @@ class MeanReversionStrategy(BaseStrategy):
         rsi_oversold = self.rsi_oversold_crypto if _is_crypto else self.rsi_oversold
         rsi_overbought = self.rsi_overbought_crypto if _is_crypto else self.rsi_overbought
 
+        # Crypto-only trend gate: pull a much longer window from the 30d bar
+        # cache (cheap — it's already there) and require the symbol to be at
+        # least crypto_trend_min_pct above its price N bars ago. Falls open
+        # (skips the gate) if there aren't enough bars to evaluate, so a
+        # fresh symbol isn't permanently blocked.
+        trend_ok = True
+        trend_pct = None
+        if _is_crypto and self.crypto_trend_filter_enabled:
+            long_bars = market_data.get_bars(symbol, self.crypto_trend_lookback_bars + 10)
+            if long_bars is not None and len(long_bars) >= self.crypto_trend_lookback_bars:
+                long_closes = long_bars["close"].values
+                ref = long_closes[-self.crypto_trend_lookback_bars]
+                if ref > 0:
+                    trend_pct = (long_closes[-1] - ref) / ref
+                    trend_ok = trend_pct >= self.crypto_trend_min_pct
+
         closes = bars["close"].values
         volumes = bars["volume"].values
         current_price = closes[-1]
@@ -178,8 +209,15 @@ class MeanReversionStrategy(BaseStrategy):
             or (checks["zscore_ok"] and checks["at_lower_bb"] and reversal_candle and vol_ratio > 1.3)
             or (checks["rsi_oversold"] and checks["at_lower_bb"] and vol_ratio > 1.5 and reversal_candle)
         )
+        # Crypto trend gate: vetoes any buy on a flat/down 14d tape. Doesn't
+        # affect equity entries or the SELL-side overbought signal below.
+        if _is_crypto and not trend_ok:
+            entry_ready = False
 
-        if entry_ready:
+        if _is_crypto and not trend_ok:
+            trend_str = f"{trend_pct:+.1%}" if trend_pct is not None else "n/a"
+            verdict = f"WAIT: weak 14d trend ({trend_str})"
+        elif entry_ready:
             verdict = "BUY SIGNAL"
         elif passed >= 2 and not reversal_candle:
             verdict = "WAIT: needs green bar"
@@ -206,6 +244,7 @@ class MeanReversionStrategy(BaseStrategy):
             "bb_lower": round(bb_lower, 2),
             "bb_zone": bb_zone,
             "vol_ratio": round(vol_ratio, 1),
+            "trend_14d": round(trend_pct, 4) if trend_pct is not None else None,
             "checks": checks,
             "checks_passed": passed,
             "verdict": verdict,
