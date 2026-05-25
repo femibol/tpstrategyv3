@@ -227,7 +227,7 @@ class Dashboard:
             output = io.StringIO()
             fields = ["symbol", "direction", "strategy", "entry_price", "exit_price",
                        "quantity", "pnl", "pnl_pct", "reason", "executed_via",
-                       "entry_time", "exit_time", "hold_time"]
+                       "entry_time", "exit_time", "hold_time_mins"]
             writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
             writer.writeheader()
             for t in trades_list:
