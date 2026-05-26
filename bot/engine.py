@@ -7480,6 +7480,65 @@ class TradingEngine:
         score = signal.get("score", 0)
         rvol = signal.get("rvol", 0)
 
+        # --- Extra decision context (cheap to compute, big for Claude's call) ---
+        # R:R: most important single number for "is this setup worth taking?"
+        price = signal.get("price", 0) or 0
+        stop = signal.get("stop_loss", 0) or 0
+        tp = signal.get("take_profit", 0) or 0
+        risk_pct = ((price - stop) / price) if (price > 0 and stop > 0 and stop < price) else 0
+        reward_pct = ((tp - price) / price) if (price > 0 and tp > price) else 0
+        rr = (reward_pct / risk_pct) if risk_pct > 0 else 0
+
+        # Spread (bps). Pulled from the IBKR streaming cache — no extra
+        # network call. None when streaming hasn't populated bid/ask yet.
+        spread_bps = None
+        if self.broker and hasattr(self.broker, 'get_live_price'):
+            try:
+                q = self.broker.get_live_price(symbol)
+                if q and q.get("bid") and q.get("ask") and q["ask"] > q["bid"]:
+                    mid = (q["bid"] + q["ask"]) / 2
+                    if mid > 0:
+                        spread_bps = round((q["ask"] - q["bid"]) / mid * 10000)
+            except Exception:
+                pass
+
+        # Time-into-session
+        now_local = datetime.now(self.tz)
+        sched = self.config.schedule_config
+        try:
+            h_open, m_open = map(int, sched.get("market_open", "09:30").split(":"))
+            market_open_dt = now_local.replace(hour=h_open, minute=m_open,
+                                               second=0, microsecond=0)
+            mins_in = int((now_local - market_open_dt).total_seconds() / 60)
+        except Exception:
+            mins_in = 0
+        if mins_in < 0:
+            session_loc = f"premarket ({-mins_in}m before open)"
+        elif mins_in < 30:
+            session_loc = f"opening-30m ({mins_in}m in)"
+        elif mins_in < 360:
+            session_loc = f"midday ({mins_in}m in)"
+        elif mins_in < 390:
+            session_loc = f"power-hour ({390 - mins_in}m to close)"
+        else:
+            session_loc = f"after-hours ({mins_in - 390}m past close)"
+
+        # Day P&L — discourages AGGRESSIVE sizing on losing days (revenge trades)
+        day_pnl_abs = float(getattr(self, 'daily_pnl', 0) or 0)
+        sod = float(getattr(self, 'start_of_day_balance', 0) or 0)
+        day_pnl_pct = (day_pnl_abs / sod * 100) if sod > 0 else 0
+
+        # Per-symbol recent record — symbol-specific behaviour often
+        # dominates strategy-wide stats (cf. NEAR-USD vs DOT-USD).
+        sym_trades = [t for t in self.trade_history if t.get("symbol") == symbol][-3:]
+
+        def _short_rec(t):
+            p = t.get("pnl", 0) or 0
+            tag = "W" if p > 0.5 else ("L" if p < -0.5 else "S")
+            return f"{tag}{p:+.0f}"
+        sym_rec = (", ".join(_short_rec(t) for t in sym_trades)
+                   if sym_trades else "no prior trades")
+
         # Learning signals
         boosted = learning.get("boosted_strategies", {}).get(strategy, 0)
 
@@ -7506,11 +7565,17 @@ class TradingEngine:
                 f"- TAKE with normal size — this is an overnight hold, don't oversize\n"
             )
 
+        spread_line = f"Spread: {spread_bps}bps" if spread_bps is not None else "Spread: n/a"
+        rr_line = (f"R:R = {rr:.2f} (risk {risk_pct*100:.2f}%, reward {reward_pct*100:.2f}%)"
+                   if risk_pct > 0 else "R:R = n/a")
+
         prompt = (
-            f"Trade decision (ONE line, start TAKE, SKIP, REDUCE, or AGGRESSIVE):\n"
             f"BUY {symbol} via {strategy} @ ${signal.get('price', 0):.2f}\n"
             f"Stop: ${signal.get('stop_loss', 0):.2f} | Target: ${signal.get('take_profit', 0):.2f}\n"
+            f"{rr_line} | {spread_line}\n"
             f"Score: {score} | RVOL: {rvol:.1f}x | Confidence: {signal.get('confidence', 0):.2f}\n"
+            f"Session: {session_loc} | Day P&L: ${day_pnl_abs:+.0f} ({day_pnl_pct:+.2f}%)\n"
+            f"Recent {symbol}: {sym_rec}\n"
             f"Recent ({'crypto' if is_crypto else 'equity'} only): "
             f"{wins}W/{losses}L/{scratches}scratch "
             f"({win_rate:.0f}% on {decisive} decisive)\n"
@@ -7519,15 +7584,20 @@ class TradingEngine:
             f"{f' | LEARNED BOOST x{boosted}' if boosted else ''}\n"
             f"Open positions: {open_count}/10 | Regime: {regime}"
             f"{trend_rider_block}\n\n"
-            f"Rules:\n"
-            f"- AGGRESSIVE (1.5x size) if: score>=80 AND RVOL>=5 AND win_rate>=60%\n"
-            f"- AGGRESSIVE if: strategy has LEARNED BOOST and score>=70\n"
-            f"- TAKE if setup is solid\n"
-            f"- REDUCE if: >7 open positions or strategy win rate <40%\n"
-            f"- SKIP if: strategy win rate <25% on 20+ DECISIVE trades or bad regime "
-            f"(under 20 decisive trades the sample is too small to gate — judge the setup on its merits)\n"
-            f"- Scratches (|P&L|<$1) are noise, NOT losses — don't count them as evidence of failure\n"
-            f"- 'Recent' and 'Strategy' stats above only cover {('crypto' if is_crypto else 'equity')} trades; do not extrapolate from the other asset class"
+            f"Rules (apply in order, first match wins):\n"
+            f"- SKIP if: strategy win rate <25% on 20+ DECISIVE trades, or bad regime, "
+            f"or R:R<1.0, or spread>50bps on equity. Under 20 decisive trades the sample is "
+            f"too small to gate — judge the setup on its merits instead of auto-skipping.\n"
+            f"- REDUCE if: >7 open positions, or (strategy win rate <40% on 20+ DECISIVE trades), "
+            f"or day P&L <-1% (don't double down on a losing day).\n"
+            f"- AGGRESSIVE (1.5x size) if: score>=80 AND RVOL>=5 AND win_rate>=60% on 20+ DECISIVE "
+            f"trades AND R:R>=2.0 AND day P&L >=-0.5%. (LEARNED BOOST x score>=70 also qualifies.)\n"
+            f"- TAKE otherwise if the setup is solid.\n"
+            f"- Scratches (|P&L|<$1) are noise, NOT losses — don't count them as evidence of failure.\n"
+            f"- 'Recent' and 'Strategy' stats above only cover "
+            f"{('crypto' if is_crypto else 'equity')} trades; do not extrapolate from the other asset class.\n\n"
+            f"Respond with a brief reason (≤30 words), then END with a line:\n"
+            f"DECISION: <one of TAKE, SKIP, REDUCE, AGGRESSIVE>"
         )
 
         try:
@@ -7535,21 +7605,46 @@ class TradingEngine:
             if not response:
                 return {}
 
-            response_upper = response.strip().upper()
-            if response_upper.startswith("SKIP"):
-                return {"skip": True, "reason": response.strip()[:200]}
-            elif response_upper.startswith("REDUCE"):
-                return {"reduce_size": True, "reason": response.strip()[:200]}
-            elif response_upper.startswith("AGGRESSIVE"):
-                return {
-                    "aggressive": True,
-                    "size_mult": 1.5,
-                    "reason": response.strip()[:200]
-                }
-            else:
+            decision = self._parse_claude_decision(response)
+            if decision is None:
+                log.warning(
+                    f"Claude pre-trade: no parseable decision for {symbol} "
+                    f"({strategy}); response head: {response[:120]!r}"
+                )
                 return {}
-        except Exception:
+
+            reason = response.strip()[:200]
+            if decision == "SKIP":
+                return {"skip": True, "reason": reason}
+            if decision == "REDUCE":
+                return {"reduce_size": True, "reason": reason}
+            if decision == "AGGRESSIVE":
+                return {"aggressive": True, "size_mult": 1.5, "reason": reason}
             return {}
+        except Exception as e:
+            log.debug(f"Claude pre-trade exception for {symbol}: {e}")
+            return {}
+
+    @staticmethod
+    def _parse_claude_decision(text):
+        """Robust decision extraction. Prefers an explicit `DECISION: X` line
+        anywhere in the response; falls back to scanning for the four
+        keywords as standalone words with conservative precedence
+        (SKIP > REDUCE > AGGRESSIVE > TAKE) so a verbose reasoning prefix
+        doesn't fail open the way `startswith` did.
+        Returns one of {'TAKE','SKIP','REDUCE','AGGRESSIVE'} or None.
+        """
+        if not text:
+            return None
+        m = re.search(r"DECISION\s*:\s*(TAKE|SKIP|REDUCE|AGGRESSIVE)\b",
+                      text, flags=re.IGNORECASE)
+        if m:
+            return m.group(1).upper()
+        upper = text.upper()
+        for keyword in ("SKIP", "REDUCE", "AGGRESSIVE", "TAKE"):
+            if re.search(r"\b" + keyword + r"\b", upper):
+                return keyword
+        return None
 
     def _entry_quality_gate(self, signal):
         """Multi-factor quality check before entry. Only TAKE trades that pass

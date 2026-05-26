@@ -67,7 +67,7 @@ class AIInsights:
         self.data_dir.mkdir(exist_ok=True)
 
         self.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        self.model = "claude-opus-4-6"  # Opus 4.6 — best reasoning for trade decisions
+        self.model = "claude-sonnet-4-6"  # Sonnet 4.6 — fast + cheap, plenty for trade decisions and trade-journal analysis (Opus was overkill and slow enough to age out fresh signals).
         self.max_tokens = 2000
 
         self._client = (
