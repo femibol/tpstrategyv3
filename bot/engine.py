@@ -25,6 +25,7 @@ from bot.data.indicators import TechnicalIndicators
 from bot.brokers.ibkr import IBKRBroker
 from bot.brokers.traderspost import TradersPostBroker
 from bot.signals.tradingview import TradingViewReceiver
+from bot.utils.market_calendar import is_us_market_holiday
 from bot.signals.politician_tracker import PoliticianTradeTracker
 from bot.signals.news_feed import NewsFeed
 from bot.strategies.mean_reversion import MeanReversionStrategy
@@ -2361,6 +2362,15 @@ class TradingEngine:
 
         if day_name not in trading_days:
             # On weekends, only run if crypto symbols exist (crypto trades 24/7)
+            self._in_premarket = False
+            self._in_postmarket = False
+            self._equity_market_open = False
+            return has_crypto
+
+        # Full-day NYSE closures (Memorial Day, Thanksgiving, etc.) — treat
+        # the same as a weekend so the equity sleeve doesn't run scanners
+        # against a closed market.
+        if is_us_market_holiday(now.date()):
             self._in_premarket = False
             self._in_postmarket = False
             self._equity_market_open = False
