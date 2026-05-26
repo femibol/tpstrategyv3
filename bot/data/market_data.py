@@ -181,6 +181,67 @@ class MarketDataFeed:
         fetch_budget = int(self.config.settings.get("data", {}).get("max_bar_fetches_per_cycle", 20))
         fetched = 0
 
+        # Parallel batch pre-fetch for IBKR equities. Stays single-threaded
+        # (runs on the IBKR worker thread that owns the event loop) but uses
+        # asyncio.gather to keep N requests in flight on that loop — 20
+        # sequential 6.5s fetches (130s) collapse to ~5 rounds × 6.5s (~32s)
+        # at concurrency=4. Disable via data.parallel_fetch=false if it ever
+        # misbehaves; the per-symbol fallback path below stays intact.
+        parallel_enabled = bool(self.config.settings.get("data", {}).get("parallel_fetch", True))
+        if (parallel_enabled and self.broker and self.broker.is_connected()
+                and hasattr(self.broker, "get_historical_bars_batch")):
+            batch_candidates = []
+            for symbol in symbols:
+                if len(batch_candidates) >= fetch_budget:
+                    break
+                if self._is_crypto(symbol):
+                    continue
+                if (hasattr(self.broker, "is_symbol_invalid")
+                        and self.broker.is_symbol_invalid(symbol)):
+                    continue
+                bars_last = self._bars_last_fetch.get(symbol, 0)
+                if now - bars_last < self._cache_ttl:
+                    continue
+                fail_time = self._bars_fail_cache.get(symbol, 0)
+                if fail_time and now - fail_time < self._bars_fail_ttl:
+                    continue
+                batch_candidates.append(symbol)
+
+            if batch_candidates:
+                concurrency = int(self.config.settings.get("data", {})
+                                  .get("parallel_fetch_concurrency", 4))
+                try:
+                    batch_result = self.broker.get_historical_bars_batch(
+                        batch_candidates,
+                        duration=f"{self.lookback_days} D",
+                        bar_size=self.bar_size,
+                        concurrency=concurrency,
+                    ) or {}
+                except Exception as e:
+                    log.warning(f"batch bar fetch raised, falling back to serial: {e}")
+                    batch_result = {}
+
+                for symbol, bars in batch_result.items():
+                    # Count every batched attempt against the budget — both
+                    # successes and IBKR-side failures cost real round trips,
+                    # and we don't want a high failure rate to silently
+                    # multiply per-cycle pacing pressure.
+                    fetched += 1
+                    if bars is not None and len(bars) > 0:
+                        self._bars_cache[symbol] = bars
+                        if symbol not in self._subscribed_symbols:
+                            self._price_cache[symbol] = float(bars["close"].iloc[-1])
+                        self._volume_cache[symbol] = float(bars["volume"].iloc[-1])
+                        self._last_update[symbol] = now
+                        self._bars_last_fetch[symbol] = now
+                        self._bars_fail_cache.pop(symbol, None)
+                    else:
+                        # Mark failure so we don't slam IBKR with the same
+                        # symbol every cycle. Mirrors the serial loop's
+                        # fail-cache behaviour; TTL is _bars_fail_ttl.
+                        self._bars_fail_cache[symbol] = now
+                        self._bars_last_fetch[symbol] = now
+
         for symbol in symbols:
             # If streaming is active, grab live prices from IBKR stream first
             if self._streaming_active and self.broker and hasattr(self.broker, 'get_live_price'):
