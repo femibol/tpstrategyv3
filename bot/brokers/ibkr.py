@@ -1038,6 +1038,73 @@ class IBKRBroker(BaseBroker):
             log.error(f"Failed to get historical bars for {symbol}: {e}")
             return None
 
+    @_on_worker
+    def get_historical_bars_batch(self, symbols, duration="1 D",
+                                  bar_size="5 mins", concurrency=4):
+        """Fetch historical bars for many symbols in parallel via ib_async's
+        async API.
+
+        Stays single-threaded — the call still executes on the dedicated
+        worker thread (same one that owns the IB() event loop) — but uses
+        asyncio.gather + a semaphore to keep multiple historical-data
+        requests in flight on the SAME event loop. IBKR pacing limits
+        (60 req / 10 min rolling, ~50 req/sec instantaneous) are respected
+        via the semaphore default of 4.
+
+        Returns: {symbol: DataFrame|None}. Symbols absent from the dict
+        were not attempted (already in the invalid-symbol blacklist).
+        Symbols mapped to None failed individually — caller should fall
+        back to alternate data sources (Polygon, Yahoo).
+        """
+        if not self.is_connected() or not symbols:
+            return {}
+
+        # Same invalid-symbol reset cadence as the single-symbol path
+        now = time.time()
+        if now - self._invalid_symbols_reset_time > self._invalid_symbols_ttl:
+            if self._invalid_symbols:
+                log.info(f"Resetting {len(self._invalid_symbols)} blacklisted symbols for retry")
+            self._invalid_symbols.clear()
+            self._invalid_symbols_reset_time = now
+
+        work = [s for s in symbols if s not in self._invalid_symbols]
+        if not work:
+            return {}
+
+        async def _fetch_one(sem, symbol):
+            async with sem:
+                try:
+                    contract = Stock(symbol, "SMART", "USD")
+                    await self.ib.qualifyContractsAsync(contract)
+                    if contract.conId == 0:
+                        self._invalid_symbols.add(symbol)
+                        return symbol, None
+                    bars = await self.ib.reqHistoricalDataAsync(
+                        contract,
+                        endDateTime="",
+                        durationStr=duration,
+                        barSizeSetting=bar_size,
+                        whatToShow="TRADES",
+                        useRTH=True,
+                        formatDate=1,
+                    )
+                    return symbol, (util.df(bars) if bars else None)
+                except Exception as e:
+                    log.debug(f"batch bar fetch {symbol}: {e}")
+                    return symbol, None
+
+        async def _gather():
+            sem = asyncio.Semaphore(concurrency)
+            tasks = [_fetch_one(sem, s) for s in work]
+            results = await asyncio.gather(*tasks, return_exceptions=False)
+            return dict(results)
+
+        try:
+            return self._ib_loop.run_until_complete(_gather())
+        except Exception as e:
+            log.error(f"batch bar fetch failed entirely: {e}")
+            return {}
+
     # =========================================================================
     # Real-Time Streaming Market Data
     # =========================================================================

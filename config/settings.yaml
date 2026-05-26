@@ -329,6 +329,16 @@ data:
                                   # separate _cache_ttl_1m (5s), unaffected. The previous 10s
                                   # value plus IBKR pacing (~12s/historical req for 95 symbols)
                                   # meant every cycle was a 100% cache miss → 19-min refetch.
+  parallel_fetch: true            # Fetch IBKR historical bars in parallel per cycle via
+                                  # reqHistoricalDataAsync + asyncio.gather (stays on the
+                                  # single ib_async worker thread, so no thread-safety risk).
+                                  # 20 sequential 6.5s fetches (~130s) → ~5 rounds × 6.5s
+                                  # (~32s) at concurrency=4. Set false to fall back to the
+                                  # original per-symbol serial path if anything misbehaves.
+  parallel_fetch_concurrency: 4   # Max in-flight historical-data requests. IBKR pacing
+                                  # is 60 req / 10-min rolling per client + ~50 req/sec
+                                  # instantaneous — 4 leaves plenty of headroom for the
+                                  # rest of the worker's traffic (orders, qualifies, news).
 
 # --- Top Gainers Scanner ---
 # Catches the biggest % movers with NO price cap — finds runners at any price.
