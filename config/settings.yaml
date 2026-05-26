@@ -39,19 +39,6 @@ risk:
   max_signal_deviation_pct: 0.05           # Pre-order RTH: signal-vs-live drift cap (5% matches risk_manager.Rule 6)
   max_signal_deviation_pct_extended: 0.12  # Pre-order extended hours: 12% — pre-market gappers routinely drift 8-12%
 
-# Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
-# take_profit edge can't clear estimated round-trip cost by ratio×.
-# Ratio-based so cheap-stock momentum scalps with big % moves still
-# pass even when absolute bps cost looks scary.
-cost_model:
-  enabled: true
-  equity_fee_bps: 2.0           # IBKR Pro round-trip avg on order sizes this bot runs
-  crypto_fee_bps: 30.0          # TradersPost → Alpaca crypto taker ~15bp × 2 sides
-  equity_spread_bps_default: 5.0
-  crypto_spread_bps_default: 10.0
-  spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
-  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
-
   # --- New-entry safety gates (block buys, never block exits) ---
   max_total_trades_per_day: 25      # Hard cap on equity entries per day across all strategies (0 = disabled)
   max_total_crypto_trades_per_day: 50  # Separate cap for crypto — 24/7 market needs more headroom than RTH equity (0 = disabled)
@@ -116,7 +103,7 @@ cost_model:
     trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
     buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
   min_volume: 200000              # 200K floor so sub-$3 low-float runners (RPGL, FCHL, BIYA tier) get through. Spread-safety still enforced per-strategy.
-  min_price: 0.50                 # Floor: $0.50 — admits proper low-floats while excluding true penny junk
+  min_price: 0.20                 # Floor: $0.20 — penny tier enabled for momentum_runner/low_float_catalyst/prebreakout only
   scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
   # Bot rides runners past $500 if uptrend is confirmed
   falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
@@ -172,6 +159,19 @@ cost_model:
     max_net_exposure_pct: 1.00      # Max 100% net exposure (longs - |shorts|) / net liq
     max_loss_per_position_pct: 0.08 # Force-close any position down > 8% from entry
     monitor_all_broker_positions: true  # Track ALL broker positions (including shorts) for risk monitoring
+
+# Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
+# take_profit edge can't clear estimated round-trip cost by ratio×.
+# Ratio-based so cheap-stock momentum scalps with big % moves still
+# pass even when absolute bps cost looks scary.
+cost_model:
+  enabled: true
+  equity_fee_bps: 2.0           # IBKR Pro round-trip avg on order sizes this bot runs
+  crypto_fee_bps: 30.0          # TradersPost → Alpaca crypto taker ~15bp × 2 sides
+  equity_spread_bps_default: 5.0
+  crypto_spread_bps_default: 10.0
+  spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
+  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
 
 # --- Trading Schedule ---
 schedule:
@@ -340,15 +340,15 @@ top_gainers:
   premarket:
     min_volume: 25000                # 25K — raised from 10K, need enough liquidity to exit
     min_change_pct: 5.0              # 5%+ gap to qualify (raised from 3% — skip weak gaps)
-    min_price: 2.00                  # Floor out sub-$2 junk in premarket
+    min_price: 0.20                  # Penny tier admitted; strategy-level floors still apply
   regular:
     min_volume: 100000               # 100K — standard liquidity
     min_change_pct: 5.0              # 5%+ intraday move (the real runners)
-    min_price: 2.00                  # Floor out penny stocks
+    min_price: 0.20                  # Penny tier admitted; strategy-level floors still apply
   postmarket:
     min_volume: 75000                # 75K — raised from 50K, need real volume not ghosts
     min_change_pct: 5.0              # 5%+ after-hours move (raised from 3% — skip noise)
-    min_price: 2.00                  # Floor out penny stocks
+    min_price: 0.20                  # Penny tier admitted; strategy-level floors still apply
 
 # --- Execution ---
 execution:

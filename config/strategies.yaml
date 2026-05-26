@@ -151,7 +151,7 @@ momentum_runner:
   enabled: true
   timeframe: "1m"                    # 1-minute bars for fastest detection
   min_score: 6                       # 6/10 minimum composite score
-  min_price: 1.00                    # $1 floor
+  min_price: 0.20                    # Penny tier admitted (was $1); pairs with risk.min_price=0.20
   max_price: 100.00                  # $100 ceiling
   min_volume: 500000                 # 500K avg daily volume — real liquidity only
   max_daily_change_pct: 30.0         # Skip >30% unless fresh catalyst
@@ -208,7 +208,7 @@ prebreakout:
   enabled: true
   timeframe: "5m"
   min_score: 50                    # Moderate bar — catch accumulation early
-  min_price: 1.00                  # $1 floor
+  min_price: 0.20                  # Penny tier admitted (was $1)
   max_price: 100.00
   min_volume: 75000                # 75K — need some liquidity
   bollinger_period: 20
@@ -332,7 +332,7 @@ daily_trend_rider:
 # from 09:35+ if conditions still hold.
 low_float_catalyst:
   enabled: true
-  min_price: 0.50
+  min_price: 0.20
   max_price: 10.00
   max_float_m: 75.0                 # Catches GOVX 2.9M, VRAX 19.6M, SBFM 4.9M, WGRX 62.7M
   min_rvol: 5.0                     # 5x average volume — catalyst already firing
