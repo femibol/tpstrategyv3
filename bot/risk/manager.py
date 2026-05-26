@@ -489,6 +489,14 @@ class RiskManager:
     def is_daily_loss_exceeded(self, current_balance, start_of_day_balance):
         """Check if daily loss limit has been hit."""
         if start_of_day_balance <= 0:
+            # Silently returning False here used to hide a real bug: a transient
+            # sync glitch that wiped SOD balance would also disable the daily-loss
+            # gate. Surface it instead — the gate is degraded until balance recovers.
+            log.warning(
+                "Daily-loss gate degraded: start_of_day_balance=%s (<=0). "
+                "Gate inactive until balance state is valid.",
+                start_of_day_balance,
+            )
             return False
         daily_loss = (start_of_day_balance - current_balance) / start_of_day_balance
         return daily_loss >= self.config.max_daily_loss
@@ -496,6 +504,14 @@ class RiskManager:
     def is_max_drawdown_exceeded(self, current_balance, peak_balance):
         """Check if max drawdown from peak has been exceeded."""
         if peak_balance <= 0:
+            # Same as is_daily_loss_exceeded: log instead of swallowing. Returning
+            # True here would force-close the book on a balance-sync hiccup, which
+            # is worse than the silent fail-open — but the operator needs to see it.
+            log.warning(
+                "Max-drawdown gate degraded: peak_balance=%s (<=0). "
+                "Gate inactive until balance state is valid.",
+                peak_balance,
+            )
             return False
         drawdown = (peak_balance - current_balance) / peak_balance
         return drawdown >= self.config.max_drawdown
