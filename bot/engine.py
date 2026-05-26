@@ -7524,7 +7524,8 @@ class TradingEngine:
             f"- AGGRESSIVE if: strategy has LEARNED BOOST and score>=70\n"
             f"- TAKE if setup is solid\n"
             f"- REDUCE if: >7 open positions or strategy win rate <40%\n"
-            f"- SKIP if: strategy win rate <25% on 5+ DECISIVE trades or bad regime\n"
+            f"- SKIP if: strategy win rate <25% on 20+ DECISIVE trades or bad regime "
+            f"(under 20 decisive trades the sample is too small to gate — judge the setup on its merits)\n"
             f"- Scratches (|P&L|<$1) are noise, NOT losses — don't count them as evidence of failure\n"
             f"- 'Recent' and 'Strategy' stats above only cover {('crypto' if is_crypto else 'equity')} trades; do not extrapolate from the other asset class"
         )
