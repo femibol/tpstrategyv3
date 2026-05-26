@@ -7055,9 +7055,13 @@ class TradingEngine:
 
         # FLAG: Loss streak (>3 consecutive losses = something's wrong)
         if state["consecutive_losses"] >= 3:
+            # NOTE: this is an observability flag only — size is not reduced
+            # automatically here. Sizing already adapts via the Kelly + drawdown
+            # multipliers in position_sizer.py, and the daily soft-stop in
+            # _check_daily_loss_soft_stop pauses entries at -2% daily P&L.
             log.warning(
                 f"PSYCHOLOGY FLAG: {state['consecutive_losses']} consecutive losses — "
-                f"reducing size on next trade"
+                f"review strategy mix; consider manual pause"
             )
 
     def _check_daily_loss_soft_stop(self):

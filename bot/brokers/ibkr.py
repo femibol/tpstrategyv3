@@ -112,7 +112,7 @@ class IBKRBroker(BaseBroker):
 
         # Track symbols that fail contract qualification (e.g. delisted)
         # Prevents repeated error 200 "No security definition" requests
-        # Reset every 30 minutes to retry transiently-failed symbols
+        # Reset every 2 hours to retry transiently-failed symbols
         self._invalid_symbols = set()
         self._invalid_symbols_reset_time = time.time()
         self._invalid_symbols_ttl = 7200  # 2 hours (avoid retrying delisted symbols too often)

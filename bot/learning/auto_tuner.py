@@ -14,6 +14,7 @@ Safety guardrails:
 This is what makes the bot get smarter while you sleep.
 """
 import json
+import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -447,13 +448,19 @@ Example: {{"stop_loss_pct": 0.035, "alloc_momentum": 0.20, "mom_adx_threshold": 
                 content = data.get("content", [])
                 if content and content[0].get("type") == "text":
                     text = content[0]["text"].strip()
-                    # Parse JSON response
-                    # Strip markdown code fences if present
-                    if text.startswith("```"):
-                        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-                        if text.endswith("```"):
-                            text = text[:-3]
-                        text = text.strip()
+                    # Pull JSON out of the response. Sonnet usually obeys the
+                    # "no markdown" instruction but occasionally wraps in a
+                    # ```json fence or prepends a sentence — handle both. Try
+                    # fenced block first, then the first {...} balanced span.
+                    fence_match = re.search(
+                        r"```(?:json)?\s*\n(.*?)\n```", text, re.DOTALL
+                    )
+                    if fence_match:
+                        text = fence_match.group(1).strip()
+                    else:
+                        brace_match = re.search(r"\{.*\}", text, re.DOTALL)
+                        if brace_match:
+                            text = brace_match.group(0)
                     recommendations = json.loads(text)
                     log.info(f"AI recommendations received: {len(recommendations)} params")
                     return recommendations
