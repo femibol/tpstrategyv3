@@ -50,6 +50,18 @@ risk:
 # take_profit edge can't clear estimated round-trip cost by ratio×.
 # Ratio-based so cheap-stock momentum scalps with big % moves still
 # pass even when absolute bps cost looks scary.
+# Claude pre-trade hard gate. OFF by default — every signal that passes the
+# deterministic risk_manager + safety gates goes straight to the broker
+# without an AI veto. Live log analysis (2026-05-27) found the gate skipping
+# 100% of equity signals (267 SKIPs, 0 PROCEEDs in one session) because the
+# WR rule was reading dirty historical data: 6 of momentum's 10 "losses"
+# were `slippage_reject` artifacts already fixed in `2ec2325`, plus pre-fix
+# trail wicks fixed in `e6fcc34`. AI value lives in the batch paths instead
+# (auto-tuner crons, weekly review, post-trade insights every 5 trades) —
+# those stay on. Flip `enabled: true` to re-enable the hard gate.
+ai_pretrade:
+  enabled: false
+
 cost_model:
   enabled: true
   equity_fee_bps: 2.0           # IBKR Pro round-trip avg on order sizes this bot runs

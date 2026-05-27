@@ -2277,7 +2277,26 @@ class TradingEngine:
 
                         # CLAUDE PRE-TRADE VALIDATION: Ask Claude if we should
                         # take this trade based on recent performance and context.
+                        # Claude pre-trade hard gate is OFF by default — flip
+                        # `ai_pretrade.enabled: true` to turn it back on. Live
+                        # log analysis (2026-05-27) showed it skipping 100% of
+                        # equity signals (267 SKIPs, 0 PROCEEDs in one session)
+                        # because the WR rule was reading dirty historical data
+                        # — 6/10 momentum "losses" were `slippage_reject`
+                        # artifacts from the session-6 P&L bug already fixed in
+                        # `2ec2325`, plus pre-fix trail-stop wicks (also fixed
+                        # by `e6fcc34`). The gate has no measurement of whether
+                        # its SKIPs ever correlated with worse outcomes, the
+                        # 12-trade rolling window is too small for the rule it
+                        # enforces, and adding 1–5s of API latency to the
+                        # hot-path compounds with the signal queue's existing
+                        # 16–53s dwell (HANDOFF session 6). AI is better
+                        # applied batch (AutoTuner crons 12:30/16:30 ET,
+                        # WeeklyReview Sat, AIInsights every 5 trades) — those
+                        # paths stay on. This one gets gated off.
+                        ai_pretrade_cfg = self.config.settings.get("ai_pretrade", {})
                         if (sig.get("action") == "buy" and
+                                ai_pretrade_cfg.get("enabled", False) and
                                 self.ai_insights and self.ai_insights.is_available()):
                             try:
                                 claude_verdict = self._claude_pre_trade(sig)
