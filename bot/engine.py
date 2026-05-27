@@ -5808,12 +5808,26 @@ class TradingEngine:
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} above ${max_buy_price} ceiling — skipping")
             return
 
+        # Penny-runner pool: entry price falls in the configured band. These
+        # are squeeze plays (YMAT-style sub-$1 → $2+, BRAI-style $8 → $15+) so
+        # they need a wider stop than normal equity and a much wider trailing
+        # to ride spikes without choking on routine pullbacks.
+        _penny_min = self.config.risk_config.get("penny_runner_price_min", 0.20)
+        _penny_max = self.config.risk_config.get("penny_runner_price_max", 15.00)
+        _is_penny_runner = (
+            not self._is_crypto_symbol(symbol)
+            and _penny_min <= current_price <= _penny_max
+            and self.config.risk_config.get("max_penny_runner_positions", 0) > 0
+        )
+
         stop_loss_price = signal.get("stop_loss")
         if not stop_loss_price:
             # Use wider stops for crypto (more volatile)
             if self._is_crypto_symbol(symbol):
                 crypto_risk = self.config.settings.get("crypto", {}).get("risk", {})
                 stop_pct = crypto_risk.get("stop_loss_pct", 0.05)
+            elif _is_penny_runner:
+                stop_pct = self.config.risk_config.get("penny_runner_stop_loss_pct", 0.06)
             else:
                 stop_pct = self.config.stop_loss_pct
             stop_loss_price = current_price * (1 - stop_pct)  # Long-only: stop is always below
@@ -6279,30 +6293,32 @@ class TradingEngine:
             )
 
         # Slippage protection: compare fill price against BOTH live price AND signal price.
-        # The old check only compared fill vs live (both ~same), missing the real problem:
-        # signal at $46.82 → live at $49.55 → fill at $49.55 = no "slippage" detected.
-        # Now we also check fill vs original signal price to catch stale-signal entries.
+        # Directional for BUY — only fills ABOVE the reference count as slippage (chasing
+        # up). Fills BELOW are a discount, not an offense; the abs() version was
+        # auto-closing winning fills (RKLB 2026-05-22: signal $135.73 → fill $134.49,
+        # −0.91% treated as +0.91% reject for guaranteed −$7).
         if order.get("avg_fill_price") and action == "buy":
-            max_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
-            # Check 1: fill vs live price (traditional slippage)
-            live_slippage = abs(actual_price - current_price) / current_price if current_price > 0 else 0
-            # Check 2: fill vs original signal price (stale signal detection)
+            if outside_rth:
+                max_slippage = self.config.risk_config.get("max_slippage_pct_extended", 0.015)
+            else:
+                max_slippage = self.config.risk_config.get("max_slippage_pct", 0.008)
             signal_price = signal.get("price", 0)
-            signal_slippage = abs(actual_price - signal_price) / signal_price if signal_price > 0 else 0
-            worst_slippage = max(live_slippage, signal_slippage)
+            # Signed drift: positive = fill above reference = adverse for a BUY
+            live_drift = ((actual_price - current_price) / current_price) if current_price > 0 else 0
+            signal_drift = ((actual_price - signal_price) / signal_price) if signal_price > 0 else 0
+            worst_slippage = max(live_drift, signal_drift)
 
             if worst_slippage > max_slippage:
-                slippage_source = "signal" if signal_slippage > live_slippage else "market"
-                reference_price = signal_price if signal_slippage > live_slippage else current_price
+                slippage_source = "signal" if signal_drift > live_drift else "market"
                 log.warning(
-                    f"SLIPPAGE REJECT: {symbol} slippage {worst_slippage:.1%} exceeds "
-                    f"max {max_slippage:.1%} — closing position immediately | "
-                    f"Signal ${signal_price:.2f} → Live ${current_price:.2f} → Fill ${actual_price:.2f} "
-                    f"(worst vs {slippage_source}: {worst_slippage:.1%})"
+                    f"SLIPPAGE REJECT: {symbol} chased {worst_slippage:+.1%} above "
+                    f"{slippage_source} (max {max_slippage:.1%}, {'EXT' if outside_rth else 'RTH'}) — "
+                    f"closing position immediately | "
+                    f"Signal ${signal_price:.2f} → Live ${current_price:.2f} → Fill ${actual_price:.2f}"
                 )
                 self.notifier.risk_alert(
                     f"Slippage reject: {symbol} filled ${actual_price:.2f} "
-                    f"(signal ${signal_price:.2f}, slippage {worst_slippage:.1%}). "
+                    f"(signal ${signal_price:.2f}, slippage {worst_slippage:+.1%}). "
                     f"Closing immediately."
                 )
                 # Schedule immediate close (can't close inline, position not yet tracked)
@@ -6311,8 +6327,9 @@ class TradingEngine:
                 self._slippage_close_queue.append(symbol)
             elif worst_slippage > max_slippage * 0.5:
                 log.warning(
-                    f"SLIPPAGE WARNING: {symbol} slippage {worst_slippage:.1%} "
-                    f"(threshold {max_slippage:.1%}) | Signal ${signal_price:.2f} → Fill ${actual_price:.2f}"
+                    f"SLIPPAGE WARNING: {symbol} slippage {worst_slippage:+.1%} "
+                    f"(threshold {max_slippage:.1%}, {'EXT' if outside_rth else 'RTH'}) | "
+                    f"Signal ${signal_price:.2f} → Fill ${actual_price:.2f}"
                 )
 
         # Update current_price to actual fill price for position tracking
@@ -6365,8 +6382,11 @@ class TradingEngine:
                 "take_profit": take_profit_price,
                 "trailing_stop_pct": signal.get(
                     "trailing_stop_pct",
-                    self.config.risk_config.get("trailing_stop_pct", 0.02)
+                    self.config.risk_config.get("penny_runner_trailing_stop_pct", 0.08)
+                    if _is_penny_runner
+                    else self.config.risk_config.get("trailing_stop_pct", 0.02)
                 ),
+                "is_penny_runner": _is_penny_runner,
                 "confidence": signal.get("confidence", 0),
                 "strategy": strategy,
                 "order_id": order.get("order_id"),

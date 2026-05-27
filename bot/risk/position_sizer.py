@@ -58,6 +58,13 @@ class PositionSizer:
         self.crypto_suffixes = config.settings.get("crypto", {}).get(
             "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
         )
+        # Penny-runner pool: tight position cap so a -50% blowup on a lottery
+        # ticket doesn't sink the day. Detection is by entry price band.
+        self.penny_runner_max_position_pct = config.risk_config.get(
+            "penny_runner_max_position_size_pct", 0.05
+        )
+        self.penny_runner_price_min = config.risk_config.get("penny_runner_price_min", 0.20)
+        self.penny_runner_price_max = config.risk_config.get("penny_runner_price_max", 15.00)
 
     def update_tier(self, tier):
         """Update sizing parameters from scaling tier."""
@@ -263,8 +270,14 @@ class PositionSizer:
         # Available capital (after reserve)
         available = balance * (1 - self.reserve_pct)
 
-        # Crypto gets smaller position cap (more volatile)
-        position_pct = self.crypto_max_position_pct if self._is_crypto(symbol) else self.max_position_pct
+        # Per-class position cap: crypto smaller (volatile), penny-runner smallest
+        # (lottery-ticket risk). Falls back to standard equity cap otherwise.
+        if self._is_crypto(symbol):
+            position_pct = self.crypto_max_position_pct
+        elif self.penny_runner_price_min <= price <= self.penny_runner_price_max:
+            position_pct = self.penny_runner_max_position_pct
+        else:
+            position_pct = self.max_position_pct
 
         # Max position value scales with account size
         max_position = min(

@@ -57,6 +57,15 @@ class RiskManager:
         self.max_low_float_positions = self.risk.get(
             "max_low_float_positions", 0
         )
+        # Penny runner pool — reserved slots for sub-$2 squeeze plays
+        # (YMAT $0.23 → $2.30-style 10x candidates). Detection is by
+        # entry price falling in [penny_runner_price_min, penny_runner_price_max].
+        # Disabled when max=0; the price-band check still runs but no pool gate fires.
+        self.max_penny_runner_positions = self.risk.get(
+            "max_penny_runner_positions", 0
+        )
+        self.penny_runner_price_min = self.risk.get("penny_runner_price_min", 0.20)
+        self.penny_runner_price_max = self.risk.get("penny_runner_price_max", 2.00)
         self.max_position_pct = self.risk.get("max_position_size_pct", 0.15)
         self.risk_per_trade = self.risk.get("risk_per_trade_pct", 0.01)
         self.min_volume = self.risk.get("min_volume", 50000)
@@ -158,6 +167,13 @@ class RiskManager:
             return False, f"Max positions reached ({self.max_positions})"
         _is_crypto_for_cap = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
         _is_low_float_for_cap = (signal.get("strategy") == "low_float_catalyst")
+        _is_penny_for_cap = (
+            not _is_crypto_for_cap
+            and not _is_low_float_for_cap
+            and price > 0
+            and self.penny_runner_price_min <= price <= self.penny_runner_price_max
+            and self.max_penny_runner_positions > 0
+        )
         if _is_low_float_for_cap and self.max_low_float_positions > 0:
             low_float_held = sum(
                 1 for p in positions.values()
@@ -167,6 +183,17 @@ class RiskManager:
                 return False, (
                     f"Low-float sub-cap reached ({low_float_held}/"
                     f"{self.max_low_float_positions})"
+                )
+        elif _is_penny_for_cap:
+            penny_held = sum(
+                1 for p in positions.values()
+                if isinstance(p, dict)
+                and self.penny_runner_price_min <= (p.get("entry_price") or 0) <= self.penny_runner_price_max
+            )
+            if penny_held >= self.max_penny_runner_positions:
+                return False, (
+                    f"Penny-runner sub-cap reached ({penny_held}/"
+                    f"{self.max_penny_runner_positions})"
                 )
         elif _is_crypto_for_cap and self.max_crypto_positions < self.max_positions:
             crypto_held = sum(
@@ -213,13 +240,20 @@ class RiskManager:
                 if age_seconds > max_signal_age:
                     return False, f"Stale signal: {age_seconds:.0f}s old (max {max_signal_age}s)"
 
-        # --- Rule 4: Min price (skip for options + crypto) ---
+        # --- Rule 4: Min price (skip for options + crypto + penny pool) ---
         # Crypto routinely trades sub-$1 (MATIC $0.09, FLOKI/PEPE/BONK/SHIB
         # in the micro-cents). The $0.50 floor exists to keep equity penny
         # junk out — it has no meaning for crypto where price is just a
-        # function of supply.
+        # function of supply. Penny-pool entries have their own price band
+        # (penny_runner_price_min/max) so they can enter below the universe floor.
         _is_crypto_sym = any(symbol.upper().endswith(s) for s in self.crypto_suffixes)
-        if signal.get("asset_type") != "option" and not _is_crypto_sym and price > 0 and price < self.min_price:
+        if (
+            signal.get("asset_type") != "option"
+            and not _is_crypto_sym
+            and not _is_penny_for_cap
+            and price > 0
+            and price < self.min_price
+        ):
             return False, f"Price ${price:.2f} below minimum ${self.min_price}"
 
         # --- Rule 5: Max price (skip for options + crypto) ---

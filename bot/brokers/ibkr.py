@@ -112,10 +112,21 @@ class IBKRBroker(BaseBroker):
 
         # Track symbols that fail contract qualification (e.g. delisted)
         # Prevents repeated error 200 "No security definition" requests
-        # Reset every 2 hours to retry transiently-failed symbols
+        # TTL raised 2h → 24h: delisted symbols stay delisted, and the 2h
+        # reset was burning ~80s per cycle re-qualifying 42 dead contracts
+        # (observed 2026-05-26: SLOW CYCLE 200s+ traced to blacklist churn).
         self._invalid_symbols = set()
         self._invalid_symbols_reset_time = time.time()
-        self._invalid_symbols_ttl = 7200  # 2 hours (avoid retrying delisted symbols too often)
+        self._invalid_symbols_ttl = 86400  # 24 hours
+
+        # Qualified-contract cache. ib_async's qualifyContracts() round-trips
+        # IBKR every call (~500ms-2s per symbol), and previously we re-qualified
+        # on every historical-bar fetch — for a 90-symbol universe refreshing
+        # every 3 min that's ~90 wasted IBKR round-trips per cycle, the dominant
+        # source of slow update_data. Cache the qualified Stock object once;
+        # symbol→Stock entries live for the session and get invalidated only
+        # on the blacklist reset above.
+        self._qualified_contracts = {}
 
         # News callback (set by subscribe_news)
         self._news_callback = None
@@ -999,26 +1010,34 @@ class IBKRBroker(BaseBroker):
             if self._invalid_symbols:
                 log.info(f"Resetting {len(self._invalid_symbols)} blacklisted symbols for retry")
             self._invalid_symbols.clear()
+            # Drop qualified-contract cache too: a delisted-then-restored symbol
+            # may have a fresh conId, and we want to re-qualify on the retry.
+            self._qualified_contracts.clear()
             self._invalid_symbols_reset_time = now
 
         if symbol in self._invalid_symbols:
             return None
 
         try:
-            contract = Stock(symbol, "SMART", "USD")
-            try:
-                self.ib.qualifyContracts(contract)
-            except Exception as e:
-                # qualifyContracts can raise on network errors or if IBKR
-                # returns error 200 synchronously.  Don't blacklist — could
-                # be a transient failure.  Let caller fall through to Polygon.
-                log.debug(f"qualifyContracts failed for {symbol}: {e}")
-                return None
+            contract = self._qualified_contracts.get(symbol)
+            if contract is None:
+                contract = Stock(symbol, "SMART", "USD")
+                try:
+                    self.ib.qualifyContracts(contract)
+                except Exception as e:
+                    # qualifyContracts can raise on network errors or if IBKR
+                    # returns error 200 synchronously.  Don't blacklist — could
+                    # be a transient failure.  Let caller fall through to Polygon.
+                    log.debug(f"qualifyContracts failed for {symbol}: {e}")
+                    return None
 
-            if contract.conId == 0:
-                self._invalid_symbols.add(symbol)
-                log.info(f"No security definition for '{symbol}' — blacklisted, skipping bars")
-                return None
+                if contract.conId == 0:
+                    self._invalid_symbols.add(symbol)
+                    log.info(f"No security definition for '{symbol}' — blacklisted, skipping bars")
+                    return None
+
+                # Cache the qualified contract for the rest of the session.
+                self._qualified_contracts[symbol] = contract
 
             bars = self.ib.reqHistoricalData(
                 contract,
@@ -1037,73 +1056,6 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.error(f"Failed to get historical bars for {symbol}: {e}")
             return None
-
-    @_on_worker
-    def get_historical_bars_batch(self, symbols, duration="1 D",
-                                  bar_size="5 mins", concurrency=4):
-        """Fetch historical bars for many symbols in parallel via ib_async's
-        async API.
-
-        Stays single-threaded — the call still executes on the dedicated
-        worker thread (same one that owns the IB() event loop) — but uses
-        asyncio.gather + a semaphore to keep multiple historical-data
-        requests in flight on the SAME event loop. IBKR pacing limits
-        (60 req / 10 min rolling, ~50 req/sec instantaneous) are respected
-        via the semaphore default of 4.
-
-        Returns: {symbol: DataFrame|None}. Symbols absent from the dict
-        were not attempted (already in the invalid-symbol blacklist).
-        Symbols mapped to None failed individually — caller should fall
-        back to alternate data sources (Polygon, Yahoo).
-        """
-        if not self.is_connected() or not symbols:
-            return {}
-
-        # Same invalid-symbol reset cadence as the single-symbol path
-        now = time.time()
-        if now - self._invalid_symbols_reset_time > self._invalid_symbols_ttl:
-            if self._invalid_symbols:
-                log.info(f"Resetting {len(self._invalid_symbols)} blacklisted symbols for retry")
-            self._invalid_symbols.clear()
-            self._invalid_symbols_reset_time = now
-
-        work = [s for s in symbols if s not in self._invalid_symbols]
-        if not work:
-            return {}
-
-        async def _fetch_one(sem, symbol):
-            async with sem:
-                try:
-                    contract = Stock(symbol, "SMART", "USD")
-                    await self.ib.qualifyContractsAsync(contract)
-                    if contract.conId == 0:
-                        self._invalid_symbols.add(symbol)
-                        return symbol, None
-                    bars = await self.ib.reqHistoricalDataAsync(
-                        contract,
-                        endDateTime="",
-                        durationStr=duration,
-                        barSizeSetting=bar_size,
-                        whatToShow="TRADES",
-                        useRTH=True,
-                        formatDate=1,
-                    )
-                    return symbol, (util.df(bars) if bars else None)
-                except Exception as e:
-                    log.debug(f"batch bar fetch {symbol}: {e}")
-                    return symbol, None
-
-        async def _gather():
-            sem = asyncio.Semaphore(concurrency)
-            tasks = [_fetch_one(sem, s) for s in work]
-            results = await asyncio.gather(*tasks, return_exceptions=False)
-            return dict(results)
-
-        try:
-            return self._ib_loop.run_until_complete(_gather())
-        except Exception as e:
-            log.error(f"batch bar fetch failed entirely: {e}")
-            return {}
 
     # =========================================================================
     # Real-Time Streaming Market Data

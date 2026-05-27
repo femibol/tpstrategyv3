@@ -23,10 +23,16 @@ capital:
 risk:
   long_only: true                   # Only allow bullish (buy) entries - matches TradersPost setting
   max_position_size_pct: 0.20     # Max 20% of capital per position — spec: concentrated but controlled
-  max_positions: 15               # 10 normal (6 equity + 4 crypto budget) + 5 reserved for low_float_catalyst
+  max_positions: 18               # 10 normal (6 equity + 4 crypto budget) + 5 reserved low_float + 3 reserved penny_runner
   max_equity_positions: 6         # Per-class sub-cap; 4 slots always reserved for crypto when equity fills
   max_crypto_positions: 6         # Per-class sub-cap; 4 slots always reserved for equity when crypto fills
   max_low_float_positions: 5      # Reserved pool for low_float_catalyst — high-asymmetry catalyst plays only
+  max_penny_runner_positions: 3   # Reserved pool for low-priced squeeze plays (YMAT $0.23→$2.30, BRAI $8→$15)
+  penny_runner_price_min: 0.20    # Pool entry floor — below this is too illiquid even for squeezes
+  penny_runner_price_max: 15.00   # Pool entry ceiling — covers BRAI-style $8 starts that run to $15+
+  penny_runner_max_position_size_pct: 0.05   # Per-position cap: 5% of capital (vs 20% normal) — small bets, lottery-ticket math
+  penny_runner_stop_loss_pct: 0.06           # 6% initial stop — wider than 3% std to accommodate volatility, tight enough to bound loss
+  penny_runner_trailing_stop_pct: 0.08       # 8% trailing — ride spikes without choking on normal pullbacks (vs 1.5% std)
   risk_per_trade_pct: 0.01        # Risk 1% per trade (~$470) — spec: never risk more than 1%
   kelly_max_mult: 2.0             # Per-strategy Kelly ceiling — full aggression: a proven strategy sizes up to 2.0x base (capped at 2% by the risk ceiling)
   max_universe_symbols: 90        # Cap on symbols given a bar refresh per cycle — positions+crypto always kept, equity-discovery tail trimmed (keeps update_data fast so position monitoring isn't blocked)
@@ -34,10 +40,24 @@ risk:
   stop_loss_pct: 0.03             # 3% stop loss fallback
   trailing_stop_pct: 0.015        # 1.5% trailing stop — aggressive, ratchets up every 3 seconds
   take_profit_pct: 999.0          # NO CAP — trailing stop is the only exit for winners
-  max_slippage_pct: 0.008                  # Post-fill: fill within 0.8% of signal — small caps have wider spreads
+  max_slippage_pct: 0.008                  # Post-fill RTH: fill within 0.8% of signal (BUY: adverse direction only — fills below signal are a discount, not slippage)
+  max_slippage_pct_extended: 0.015         # Post-fill extended hours: 1.5% — thinner books, catalyst-driven moves routinely fill 0.5–1% past signal
   max_spread_pct: 0.02                     # Max 2% bid-ask spread — reject illiquid names BEFORE placing order
   max_signal_deviation_pct: 0.05           # Pre-order RTH: signal-vs-live drift cap (5% matches risk_manager.Rule 6)
   max_signal_deviation_pct_extended: 0.12  # Pre-order extended hours: 12% — pre-market gappers routinely drift 8-12%
+
+# Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
+# take_profit edge can't clear estimated round-trip cost by ratio×.
+# Ratio-based so cheap-stock momentum scalps with big % moves still
+# pass even when absolute bps cost looks scary.
+cost_model:
+  enabled: true
+  equity_fee_bps: 2.0           # IBKR Pro round-trip avg on order sizes this bot runs
+  crypto_fee_bps: 30.0          # TradersPost → Alpaca crypto taker ~15bp × 2 sides
+  equity_spread_bps_default: 5.0
+  crypto_spread_bps_default: 10.0
+  spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
+  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
 
   # --- New-entry safety gates (block buys, never block exits) ---
   max_total_trades_per_day: 25      # Hard cap on equity entries per day across all strategies (0 = disabled)
@@ -103,7 +123,7 @@ risk:
     trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
     buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
   min_volume: 200000              # 200K floor so sub-$3 low-float runners (RPGL, FCHL, BIYA tier) get through. Spread-safety still enforced per-strategy.
-  min_price: 0.20                 # Floor: $0.20 — penny tier enabled for momentum_runner/low_float_catalyst/prebreakout only
+  min_price: 0.50                 # Floor: $0.50 — admits proper low-floats while excluding true penny junk
   scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
   # Bot rides runners past $500 if uptrend is confirmed
   falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
@@ -159,19 +179,6 @@ risk:
     max_net_exposure_pct: 1.00      # Max 100% net exposure (longs - |shorts|) / net liq
     max_loss_per_position_pct: 0.08 # Force-close any position down > 8% from entry
     monitor_all_broker_positions: true  # Track ALL broker positions (including shorts) for risk monitoring
-
-# Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
-# take_profit edge can't clear estimated round-trip cost by ratio×.
-# Ratio-based so cheap-stock momentum scalps with big % moves still
-# pass even when absolute bps cost looks scary.
-cost_model:
-  enabled: true
-  equity_fee_bps: 2.0           # IBKR Pro round-trip avg on order sizes this bot runs
-  crypto_fee_bps: 30.0          # TradersPost → Alpaca crypto taker ~15bp × 2 sides
-  equity_spread_bps_default: 5.0
-  crypto_spread_bps_default: 10.0
-  spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
-  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
 
 # --- Trading Schedule ---
 schedule:
@@ -284,18 +291,6 @@ crypto:
   # on trailing-stop exits because their ATR is large relative to entry size.
   # Revisit if the trailing-stop gate fix (engine.py:2755) reduces the leak
   # enough that these are net-profitable on the new behavior.
-  # CoinGecko top-volume scanner (replaces the hand-maintained list as the
-  # *primary* source when enabled). Below is OFF by default — flip to true
-  # to pick up runners that aren't yet in `symbols` (WLD, DRIFT, JTO, ONDO,
-  # ENA, W, etc. — the 2025/26 names not captured at the last hand review).
-  # See bot/data/crypto_scanner.py. The scanner UNIONS its output with the
-  # static `symbols` list below, so the curated favorites are never dropped
-  # by a ranking change. On API failure the static list alone is used —
-  # outages never disarm the crypto sleeve. Cached 24h on disk
-  # (data/crypto_scanner_cache.json).
-  dynamic_universe:
-    enabled: false                  # flip to true to enable the scanner
-    limit: 50                       # top-N by 24h volume (excluding stables / wrapped)
   symbols: [
     "AAVE-USD", "ADA-USD", "ALGO-USD", "APT-USD", "ARB-USD", "ATOM-USD",
     "AVAX-USD", "BONK-USD", "BTC-USD", "COMP-USD", "CRV-USD",
@@ -341,16 +336,6 @@ data:
                                   # separate _cache_ttl_1m (5s), unaffected. The previous 10s
                                   # value plus IBKR pacing (~12s/historical req for 95 symbols)
                                   # meant every cycle was a 100% cache miss → 19-min refetch.
-  parallel_fetch: true            # Fetch IBKR historical bars in parallel per cycle via
-                                  # reqHistoricalDataAsync + asyncio.gather (stays on the
-                                  # single ib_async worker thread, so no thread-safety risk).
-                                  # 20 sequential 6.5s fetches (~130s) → ~5 rounds × 6.5s
-                                  # (~32s) at concurrency=4. Set false to fall back to the
-                                  # original per-symbol serial path if anything misbehaves.
-  parallel_fetch_concurrency: 4   # Max in-flight historical-data requests. IBKR pacing
-                                  # is 60 req / 10-min rolling per client + ~50 req/sec
-                                  # instantaneous — 4 leaves plenty of headroom for the
-                                  # rest of the worker's traffic (orders, qualifies, news).
 
 # --- Top Gainers Scanner ---
 # Catches the biggest % movers with NO price cap — finds runners at any price.
@@ -359,18 +344,22 @@ data:
 top_gainers:
   enabled: true
   limit: 50                          # Max gainers to track per scan
+  # Price floor lowered from $2.00 → $0.20 to feed the penny_runner pool
+  # (YMAT-style sub-$1 squeezes). Penny pool has its own 5% size cap + 6% stop,
+  # so admitting them at the scanner layer doesn't raise per-trade risk above
+  # normal. Volume floors raised in parallel to keep ghost-volume penny junk out.
   premarket:
-    min_volume: 25000                # 25K — raised from 10K, need enough liquidity to exit
-    min_change_pct: 5.0              # 5%+ gap to qualify (raised from 3% — skip weak gaps)
-    min_price: 0.20                  # Penny tier admitted; strategy-level floors still apply
+    min_volume: 100000               # 100K — penny floor demands real volume to qualify (raised from 25K)
+    min_change_pct: 10.0             # 10%+ gap — only real squeeze candidates (raised from 5%)
+    min_price: 0.20                  # Floor matches penny_runner_price_min
   regular:
-    min_volume: 100000               # 100K — standard liquidity
-    min_change_pct: 5.0              # 5%+ intraday move (the real runners)
-    min_price: 0.20                  # Penny tier admitted; strategy-level floors still apply
+    min_volume: 300000               # 300K — RTH penny needs serious flow (raised from 100K)
+    min_change_pct: 10.0             # 10%+ intraday — already running, not at the lows
+    min_price: 0.20                  # Floor matches penny_runner_price_min
   postmarket:
-    min_volume: 75000                # 75K — raised from 50K, need real volume not ghosts
-    min_change_pct: 5.0              # 5%+ after-hours move (raised from 3% — skip noise)
-    min_price: 0.20                  # Penny tier admitted; strategy-level floors still apply
+    min_volume: 150000               # 150K — postmarket penny needs proven flow (raised from 75K)
+    min_change_pct: 10.0             # 10%+ AH move — real news, not noise
+    min_price: 0.20                  # Floor matches penny_runner_price_min
 
 # --- Execution ---
 execution:
