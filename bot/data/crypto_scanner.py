@@ -169,3 +169,43 @@ def top_volume_symbols(limit: int = 50, force_refresh: bool = False) -> list[str
             f"({', '.join(symbols[:5])}, …)"
         )
         return symbols
+
+
+def new_entrants(limit: int = 50) -> list[str]:
+    """Symbols in the current top-``limit`` that weren't in the previous
+    snapshot. These are the earliest scanner-detectable signal of fresh
+    attention — typically the first sign a name is starting to move.
+
+    Compares the live ``top_volume_symbols(limit)`` against the previous
+    snapshot we persisted at the last refresh boundary. Returns an empty
+    list if there's no previous snapshot yet (first run) so callers can
+    treat "no entrants" as a normal no-op, not an error.
+    """
+    if limit <= 0:
+        return []
+    current = top_volume_symbols(limit=limit)
+    if not current:
+        return []
+    with _lock:
+        cache = _load_cache()
+        prev_entry = cache.get("previous_top_volume", {})
+        prev = set(prev_entry.get("symbols", []))
+        top_entry = cache.get("top_volume", {})
+        top_ts = top_entry.get("ts", 0)
+        # Roll the snapshot forward only when the top_volume cache itself
+        # has rotated — otherwise repeated calls keep stamping "previous =
+        # current" and new_entrants returns [] forever. Rotate when the
+        # stored top_ts differs from the previous snapshot's recorded
+        # source_ts.
+        prev_source_ts = prev_entry.get("source_ts", 0)
+        if top_ts and top_ts != prev_source_ts:
+            cache["previous_top_volume"] = {
+                "symbols": current,
+                "source_ts": top_ts,
+            }
+            _save_cache()
+        if not prev:
+            # First run after a fresh boot — no baseline yet, can't compute
+            # entrants. Return [] and let the next refresh cycle establish it.
+            return []
+        return [s for s in current if s not in prev]
