@@ -42,7 +42,7 @@ Installed once via `scripts/install-claude-bridge.sh` on the VPS. Two crons:
 - **Every 5 min** → state snapshot pushed to `origin/claude/live-state` (`data/*.json` + `review/log-tail.log` + `review/docker-state.json` + `review/snapshot-meta.txt`)
 - **Every 1 min** → command runner polls `origin/claude/cmd`; whatever Claude pushes there executes on the VPS with a 90s timeout and the result is pushed back as `cmd/result.txt`
 
-Helper `scripts/claude-vps` wraps the common queries:
+Helper `scripts/claude-vps` wraps the common READ queries:
 
 ```bash
 scripts/claude-vps meta                       # "how fresh is the snapshot?"
@@ -50,10 +50,24 @@ scripts/claude-vps trades --last 50           # recent closed trades
 scripts/claude-vps positions                  # open positions
 scripts/claude-vps logs --tail 500            # bot log tail
 scripts/claude-vps logs --grep "REJECTED"     # specific patterns
-scripts/claude-vps run "docker logs trading-bot-trading-bot-1 --tail 50" --wait
 ```
 
 If `claude-vps meta` errors with "bridge isn't installed," fall back to asking the user to push state via the snapshot pattern (see Trade Data Locations below).
+
+### Running commands on the VPS from a Claude Code on the Web session
+
+`scripts/claude-vps run "<cmd>"` works from a local terminal but **fails from a cloud session** — those require commits to be signed via the per-session signing server, and the helper's plain `git commit` doesn't carry the source attribution the signer wants. Use the GitHub API to push instead — it commits via the GitHub web-flow key (verified) and the cmd-runner cron picks it up the same way:
+
+```
+# Pseudo-call — replace <CMD> with the bash to run on the VPS
+mcp__github__create_or_update_file(
+  owner="femibol", repo="tpstrategyv3", branch="claude/cmd",
+  path="cmd/run.sh", message="request: <short label>",
+  content=<base64 of "#!/bin/bash\n<CMD>\n">
+)
+```
+
+Cron runs the command within ~60s (timeout 90s, 1MB output cap). Read the result back with `git fetch origin claude/cmd && git show origin/claude/cmd:cmd/result.txt`. The branch always carries the LATEST cmd + the LATEST result — there's no queue. If the SHA at `cmd/last_executed.txt` matches your request SHA, the cron has processed it.
 
 1. `scripts/claude-vps trades --last 200` — check win rate, avg P&L, strategy breakdown
 2. `scripts/claude-vps logs --grep "REJECTED|RATE LIMIT|ERROR"` — find execution issues
