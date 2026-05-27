@@ -169,6 +169,12 @@ services:
       DASHBOARD_HOST: 0.0.0.0
       DASHBOARD_PORT: 5000
       DASHBOARD_SECRET_KEY: ${DASHBOARD_SECRET_KEY:-change-me}
+
+      # Suppress .pyc generation. With ./bot bind-mounted below, Python
+      # would otherwise scatter __pycache__/ dirs across the host tree.
+      # .gitignore covers them but the noise is annoying; this just
+      # turns it off — runtime cost is negligible.
+      PYTHONDONTWRITEBYTECODE: "1"
     # No ports: section — see network_mode comment above. Dashboard
     # 5000 is exposed on ib-gateway's port mapping since we share its
     # network namespace.
@@ -185,6 +191,18 @@ services:
       # wins, the auto-tuner's writes are invisible, and every config
       # tweak needs a docker cp workaround.
       - ./config:/app/config
+      # Bind-mount bot source — same reasoning. With the image-baked
+      # copy winning, every code change (a single-line trail-gate fix,
+      # a new strategy, an engine tweak) needs `docker compose up -d
+      # --build trading-bot` even though the change touched 5 lines of
+      # Python. Mount the host tree directly: `docker restart
+      # trading-bot-trading-bot-1` picks up the new code on the next
+      # process boot. Pairs with PYTHONDONTWRITEBYTECODE=1 above so the
+      # mount stays clean of __pycache__/ scatter. The auto-deploy cron
+      # (./deploy/auto-deploy.sh) can drop its --build for a faster
+      # cycle, though leaving --build is harmless (the rebuild just
+      # has nothing to do).
+      - ./bot:/app/bot
       # Read-write access to Docker socket so the bot can self-heal by
       # restarting the ib-gateway container when its API wedges (TCP open
       # but handshake dead). Gated by safety caps in engine.py:
