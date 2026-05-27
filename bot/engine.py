@@ -5545,9 +5545,13 @@ class TradingEngine:
                         )
                         return
                 elif fail_open:
+                    # "PASS" not "SKIP" — this branch ALLOWS the trade through.
+                    # Previous "FALLING KNIFE SKIP" wording read like the
+                    # guard was rejecting the entry, which led to a false-
+                    # alarm investigation on the crypto path 2026-05-27.
                     log.info(
-                        f"FALLING KNIFE SKIP: {symbol} no quote in extended/momentum context "
-                        f"(scanner already proved direction) | Strategy: {strategy}"
+                        f"FALLING KNIFE PASS: {symbol} no quote in extended/crypto/manual "
+                        f"context — fail-open, scanner/source vetted direction | Strategy: {strategy}"
                     )
                 else:
                     log.warning(
@@ -5811,9 +5815,14 @@ class TradingEngine:
                     f"target=${signal.get('take_profit', 0):.2f}"
                 )
 
-        # Price floor filter — no sub-$0.50 junk
+        # Price floor filter — no sub-$0.50 junk for equity.
+        # Crypto exempt: SEI is $0.07, BONK / FLOKI / SHIB / PEPE / WIF are
+        # all sub-dollar legitimate pairs. The $0.50 floor is an equity
+        # penny-stock guard, not an asset-class assertion. Mirror of the
+        # crypto exemption on the price ceiling below.
         min_price = self.config.settings.get("risk", {}).get("min_price", 0.50)
-        if action == "buy" and current_price < min_price:
+        if (action == "buy" and current_price < min_price
+                and not self._is_crypto_symbol(symbol)):
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} below ${min_price} floor")
             return
 

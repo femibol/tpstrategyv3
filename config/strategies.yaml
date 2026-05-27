@@ -50,7 +50,7 @@ mean_reversion:
   # filter every losing symbol). See HANDOFF for the planned pagination follow-up.
   crypto_trend_filter_enabled: true
   crypto_trend_lookback_bars: 864    # 3d × 24h × 12 bars/h on 5m (within the 1000-bar Binance cap)
-  crypto_trend_min_pct: 0.10         # require ≥ +10% over the lookback window
+  crypto_trend_min_pct: 0.05         # require ≥ +5% over the lookback window (was +10%, too strict in flat tape — live diag 2026-05-27 showed 33-36/42 names blocked at 10% with strongest at ICP +9.9% / GRT +8.7% / TIA +7.7%; per HANDOFF session 8 pre-approved fallback)
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5
