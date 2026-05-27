@@ -51,12 +51,37 @@ for f in trade_history.json signal_log.json positions_state.json; do
 done
 
 # Log tail — capacity-bound at 20k lines (~2MB) so the branch doesn't bloat.
-if [ -f "$REPO/logs/trading.log" ]; then
-    tail -n 20000 "$REPO/logs/trading.log" > review/log-tail.log
+# Try a couple of common paths so a deployment that writes logs to a
+# non-default location still gets captured. Write a diagnostic if no path
+# matches so the next session sees WHY the tail is empty instead of an
+# invisible failure.
+LOG_PATH=""
+for candidate in "$REPO/logs/trading.log" "/var/log/trading-bot/trading.log"; do
+    if [ -f "$candidate" ] && [ -r "$candidate" ]; then
+        LOG_PATH="$candidate"
+        break
+    fi
+done
+if [ -n "$LOG_PATH" ]; then
+    tail -n 20000 "$LOG_PATH" > review/log-tail.log
+else
+    {
+        echo "no readable log file found. searched:"
+        echo "  - $REPO/logs/trading.log"
+        echo "  - /var/log/trading-bot/trading.log"
+        echo "host dir listing:"
+        ls -la "$REPO/logs/" 2>&1 || echo "  ($REPO/logs/ missing)"
+    } > review/log-tail.log
 fi
 
-# Container state — single source of truth for "is anything wedged".
-docker compose ps --format json > review/docker-state.json 2>/dev/null || true
+# Container state — single source of truth for "is anything wedged". MUST
+# run from the real repo dir (docker compose needs the compose file in cwd),
+# not the snapshot worktree which only has source files at HEAD — there's
+# no docker-compose.yml in the worktree, so the previous version of this
+# line silently produced an empty file.
+( cd "$REPO" && docker compose ps --format json ) > review/docker-state.json 2>&1 || true
+[ -s review/docker-state.json ] || \
+    echo '{"error":"docker compose ps returned empty"}' > review/docker-state.json
 
 # Snapshot metadata — useful for "how stale is this?" checks at the other end.
 {
