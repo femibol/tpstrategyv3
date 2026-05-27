@@ -1,0 +1,176 @@
+#!/bin/bash
+# Helper for Claude sessions to use the VPS bridge installed by
+# scripts/install-claude-bridge.sh.
+#
+# Subcommands:
+#   state                          — pull latest state snapshot (data/ + log tail)
+#   trades [--last N]              — pretty-print recent closed trades
+#   positions                      — pretty-print open positions
+#   logs [--tail N] [--grep PAT]   — show recent bot log lines
+#   meta                           — when was the last snapshot pushed?
+#   run "<command>" [--wait]       — execute a command on the VPS via the
+#                                    claude/cmd branch. With --wait, poll
+#                                    until the result is back (60-180s).
+#
+# All commands operate on origin/claude/live-state (read) or origin/claude/cmd
+# (write+poll). Requires the bridge to be installed on the VPS — if not, the
+# fetches will fail with "couldn't find remote ref" and the script bails out.
+set -euo pipefail
+
+STATE_BRANCH=claude/live-state
+CMD_BRANCH=claude/cmd
+
+_have_remote() {
+    git ls-remote --exit-code origin "$1" >/dev/null 2>&1
+}
+
+_ensure_state() {
+    if ! _have_remote "$STATE_BRANCH"; then
+        echo "ERROR: origin/$STATE_BRANCH doesn't exist." >&2
+        echo "Bridge isn't installed on the VPS yet. Run on the VPS as root:" >&2
+        echo "  sudo /opt/trading-bot/scripts/install-claude-bridge.sh" >&2
+        exit 2
+    fi
+    git fetch origin "$STATE_BRANCH" >/dev/null 2>&1
+}
+
+cmd_state() {
+    _ensure_state
+    echo "✓ Snapshot ref: origin/$STATE_BRANCH"
+    git show "origin/$STATE_BRANCH:review/snapshot-meta.txt" 2>/dev/null \
+      | sed 's/^/    /'
+}
+
+cmd_trades() {
+    _ensure_state
+    local last=20
+    [ "${1:-}" = "--last" ] && last="$2"
+    git show "origin/$STATE_BRANCH:data/trade_history.json" \
+      | python3 -c "
+import json, sys
+trades = json.load(sys.stdin)[-$last:]
+for t in trades:
+    print(f\"{t.get('exit_time','?')[:19]}  {t.get('symbol','?'):<10s}  {t.get('strategy','?'):<18s}  {t.get('reason','?'):<22s}  pnl=\${t.get('pnl',0):+7.2f}\")
+"
+}
+
+cmd_positions() {
+    _ensure_state
+    git show "origin/$STATE_BRANCH:data/positions_state.json" 2>/dev/null \
+      | python3 -m json.tool || echo "(no positions_state.json in snapshot)"
+}
+
+cmd_logs() {
+    _ensure_state
+    local tail_n=200
+    local grep_pat=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --tail) tail_n="$2"; shift 2 ;;
+            --grep) grep_pat="$2"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+    if [ -n "$grep_pat" ]; then
+        git show "origin/$STATE_BRANCH:review/log-tail.log" \
+          | grep -E "$grep_pat" | tail -n "$tail_n"
+    else
+        git show "origin/$STATE_BRANCH:review/log-tail.log" | tail -n "$tail_n"
+    fi
+}
+
+cmd_meta() {
+    _ensure_state
+    local age
+    age=$(git log -1 --format=%cr "origin/$STATE_BRANCH")
+    echo "Last snapshot: $age"
+    git show "origin/$STATE_BRANCH:review/snapshot-meta.txt" 2>/dev/null \
+      | sed 's/^/    /'
+}
+
+cmd_run() {
+    local command="$1"
+    local wait_for_result=false
+    [ "${2:-}" = "--wait" ] && wait_for_result=true
+
+    # Build a request commit on a worktree so we don't dirty the current branch.
+    local req_tree
+    req_tree=$(mktemp -d)
+    git worktree add --quiet -B "$CMD_BRANCH" "$req_tree" origin/main >/dev/null 2>&1 || {
+        # Branch may already exist locally — reuse.
+        git worktree add --quiet "$req_tree" "$CMD_BRANCH" >/dev/null 2>&1
+    }
+    trap "git worktree remove --force '$req_tree' >/dev/null 2>&1 || true" EXIT
+
+    (
+        cd "$req_tree"
+        git fetch origin "$CMD_BRANCH" >/dev/null 2>&1 && \
+            git reset --hard "origin/$CMD_BRANCH" >/dev/null 2>&1 || true
+        mkdir -p cmd
+        printf '%s\n' "$command" > cmd/run.sh
+        chmod +x cmd/run.sh
+        git add cmd/run.sh
+        git -c user.email=claude@session -c user.name=claude-cli \
+            commit --quiet -m "request: $(echo "$command" | head -c 60)"
+        git push --quiet origin "$CMD_BRANCH"
+    )
+    local request_sha
+    request_sha=$(git -C "$req_tree" rev-parse HEAD)
+    echo "✓ Request pushed: $request_sha"
+    echo "  Cron polls every 60s; result arrives in 60-120s."
+
+    if ! $wait_for_result; then
+        echo "  Run \`scripts/claude-vps fetch-result\` later to retrieve."
+        return 0
+    fi
+
+    echo "  Waiting for result..."
+    local elapsed=0
+    while [ $elapsed -lt 180 ]; do
+        sleep 15
+        elapsed=$((elapsed + 15))
+        git fetch origin "$CMD_BRANCH" >/dev/null 2>&1 || continue
+        local last_exec
+        last_exec=$(git show "origin/$CMD_BRANCH:cmd/last_executed.txt" 2>/dev/null || echo "")
+        if [ "$last_exec" = "$request_sha" ]; then
+            echo "--- result ($(date -u +%FT%TZ)) ---"
+            git show "origin/$CMD_BRANCH:cmd/result.txt"
+            return 0
+        fi
+    done
+    echo "TIMEOUT after ${elapsed}s. Check VPS cron: tail /var/log/claude-cmd-runner.log" >&2
+    return 3
+}
+
+case "${1:-}" in
+    state) cmd_state ;;
+    trades) shift; cmd_trades "$@" ;;
+    positions) cmd_positions ;;
+    logs) shift; cmd_logs "$@" ;;
+    meta) cmd_meta ;;
+    run)
+        shift
+        [ $# -ge 1 ] || { echo "usage: claude-vps run \"<command>\" [--wait]" >&2; exit 1; }
+        cmd_run "$@"
+        ;;
+    fetch-result)
+        git fetch origin "$CMD_BRANCH" >/dev/null 2>&1
+        echo "--- latest result ---"
+        git show "origin/$CMD_BRANCH:cmd/result.txt" 2>/dev/null || echo "(no result yet)"
+        ;;
+    *)
+        cat <<EOF
+usage: scripts/claude-vps <subcommand> [args]
+
+  state                          show snapshot freshness metadata
+  trades [--last N]              recent closed trades (default 20)
+  positions                      open positions
+  logs [--tail N] [--grep PAT]   bot log tail (default 200 lines)
+  meta                           snapshot freshness + uptime
+  run "<command>" [--wait]       execute command on VPS, optionally poll
+  fetch-result                   show latest cmd result
+
+Requires: scripts/install-claude-bridge.sh has been run on the VPS once.
+EOF
+        ;;
+esac

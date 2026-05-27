@@ -33,12 +33,32 @@ When reviewing trades, check these files:
 
 ## Review Checklist
 
-When asked to review trades:
-1. Read `data/trade_history.json` — check win rate, avg P&L, strategy breakdown
-2. Read `data/signal_log.json` — check for rejected signals, failed webhooks
-3. Grep logs for `REJECTED`, `RATE LIMIT`, `ERROR` — find execution issues
-4. Check `config/settings.yaml` overnight section — verify hold/close settings
-5. Look at strategy distribution — which strategies are winning/losing
+When asked to review trades, **prefer the live VPS bridge over committed `data/` files** — committed `data/` is whatever was snapshot for the last review and may be stale. The bridge gives 5-min-fresh state without the user pushing anything.
+
+### VPS bridge (read live state without copy-paste)
+
+Installed once via `scripts/install-claude-bridge.sh` on the VPS. Two crons:
+
+- **Every 5 min** → state snapshot pushed to `origin/claude/live-state` (`data/*.json` + `review/log-tail.log` + `review/docker-state.json` + `review/snapshot-meta.txt`)
+- **Every 1 min** → command runner polls `origin/claude/cmd`; whatever Claude pushes there executes on the VPS with a 90s timeout and the result is pushed back as `cmd/result.txt`
+
+Helper `scripts/claude-vps` wraps the common queries:
+
+```bash
+scripts/claude-vps meta                       # "how fresh is the snapshot?"
+scripts/claude-vps trades --last 50           # recent closed trades
+scripts/claude-vps positions                  # open positions
+scripts/claude-vps logs --tail 500            # bot log tail
+scripts/claude-vps logs --grep "REJECTED"     # specific patterns
+scripts/claude-vps run "docker logs trading-bot-trading-bot-1 --tail 50" --wait
+```
+
+If `claude-vps meta` errors with "bridge isn't installed," fall back to asking the user to push state via the snapshot pattern (see Trade Data Locations below).
+
+1. `scripts/claude-vps trades --last 200` — check win rate, avg P&L, strategy breakdown
+2. `scripts/claude-vps logs --grep "REJECTED|RATE LIMIT|ERROR"` — find execution issues
+3. Check `config/settings.yaml` overnight section — verify hold/close settings
+4. Look at strategy distribution — which strategies are winning/losing
 
 ## Common Issues
 - **`ib-gateway` crash-loop / bot stuck on `ConnectionRefused 4002`** — the gateway binds the API port on the IPv6 wildcard (`:::4002`). The `docker-compose.yml` healthcheck must grep `/proc/net/tcp6` as well as `/proc/net/tcp`, or it's a permanent false negative: a healthy gateway reads as unhealthy, autoheal kills it, and the bot's own self-heal (Docker socket) kills it too — eternal restart loop. Fixed 2026-05-15.
