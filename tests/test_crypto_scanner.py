@@ -234,6 +234,60 @@ def test_engine_helper_scanner_raises_falls_back_to_static(monkeypatch):
     assert eng._get_crypto_universe() == ["BTC-USD"]
 
 
+def test_new_entrants_returns_empty_on_first_run(monkeypatch):
+    """No previous snapshot exists yet — can't compute entrants."""
+    rows = [_mk_row("btc"), _mk_row("eth"), _mk_row("wld")]
+    monkeypatch.setattr(crypto_scanner, "_fetch_from_coingecko", lambda limit: rows)
+    assert crypto_scanner.new_entrants(limit=10) == []
+
+
+def test_new_entrants_detects_freshly_appearing_symbols(monkeypatch):
+    """After a baseline snapshot, a refresh that adds new names returns
+    exactly those new names."""
+    # First refresh — establishes the baseline.
+    monkeypatch.setattr(
+        crypto_scanner,
+        "_fetch_from_coingecko",
+        lambda limit: [_mk_row("btc"), _mk_row("eth"), _mk_row("sol")],
+    )
+    crypto_scanner.new_entrants(limit=10)
+
+    # Wipe in-memory cache and bump the cached ts so the next call rotates
+    # the snapshot (simulating the 24h TTL expiry).
+    monkeypatch.setattr(crypto_scanner, "_mem_cache", None)
+    cache = crypto_scanner._load_cache()
+    cache["top_volume"]["ts"] = 0  # force a refresh on next call
+
+    # Second refresh — wld + drift are new, eth dropped out.
+    monkeypatch.setattr(
+        crypto_scanner,
+        "_fetch_from_coingecko",
+        lambda limit: [_mk_row("btc"), _mk_row("sol"), _mk_row("wld"), _mk_row("drift")],
+    )
+    out = crypto_scanner.new_entrants(limit=10)
+    assert sorted(out) == ["DRIFT-USD", "WLD-USD"]
+
+
+def test_new_entrants_returns_empty_when_universe_unchanged(monkeypatch):
+    monkeypatch.setattr(
+        crypto_scanner,
+        "_fetch_from_coingecko",
+        lambda limit: [_mk_row("btc"), _mk_row("eth")],
+    )
+    crypto_scanner.new_entrants(limit=10)
+    # Force rotation then call again with the same data.
+    monkeypatch.setattr(crypto_scanner, "_mem_cache", None)
+    cache = crypto_scanner._load_cache()
+    cache["top_volume"]["ts"] = 0
+    out = crypto_scanner.new_entrants(limit=10)
+    assert out == []
+
+
+def test_new_entrants_on_network_failure_with_no_cache(monkeypatch):
+    monkeypatch.setattr(crypto_scanner, "_fetch_from_coingecko", lambda limit: None)
+    assert crypto_scanner.new_entrants(limit=10) == []
+
+
 def test_malformed_row_skipped(monkeypatch):
     # Bad rows: missing symbol, non-string symbol, empty symbol.
     rows = [

@@ -38,6 +38,7 @@ from bot.strategies.rvol_scalp import RvolScalpStrategy
 from bot.strategies.prebreakout import PreBreakoutStrategy
 from bot.strategies.premarket_gap import PreMarketGapStrategy
 from bot.strategies.low_float_catalyst import LowFloatCatalystStrategy
+from bot.strategies.crypto_runner import CryptoRunnerStrategy
 from bot.strategies.options_momentum import OptionsMomentumStrategy
 from bot.strategies.short_squeeze import ShortSqueezeStrategy
 from bot.strategies.pead import PEADStrategy
@@ -1453,6 +1454,7 @@ class TradingEngine:
             "momentum_runner": MomentumRunnerStrategy,
             "daily_trend_rider": DailyTrendRiderStrategy,
             "low_float_catalyst": LowFloatCatalystStrategy,
+            "crypto_runner": CryptoRunnerStrategy,
         }
 
         allocation = self.config.strategy_allocation

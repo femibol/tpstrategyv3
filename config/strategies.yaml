@@ -22,6 +22,7 @@ allocation:
   pead: 0.00
   daily_trend_rider: 0.15           # 15% — swing trades on multi-day runners
   low_float_catalyst: 0.05          # 5% — micro-cap catalyst runners (GOVX/VRAX/SBFM-style), reserved 5-slot pool
+  crypto_runner: 0.04               # 4% — live crypto pump catcher (WLD/DRIFT/JTO-style intraday moves)
 
 # --- Mean Reversion Strategy ---
 # Earns in sideways markets when momentum strategies idle.
@@ -355,3 +356,22 @@ tradingview_signals:
   allowed_actions: ["buy", "sell", "close"]
   require_confirmation: false
   max_signal_age_seconds: 30
+
+# --- Crypto Runner Strategy ---
+# Live crypto pump catcher. Mirrors low_float_catalyst's "hard stop, hard TP,
+# time stop, no trail" shape, on crypto. Pairs with the CoinGecko dynamic
+# universe + new_entrants scanner signal — new entrants get a relaxed
+# 1h-change floor (default 0.5x) so we don't miss the first 30 min of a run.
+# See bot/strategies/crypto_runner.py.
+crypto_runner:
+  enabled: true
+  min_1h_change_pct: 5.0            # 5% in the last 60 min — pump already in motion
+  min_rvol: 3.0                     # 3x on the latest 5-min bar vs prior 10
+  hard_stop_pct: 0.06               # -6% server-managed stop
+  hard_target_pct: 0.15             # +15% target (TP/stop ratio = 2.5x)
+  max_hold_minutes: 240             # 4h time stop
+  max_trades_per_day: 8
+  max_position_pct: 0.04            # ~$960 @ $24K account, tight initial cap
+  new_entrant_threshold_mult: 0.5   # New entrants halve the 1h floor (e.g. 2.5%)
+  require_new_entrant: false        # Set true to ONLY trade new entrants (strict mode)
+  symbols: []                       # Uses crypto universe injected by engine
