@@ -1,5 +1,54 @@
-=== executed: ae7d3efd05a42b6cbad84e8e01e528d2a73f0297
-=== started:  2026-05-27T12:24:04Z
+=== executed: 62ad31d6788e4885df27aace9073d4a011f22b30
+=== started:  2026-05-27T12:25:04Z
 === exit:     
 === timeout:  90s
 ===
+=== /opt/trading-bot git HEAD ===
+48af660
+48af660 Merge pull request #178 from femibol/claude/vps-bridge-fixes-Q1nQt
+16a08c6 fix: VPS bridge — capture log tail + docker state, document cloud cmd push
+399a8f4 Merge pull request #177 from femibol/claude/vps-bridge-rJp8z
+
+=== logs/ dir on host ===
+total 232740
+drwxr-xr-x  2 root root     4096 May 26 13:36 .
+drwxr-xr-x 17 root root     4096 May 27 12:19 ..
+-rw-r--r--  1 root root        0 Apr 13 17:39 trades.log
+-rw-r--r--  1 root root  3732000 May 27 12:23 trading.log
+-rw-r--r--  1 root root 52428729 May 26 13:36 trading.log.1
+-rw-r--r--  1 root root 52428663 May 17 15:20 trading.log.2
+-rw-r--r--  1 root root 24841476 May 14 14:34 trading.log.3
+-rw-r--r--  1 root root 52428679 May 13 11:39 trading.log.4
+-rw-r--r--  1 root root 52428737 May  6 16:45 trading.log.5
+
+=== Tail of the snapshot cron's own log ===
+ssh: connect to host github.com port 22: Connection timed out
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+ssh: connect to host github.com port 22: Connection timed out
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+ssh: connect to host github.com port 22: Connection timed out
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+
+=== Does the new snapshot script include the diagnostic fallback? ===
+        echo "no readable log file found. searched:"
+        echo "  - $REPO/logs/trading.log"
+        echo "  - /var/log/trading-bot/trading.log"
+
+=== Run the snapshot script manually NOW and see what happens ===
+
+=== Snapshot worktree contents post-run ===
+total 3072
+drwxr-xr-x  2 root root    4096 May 27 12:25 .
+drwxr-xr-x 13 root root    4096 May 27 11:49 ..
+-rw-r--r--  1 root root    4380 May 27 12:25 docker-state.json
+-rw-r--r--  1 root root 3124311 May 27 12:25 log-tail.log
+-rw-r--r--  1 root root     146 May 27 12:25 snapshot-meta.txt
