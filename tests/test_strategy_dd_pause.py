@@ -45,12 +45,26 @@ def _make_engine(threshold=0.03, alloc=None, sod_balance=50000,
 
 
 def _today_trade(strategy, pnl, hours_ago=2):
-    """Build a trade with exit_time today (local NY tz)."""
-    now = datetime.now(pytz.timezone("America/New_York"))
+    """Build a trade with exit_time today (local NY tz).
+
+    Anchored to today-noon NY (not `now() - hours_ago`) so the trade
+    always lands within the current NY date — otherwise the fixture is
+    flaky during the first 4 hours after NY midnight, when `now - 4h`
+    rolls back to the previous date and the gate's `xt.date() == today`
+    filter excludes the trade. Caught CI for PR #176 at 00:31 NY.
+    """
+    ny = pytz.timezone("America/New_York")
+    now = datetime.now(ny)
+    today_noon = now.replace(hour=12, minute=0, second=0, microsecond=0)
+    # Keep `hours_ago` parameter for callers that want to vary intra-day
+    # ordering, but clamp anything that would cross midnight to noon.
+    trade_time = today_noon - timedelta(hours=hours_ago)
+    if trade_time.date() != today_noon.date():
+        trade_time = today_noon
     return {
         "strategy": strategy,
         "pnl": pnl,
-        "exit_time": (now - timedelta(hours=hours_ago)).isoformat(),
+        "exit_time": trade_time.isoformat(),
     }
 
 
