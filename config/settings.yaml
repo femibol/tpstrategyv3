@@ -284,6 +284,18 @@ crypto:
   # on trailing-stop exits because their ATR is large relative to entry size.
   # Revisit if the trailing-stop gate fix (engine.py:2755) reduces the leak
   # enough that these are net-profitable on the new behavior.
+  # CoinGecko top-volume scanner (replaces the hand-maintained list as the
+  # *primary* source when enabled). Below is OFF by default — flip to true
+  # to pick up runners that aren't yet in `symbols` (WLD, DRIFT, JTO, ONDO,
+  # ENA, W, etc. — the 2025/26 names not captured at the last hand review).
+  # See bot/data/crypto_scanner.py. The scanner UNIONS its output with the
+  # static `symbols` list below, so the curated favorites are never dropped
+  # by a ranking change. On API failure the static list alone is used —
+  # outages never disarm the crypto sleeve. Cached 24h on disk
+  # (data/crypto_scanner_cache.json).
+  dynamic_universe:
+    enabled: false                  # flip to true to enable the scanner
+    limit: 50                       # top-N by 24h volume (excluding stables / wrapped)
   symbols: [
     "AAVE-USD", "ADA-USD", "ALGO-USD", "APT-USD", "ARB-USD", "ATOM-USD",
     "AVAX-USD", "BONK-USD", "BTC-USD", "COMP-USD", "CRV-USD",
