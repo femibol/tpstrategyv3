@@ -91,7 +91,13 @@ fi
     echo "bot_uptime=$(docker inspect -f '{{.State.StartedAt}}' trading-bot-trading-bot-1 2>/dev/null || echo unknown)"
 } > review/snapshot-meta.txt
 
-git add -A data review
+# Force-add review/ because the repo's .gitignore has `*.log` which matches
+# review/log-tail.log — without -f, git add silently skipped the log file
+# and the snapshot branch never carried it. data/ is also gitignored
+# (`data/*.csv`, `data/*.json`) — same -f reasoning. Confirmed against the
+# first live install (PRs #177 / #178): the script was writing log-tail.log
+# locally on every cron tick (3MB on disk) but git add -A was dropping it.
+git add -fA data review
 
 # --allow-empty so a no-change tick still bumps the timestamp file — lets the
 # consumer detect "is the cron still alive?" via the commit timestamp alone.
