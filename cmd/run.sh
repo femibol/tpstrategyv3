@@ -1,1 +1,18 @@
-IyEvYmluL2Jhc2gKZWNobyAiPT09IC9vcHQvdHJhZGluZy1ib3QgZ2l0IEhFQUQgPT09IgpjZCAvb3B0L3RyYWRpbmctYm90ICYmIGdpdCByZXYtcGFyc2UgLS1zaG9ydCBIRUFEICYmIGdpdCBsb2cgLS1vbmVsaW5lIC0zCmVjaG8gIiIKZWNobyAiPT09IGxvZ3MvIGRpciBvbiBob3N0ID09PSIKbHMgLWxhIC9vcHQvdHJhZGluZy1ib3QvbG9ncy8gMj4mMSB8IGhlYWQgLTEwIHx8IGVjaG8gIm1pc3NpbmciCmVjaG8gIiIKZWNobyAiPT09IFRhaWwgb2YgdGhlIHNuYXBzaG90IGNyb24ncyBvd24gbG9nID09PSIKdGFpbCAtMzAgL3Zhci9sb2cvY2xhdWRlLXNuYXBzaG90LmxvZyAyPiYxIHwgdGFpbCAtMzAKZWNobyAiIgplY2hvICI9PT0gRG9lcyB0aGUgbmV3IHNuYXBzaG90IHNjcmlwdCBpbmNsdWRlIHRoZSBkaWFnbm9zdGljIGZhbGxiYWNrPyA9PT0iCmdyZXAgLUEyICJubyByZWFkYWJsZSBsb2cgZmlsZSIgL29wdC90cmFkaW5nLWJvdC9zY3JpcHRzL2NsYXVkZS1zbmFwc2hvdC5zaCB8IGhlYWQgLTUgfHwgZWNobyAiTkVXIENPREUgTk9UIFBSRVNFTlQiCmVjaG8gIiIKZWNobyAiPT09IFJ1biB0aGUgc25hcHNob3Qgc2NyaXB0IG1hbnVhbGx5IE5PVyBhbmQgc2VlIHdoYXQgaGFwcGVucyA9PT0iCi9vcHQvdHJhZGluZy1ib3Qvc2NyaXB0cy9jbGF1ZGUtc25hcHNob3Quc2ggMj4mMSB8IHRhaWwgLTIwCmVjaG8gIiIKZWNobyAiPT09IFNuYXBzaG90IHdvcmt0cmVlIGNvbnRlbnRzIHBvc3QtcnVuID09PSIKbHMgLWxhIC9vcHQvdHJhZGluZy1ib3Qtc25hcHNob3QvcmV2aWV3LyAyPiYxIHx8IGVjaG8gInJldmlldyBtaXNzaW5nIgo=
+#!/bin/bash
+echo "=== /opt/trading-bot git HEAD ==="
+cd /opt/trading-bot && git rev-parse --short HEAD && git log --oneline -3
+echo ""
+echo "=== logs/ dir on host ==="
+ls -la /opt/trading-bot/logs/ 2>&1 | head -10 || echo "missing"
+echo ""
+echo "=== Tail of the snapshot cron's own log ==="
+tail -30 /var/log/claude-snapshot.log 2>&1 | tail -30
+echo ""
+echo "=== Does the new snapshot script include the diagnostic fallback? ==="
+grep -A2 "no readable log file" /opt/trading-bot/scripts/claude-snapshot.sh | head -5 || echo "NEW CODE NOT PRESENT"
+echo ""
+echo "=== Run the snapshot script manually NOW and see what happens ==="
+/opt/trading-bot/scripts/claude-snapshot.sh 2>&1 | tail -20
+echo ""
+echo "=== Snapshot worktree contents post-run ==="
+ls -la /opt/trading-bot-snapshot/review/ 2>&1 || echo "review missing"
