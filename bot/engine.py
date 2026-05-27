@@ -2820,15 +2820,28 @@ class TradingEngine:
     # the normal profit-tiered trail takes over. momentum_runner is unaffected
     # — it has its own 4-phase ATR trail.
     MOMENTUM_TRAIL_ARM_PCT = 0.02
+    # Crypto-specific arming floor. The 18ae5f2 / session-5(9) fix prevented
+    # the trail from being SET below entry but allowed it to be set AT entry
+    # the moment price ticked one print above — turning the trail into a
+    # breakeven stop that wicked out on the next print. Live review of 173
+    # crypto trades (2026-05-17..05-26) found 12 trail exits in the -0.04%
+    # to -1.29% band, net -$150, with `final_stop` still pinned at the
+    # initial 5%-below-entry stop_loss — meaning the trail had armed at
+    # entry and fired on slippage. Require ≥0.5% pnl before the trail can
+    # arm so brief wicks above entry don't install a breakeven stop;
+    # the static stop_loss continues to bound the downside.
+    CRYPTO_TRAIL_ARM_PCT = 0.005
 
-    def _trail_arm_allowed(self, pos, pnl_pct):
+    def _trail_arm_allowed(self, pos, pnl_pct, symbol=None):
         """Whether a position's trailing stop may be ARMED/ratcheted now.
 
-        Returns False only for a plain `momentum` position still below
-        MOMENTUM_TRAIL_ARM_PCT — its trail stays un-armed so the breakout has
-        room. The exit check against an already-set trail is never gated by
-        this (a trail armed earlier, after the position ran, is still honored).
+        Returns False for crypto positions below CRYPTO_TRAIL_ARM_PCT and
+        plain `momentum` positions below MOMENTUM_TRAIL_ARM_PCT. The exit
+        check against an already-set trail is never gated by this (a trail
+        armed earlier, after the position ran, is still honored).
         """
+        if symbol and self._is_crypto_symbol(symbol):
+            return pnl_pct >= self.CRYPTO_TRAIL_ARM_PCT
         if pos.get("strategy") != "momentum" or pos.get("momentum_runner"):
             return True
         return pnl_pct >= self.MOMENTUM_TRAIL_ARM_PCT
@@ -3279,8 +3292,10 @@ class TradingEngine:
                     # Only move stop UP, never down — and only ratchet while in profit
                     # so we don't set the floor at entry on every losing tick.
                     # _trail_arm_allowed keeps a plain-momentum trail un-armed
-                    # until the breakout has run past MOMENTUM_TRAIL_ARM_PCT.
-                    if (self._trail_arm_allowed(pos, pnl_pct)
+                    # until the breakout has run past MOMENTUM_TRAIL_ARM_PCT,
+                    # and gates crypto trails below CRYPTO_TRAIL_ARM_PCT to
+                    # stop breakeven-stop wicks (see helper docstring).
+                    if (self._trail_arm_allowed(pos, pnl_pct, symbol)
                             and current_price > entry_price and (
                         "trailing_stop" not in pos
                         or new_trail > pos.get("trailing_stop", 0)
@@ -3397,8 +3412,9 @@ class TradingEngine:
                 if price > hwm:
                     pos["_high_water_mark"] = price
                     # _trail_arm_allowed: plain-momentum trail stays un-armed
-                    # below MOMENTUM_TRAIL_ARM_PCT so the breakout has room.
-                    if price > entry and self._trail_arm_allowed(pos, pnl_pct):
+                    # below MOMENTUM_TRAIL_ARM_PCT so the breakout has room,
+                    # crypto trail below CRYPTO_TRAIL_ARM_PCT (see helper).
+                    if price > entry and self._trail_arm_allowed(pos, pnl_pct, symbol):
                         trail_pct = pos.get("trailing_stop_pct", 0.02)
                         new_trail = max(price * (1 - trail_pct), entry)
                         if new_trail > pos.get("trailing_stop", 0):
@@ -3497,8 +3513,9 @@ class TradingEngine:
             if price > hwm:
                 pos["_high_water_mark"] = price
                 # _trail_arm_allowed: plain-momentum trail stays un-armed
-                # below MOMENTUM_TRAIL_ARM_PCT so the breakout has room.
-                if price > entry and self._trail_arm_allowed(pos, pnl_pct):
+                # below MOMENTUM_TRAIL_ARM_PCT so the breakout has room,
+                # crypto trail below CRYPTO_TRAIL_ARM_PCT (see helper).
+                if price > entry and self._trail_arm_allowed(pos, pnl_pct, symbol):
                     trail_pct = pos.get("trailing_stop_pct", 0.02)
                     new_trail = max(price * (1 - trail_pct), entry)
                     if new_trail > pos.get("trailing_stop", 0):
@@ -4218,8 +4235,9 @@ class TradingEngine:
                 # the floor at entry and immediately fire on the next dip.
                 new_trail = max(current_price * (1 - trailing_pct), entry_price)
                 # _trail_arm_allowed keeps a plain-momentum trail un-armed until
-                # the breakout has run past MOMENTUM_TRAIL_ARM_PCT (see helper).
-                if (self._trail_arm_allowed(pos, pnl_pct)
+                # MOMENTUM_TRAIL_ARM_PCT, and crypto trail until
+                # CRYPTO_TRAIL_ARM_PCT (see helper).
+                if (self._trail_arm_allowed(pos, pnl_pct, symbol)
                         and current_price > entry_price and (
                     "trailing_stop" not in pos or new_trail > pos["trailing_stop"]
                 )):
