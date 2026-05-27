@@ -1,75 +1,3 @@
-2026-05-26 23:25:28 | INFO     | trading_bot.signals.politician_tracker | Loaded 44 seen politician trades from disk
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Politician trade tracker enabled
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | News catalyst scanner ENABLED (IBKR)
-2026-05-26 23:25:28 | INFO     | trading_bot.learning.trade_analyzer | Loaded 207 persisted trades from disk
-2026-05-26 23:25:28 | INFO     | trading_bot.learning.trade_analyzer | Loaded learning state from disk
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Trade learning system enabled
-2026-05-26 23:25:28 | INFO     | trading_bot.integrations.google_sheets | Google Sheets disabled: set GOOGLE_SHEETS_CREDENTIALS and GOOGLE_SHEETS_SPREADSHEET_ID env vars
-2026-05-26 23:25:28 | INFO     | trading_bot.learning.ai_insights | Claude AI Insights enabled (API key configured)
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Claude AI Insights ENABLED
-2026-05-26 23:25:28 | INFO     | trading_bot.learning.auto_tuner | Auto-Tuner enabled (Claude API configured)
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Auto-Tuner ENABLED - bot will self-optimize parameters
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Weekly Review ENABLED — Saturday 10am ET to Discord
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 207 trades | 97W/110L | Net P&L: $+10.43 | Strategies: mean_reversion, crypto_test, momentum, synced_from_ibkr
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Market regime detector enabled
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Hedging system enabled (auto_hedge=False)
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | All components initialized successfully
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Engine state set to RUNNING
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Scheduler started
-2026-05-26 23:25:28 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-05-26 23:25:28 | INFO     | trading_bot.signals.politician_tracker | Politician trade tracker started (44 trades already seen)
-2026-05-26 23:25:28 | INFO     | trading_bot.broker.ibkr | IBKR real-time news subscription active
-2026-05-26 23:25:28 | INFO     | trading_bot.signals.news | News scanner started (IBKR) - scanning for catalysts
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | Trading engine started - entering main loop
-2026-05-26 23:25:28 | INFO     | trading_bot.notifications | [ALERT] System: ✅ **System**: Trading engine started
-2026-05-26 23:25:28 | INFO     | trading_bot.signals.politician_tracker | No new trades found
-2026-05-26 23:25:28 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(42 dyn), momentum(42 dyn)
-2026-05-26 23:25:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-05-26 23:25:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-05-26 23:25:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-05-26 23:25:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-05-26 23:25:32 | INFO     | trading_bot.engine   | IBKR scanner: 121 unique symbols discovered | 50 gainers, 24 gaps, 20 losers
-2026-05-26 23:25:32 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
-2026-05-26 23:25:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'SHIB-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'NEAR-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETC-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'UNI-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'SOL-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'SEI-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'OP-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'ATOM-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'BONK-USD' — skipping streaming
-2026-05-26 23:25:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'RNDR-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'HBAR-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'BTC-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ALGO-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'CRV-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'WIF-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'TON-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'IMX-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'SNX-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'FLOKI-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'GRT-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'MKR-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'JUP-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ICP-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'DOT-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'APT-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'TRX-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'TIA-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'DOGE-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'LINK-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'XRP-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'FET-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'LTC-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETH-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ADA-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'COMP-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'AAVE-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'PEPE-USD' — skipping streaming
-2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ARB-USD' — skipping streaming
 2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'MATIC-USD' — skipping streaming
 2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'SUI-USD' — skipping streaming
 2026-05-26 23:25:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'XLM-USD' — skipping streaming
@@ -19998,3 +19926,75 @@ Strategy: momentum | 10:44:35 ET
 2026-05-27 10:44:43 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-05-27 10:44:43 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-05-27 10:44:43 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-05-27 10:47:28 | WARNING  | trading_bot.engine   | STOP WATCHDOG: AAPL has NO broker-side stop! Placing emergency stop @ $304.41 for 11 shares
+2026-05-27 10:47:29 | INFO     | trading_bot.broker.ibkr | Order update: AAPL | Status: Cancelled | Filled: 0.0/11
+2026-05-27 10:47:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-05-27 10:47:30 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 11 AAPL @ STOP 304.4076 [OUTSIDE RTH] | Order ID: 318807
+2026-05-27 10:47:30 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: AAPL | Order ID: 318807
+2026-05-27 10:47:30 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: AAPL — IBKR returned None
+2026-05-27 10:47:30 | WARNING  | trading_bot.engine   | STOP WATCHDOG: TSLA has NO broker-side stop! Placing emergency stop @ $434.48 for 8 shares
+2026-05-27 10:47:30 | INFO     | trading_bot.broker.ibkr | Order update: TSLA | Status: Cancelled | Filled: 0.0/8
+2026-05-27 10:47:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-05-27 10:47:31 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 8 TSLA @ STOP 434.48249999999996 [OUTSIDE RTH] | Order ID: 318809
+2026-05-27 10:47:32 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: TSLA | Order ID: 318809
+2026-05-27 10:47:32 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: TSLA — IBKR returned None
+2026-05-27 10:47:32 | WARNING  | trading_bot.engine   | STOP WATCHDOG: CBRG has NO broker-side stop! Placing emergency stop @ $9.75 for 92 shares
+2026-05-27 10:47:32 | INFO     | trading_bot.broker.ibkr | Order update: CBRG | Status: Cancelled | Filled: 0.0/92
+2026-05-27 10:47:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-05-27 10:47:33 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 92 CBRG @ STOP 9.74974 [OUTSIDE RTH] | Order ID: 318811
+2026-05-27 10:47:33 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: CBRG | Order ID: 318811
+2026-05-27 10:47:33 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: CBRG — IBKR returned None
+2026-05-27 10:47:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=67, higher lows, Vol=0.2x | GOOGL @ $392.24
+2026-05-27 10:47:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, breakout>312.78, higher lows, Vol=0.4x | AAPL @ $313.12
+2026-05-27 10:47:33 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: PCLA | Score: 70 | RVOL: 3.1x | Change: +0.3% | R:R 1.9 | Target: $9.92 (+1.2%)
+2026-05-27 10:47:33 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-05-27 10:47:33 | INFO     | trading_bot.engine   |   -> momentum: buy GOOGL @ $392.24 conf=0.75
+2026-05-27 10:47:33 | INFO     | trading_bot.engine   |   -> momentum: buy AAPL @ $313.12 conf=0.90
+2026-05-27 10:47:33 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy PCLA @ $9.80 conf=0.70
+2026-05-27 10:47:33 | INFO     | trading_bot.risk.manager | APPROVED: buy GOOGL | Momentum BUY: pullback entry, ADX=67, higher lows, Vol=0.2x
+2026-05-27 10:47:33 | INFO     | trading_bot.risk.manager | REJECTED: buy AAPL | Already in position: AAPL
+2026-05-27 10:47:33 | INFO     | trading_bot.risk.manager | REJECTED: buy PCLA | Penny-runner sub-cap reached (3/3)
+2026-05-27 10:47:33 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 998 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ GOOGL: score 75/100 — Momentum BUY: pullback entry, ADX=67, higher lows, Vol=0.2x
+  ✅ AAPL: score 90/100 — Momentum BUY: p
+2026-05-27 10:47:34 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.1s total): update_data=150.2s, update_scalp=15.3s, discover=5.0s
+2026-05-27 10:47:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-05-27 10:47:37 | WARNING  | trading_bot.engine   | LEARNING BLOCK: GOOGL avoided — consistent loser (score: -17.5)
+2026-05-27 10:47:40 | INFO     | trading_bot.broker.ibkr | Order update: CBRG | Status: Cancelled | Filled: 0.0/92
+2026-05-27 10:47:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-05-27 10:47:41 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 92 CBRG @ STOP 9.93784 [OUTSIDE RTH] | Order ID: 318819
+2026-05-27 10:47:41 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: CBRG | Order ID: 318819
+2026-05-27 10:47:41 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: CBRG — IBKR returned None
+2026-05-27 10:47:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | WAIT[32]: AAVE-USD(weak 3d trend (-3.0%)), ADA-USD(weak 3d trend (-1.5%)), ALGO-USD(weak 3d trend (-4.6%)), APT-USD(weak 3d trend (-0.2%)), ARB-USD(weak 3d trend (+0.8%)), AVAX-USD(weak 3d trend (-0.8%)), BONK-USD(weak 3d trend (-1.3%)), BTC-USD(weak 3d trend (-1.8%)), COMP-USD(weak 3d trend (+0.2%)), CRV-USD(weak 3d trend (-1.6%)), DOGE-USD(weak 3d trend (-1.1%)), DOT-USD(weak 3d trend (+0.4%)), ETC-USD(weak 3d trend (-4.1%)), ETH-USD(weak 3d trend (-1.7%)), FLOKI-USD(weak 3d trend (-0.3%)), HBAR-USD(weak 3d trend (-3.4%)), ICP-USD(needs vol>=1.1x), JUP-USD(weak 3d trend (-0.1%)), LINK-USD(weak 3d trend (-1.1%)), LTC-USD(weak 3d trend (-1.2%)), MATIC-USD(weak 3d trend (+0.3%)), NEAR-USD(weak 3d trend (+3.6%)), OP-USD(weak 3d trend (+1.6%)), PEPE-USD(weak 3d trend (-1.7%)), SHIB-USD(weak 3d trend (-2.3%)), SNX-USD(weak 3d trend (-14.5%)), SOL-USD(weak 3d trend (-1.9%)), SUI-USD(weak 3d trend (-5.4%)), TRX-USD(weak 3d trend (+1.4%)), UNI-USD(weak 3d trend (-4.8%)), WIF-USD(weak 3d trend (+0.0%)), XRP-USD(weak 3d trend (-1.9%)) | neutral=4 | no_data=3
+2026-05-27 10:47:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=67, higher lows, Vol=0.2x | GOOGL @ $392.24
+2026-05-27 10:47:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, breakout>312.78, higher lows, Vol=0.4x | AAPL @ $313.12
+2026-05-27 10:47:44 | INFO     | trading_bot.broker.ibkr | Order update: CBRG | Status: Cancelled | Filled: 0.0/92
+2026-05-27 10:47:44 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-05-27 10:47:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-27 10:47:45 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 92 CBRG @ STOP 9.97712 [OUTSIDE RTH] | Order ID: 318821
+2026-05-27 10:47:46 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: CBRG | Order ID: 318821
+2026-05-27 10:47:46 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: CBRG — IBKR returned None
+2026-05-27 10:47:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=67, higher lows, Vol=0.2x | GOOGL @ $392.24
+2026-05-27 10:47:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, breakout>312.78, higher lows, Vol=0.4x | AAPL @ $313.12
+2026-05-27 10:47:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-27 10:47:49 | INFO     | trading_bot.broker.ibkr | Order update: CBRG | Status: Cancelled | Filled: 0.0/92
+2026-05-27 10:47:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-05-27 10:47:50 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 92 CBRG @ STOP 9.99775 [OUTSIDE RTH] | Order ID: 318823
+2026-05-27 10:47:50 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: CBRG | Order ID: 318823
+2026-05-27 10:47:50 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: CBRG — IBKR returned None
+2026-05-27 10:47:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=67, higher lows, Vol=0.2x | GOOGL @ $392.24
+2026-05-27 10:47:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, breakout>312.78, higher lows, Vol=0.4x | AAPL @ $313.12
+2026-05-27 10:47:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-05-27 10:47:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-05-27 10:47:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-05-27 10:47:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-05-27 10:47:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-05-27 10:47:55 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 50 gainers, 8 gaps, 20 losers
+2026-05-27 10:47:55 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-05-27 10:47:55 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-05-27 10:47:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 112 low-priority equity names; max 90)
+2026-05-27 10:47:55 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-05-27 10:47:56 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-05-27 10:47:56 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
