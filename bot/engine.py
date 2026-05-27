@@ -1521,7 +1521,7 @@ class TradingEngine:
         # signals → engine routes to tp_crypto_broker → TradersPost webhook.
         if self._is_crypto_enabled():
             crypto_cfg = self.config.settings.get("crypto", {})
-            crypto_symbols = crypto_cfg.get("symbols", [])
+            crypto_symbols = self._get_crypto_universe()
             allowed = crypto_cfg.get("allowed_strategies", ["mean_reversion", "momentum"])
             if crypto_symbols:
                 for strat_name in allowed:
@@ -2334,6 +2334,44 @@ class TradingEngine:
     def _is_crypto_enabled(self):
         """Check if crypto trading is enabled in config."""
         return self.config.settings.get("crypto", {}).get("enabled", False)
+
+    def _get_crypto_universe(self):
+        """Resolve the crypto universe for this cycle.
+
+        With ``crypto.dynamic_universe.enabled: true``, pull the top-N
+        symbols by 24h volume from CoinGecko (cached 24h on disk) and
+        union them with the hand-curated ``crypto.symbols`` list so the
+        user's must-keep favorites are never dropped by a CoinGecko
+        ranking change. If the scanner fails (network down, parse error)
+        the static list alone is returned, so a CoinGecko outage never
+        disarms the crypto sleeve.
+
+        Returns the merged universe (scanner-ranked first, static names
+        appended after) as a deduped list.
+        """
+        crypto_cfg = self.config.settings.get("crypto", {})
+        static_list = list(crypto_cfg.get("symbols", []))
+        dyn_cfg = crypto_cfg.get("dynamic_universe", {})
+        if not dyn_cfg.get("enabled", False):
+            return static_list
+        try:
+            from bot.data.crypto_scanner import top_volume_symbols
+            limit = int(dyn_cfg.get("limit", 50))
+            ranked = top_volume_symbols(limit=limit)
+        except Exception as e:
+            log.warning(f"crypto scanner errored, falling back to static list: {e}")
+            return static_list
+        if not ranked:
+            return static_list
+        seen = set()
+        merged: list[str] = []
+        for sym in ranked + static_list:
+            up = sym.upper()
+            if up in seen:
+                continue
+            seen.add(up)
+            merged.append(up)
+        return merged
 
     def _has_crypto_symbols(self):
         """Check if any watched/traded symbols are crypto (enables 24/7 mode)."""
@@ -9605,7 +9643,7 @@ class TradingEngine:
         # out after 30 minutes since they never appear in the equity scanner.
         if self._is_crypto_enabled():
             crypto_cfg = self.config.settings.get("crypto", {})
-            crypto_symbols = crypto_cfg.get("symbols", [])
+            crypto_symbols = self._get_crypto_universe()
             allowed = crypto_cfg.get("allowed_strategies", ["mean_reversion", "momentum"])
             if crypto_symbols:
                 _injected_to = []
