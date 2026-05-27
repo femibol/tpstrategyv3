@@ -1,6 +1,6 @@
-=== executed: 2724f37db829e0a4a9a1a6894ba6603501e65e7f
-=== started:  2026-05-27T12:32:32Z
-=== exit:     124
+=== executed: fd4f77356d8e8354a0d1513421986126fa82fb8c
+=== started:  2026-05-27T12:51:44Z
+=== exit:     
 === timeout:  90s
 ===
 === pull main on host ===
@@ -8,5 +8,20 @@ From github-write:femibol/tpstrategyv3
  * branch            main       -> FETCH_HEAD
 M	data/signal_log.json
 M	data/trade_history.json
-Your branch is behind 'origin/main' by 2 commits, and can be fast-forwarded.
-  (use "git pull" to update your local branch)
+Your branch is up to date with 'origin/main'.
+From github-write:femibol/tpstrategyv3
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+8f2d87a Merge pull request #180 from femibol/claude/crypto-flow-unblocks-9bRqM
+87ec0cd fix: unblock crypto entries — trend filter 10→5%, crypto-exempt price floor, falling-knife log wording
+12549aa Merge pull request #179 from femibol/claude/fix-snapshot-gitignore-7vKxL
+
+=== restart bot to pick up new code (bind-mount makes this hot) ===
+trading-bot-trading-bot-1
+state: running  started: 2026-05-27T12:51:13.757431609Z  health: starting
+
+=== verify config picked up: grep loaded threshold ===
+2026-05-27 08:50:19 | INFO     | trading_bot.engine   | Loaded strategy: mean_reversion | Allocation: 15% ($3,600.32)
+2026-05-27 08:51:26 | INFO     | trading_bot.engine   | Loaded strategy: mean_reversion | Allocation: 15% ($3,600.32)
+
+=== first heartbeat post-restart ===
