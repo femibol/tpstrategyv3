@@ -1,33 +1,35 @@
-=== executed: 44938850c0cd2e6b28ac9351441ca0c1901a7f09
-=== started:  2026-05-28T13:48:02Z
+=== executed: 318a169c8f9083a166f5cc6d0aec2ffbe68c2d18
+=== started:  2026-05-28T19:04:20Z
 === exit:     
 === timeout:  90s
 ===
-=== bot's known positions right now ===
-count: 1
-  SEI-USD    mean_reversion     qty=5000  entry=$0.0659  unr=+0.00%
+=== pull #182 on host ===
+From github-write:femibol/tpstrategyv3
+ * branch            main       -> FETCH_HEAD
+   64303e5..078ba9a  main       -> origin/main
+M	config/settings.yaml
+M	config/strategies.yaml
+M	data/signal_log.json
+M	data/trade_history.json
+Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+From github-write:femibol/tpstrategyv3
+ * branch            main       -> FETCH_HEAD
+Updating 64303e5..078ba9a
+Fast-forward
+ bot/engine.py                        |  34 +++++++++++
+ tests/test_equity_overnight_guard.py | 111 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 145 insertions(+)
+ create mode 100644 tests/test_equity_overnight_guard.py
+078ba9a fix: drop equity BUY signals in deep-overnight window (20:00-04:00 ET) (#182)
+64303e5 Merge pull request #181 from femibol/claude/handoff-session-9-update-Tq8wN
+785f3bb Update HANDOFF.md — session 9 (9 PRs + VPS bridge live + local-merge fixes)
 
-=== bot's recent activity on RKLB/SMCI (last 30h docker logs) ===
-2026-05-28 09:40:04 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
-2026-05-28 09:40:04 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
-2026-05-28 09:40:22 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
-2026-05-28 09:40:28 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:40:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:40:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:44:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:44:00 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
-2026-05-28 09:44:00 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
-2026-05-28 09:44:16 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
-2026-05-28 09:44:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:44:22 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:44:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:47:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:47:07 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
-2026-05-28 09:47:07 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
-2026-05-28 09:47:24 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
-2026-05-28 09:47:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:47:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 09:47:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+=== restart bot (bind-mount hot reload) ===
+trading-bot-trading-bot-1
+state: running  started: 2026-05-28T19:04:14.214836408Z  health: starting
 
-=== minutes to market open (NY) ===
-NY time: 09:48:02  → open in -18m
+=== grep new guard in running bot/engine.py ===
+                                f"EQUITY MARKET CLOSED: dropped {len(dropped)} "
+                                f"buy signal(s) — {', '.join(dropped[:10])}"
+                                f"{'...' if len(dropped) > 10 else ''}"
