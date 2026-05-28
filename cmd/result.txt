@@ -1,42 +1,33 @@
-=== executed: cc6b9f82bacd98e2db67abecd26c2cc7967ae2e4
-=== started:  2026-05-28T13:09:03Z
+=== executed: 44938850c0cd2e6b28ac9351441ca0c1901a7f09
+=== started:  2026-05-28T13:48:02Z
 === exit:     
 === timeout:  90s
 ===
-=== reconcile with verbose + grep secret from .env ===
-secret-set: yes
-HTTP 200
-{"closed":false,"orphans":[{"quantity":66.0,"symbol":"CBRG"},{"quantity":54.0,"symbol":"CRSR"}],"status":"Mirror reconcile complete"}
+=== bot's known positions right now ===
+count: 1
+  SEI-USD    mean_reversion     qty=5000  entry=$0.0659  unr=+0.00%
 
+=== bot's recent activity on RKLB/SMCI (last 30h docker logs) ===
+2026-05-28 09:40:04 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
+2026-05-28 09:40:04 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
+2026-05-28 09:40:22 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 09:40:28 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:40:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:40:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:44:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:44:00 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
+2026-05-28 09:44:00 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
+2026-05-28 09:44:16 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 09:44:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:44:22 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:44:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:47:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:47:07 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
+2026-05-28 09:47:07 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
+2026-05-28 09:47:24 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 09:47:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:47:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 09:47:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
 
-=== last 20 signal_log entries (any ticker) ===
-total entries: 506
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-?  ?           ?       resp=?  reject=False
-
-=== distinct tickers in signal_log (last 200 entries) ===
-  ?: 200
-
-=== check the docker logs for CRSR/CBRG/NOK closes ===
-2026-05-27 23:50:29 | WARNING  | trading_bot.engine   | MIRROR RECONCILE: 2 ORPHAN equity position(s) likely open on the TradersPost mirror account but NOT tracked by the engine: CBRG=66, CRSR=54. IBKR is the source of truth; the bot does not manage stops/exits on these.
-⚠️ MIRROR ORPHAN POSITIONS: 2 equity symbol(s) adrift on the TradersPost mirror without engine tracking. CBRG=66, CRSR=54. Check the mirror broker and close manually, or POST /api
-2026-05-28 09:09:02 | WARNING  | trading_bot.engine   | MIRROR RECONCILE: 2 ORPHAN equity position(s) likely open on the TradersPost mirror account but NOT tracked by the engine: CBRG=66, CRSR=54. IBKR is the source of truth; the bot does not manage stops/exits on these.
-⚠️ MIRROR ORPHAN POSITIONS: 2 equity symbol(s) adrift on the TradersPost mirror without engine tracking. CBRG=66, CRSR=54. Check the mirror broker and close manually, or POST /api
+=== minutes to market open (NY) ===
+NY time: 09:48:02  → open in -18m
