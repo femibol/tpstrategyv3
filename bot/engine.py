@@ -2020,6 +2020,40 @@ class TradingEngine:
                     if rejected_for_rotation and len(self.positions) >= self.risk_manager.max_positions - 1:
                         self._momentum_rotation_check(rejected_for_rotation)
 
+                    # 6b. Deep-overnight equity guard. 20:00-04:00 ET (and
+                    # weekends / holidays) sits OUTSIDE both premarket and
+                    # postmarket windows, so the per-window allowed_strategies
+                    # filter below never applies. The strategy loop still runs
+                    # in that window because crypto keeps `_should_run` True,
+                    # and equity strategies happily generate signals on names
+                    # in their dynamic universes — which IBKR's extended-hours
+                    # session is happy to fill. Result observed 2026-05-28
+                    # 03:02 EDT: RKLB momentum entry, stop_loss -$82.56 in
+                    # dead-of-night liquidity. The same loss tripped the
+                    # strategy daily DD gate, pausing momentum for the entire
+                    # next day.
+                    #
+                    # Drop equity BUY signals when the equity market is fully
+                    # closed. Crypto signals pass through (24/7 by design).
+                    # Exits / sells are unaffected — they don't flow through
+                    # `approved` here; stops fire from `_check_position_exits`.
+                    if not getattr(self, "_equity_market_open", False):
+                        pre_filtered = []
+                        dropped = []
+                        for sig in approved:
+                            if (sig.get("action") == "buy"
+                                    and not self._is_crypto_symbol(sig.get("symbol", ""))):
+                                dropped.append(sig.get("symbol", "?"))
+                                continue
+                            pre_filtered.append(sig)
+                        if dropped:
+                            log.info(
+                                f"EQUITY MARKET CLOSED: dropped {len(dropped)} "
+                                f"buy signal(s) — {', '.join(dropped[:10])}"
+                                f"{'...' if len(dropped) > 10 else ''}"
+                            )
+                        approved = pre_filtered
+
                     # 7a. Pre-market / Post-market filtering: limit strategies, reduce size,
                     #     and enforce quality gate (RVOL + score minimums)
                     if getattr(self, "_in_premarket", False):
