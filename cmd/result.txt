@@ -1,13 +1,42 @@
-=== executed: 58c33928f76ab0ea3581a5f8701b08e989fa977b
-=== started:  2026-05-28T13:08:01Z
+=== executed: cc6b9f82bacd98e2db67abecd26c2cc7967ae2e4
+=== started:  2026-05-28T13:09:03Z
 === exit:     
 === timeout:  90s
 ===
-=== bot's known positions ===
-count: 1
-  - SEI-USD
+=== reconcile with verbose + grep secret from .env ===
+secret-set: yes
+HTTP 200
+{"closed":false,"orphans":[{"quantity":66.0,"symbol":"CBRG"},{"quantity":54.0,"symbol":"CRSR"}],"status":"Mirror reconcile complete"}
 
-=== run mirror orphan reconcile (alert-only, NOT closing) ===
 
+=== last 20 signal_log entries (any ticker) ===
+total entries: 506
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
+?  ?           ?       resp=?  reject=False
 
-=== last few signal_log entries for CRSR/CBRG/NOK/RKLB/SMCI ===
+=== distinct tickers in signal_log (last 200 entries) ===
+  ?: 200
+
+=== check the docker logs for CRSR/CBRG/NOK closes ===
+2026-05-27 23:50:29 | WARNING  | trading_bot.engine   | MIRROR RECONCILE: 2 ORPHAN equity position(s) likely open on the TradersPost mirror account but NOT tracked by the engine: CBRG=66, CRSR=54. IBKR is the source of truth; the bot does not manage stops/exits on these.
+⚠️ MIRROR ORPHAN POSITIONS: 2 equity symbol(s) adrift on the TradersPost mirror without engine tracking. CBRG=66, CRSR=54. Check the mirror broker and close manually, or POST /api
+2026-05-28 09:09:02 | WARNING  | trading_bot.engine   | MIRROR RECONCILE: 2 ORPHAN equity position(s) likely open on the TradersPost mirror account but NOT tracked by the engine: CBRG=66, CRSR=54. IBKR is the source of truth; the bot does not manage stops/exits on these.
+⚠️ MIRROR ORPHAN POSITIONS: 2 equity symbol(s) adrift on the TradersPost mirror without engine tracking. CBRG=66, CRSR=54. Check the mirror broker and close manually, or POST /api
