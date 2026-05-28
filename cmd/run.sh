@@ -1,12 +1,28 @@
 #!/bin/bash
-echo "=== bot state ==="
-docker inspect -f 'started: {{.State.StartedAt}}  health: {{.State.Health.Status}}' trading-bot-trading-bot-1
+echo "=== bot's known positions ==="
+cd /opt/trading-bot
+python3 -c "
+import json
+with open('data/positions_state.json') as f:
+    pos = json.load(f)
+print(f'count: {len(pos)}')
+for sym in pos: print(f'  - {sym}')
+"
+
 echo ""
-echo "=== last 2 crypto fast-lane heartbeats ==="
-docker logs trading-bot-trading-bot-1 2>&1 | grep "CRYPTO FAST LANE HEARTBEAT" | tail -2
+echo "=== run mirror orphan reconcile (alert-only, NOT closing) ==="
+curl -s -u admin:${DASHBOARD_SECRET_KEY:-changeme} -X POST http://localhost:5000/api/reconcile/mirror/run | head -c 4000
 echo ""
-echo "=== any BUY signals since restart? ==="
-docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -E "FAST LANE HEARTBEAT.*BUY\[|CRYPTO FAST LANE: approved" | tail -5
+
 echo ""
-echo "=== any crypto orders sent since restart? ==="
-docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -E "TradersPost SUBMITTED|ORDER BUY.*-USD" | tail -3
+echo "=== last few signal_log entries for CRSR/CBRG/NOK/RKLB/SMCI ==="
+python3 -c "
+import json
+with open('data/signal_log.json') as f:
+    sigs = json.load(f)
+watch = {'CRSR','CBRG','NOK','RKLB','SMCI'}
+hits = [s for s in sigs if s.get('payload',{}).get('ticker') in watch]
+for s in hits[-15:]:
+    p = s.get('payload', {})
+    print(f\"{s.get('timestamp','?')[:19]}  {p.get('ticker','?'):<6s}  {p.get('action','?'):<6s} qty={p.get('quantity','?')}  resp={s.get('http_status','?')}\")
+"
