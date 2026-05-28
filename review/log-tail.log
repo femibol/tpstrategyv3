@@ -1,98 +1,3 @@
-Strategy: **mean_reversion** | Confid
-2026-05-27 21:11:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:11:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:11:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:11:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:11:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-05-27 21:11:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-05-27 21:11:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-05-27 21:11:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-05-27 21:11:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-05-27 21:11:18 | INFO     | trading_bot.engine   | IBKR scanner: 128 unique symbols discovered | 50 gainers, 19 gaps, 20 losers
-2026-05-27 21:11:19 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
-2026-05-27 21:11:19 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-05-27 21:11:19 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 128 low-priority equity names; max 90)
-2026-05-27 21:14:00 | WARNING  | trading_bot.engine   | STOP WATCHDOG: SMCI has NO broker-side stop! Placing emergency stop @ $36.87 for 62 shares
-2026-05-27 21:14:00 | INFO     | trading_bot.broker.ibkr | Order update: SMCI | Status: Cancelled | Filled: 0.0/62
-2026-05-27 21:14:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-05-27 21:14:01 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 62 SMCI @ STOP 36.869699999999995 [OUTSIDE RTH] | Order ID: 354768
-2026-05-27 21:14:01 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: SMCI | Order ID: 354768
-2026-05-27 21:14:01 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: SMCI — IBKR returned None
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>7.98, Vol=5.1x | EDSA @ $8.00
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=52, Vol=3.8x | ISPC @ $3.31
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>9.82, Vol=6.7x | CRSR @ $9.83
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AXTX | Score: 80 | RVOL: 3.4x | Change: +0.7% | R:R 1.5 | Target: $55.51 (+1.2%)
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: ASX | Score: 70 | RVOL: 4.7x | Change: +0.1% | R:R 2.0 | Target: $39.22 (+1.2%)
-2026-05-27 21:14:01 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: SNOY | Score: 75 | RVOL: 20.0x | Change: +0.5% | R:R 2.0 | Target: $7.89 (+1.2%)
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> momentum: buy EDSA @ $8.00 conf=0.85
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> momentum: buy ISPC @ $3.31 conf=0.70
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> momentum: buy CRSR @ $9.83 conf=0.75
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> momentum: buy META @ $635.25 conf=0.65
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AXTX @ $54.85 conf=0.80
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ASX @ $39.09 conf=0.70
-2026-05-27 21:14:01 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy SNOY @ $7.87 conf=0.75
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy EDSA | Momentum BUY: EMA trend, ADX=44, breakout>7.98, Vol=5.1x
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy ISPC | Momentum BUY: EMA trend, ADX=52, Vol=3.8x
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy CRSR | Momentum BUY: EMA trend, breakout>9.82, Vol=6.7x
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy META | Momentum BUY: EMA trend, ADX=65, Vol=1.4x
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | REJECTED: buy SMCI | Already in position: SMCI
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Very high RVOL 3.4x | Moving up +0.7% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy ASX | Extreme RVOL 4.7x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-05-27 21:14:01 | INFO     | trading_bot.risk.manager | APPROVED: buy SNOY | Extreme RVOL 20.0x | Moving up +0.5% | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-05-27 21:14:01 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1102 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ EDSA: score 85/100 — Momentum BUY: EMA trend, ADX=44, breakout>7.98, Vol=5.1x
-  ✅ ISPC: score 70/100 — Momentum BUY: EMA 
-2026-05-27 21:14:02 | WARNING  | trading_bot.engine   | SLOW CYCLE (167.0s total): update_data=141.4s, update_scalp=19.6s
-2026-05-27 21:14:05 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | WAIT[35]: AAVE-USD(weak 3d trend (-0.0%)), ADA-USD(weak 3d trend (-1.9%)), ALGO-USD(weak 3d trend (-5.2%)), APT-USD(weak 3d trend (+3.3%)), ARB-USD(weak 3d trend (+0.7%)), ATOM-USD(weak 3d trend (+3.3%)), AVAX-USD(weak 3d trend (-1.9%)), BONK-USD(weak 3d trend (-4.8%)), BTC-USD(weak 3d trend (-3.5%)), COMP-USD(weak 3d trend (-10.0%)), CRV-USD(weak 3d trend (-5.2%)), DOGE-USD(weak 3d trend (-2.0%)), DOT-USD(weak 3d trend (-1.6%)), ETC-USD(weak 3d trend (-4.9%)), ETH-USD(weak 3d trend (-3.7%)), FLOKI-USD(weak 3d trend (-3.3%)), GRT-USD(weak 3d trend (+4.6%)), HBAR-USD(weak 3d trend (-2.8%)), ICP-USD(needs vol>=1.1x), JUP-USD(weak 3d trend (-0.1%)), LINK-USD(weak 3d trend (-3.6%)), LTC-USD(weak 3d trend (-1.6%)), MATIC-USD(weak 3d trend (-0.7%)), NEAR-USD(weak 3d trend (+2.7%)), OP-USD(weak 3d trend (-2.4%)), PEPE-USD(weak 3d trend (-3.1%)), SHIB-USD(weak 3d trend (-3.4%)), SNX-USD(weak 3d trend (+2.7%)), SOL-USD(weak 3d trend (-3.3%)), SUI-USD(weak 3d trend (-7.0%)), TON-USD(weak 3d trend (-2.7%)), TRX-USD(weak 3d trend (+2.3%)), UNI-USD(weak 3d trend (-8.0%)), WIF-USD(weak 3d trend (+1.1%)), XRP-USD(weak 3d trend (-3.2%)) | warming=1 | neutral=2 | no_data=2
-2026-05-27 21:14:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:14:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:14:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:14:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:14:11 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:14:11 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:14:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-05-27 21:14:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-05-27 21:14:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-05-27 21:14:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-05-27 21:14:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-05-27 21:14:14 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 50 gainers, 19 gaps, 20 losers
-2026-05-27 21:14:15 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
-2026-05-27 21:14:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 128 low-priority equity names; max 90)
-2026-05-27 21:17:05 | WARNING  | trading_bot.engine   | STOP WATCHDOG: SMCI has NO broker-side stop! Placing emergency stop @ $36.87 for 62 shares
-2026-05-27 21:17:05 | INFO     | trading_bot.broker.ibkr | Order update: SMCI | Status: Cancelled | Filled: 0.0/62
-2026-05-27 21:17:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-05-27 21:17:06 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 62 SMCI @ STOP 36.869699999999995 [OUTSIDE RTH] | Order ID: 354952
-2026-05-27 21:17:07 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: SMCI | Order ID: 354952
-2026-05-27 21:17:07 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: SMCI — IBKR returned None
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>7.98, Vol=5.1x | EDSA @ $8.00
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=52, Vol=3.8x | ISPC @ $3.31
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>9.82, Vol=6.7x | CRSR @ $9.83
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, Vol=1.4x | META @ $635.25
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AXTX | Score: 80 | RVOL: 3.4x | Change: +0.7% | R:R 1.5 | Target: $55.51 (+1.2%)
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: ASX | Score: 70 | RVOL: 4.7x | Change: +0.1% | R:R 2.0 | Target: $39.22 (+1.2%)
-2026-05-27 21:17:07 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: SNOY | Score: 75 | RVOL: 20.0x | Change: +0.5% | R:R 2.0 | Target: $7.89 (+1.2%)
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> momentum: buy EDSA @ $8.00 conf=0.85
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> momentum: buy ISPC @ $3.31 conf=0.70
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> momentum: buy CRSR @ $9.83 conf=0.75
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> momentum: buy META @ $635.25 conf=0.65
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AXTX @ $54.85 conf=0.80
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ASX @ $39.09 conf=0.70
-2026-05-27 21:17:07 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy SNOY @ $7.87 conf=0.75
-2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy EDSA | Momentum BUY: EMA trend, ADX=44, breakout>7.98, Vol=5.1x
-2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy ISPC | Momentum BUY: EMA trend, ADX=52, Vol=3.8x
-2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy CRSR | Momentum BUY: EMA trend, breakout>9.82, Vol=6.7x
-2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy META | Momentum BUY: EMA trend, ADX=65, Vol=1.4x
-2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | REJECTED: buy SMCI | Already in position: SMCI
-2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Very high RVOL 3.4x | Moving up +0.7% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
 2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy ASX | Extreme RVOL 4.7x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
 2026-05-27 21:17:07 | INFO     | trading_bot.risk.manager | APPROVED: buy SNOY | Extreme RVOL 20.0x | Moving up +0.5% | Volume accelerating bar-over-bar | Short-term trend bullish
 2026-05-27 21:17:07 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1102 symbols
@@ -19998,3 +19903,98 @@ Signals found: 4
 2026-05-28 11:14:59 | INFO     | trading_bot.engine   | CYCLE #175: regime=sideways | signals=4->approved=4 | positions=0/15 | bars_warm=118/119 | equity_open=True | pm=False pwr_hr=False
 2026-05-28 11:15:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
 2026-05-28 11:15:01 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SIDU — bearish spot imbalance -0.42
+2026-05-28 11:15:04 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: PLTR — bearish EMA imbalance -0.34
+2026-05-28 11:15:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-05-28 11:15:07 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 11:15:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-05-28 11:15:09 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: FLYT — score 0 below min 50
+2026-05-28 11:15:09 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
+2026-05-28 11:15:10 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; Top: IBEOS; OVERNIGHT; 
+2026-05-28 11:15:11 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: IBEOS; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; 
+2026-05-28 11:15:12 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[38]: AAVE-USD(weak 3d trend (-7.1%)), ADA-USD(weak 3d trend (-5.8%)), ALGO-USD(weak 3d trend (-8.4%)), APT-USD(weak 3d trend (-3.4%)), ARB-USD(weak 3d trend (-5.4%)), ATOM-USD(weak 3d trend (-5.9%)), AVAX-USD(weak 3d trend (-6.6%)), BONK-USD(weak 3d trend (-12.7%)), BTC-USD(weak 3d trend (-6.0%)), COMP-USD(weak 3d trend (-11.6%)), CRV-USD(weak 3d trend (-9.5%)), DOGE-USD(weak 3d trend (-4.8%)), DOT-USD(weak 3d trend (-6.4%)), ETC-USD(weak 3d trend (-3.3%)), ETH-USD(weak 3d trend (-6.7%)), FET-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-2.5%)), ICP-USD(weak 3d trend (-1.1%)), JUP-USD(weak 3d trend (-13.4%)), LINK-USD(weak 3d trend (-7.3%)), LTC-USD(weak 3d trend (-3.5%)), MATIC-USD(weak 3d trend (-5.9%)), NEAR-USD(weak 3d trend (-13.6%)), OP-USD(weak 3d trend (-12.9%)), PEPE-USD(weak 3d trend (-9.6%)), RNDR-USD(weak 3d trend (-10.8%)), SHIB-USD(weak 3d trend (-6.4%)), SNX-USD(weak 3d trend (-0.3%)), SOL-USD(weak 3d trend (-6.2%)), SUI-USD(weak 3d trend (-13.0%)), TIA-USD(weak 3d trend (-3.3%)), TON-USD(weak 3d trend (-4.2%)), TRX-USD(weak 3d trend (-6.1%)), UNI-USD(weak 3d trend (-12.2%)), WIF-USD(weak 3d trend (-10.8%)), XRP-USD(weak 3d trend (-4.7%)) | warming=1 | neutral=1 | no_data=2
+2026-05-28 11:15:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:15:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:15:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:15 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:15:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:15:16 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:15:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:15:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:15:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-05-28 11:15:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-05-28 11:15:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-05-28 11:15:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-05-28 11:15:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-05-28 11:15:23 | INFO     | trading_bot.engine   | IBKR scanner: 113 unique symbols discovered | 50 gainers, 6 gaps, 20 losers
+2026-05-28 11:15:23 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-05-28 11:15:23 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-05-28 11:15:23 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-05-28 11:15:23 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-05-28 11:15:23 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-05-28 11:15:23 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-05-28 11:18:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-05-28 11:18:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-05-28 11:18:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.98, RSI=24, BB=lower, Vol=6.8x | SIDU @ $5.09
+2026-05-28 11:18:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.1x | AAPL @ $311.74
+2026-05-28 11:18:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:18:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:18:41 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-05-28 11:18:41 | INFO     | trading_bot.engine   |   -> mean_reversion: buy SIDU @ $5.09 conf=1.00
+2026-05-28 11:18:41 | INFO     | trading_bot.engine   |   -> momentum: buy AAPL @ $311.74 conf=0.65
+2026-05-28 11:18:41 | INFO     | trading_bot.engine   |   -> momentum: buy PLTR @ $135.70 conf=1.00
+2026-05-28 11:18:41 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
+2026-05-28 11:18:41 | INFO     | trading_bot.risk.manager | APPROVED: buy SIDU | Mean reversion BUY: Z=-3.98, RSI=24, BB=lower, Vol=6.8x
+2026-05-28 11:18:41 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Momentum BUY: pullback entry, higher lows, Vol=0.1x
+2026-05-28 11:18:41 | INFO     | trading_bot.risk.manager | APPROVED: buy PLTR | Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x
+2026-05-28 11:18:41 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x
+2026-05-28 11:18:41 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 938 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ SIDU: score 100/100 — Mean reversion BUY: Z=-3.98, RSI=24, BB=lower, Vol=6.8x
+  ✅ AAPL: score 65/100 — Momentum BUY: pullb
+2026-05-28 11:18:42 | WARNING  | trading_bot.engine   | SLOW CYCLE (203.1s total): update_data=183.3s, update_scalp=14.7s
+2026-05-28 11:18:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-05-28 11:18:44 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SIDU — score 0 below min 50
+2026-05-28 11:18:47 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: AAPL EMA imbalance +0.32 ramping → score 65 → 75
+2026-05-28 11:18:47 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: AAPL via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 11:18:47 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-05-28 11:18:49 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: PLTR via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 11:18:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-05-28 11:18:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; CHX; NYSENAT; PSX; T24X; MEMX; EDGEA; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; LTSE; 
+2026-05-28 11:18:52 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SMCI via momentum — momentum hit daily DD limit (-4.15%)
+2026-05-28 11:18:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:18:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:18:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; 
+2026-05-28 11:18:55 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[38]: AAVE-USD(weak 3d trend (-7.1%)), ADA-USD(weak 3d trend (-5.9%)), ALGO-USD(weak 3d trend (-7.7%)), APT-USD(weak 3d trend (-3.4%)), ARB-USD(weak 3d trend (-5.4%)), ATOM-USD(weak 3d trend (-5.9%)), AVAX-USD(weak 3d trend (-6.3%)), BONK-USD(weak 3d trend (-12.7%)), BTC-USD(weak 3d trend (-6.1%)), COMP-USD(weak 3d trend (-11.6%)), CRV-USD(weak 3d trend (-9.5%)), DOGE-USD(weak 3d trend (-4.9%)), DOT-USD(weak 3d trend (-6.8%)), ETC-USD(weak 3d trend (-3.3%)), ETH-USD(weak 3d trend (-6.3%)), FET-USD(weak 3d trend (-0.1%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (-0.4%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (+2.4%)), JUP-USD(weak 3d trend (-13.4%)), LINK-USD(weak 3d trend (-7.3%)), LTC-USD(weak 3d trend (-3.5%)), MATIC-USD(weak 3d trend (-5.9%)), NEAR-USD(weak 3d trend (-12.7%)), OP-USD(weak 3d trend (-12.9%)), PEPE-USD(weak 3d trend (-9.6%)), RNDR-USD(weak 3d trend (-10.8%)), SHIB-USD(weak 3d trend (-6.4%)), SNX-USD(weak 3d trend (-0.3%)), SOL-USD(weak 3d trend (-6.1%)), SUI-USD(weak 3d trend (-12.1%)), TIA-USD(weak 3d trend (-3.3%)), TON-USD(weak 3d trend (-4.2%)), TRX-USD(weak 3d trend (-6.1%)), UNI-USD(weak 3d trend (-12.2%)), WIF-USD(weak 3d trend (-10.8%)), XRP-USD(weak 3d trend (-4.4%)) | warming=1 | neutral=1 | no_data=2
+2026-05-28 11:18:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:18:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.1x | AAPL @ $311.74
+2026-05-28 11:18:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:18:55 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:18:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:18:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:18:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:18:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.1x | AAPL @ $311.74
+2026-05-28 11:18:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:18:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:19:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:19:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
+2026-05-28 11:19:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.1x | AAPL @ $311.74
+2026-05-28 11:19:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, breakout>133.37, Vol=5.3x | PLTR @ $135.70
+2026-05-28 11:19:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-05-28 11:19:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-05-28 11:19:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-05-28 11:19:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-05-28 11:19:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-05-28 11:19:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-05-28 11:19:05 | INFO     | trading_bot.engine   | IBKR scanner: 114 unique symbols discovered | 50 gainers, 6 gaps, 20 losers
+2026-05-28 11:19:05 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-05-28 11:19:05 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-05-28 11:19:05 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 100 low-priority equity names; max 90)
+2026-05-28 11:19:05 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-05-28 11:19:05 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-05-28 11:19:05 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
