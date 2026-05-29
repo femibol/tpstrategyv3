@@ -74,7 +74,7 @@ cost_model:
   # --- New-entry safety gates (block buys, never block exits) ---
   max_total_trades_per_day: 25      # Hard cap on equity entries per day across all strategies (0 = disabled)
   max_total_crypto_trades_per_day: 50  # Separate cap for crypto — 24/7 market needs more headroom than RTH equity (0 = disabled)
-  strategy_daily_dd_pause_pct: 0.03 # If a strategy is down >3% on its allocated capital today, pause its new entries until tomorrow (0 = disabled)
+  strategy_daily_dd_pause_pct: 0.05 # If a strategy is down >5% on its allocated capital today, pause its new entries until tomorrow (0 = disabled). Raised 3%→5% 2026-05-28 after RKLB -$82.56 overnight tripped momentum at -4.15% and killed the whole RTH session — one bad trade nuked the bot's primary equity strategy for the day. 5% lets momentum absorb a single overnight slip and keep trying instead of compounding into a dead day.
   premarket_news_check: true        # 6 AM ET sweep over overnight holds — close at open if a bearish catalyst dropped overnight
 
   # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
