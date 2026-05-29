@@ -1,62 +1,3 @@
-2026-05-28 01:52:10 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
-2026-05-28 01:52:10 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-05-28 01:52:10 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 120 low-priority equity names; max 90)
-2026-05-28 01:52:10 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-05-28 01:52:10 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-05-28 01:52:10 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-05-28 01:54:43 | INFO     | trading_bot.engine   | DATA COVERAGE: 66/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 1
-2026-05-28 01:55:01 | WARNING  | trading_bot.engine   | STOP WATCHDOG: SMCI has NO broker-side stop! Placing emergency stop @ $36.54 for 62 shares
-2026-05-28 01:55:01 | INFO     | trading_bot.broker.ibkr | Order update: SMCI | Status: Cancelled | Filled: 0.0/62.0
-2026-05-28 01:55:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-05-28 01:55:02 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 62.0 SMCI @ STOP 36.5376029142175 [OUTSIDE RTH] | Order ID: 368235
-2026-05-28 01:55:03 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: SMCI | Order ID: 368235
-2026-05-28 01:55:03 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: SMCI — IBKR returned None
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, Vol=4.1x | MSTZ @ $6.50
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=34, Vol=3.2x | NVDA @ $212.57
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=43, higher lows, Vol=3.8x | RKLB @ $150.23
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, breakout>62.17, Vol=4.3x | WOLF @ $63.15
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, higher lows, Vol=4.6x | SMCI @ $38.19
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: MSTZ | Score: 70 | RVOL: 371.9x | Change: +0.5% | R:R 2.7
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: QBTZ | Score: 65 | RVOL: 462.2x | Change: +2.3% | R:R 2.7
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WOLF | Score: 80 | RVOL: 335.0x | Change: +2.9% | R:R 2.7
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: QUCY | Score: 75 | RVOL: 253.2x | Change: +1.0% | R:R 2.7
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SIDU | Score: 65 | RVOL: 425.3x | Change: +0.3% | R:R 2.7
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: SNOY | Score: 75 | RVOL: 20.0x | Change: +0.5% | R:R 2.0 | Target: $7.89 (+1.2%)
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: IONZ | Score: 75 | RVOL: 7.4x | Change: +0.4% | R:R 1.9 | Target: $2.30 (+1.2%)
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: DPRO | Score: 75 | RVOL: 3.7x | Change: +0.4% | R:R 2.0 | Target: $6.71 (+1.2%)
-2026-05-28 01:55:03 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: LTRX | Score: 90 | RVOL: 5.7x | Change: +0.2% | R:R 2.0 | Target: $7.27 (+1.2%)
-2026-05-28 01:57:31 | INFO     | trading_bot.strategy.daily_trend_rider | TREND RIDER: 5 candidates from 146 scanned — UMAC, NASA, ASTX, TSLL, RDW
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 14 signals from strategies
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> momentum: buy MSTZ @ $6.50 conf=0.70
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> momentum: buy NVDA @ $212.57 conf=0.70
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> momentum: buy RKLB @ $150.23 conf=0.75
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> momentum: buy WOLF @ $63.15 conf=0.85
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $38.19 conf=0.75
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy MSTZ @ $6.50 conf=0.70
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy QBTZ @ $4.03 conf=0.65
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WOLF @ $63.15 conf=0.80
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy QUCY @ $2.91 conf=0.75
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SIDU @ $6.08 conf=0.65
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy SNOY @ $7.87 conf=0.75
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy IONZ @ $2.27 conf=0.75
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy DPRO @ $6.67 conf=0.75
-2026-05-28 01:57:31 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy LTRX @ $7.25 conf=0.90
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy MSTZ | Momentum BUY: EMA trend, ADX=44, Vol=4.1x
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy NVDA | Momentum BUY: EMA trend, ADX=34, Vol=3.2x
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy RKLB | Momentum BUY: EMA trend, ADX=43, higher lows, Vol=3.8x
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy WOLF | Momentum BUY: EMA trend, ADX=46, breakout>62.17, Vol=4.3x
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | REJECTED: buy SMCI | Already in position: SMCI
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy MSTZ | Extreme RVOL 371.9x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy QBTZ | Extreme RVOL 462.2x | Moving up +2.3% | RSI healthy (48) | Range expansion
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy WOLF | Extreme RVOL 335.0x | Moving up +2.9% | EMA trend bullish | MACD histogram positive
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy QUCY | Extreme RVOL 253.2x | Moving up +1.0% | MACD histogram positive | RSI healthy (55)
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy SIDU | Extreme RVOL 425.3x | Trending up +0.3% | EMA trend bullish | MACD histogram positive
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy SNOY | Extreme RVOL 20.0x | Moving up +0.5% | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy IONZ | Extreme RVOL 7.4x | Moving up +0.4% | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy DPRO | Very high RVOL 3.7x | Moving up +0.4% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-05-28 01:57:31 | INFO     | trading_bot.risk.manager | APPROVED: buy LTRX | Extreme RVOL 5.7x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-05-28 01:57:31 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1053 symbols
-Market: 🟡 SIDEWAYS 
 Signals found: 14
   ✅ MSTZ: score 70/100 — Momentum BUY: EMA trend, ADX=44, Vol=4.1x
   ✅ NVDA: score 70/100 — Momentum BUY: EMA trend, ADX=34,
@@ -19998,3 +19939,62 @@ Signals found: 3
 2026-05-29 01:22:37 | INFO     | trading_bot.engine   | IBKR scanner: 127 unique symbols discovered | 50 gainers, 25 gaps, 20 losers
 2026-05-29 01:22:38 | INFO     | trading_bot.engine   | Injected 6 runners into all strategies
 2026-05-29 01:22:38 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 111 low-priority equity names; max 90)
+2026-05-29 01:25:40 | INFO     | trading_bot.engine   | DATA COVERAGE: 63/90 symbols have bars, 89/90 have prices | IBKR blacklisted: 43
+2026-05-29 01:25:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: RKTO | Score: 70 | RVOL: 464.0x | Change: +0.4% | R:R 2.7
+2026-05-29 01:25:58 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AEVA | Score: 80 | RVOL: 6.0x | Change: +0.6% | R:R 2.0 | Target: $25.96 (+1.2%)
+2026-05-29 01:25:58 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NOWL | Score: 85 | RVOL: 4.0x | Change: +0.5% | R:R 2.0 | Target: $5.73 (+1.2%)
+2026-05-29 01:25:58 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-05-29 01:25:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy RKTO @ $1.36 conf=0.70
+2026-05-29 01:25:58 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AEVA @ $25.82 conf=0.80
+2026-05-29 01:25:58 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NOWL @ $5.68 conf=0.85
+2026-05-29 01:25:58 | INFO     | trading_bot.risk.manager | APPROVED: buy RKTO | Extreme RVOL 464.0x | Trending up +0.4% | EMA trend bullish | MACD histogram positive
+2026-05-29 01:25:58 | INFO     | trading_bot.risk.manager | APPROVED: buy AEVA | Extreme RVOL 6.0x | Moving up +0.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-05-29 01:25:58 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Extreme RVOL 4.0x | Moving up +0.5% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-05-29 01:25:58 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — RKTO, AEVA, NOWL
+2026-05-29 01:25:58 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1010 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ RKTO: score 70/100 — Extreme RVOL 464.0x | Trending up +0.4% | EMA trend bullish 
+  ✅ AEVA: score 80/100 — Extreme RVOL 6
+2026-05-29 01:25:59 | WARNING  | trading_bot.engine   | SLOW CYCLE (205.2s total): update_data=183.0s, update_scalp=17.5s
+2026-05-29 01:26:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[34]: AAVE-USD(weak 3d trend (-5.6%)), ADA-USD(weak 3d trend (-2.9%)), ALGO-USD(weak 3d trend (+4.2%)), APT-USD(weak 3d trend (-5.8%)), ARB-USD(weak 3d trend (-1.4%)), ATOM-USD(weak 3d trend (-1.2%)), AVAX-USD(weak 3d trend (-3.8%)), BONK-USD(weak 3d trend (-9.3%)), BTC-USD(weak 3d trend (-4.3%)), COMP-USD(weak 3d trend (-8.0%)), CRV-USD(weak 3d trend (-4.3%)), DOGE-USD(weak 3d trend (-2.0%)), DOT-USD(weak 3d trend (-4.5%)), ETC-USD(weak 3d trend (-4.9%)), ETH-USD(weak 3d trend (-4.2%)), FET-USD(weak 3d trend (+0.8%)), FLOKI-USD(weak 3d trend (-6.3%)), GRT-USD(weak 3d trend (-5.8%)), JUP-USD(weak 3d trend (-13.4%)), LINK-USD(weak 3d trend (-5.6%)), LTC-USD(weak 3d trend (-1.9%)), MATIC-USD(weak 3d trend (-5.4%)), NEAR-USD(weak 3d trend (-9.6%)), OP-USD(weak 3d trend (-8.5%)), PEPE-USD(weak 3d trend (-4.8%)), RNDR-USD(weak 3d trend (-13.6%)), SHIB-USD(weak 3d trend (-3.8%)), SOL-USD(weak 3d trend (-3.0%)), SUI-USD(weak 3d trend (-11.3%)), TON-USD(weak 3d trend (-4.3%)), TRX-USD(weak 3d trend (-6.5%)), UNI-USD(weak 3d trend (-8.1%)), WIF-USD(weak 3d trend (-5.2%)), XRP-USD(weak 3d trend (-2.6%)) | neutral=3 | no_data=4
+2026-05-29 01:26:08 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
+2026-05-29 01:26:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-05-29 01:26:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-05-29 01:26:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-05-29 01:26:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-05-29 01:26:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-05-29 01:26:11 | INFO     | trading_bot.engine   | IBKR scanner: 127 unique symbols discovered | 50 gainers, 25 gaps, 20 losers
+2026-05-29 01:26:12 | INFO     | trading_bot.engine   | Injected 6 runners into all strategies
+2026-05-29 01:26:12 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 111 low-priority equity names; max 90)
+2026-05-29 01:29:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: RKTO | Score: 70 | RVOL: 464.0x | Change: +0.4% | R:R 2.7
+2026-05-29 01:29:02 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AEVA | Score: 80 | RVOL: 6.0x | Change: +0.6% | R:R 2.0 | Target: $25.96 (+1.2%)
+2026-05-29 01:29:02 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NOWL | Score: 85 | RVOL: 4.0x | Change: +0.5% | R:R 2.0 | Target: $5.73 (+1.2%)
+2026-05-29 01:29:02 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-05-29 01:29:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy RKTO @ $1.36 conf=0.70
+2026-05-29 01:29:02 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AEVA @ $25.82 conf=0.80
+2026-05-29 01:29:02 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NOWL @ $5.68 conf=0.85
+2026-05-29 01:29:02 | INFO     | trading_bot.risk.manager | APPROVED: buy RKTO | Extreme RVOL 464.0x | Trending up +0.4% | EMA trend bullish | MACD histogram positive
+2026-05-29 01:29:02 | INFO     | trading_bot.risk.manager | APPROVED: buy AEVA | Extreme RVOL 6.0x | Moving up +0.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-05-29 01:29:02 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Extreme RVOL 4.0x | Moving up +0.5% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-05-29 01:29:02 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — RKTO, AEVA, NOWL
+2026-05-29 01:29:02 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1010 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ RKTO: score 70/100 — Extreme RVOL 464.0x | Trending up +0.4% | EMA trend bullish 
+  ✅ AEVA: score 80/100 — Extreme RVOL 6
+2026-05-29 01:29:03 | WARNING  | trading_bot.engine   | SLOW CYCLE (174.7s total): update_data=149.2s, update_scalp=21.5s
+2026-05-29 01:29:03 | INFO     | trading_bot.engine   | CYCLE #25: regime=sideways | signals=3->approved=0 | positions=1/15 | bars_warm=65/65 | equity_open=False | pm=False pwr_hr=False
+2026-05-29 01:29:06 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[34]: AAVE-USD(weak 3d trend (-5.6%)), ADA-USD(weak 3d trend (-2.9%)), ALGO-USD(weak 3d trend (+4.2%)), APT-USD(weak 3d trend (-5.8%)), ARB-USD(weak 3d trend (-1.4%)), ATOM-USD(weak 3d trend (-1.2%)), AVAX-USD(weak 3d trend (-3.9%)), BONK-USD(weak 3d trend (-9.3%)), BTC-USD(weak 3d trend (-4.3%)), COMP-USD(weak 3d trend (-8.0%)), CRV-USD(weak 3d trend (-4.3%)), DOGE-USD(weak 3d trend (-2.1%)), DOT-USD(weak 3d trend (-4.5%)), ETC-USD(weak 3d trend (-4.9%)), ETH-USD(weak 3d trend (-4.2%)), FET-USD(weak 3d trend (-0.6%)), FLOKI-USD(weak 3d trend (-6.3%)), GRT-USD(weak 3d trend (-7.7%)), JUP-USD(weak 3d trend (-13.4%)), LINK-USD(weak 3d trend (-5.9%)), LTC-USD(weak 3d trend (-2.1%)), MATIC-USD(weak 3d trend (-5.4%)), NEAR-USD(weak 3d trend (-10.3%)), OP-USD(weak 3d trend (-9.2%)), PEPE-USD(weak 3d trend (-4.8%)), RNDR-USD(weak 3d trend (-13.8%)), SHIB-USD(weak 3d trend (-3.8%)), SOL-USD(weak 3d trend (-3.1%)), SUI-USD(weak 3d trend (-11.4%)), TON-USD(weak 3d trend (-4.3%)), TRX-USD(weak 3d trend (-6.5%)), UNI-USD(weak 3d trend (-8.1%)), WIF-USD(weak 3d trend (-5.2%)), XRP-USD(weak 3d trend (-2.6%)) | neutral=3 | no_data=4
+2026-05-29 01:29:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-05-29 01:29:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-05-29 01:29:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-05-29 01:29:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-05-29 01:29:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-05-29 01:29:15 | INFO     | trading_bot.engine   | IBKR scanner: 127 unique symbols discovered | 50 gainers, 25 gaps, 20 losers
+2026-05-29 01:29:16 | INFO     | trading_bot.engine   | Injected 6 runners into all strategies
+2026-05-29 01:29:16 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-05-29 01:29:16 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 110 low-priority equity names; max 90)
+2026-05-29 01:29:16 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-05-29 01:29:16 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-05-29 01:29:16 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
