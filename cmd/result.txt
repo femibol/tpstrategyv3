@@ -1,17 +1,24 @@
-=== executed: 61a34dce150e37da9e3a637df6e151204b04c595
-=== started:  2026-05-30T04:11:40Z
+=== executed: f9806c4d7e7154e8a1d240b7e718534278c680c9
+=== started:  2026-05-30T04:13:07Z
 === exit:     
 === timeout:  90s
 ===
-secret-set: yes
+=== current DELL state ===
+  qty=8 entry=$420.01 current=$420.36 unr=+0.08%
 
-=== bot's DELL position before close ===
-  qty=8  entry=$420.01  current=$420.36  unr=+0.08%  stop=$416.43
+=== last 3 min of bot logs filtered for close/cancel/DELL/error ===
+2026-05-30 00:11:30 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
+2026-05-30 00:12:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2157: Sec-def data farm connection is broken:secdefil
 
-=== POST /api/control/close/DELL ===
+=== verify the endpoint exists and what it returns ===
+{"status":"closed","symbol":"DELL"}
 
+HTTP 200
 
-=== bot's DELL position after close (re-check in 8s) ===
-  STILL OPEN: qty=8  current=$420.36
+=== try the close again with the IBKR worker possibly stuck — give it 20s this time ===
+{"status":"closed","symbol":"DELL"}
 
-=== docker logs tail — what happened ===
+HTTP 200 time=0.001750s
+
+=== positions_state after retry ===
+  ['DELL']
