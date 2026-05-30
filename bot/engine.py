@@ -6278,7 +6278,31 @@ class TradingEngine:
             # need a LIMIT entry — broker's bracket attachment only fires for
             # LIMIT/MIDPRICE in ibkr.py:426. Use a 2% above-market cap so fast
             # micro-cap runners still fill, while keeping fill price bounded.
-            use_server_bracket = bool(signal.get("use_server_bracket")) and current_price and current_price > 0
+            #
+            # 2026-05-30: default to TRUE for equity signals so the stop+TP
+            # live on IBKR's side instead of in bot memory. Survives bot/gateway
+            # disruptions — directly addresses the DELL incident where a
+            # wedged IBKR worker left the position uncovered for hours despite
+            # the bot's in-memory stop. Crypto continues to default FALSE
+            # because crypto execution goes through the TradersPost webhook
+            # path which doesn't support IBKR-style broker brackets. Strategies
+            # can still override explicitly (crypto_runner sets False, an
+            # equity strategy could opt out by setting False).
+            # Master kill switch: `risk.use_server_bracket_equity_default`
+            # in settings.yaml (default true) flips the default back to the
+            # old behavior if the bracket lifecycle causes issues.
+            bracket_default_enabled = self.config.risk_config.get(
+                "use_server_bracket_equity_default", True
+            )
+            if bracket_default_enabled and not self._is_crypto_symbol(symbol):
+                default_bracket = True
+            else:
+                default_bracket = False
+            use_server_bracket = bool(
+                signal.get("use_server_bracket", default_bracket)
+                and current_price and current_price > 0
+                and stop_loss_price and take_profit_price
+            )
             if use_server_bracket and not use_midprice:
                 entry_order_type = "LIMIT"
                 entry_limit_price = round(current_price * 1.02, 2)

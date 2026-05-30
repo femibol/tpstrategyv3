@@ -46,6 +46,18 @@ risk:
   max_signal_deviation_pct: 0.05           # Pre-order RTH: signal-vs-live drift cap (5% matches risk_manager.Rule 6)
   max_signal_deviation_pct_extended: 0.12  # Pre-order extended hours: 12% — pre-market gappers routinely drift 8-12%
 
+  # Server-side bracket default for equity entries. When true, equity BUYs
+  # are routed as LIMIT @ price×1.02 so IBKR attaches a bracket order
+  # (stop + target on broker side). Survives bot/gateway disruptions —
+  # without this, in-memory stops can fail to reach IBKR when the worker
+  # is wedged (DELL incident 2026-05-30: position uncovered for hours
+  # because BROKER STOP UPDATE FAILED in a retry loop while the worker
+  # timed out at 180s on every call). Crypto signals stay False (executed
+  # via TradersPost webhook which doesn't support IBKR brackets).
+  # Strategies can still override per-signal via `use_server_bracket` field.
+  # Set to false to revert to the old in-memory-stop behavior.
+  use_server_bracket_equity_default: true
+
 # Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
 # take_profit edge can't clear estimated round-trip cost by ratio×.
 # Ratio-based so cheap-stock momentum scalps with big % moves still
