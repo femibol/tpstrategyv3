@@ -1,22 +1,37 @@
-=== executed: 57f8bedeeb5f4ee2d8ca0c9ec99c93d840529385
-=== started:  2026-05-30T10:57:03Z
-=== exit:     1
+=== executed: c8044cda66d59cabb05287a667cca9fac483e8a8
+=== started:  2026-05-30T10:58:32Z
+=== exit:     
 === timeout:  90s
 ===
-=== pull #184 ===
+=== stash local config edits + pull main + pop ===
+Saved working directory and index state On main: auto-tuner-writes-1780138682
 From github-write:femibol/tpstrategyv3
  * branch            main       -> FETCH_HEAD
-   d8ade46..b211db9  main       -> origin/main
-M	config/settings.yaml
-M	config/strategies.yaml
 M	data/signal_log.json
 M	data/trade_history.json
 Your branch is behind 'origin/main' by 4 commits, and can be fast-forwarded.
   (use "git pull" to update your local branch)
-From github-write:femibol/tpstrategyv3
- * branch            main       -> FETCH_HEAD
-error: Your local changes to the following files would be overwritten by merge:
-	config/settings.yaml
-Please commit your changes or stash them before you merge.
-Aborting
-Updating 078ba9a..b211db9
+ bot/engine.py                        |  26 ++++++-
+ config/settings.yaml                 |  14 +++-
+ tests/test_server_bracket_default.py | 146 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 184 insertions(+), 2 deletions(-)
+ create mode 100644 tests/test_server_bracket_default.py
+	install.cmd
+
+The stash entry is kept in case you need it again.
+b211db9 Merge pull request #184 from femibol/claude/bracket-default-equity-rB8Pq
+2f06838 fix: default server-side bracket on equity entries (DELL incident)
+d8ade46 Merge pull request #183 from femibol/claude/dd-pause-bump-rvol-followup-cN3xQ
+
+=== force-recreate trading-bot (unwedges IBKR worker) ===
+ Container trading-bot-ib-gateway-1 Running 
+ Container trading-bot-trading-bot-1 Recreate 
+ Container trading-bot-trading-bot-1 Recreated 
+ Container trading-bot-trading-bot-1 Starting 
+ Container trading-bot-trading-bot-1 Started 
+state: restarting  started: 2026-05-30T10:58:18.237035076Z  health: unhealthy
+
+=== DELL state after restart ===
+  (no DELL — bot synced to flat from IBKR)
+
+=== DELL/bracket activity since restart ===
