@@ -1,15 +1,40 @@
 #!/bin/bash
-echo "=== latest crypto fast-lane heartbeat ==="
-docker logs trading-bot-trading-bot-1 --since 30m 2>&1 | grep "CRYPTO FAST LANE HEARTBEAT" | tail -2
+cd /opt/trading-bot
+SECRET=$(grep -E "^DASHBOARD_SECRET_KEY" .env 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'")
+echo "secret-set: $([ -n "$SECRET" ] && echo yes || echo no)"
+
 echo ""
-echo "=== crypto signal count last 1h, per strategy + name ==="
-docker logs trading-bot-trading-bot-1 --since 1h 2>&1 | grep -E "SIGNAL.*-USD" | grep -oE "(mean_reversion|momentum|crypto_runner)" | sort | uniq -c
+echo "=== bot's DELL position before close ==="
+python3 -c "
+import json
+with open('data/positions_state.json') as f:
+    pos = json.load(f)
+d = pos.get('DELL')
+if d:
+    print(f'  qty={d[\"quantity\"]}  entry=\${d[\"entry_price\"]:.2f}  current=\${d.get(\"current_price\",0):.2f}  unr={d.get(\"unrealized_pnl_pct\",0)*100:+.2f}%  stop=\${d.get(\"stop_loss\",0):.2f}')
+else:
+    print('  (no DELL position tracked)')
+"
+
 echo ""
-echo "=== distinct crypto symbols heard from in last 1h ==="
-docker logs trading-bot-trading-bot-1 --since 1h 2>&1 | grep -oE "[A-Z]+-USD" | sort | uniq -c | sort -rn | head -20
+echo "=== POST /api/control/close/DELL ==="
+curl -s -m 30 -u admin:"$SECRET" -X POST http://localhost:5000/api/control/close/DELL
 echo ""
-echo "=== blocked crypto entries last 6h ==="
-docker logs trading-bot-trading-bot-1 --since 6h 2>&1 | grep -iE "REJECTED.*-USD|BLOCKED.*-USD|cooldown.*-USD|SAFETY GATE.*-USD" | tail -10
+
 echo ""
-echo "=== Looser-than-5% trend names (what's actually clearing the gate now)? ==="
-docker logs trading-bot-trading-bot-1 --since 30m 2>&1 | grep -oE "CRYPTO FAST LANE HEARTBEAT.*" | tail -1 | tr '|' '\n' | grep -E "neutral|BUY\[|warming"
+echo "=== bot's DELL position after close (re-check in 8s) ==="
+sleep 8
+python3 -c "
+import json
+with open('data/positions_state.json') as f:
+    pos = json.load(f)
+d = pos.get('DELL')
+if d:
+    print(f'  STILL OPEN: qty={d[\"quantity\"]}  current=\${d.get(\"current_price\",0):.2f}')
+else:
+    print('  FLAT — DELL no longer in positions_state.json ✓')
+"
+
+echo ""
+echo "=== docker logs tail — what happened ==="
+docker logs trading-bot-trading-bot-1 --since 1m 2>&1 | grep -iE "DELL|API.*close|control.*close" | tail -10
