@@ -1,54 +1,38 @@
-=== executed: b306c2809a41f1d386081caf48a3784fd9dc247a
-=== started:  2026-05-30T01:00:03Z
+=== executed: 650f4bb14bab06c40ca35ae6e9dc97caf9d9754e
+=== started:  2026-05-30T01:01:03Z
 === exit:     
 === timeout:  90s
 ===
-=== container health ===
-  trading-bot-autoheal-1              state=running    health=healthy    Up 21 hours (healthy)
-  trading-bot-ib-gateway-1            state=running    health=healthy    Up 21 hours (healthy)
-  trading-bot-trading-bot-1           state=running    health=healthy    Up 21 hours (healthy)
+=== latest crypto fast-lane heartbeat ===
+2026-05-29 20:51:08 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-4.3%)), ADA-USD(weak 3d trend (-2.5%)), APT-USD(weak 3d trend (-4.4%)), ARB-USD(weak 3d trend (-3.9%)), ATOM-USD(weak 3d trend (-7.8%)), AVAX-USD(weak 3d trend (-3.2%)), BONK-USD(weak 3d trend (-8.8%)), BTC-USD(weak 3d trend (-3.3%)), COMP-USD(weak 3d trend (-7.3%)), CRV-USD(weak 3d trend (-2.2%)), DOGE-USD(weak 3d trend (-1.7%)), DOT-USD(weak 3d trend (-5.4%)), ETC-USD(weak 3d trend (-5.6%)), ETH-USD(weak 3d trend (-3.2%)), FET-USD(weak 3d trend (-6.0%)), FLOKI-USD(weak 3d trend (-5.8%)), GRT-USD(weak 3d trend (-8.5%)), ICP-USD(weak 3d trend (-2.0%)), JUP-USD(weak 3d trend (-15.1%)), LINK-USD(weak 3d trend (-3.8%)), LTC-USD(weak 3d trend (-0.2%)), MATIC-USD(weak 3d trend (-1.8%)), NEAR-USD(weak 3d trend (-6.9%)), OP-USD(weak 3d trend (-7.8%)), PEPE-USD(weak 3d trend (-3.7%)), RNDR-USD(weak 3d trend (-16.7%)), SEI-USD(weak 3d trend (-1.5%)), SHIB-USD(weak 3d trend (-2.5%)), SOL-USD(weak 3d trend (-2.2%)), SUI-USD(weak 3d trend (-10.5%)), TIA-USD(weak 3d trend (-14.3%)), TON-USD(weak 3d trend (-7.9%)), TRX-USD(weak 3d trend (-16.9%)), UNI-USD(weak 3d trend (-6.5%)), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (+0.6%)) | neutral=3 | no_data=3
+2026-05-29 20:52:22 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-4.3%)), ADA-USD(weak 3d trend (-2.5%)), APT-USD(weak 3d trend (-4.4%)), ARB-USD(weak 3d trend (-3.9%)), ATOM-USD(weak 3d trend (-7.8%)), AVAX-USD(weak 3d trend (-3.2%)), BONK-USD(weak 3d trend (-8.8%)), BTC-USD(weak 3d trend (-3.3%)), COMP-USD(weak 3d trend (-7.3%)), CRV-USD(weak 3d trend (-2.2%)), DOGE-USD(weak 3d trend (-1.7%)), DOT-USD(weak 3d trend (-5.4%)), ETC-USD(weak 3d trend (-5.6%)), ETH-USD(weak 3d trend (-3.2%)), FET-USD(weak 3d trend (-6.0%)), FLOKI-USD(weak 3d trend (-5.8%)), GRT-USD(weak 3d trend (-8.5%)), ICP-USD(weak 3d trend (-2.0%)), JUP-USD(weak 3d trend (-15.1%)), LINK-USD(weak 3d trend (-3.8%)), LTC-USD(weak 3d trend (-0.2%)), MATIC-USD(weak 3d trend (-1.8%)), NEAR-USD(weak 3d trend (-6.9%)), OP-USD(weak 3d trend (-7.8%)), PEPE-USD(weak 3d trend (-3.7%)), RNDR-USD(weak 3d trend (-16.7%)), SEI-USD(weak 3d trend (-1.5%)), SHIB-USD(weak 3d trend (-2.5%)), SOL-USD(weak 3d trend (-2.2%)), SUI-USD(weak 3d trend (-10.5%)), TIA-USD(weak 3d trend (-14.3%)), TON-USD(weak 3d trend (-7.9%)), TRX-USD(weak 3d trend (-16.9%)), UNI-USD(weak 3d trend (-6.5%)), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (+0.6%)) | neutral=3 | no_data=3
 
-=== dashboard port listening on host ===
-LISTEN 0      4096         0.0.0.0:5000      0.0.0.0:*    users:(("docker-proxy",pid=1363994,fd=8))                 
-LISTEN 0      4096            [::]:5000         [::]:*    users:(("docker-proxy",pid=1364000,fd=8))                 
+=== crypto signal count last 1h, per strategy + name ===
+      6 crypto_runner
 
-=== curl dashboard from inside the host ===
-HTTP 200 time=0.005667s
+=== distinct crypto symbols heard from in last 1h ===
+     38 COMP-USD
+     18 XRP-USD
+     18 WIF-USD
+     18 UNI-USD
+     18 TRX-USD
+     18 TON-USD
+     18 TIA-USD
+     18 SUI-USD
+     18 SOL-USD
+     18 SHIB-USD
+     18 SEI-USD
+     18 RNDR-USD
+     18 PEPE-USD
+     18 OP-USD
+     18 NEAR-USD
+     18 MATIC-USD
+     18 LTC-USD
+     18 LINK-USD
+     18 JUP-USD
+     18 ICP-USD
 
-=== curl dashboard via the public IP ===
-public IP: 2600:3c03::2000:f2ff:fe77:4a9d
-HTTP 000 time=0.000000s
+=== blocked crypto entries last 6h ===
 
-=== bot container recent flask errors ===
-127.0.0.1 - - [29/May/2026 20:54:59] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:55:29] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:55:59] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 20:56:02] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:56:29] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:57:00] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:57:30] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:58:00] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 20:58:02] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:58:31] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:59:01] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:59:31] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 21:00:01] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 21:00:02] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 21:00:03] "GET /health HTTP/1.1" 200 -
-
-=== bot container last 15 log lines ===
-127.0.0.1 - - [29/May/2026 20:55:29] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:55:59] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 20:56:02] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:56:29] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:57:00] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:57:30] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:58:00] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 20:58:02] "GET /health HTTP/1.1" 200 -
-2026-05-29 20:58:28 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
-127.0.0.1 - - [29/May/2026 20:58:31] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:59:01] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 20:59:31] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [29/May/2026 21:00:01] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 21:00:02] "GET /health HTTP/1.1" 200 -
-172.18.0.1 - - [29/May/2026 21:00:03] "GET /health HTTP/1.1" 200 -
+=== Looser-than-5% trend names (what's actually clearing the gate now)? ===
+ neutral=3 
