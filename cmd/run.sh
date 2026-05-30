@@ -1,26 +1,35 @@
 #!/bin/bash
 cd /opt/trading-bot
-
-echo "=== container state (now) ==="
-docker inspect -f 'state: {{.State.Status}}  health: {{.State.Health.Status}}  uptime: {{.State.StartedAt}}' trading-bot-trading-bot-1
-
-echo ""
-echo "=== last 3 healthcheck results ==="
-docker inspect --format '{{range .State.Health.Log}}{{.End}} exit={{.ExitCode}} {{.Output}}|{{end}}' trading-bot-trading-bot-1 2>/dev/null | tr '|' '\n' | tail -5
+echo "=== resolve conflict: take main's settings.yaml (has PR #184) ==="
+git checkout --theirs config/settings.yaml 2>&1
+git add config/settings.yaml
+git stash drop stash@{0} 2>&1 | tail -2 || true
 
 echo ""
-echo "=== docker logs tail to see what's happening ==="
-docker logs trading-bot-trading-bot-1 --tail 30 2>&1 | tail -30
+echo "=== validate YAML ==="
+python3 -c "import yaml; yaml.safe_load(open('config/settings.yaml'))" && echo "YAML OK"
 
 echo ""
-echo "=== confirm DELL really flat per IBKR (not just bot's belief) ==="
-SECRET=$(grep -E "^DASHBOARD_SECRET_KEY" .env 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'")
-curl -s -m 10 -u admin:"$SECRET" http://localhost:5000/api/positions | head -c 500
-
-echo ""
-echo "=== stash list (we have stashed auto-tuner edits) ==="
-git stash list
-
-echo ""
-echo "=== git status ==="
+echo "=== git status after resolve ==="
 git status -s | head -10
+
+echo ""
+echo "=== restart bot (config bind-mounted, plain restart picks up fix) ==="
+docker restart trading-bot-trading-bot-1
+sleep 15
+docker inspect -f 'state: {{.State.Status}}  health: {{.State.Health.Status}}' trading-bot-trading-bot-1
+
+echo ""
+echo "=== bot startup logs ==="
+docker logs trading-bot-trading-bot-1 --tail 15 2>&1 | tail -15
+
+echo ""
+echo "=== positions after re-sync ==="
+sleep 8
+python3 -c "
+import json
+with open('data/positions_state.json') as f:
+    pos = json.load(f)
+print(f'count: {len(pos)}')
+for sym, p in pos.items():
+    print(f'  {sym}  qty={p.get(\"quantity\",0):.4g}  strategy={p.get(\"strategy\",\"?\")}')"
