@@ -1,10 +1,3 @@
-2026-05-29 06:56:29 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: NXB — wide spread 41.4% (>2%)
-2026-05-29 06:56:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-05-29 06:56:32 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: RKTO EMA imbalance +0.82 ramping → score 0 → 10
-2026-05-29 06:56:32 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RKTO — score 0 below min 50
-2026-05-29 06:56:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-05-29 06:56:35 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: NCT — wide spread 9.8% (>2%)
-2026-05-29 06:56:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
 2026-05-29 06:56:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
 2026-05-29 06:56:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
 2026-05-29 06:56:37 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: PLCE — wide spread 5.7% (>2%)
@@ -19998,3 +19991,10 @@ TypeError: 'NoneType' object is not iterable
 2026-05-29 23:56:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2107: HMDS data farm connection is inactive but should be available upon demand.ushmds
 2026-05-29 23:59:30 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
 2026-05-30 00:02:30 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
+2026-05-30 00:05:30 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
+2026-05-30 00:05:30 | ERROR    | trading_bot.engine   | Dynamic discovery error: 'NoneType' object is not iterable
+Traceback (most recent call last):
+  File "/app/bot/engine.py", line 9782, in _discover_dynamic_symbols
+    for g in ibkr_gainers:
+TypeError: 'NoneType' object is not iterable
+2026-05-30 00:08:30 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
