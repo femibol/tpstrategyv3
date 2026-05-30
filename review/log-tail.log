@@ -1,18 +1,3 @@
-2026-05-29 12:29:40 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
-2026-05-29 12:29:40 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-05-29 12:29:40 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
-2026-05-29 12:30:00 | INFO     | trading_bot.engine   | === AUTO-TUNE CYCLE ===
-2026-05-29 12:30:00 | INFO     | trading_bot.learning.auto_tuner | === AUTO-TUNER: Starting autonomous optimization ===
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AI recommendations received: 20 params
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_mean_reversion: 0.202 -> 0.252 (AI suggested 0.28)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_momentum: 0.043 -> 0.05 (AI suggested 0.05)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_smc_forever: 0.129 -> 0.15 (AI suggested 0.15)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_rvol_momentum: 0.086 -> 0.12 (AI suggested 0.12)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_vwap_scalp: 0.043 -> 0.05 (AI suggested 0.05)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_rvol_scalp: 0.086 -> 0.1 (AI suggested 0.1)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_pairs_trading: 0.06 -> 0.07 (AI suggested 0.07)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_daily_trend_rider: 0.112 -> 0.13 (AI suggested 0.13)
-2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: stop_loss_pct: 0.053614999999999996 -> 0.058614999999999993 (AI suggested 0.06)
 2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: trailing_stop_pct: 0.03 -> 0.034 (AI suggested 0.035)
 2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mr_entry_zscore: -2.5 -> -2.7 (AI suggested -2.7)
 2026-05-29 12:30:05 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mr_bollinger_std: 2.8 -> 2.6 (AI suggested 2.6)
@@ -19998,3 +19983,18 @@ Signals found: 5
 2026-05-30 12:15:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=79, breakout>448.70, higher lows, Vol=9.8x | MSFT @ $449.03
 2026-05-30 12:15:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
 2026-05-30 12:15:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-05-30 12:15:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-05-30 12:15:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-05-30 12:15:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 19 results
+2026-05-30 12:15:04 | INFO     | trading_bot.engine   | IBKR scanner: 128 unique symbols discovered | 48 gainers, 8 gaps, 19 losers
+2026-05-30 12:15:04 | INFO     | trading_bot.engine   | Injected 8 runners into all strategies
+2026-05-30 12:15:04 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-05-30 12:18:30 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $313.88 for SELL 8.0 DELL
+2026-05-30 12:18:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: PreSubmitted | Filled: 0.0/8.0
+2026-05-30 12:18:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: ValidationError | Filled: 0.0/8.0
+2026-05-30 12:18:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 8 DELL NYSE Warning: Your order will not be placed at the exchange until 2026-06-01 04:00:00 US/Eastern.
+2026-05-30 12:18:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: PreSubmitted | Filled: 0.0/8.0
+2026-05-30 12:18:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: ValidationError | Filled: 0.0/8.0
+2026-05-30 12:18:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: SELL 8 DELL NYSE @ 313.88  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 395.80 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
+2026-05-30 12:18:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
+2026-05-30 12:18:31 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 8.0 DELL @ MARKET MKT [OUTSIDE RTH] | Order ID: 443003
