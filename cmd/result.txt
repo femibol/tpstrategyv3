@@ -1,35 +1,54 @@
-=== executed: 318a169c8f9083a166f5cc6d0aec2ffbe68c2d18
-=== started:  2026-05-28T19:04:20Z
+=== executed: b306c2809a41f1d386081caf48a3784fd9dc247a
+=== started:  2026-05-30T01:00:03Z
 === exit:     
 === timeout:  90s
 ===
-=== pull #182 on host ===
-From github-write:femibol/tpstrategyv3
- * branch            main       -> FETCH_HEAD
-   64303e5..078ba9a  main       -> origin/main
-M	config/settings.yaml
-M	config/strategies.yaml
-M	data/signal_log.json
-M	data/trade_history.json
-Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.
-  (use "git pull" to update your local branch)
-From github-write:femibol/tpstrategyv3
- * branch            main       -> FETCH_HEAD
-Updating 64303e5..078ba9a
-Fast-forward
- bot/engine.py                        |  34 +++++++++++
- tests/test_equity_overnight_guard.py | 111 +++++++++++++++++++++++++++++++++++
- 2 files changed, 145 insertions(+)
- create mode 100644 tests/test_equity_overnight_guard.py
-078ba9a fix: drop equity BUY signals in deep-overnight window (20:00-04:00 ET) (#182)
-64303e5 Merge pull request #181 from femibol/claude/handoff-session-9-update-Tq8wN
-785f3bb Update HANDOFF.md — session 9 (9 PRs + VPS bridge live + local-merge fixes)
+=== container health ===
+  trading-bot-autoheal-1              state=running    health=healthy    Up 21 hours (healthy)
+  trading-bot-ib-gateway-1            state=running    health=healthy    Up 21 hours (healthy)
+  trading-bot-trading-bot-1           state=running    health=healthy    Up 21 hours (healthy)
 
-=== restart bot (bind-mount hot reload) ===
-trading-bot-trading-bot-1
-state: running  started: 2026-05-28T19:04:14.214836408Z  health: starting
+=== dashboard port listening on host ===
+LISTEN 0      4096         0.0.0.0:5000      0.0.0.0:*    users:(("docker-proxy",pid=1363994,fd=8))                 
+LISTEN 0      4096            [::]:5000         [::]:*    users:(("docker-proxy",pid=1364000,fd=8))                 
 
-=== grep new guard in running bot/engine.py ===
-                                f"EQUITY MARKET CLOSED: dropped {len(dropped)} "
-                                f"buy signal(s) — {', '.join(dropped[:10])}"
-                                f"{'...' if len(dropped) > 10 else ''}"
+=== curl dashboard from inside the host ===
+HTTP 200 time=0.005667s
+
+=== curl dashboard via the public IP ===
+public IP: 2600:3c03::2000:f2ff:fe77:4a9d
+HTTP 000 time=0.000000s
+
+=== bot container recent flask errors ===
+127.0.0.1 - - [29/May/2026 20:54:59] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:55:29] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:55:59] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 20:56:02] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:56:29] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:57:00] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:57:30] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:58:00] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 20:58:02] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:58:31] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:59:01] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:59:31] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 21:00:01] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 21:00:02] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 21:00:03] "GET /health HTTP/1.1" 200 -
+
+=== bot container last 15 log lines ===
+127.0.0.1 - - [29/May/2026 20:55:29] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:55:59] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 20:56:02] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:56:29] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:57:00] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:57:30] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:58:00] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 20:58:02] "GET /health HTTP/1.1" 200 -
+2026-05-29 20:58:28 | ERROR    | trading_bot.broker.ibkr | IBKR worker call timed out after 180s
+127.0.0.1 - - [29/May/2026 20:58:31] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:59:01] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 20:59:31] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2026 21:00:01] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 21:00:02] "GET /health HTTP/1.1" 200 -
+172.18.0.1 - - [29/May/2026 21:00:03] "GET /health HTTP/1.1" 200 -
