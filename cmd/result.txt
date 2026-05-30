@@ -1,56 +1,17 @@
-=== executed: dc1eb6eaf5a2389d98c7de7419ef2856c3cb41b9
-=== started:  2026-05-30T11:00:02Z
+=== executed: 355afec89926dea3bd2c7b164bac4940eb4c6b18
+=== started:  2026-05-30T11:01:25Z
 === exit:     
 === timeout:  90s
 ===
-=== container state (now) ===
-state: restarting  health: unhealthy  uptime: 2026-05-30T10:59:19.468297575Z
+=== resolve conflict: take main's settings.yaml (has PR #184) ===
+Updated 1 path from the index
+Dropped stash@{0} (a5120891a3291cb616996fe1183495e3abb2b9c3)
 
-=== last 3 healthcheck results ===
+=== validate YAML ===
+YAML OK
 
-
-=== docker logs tail to see what's happening ===
-  File "/usr/local/lib/python3.10/site-packages/yaml/__init__.py", line 125, in safe_load
-    return load(stream, SafeLoader)
-  File "/usr/local/lib/python3.10/site-packages/yaml/__init__.py", line 81, in load
-    return loader.get_single_data()
-  File "/usr/local/lib/python3.10/site-packages/yaml/constructor.py", line 49, in get_single_data
-    node = self.get_single_node()
-  File "/usr/local/lib/python3.10/site-packages/yaml/composer.py", line 36, in get_single_node
-    document = self.compose_document()
-  File "/usr/local/lib/python3.10/site-packages/yaml/composer.py", line 55, in compose_document
-    node = self.compose_node(None, None)
-  File "/usr/local/lib/python3.10/site-packages/yaml/composer.py", line 84, in compose_node
-    node = self.compose_mapping_node(anchor)
-  File "/usr/local/lib/python3.10/site-packages/yaml/composer.py", line 133, in compose_mapping_node
-    item_value = self.compose_node(node, item_key)
-  File "/usr/local/lib/python3.10/site-packages/yaml/composer.py", line 64, in compose_node
-    if self.check_event(AliasEvent):
-  File "/usr/local/lib/python3.10/site-packages/yaml/parser.py", line 98, in check_event
-    self.current_event = self.state()
-  File "/usr/local/lib/python3.10/site-packages/yaml/parser.py", line 449, in parse_block_mapping_value
-    if not self.check_token(KeyToken, ValueToken, BlockEndToken):
-  File "/usr/local/lib/python3.10/site-packages/yaml/scanner.py", line 115, in check_token
-    while self.need_more_tokens():
-  File "/usr/local/lib/python3.10/site-packages/yaml/scanner.py", line 152, in need_more_tokens
-    self.stale_possible_simple_keys()
-  File "/usr/local/lib/python3.10/site-packages/yaml/scanner.py", line 291, in stale_possible_simple_keys
-    raise ScannerError("while scanning a simple key", key.mark,
-yaml.scanner.ScannerError: while scanning a simple key
-  in "/app/config/settings.yaml", line 9, column 1
-could not find expected ':'
-  in "/app/config/settings.yaml", line 10, column 12
-
-=== confirm DELL really flat per IBKR (not just bot's belief) ===
-
-=== stash list (we have stashed auto-tuner edits) ===
-stash@{0}: On main: auto-tuner-writes-1780138682
-stash@{1}: WIP on main: 5396a68 snapshot: trade_history + signal_log for crypto review
-stash@{2}: On main: vps-better-queued-handling
-stash@{3}: WIP on main: 56da615 Merge pull request #146 from femibol/claude/traderspost-primary-execution
-
-=== git status ===
-UU config/settings.yaml
+=== git status after resolve ===
+M  config/settings.yaml
 M  config/strategies.yaml
  M data/signal_log.json
  M data/trade_history.json
@@ -59,3 +20,27 @@ M  config/strategies.yaml
 ?? data/trade_history.json.bak.20260518_090525
 ?? data/weekly-reviews/
 ?? install.cmd
+
+=== restart bot (config bind-mounted, plain restart picks up fix) ===
+trading-bot-trading-bot-1
+state: running  health: starting
+
+=== bot startup logs ===
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'DOT-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'SNX-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'LINK-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'LTC-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'AVAX-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'SEI-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'ICP-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'ATOM-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'SOL-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'MKR-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'FET-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'ARB-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'APT-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'BTC-USD' — skipping streaming
+2026-05-30 07:01:13 | INFO     | trading_bot.broker.ibkr | No security definition for 'MATIC-USD' — skipping streaming
+
+=== positions after re-sync ===
+count: 0
