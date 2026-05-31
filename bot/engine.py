@@ -2925,6 +2925,25 @@ class TradingEngine:
     # the static stop_loss continues to bound the downside.
     CRYPTO_TRAIL_ARM_PCT = 0.005
 
+    def _trail_floor_price(self, symbol, entry_price):
+        """Minimum price the trailing-stop may sit at for this symbol.
+
+        For crypto, returns `entry_price × (1 + CRYPTO_TRAIL_ARM_PCT)` so a
+        trail exit always locks in at least +0.5% — eliminates the
+        breakeven-wick pattern that survived PR #172. Before this fix the
+        floor was `entry_price`, so a brief tick above entry armed the
+        trail at exactly entry, and the next dip through entry triggered
+        a sub-entry exit (5 such trades 2026-05-27..05-29, net -$26.80).
+
+        For non-crypto symbols returns `entry_price` unchanged — equity
+        / momentum strategies have their own arming gates and rely on
+        the entry-floor behavior. Don't extend this to all assets without
+        a parallel trade-review.
+        """
+        if self._is_crypto_symbol(symbol):
+            return entry_price * (1 + self.CRYPTO_TRAIL_ARM_PCT)
+        return entry_price
+
     def _trail_arm_allowed(self, pos, pnl_pct, symbol=None):
         """Whether a position's trailing stop may be ARMED/ratcheted now.
 
@@ -3376,12 +3395,18 @@ class TradingEngine:
                             f"${old_trail:.4f} unset (entry ${entry_price:.4f}, "
                             f"will re-arm on first ratchet above entry)"
                         )
-                    # Trail can never lock in a loss: floor at entry_price.
-                    # Pre-fix, the trail engaged at tick #1 below entry and
-                    # exited every losing crypto trade for -1.5%/-3%, costing
-                    # ~$120 across 6 trades vs. the 4% hard stop that would
-                    # have either held or hit cleanly.
-                    new_trail = max(current_price * (1 - trailing_pct), entry_price)
+                    # Trail can never lock in a loss: floor at entry_price (equity)
+                    # or entry × 1.005 (crypto — _trail_floor_price). Pre-PR-#172,
+                    # the trail engaged at tick #1 below entry and exited every
+                    # losing crypto trade for -1.5%/-3%. Post-#172 the floor at
+                    # entry stopped that but a wick pattern persisted (price
+                    # ticks above entry → trail set at entry → wicks back below
+                    # entry by slippage → exits at small loss); 5 such crypto
+                    # trail exits 2026-05-27..05-29, net -$26.80. The new
+                    # crypto floor at entry × 1.005 means trail exits always
+                    # lock in ≥0.5% gain (modulo slippage).
+                    floor_price = self._trail_floor_price(symbol, entry_price)
+                    new_trail = max(current_price * (1 - trailing_pct), floor_price)
                     # Only move stop UP, never down — and only ratchet while in profit
                     # so we don't set the floor at entry on every losing tick.
                     # _trail_arm_allowed keeps a plain-momentum trail un-armed
@@ -3509,7 +3534,9 @@ class TradingEngine:
                     # crypto trail below CRYPTO_TRAIL_ARM_PCT (see helper).
                     if price > entry and self._trail_arm_allowed(pos, pnl_pct, symbol):
                         trail_pct = pos.get("trailing_stop_pct", 0.02)
-                        new_trail = max(price * (1 - trail_pct), entry)
+                        # See engine.py:~3403 — crypto floor at entry × 1.005.
+                        floor_price = self._trail_floor_price(symbol, entry)
+                        new_trail = max(price * (1 - trail_pct), floor_price)
                         if new_trail > pos.get("trailing_stop", 0):
                             pos["trailing_stop"] = new_trail
 
@@ -3610,7 +3637,9 @@ class TradingEngine:
                 # crypto trail below CRYPTO_TRAIL_ARM_PCT (see helper).
                 if price > entry and self._trail_arm_allowed(pos, pnl_pct, symbol):
                     trail_pct = pos.get("trailing_stop_pct", 0.02)
-                    new_trail = max(price * (1 - trail_pct), entry)
+                    # See engine.py:~3403 — crypto floor at entry × 1.005.
+                    floor_price = self._trail_floor_price(symbol, entry)
+                    new_trail = max(price * (1 - trail_pct), floor_price)
                     if new_trail > pos.get("trailing_stop", 0):
                         pos["trailing_stop"] = new_trail
 
@@ -4322,11 +4351,11 @@ class TradingEngine:
             trailing_pct += momentum_buffer
 
             if direction == "long":
-                # Floor at entry: trail can never lock in a loss. Mirror of
-                # the crypto fix in _fast_scalp_monitor (commit 18ae5f2).
-                # Only ratchet while in profit so a losing tick doesn't set
-                # the floor at entry and immediately fire on the next dip.
-                new_trail = max(current_price * (1 - trailing_pct), entry_price)
+                # Floor at entry (equity) or entry × 1.005 (crypto). Mirror of
+                # the crypto fix in _fast_scalp_monitor (commit 18ae5f2) +
+                # the 0.5% lockin from the trail-floor-profit follow-up.
+                floor_price = self._trail_floor_price(symbol, entry_price)
+                new_trail = max(current_price * (1 - trailing_pct), floor_price)
                 # _trail_arm_allowed keeps a plain-momentum trail un-armed until
                 # MOMENTUM_TRAIL_ARM_PCT, and crypto trail until
                 # CRYPTO_TRAIL_ARM_PCT (see helper).
