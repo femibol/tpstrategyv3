@@ -1,12 +1,3 @@
-2026-05-30 11:07:45 | INFO     | trading_bot.engine   | Injected 8 runners into all strategies
-2026-05-30 11:07:45 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
-2026-05-30 11:10:30 | WARNING  | trading_bot.engine   | STOP WATCHDOG: DELL has NO broker-side stop! Placing emergency stop @ $393.41 for 8 shares
-2026-05-30 11:10:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Cancelled | Filled: 0.0/8.0
-2026-05-30 11:10:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-05-30 11:10:31 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 8.0 DELL @ STOP 393.408114784155 [OUTSIDE RTH] | Order ID: 440656
-2026-05-30 11:10:31 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DELL | Order ID: 440656
-2026-05-30 11:10:31 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DELL — IBKR returned None
-2026-05-30 11:10:31 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.11, RSI=30, BB=near, Vol=1.2x | HBAR-USD @ $0.10
 2026-05-30 11:10:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=77, higher lows, Vol=4.8x | AAPL @ $312.07
 2026-05-30 11:10:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=64, higher lows, Vol=6.4x | QURE @ $28.53
 2026-05-30 11:10:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=79, breakout>448.70, higher lows, Vol=9.8x | MSFT @ $449.03
@@ -19998,3 +19989,12 @@ Signals found: 7
 2026-05-31 12:54:36 | INFO     | trading_bot.engine   | IBKR scanner: 128 unique symbols discovered | 48 gainers, 8 gaps, 19 losers
 2026-05-31 12:54:36 | INFO     | trading_bot.engine   | Injected 8 runners into all strategies
 2026-05-31 12:54:36 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-05-31 12:58:03 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $313.88 for SELL 8.0 DELL
+2026-05-31 12:58:03 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: PreSubmitted | Filled: 0.0/8.0
+2026-05-31 12:58:03 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: ValidationError | Filled: 0.0/8.0
+2026-05-31 12:58:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 8 DELL NYSE Warning: Your order will not be placed at the exchange until 2026-06-01 04:00:00 US/Eastern.
+2026-05-31 12:58:03 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: PreSubmitted | Filled: 0.0/8.0
+2026-05-31 12:58:03 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: ValidationError | Filled: 0.0/8.0
+2026-05-31 12:58:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: SELL 8 DELL NYSE @ 313.88  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 395.80 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
+2026-05-31 12:58:03 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
+2026-05-31 12:58:04 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 8.0 DELL @ MARKET MKT [OUTSIDE RTH] | Order ID: 490539
