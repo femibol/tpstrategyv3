@@ -538,14 +538,52 @@ class TradingEngine:
                     )
 
                 # Check for pending sell orders at IBKR to avoid syncing
-                # positions that are in the process of being closed
+                # positions that are in the process of being closed.
+                # Stale orders (pending > N hours) are auto-cancelled here —
+                # without that, the DELL incident pattern repeats: a stale
+                # bracket SELL leg at an out-of-market limit sits "Submitted"
+                # for hours/days while IBKR's price cap keeps it from filling,
+                # and the sync silently skips the symbol every restart. By
+                # the time the user notices, the position has either ridden
+                # a runup (paper-account double-counting) or bled a dump.
                 pending_sell_symbols = set()
+                stale_pending_max_hours = float(
+                    self.config.risk_config.get("stale_pending_sell_max_hours", 2.0)
+                )
                 try:
+                    from datetime import datetime as _dt, timezone as _tz
+                    now_utc = _dt.now(_tz.utc)
                     open_trades = self.broker.ib.openTrades()
                     for t in open_trades:
                         if (t.order.action.upper() == "SELL" and
                                 t.orderStatus.status in ("PreSubmitted", "Submitted")):
-                            pending_sell_symbols.add(t.contract.symbol)
+                            sym = t.contract.symbol
+                            # Check age — older than threshold = cancel.
+                            age_hours = None
+                            try:
+                                if t.log:
+                                    placed_at = t.log[0].time
+                                    if placed_at.tzinfo is None:
+                                        placed_at = placed_at.replace(tzinfo=_tz.utc)
+                                    age_hours = (now_utc - placed_at).total_seconds() / 3600
+                            except Exception as e:
+                                log.debug(f"Could not read order age for {sym}: {e}")
+                            if age_hours is not None and age_hours > stale_pending_max_hours:
+                                try:
+                                    self.broker.cancel_order(t.order.orderId)
+                                    log.warning(
+                                        f"STALE PENDING SELL CANCELLED: {sym} order "
+                                        f"{t.order.orderId} pending {age_hours:.1f}h "
+                                        f"(threshold {stale_pending_max_hours}h) — "
+                                        f"sync will resume normal tracking next cycle"
+                                    )
+                                    # Don't add to skip set — let sync proceed.
+                                    continue
+                                except Exception as e:
+                                    log.error(
+                                        f"Failed to cancel stale order for {sym}: {e}"
+                                    )
+                            pending_sell_symbols.add(sym)
                     if pending_sell_symbols:
                         log.info(
                             f"IBKR SYNC: Found pending SELL orders for: "
