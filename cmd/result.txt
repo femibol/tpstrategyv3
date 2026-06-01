@@ -1,34 +1,41 @@
-=== executed: 7dd77d1d4fe5b2fef7443370643fbde15de32782
-=== started:  2026-05-31T19:07:25Z
+=== executed: beba42b49f0d987fae991c0349e73642d918a4ef
+=== started:  2026-06-01T23:46:03Z
 === exit:     
 === timeout:  90s
 ===
-=== pull #186 on host (stash any auto-tuner edits first) ===
-Saved working directory and index state On main: auto-tuner-pre-186-1780254421
-From github-write:femibol/tpstrategyv3
- * branch            main       -> FETCH_HEAD
-   924204b..e5cb44f  main       -> origin/main
-M	data/signal_log.json
-M	data/trade_history.json
-Your branch is behind 'origin/main' by 2 commits, and can be fast-forwarded.
-  (use "git pull" to update your local branch)
-Fast-forward
- bot/engine.py                           |  55 ++++++++++----
- tests/test_crypto_trail_floor_profit.py | 122 ++++++++++++++++++++++++++++++++
- 2 files changed, 164 insertions(+), 13 deletions(-)
- create mode 100644 tests/test_crypto_trail_floor_profit.py
-Dropped stash@{0} (566df6609dfd77c88d2469ae708636cbbee44544)
+=== running code: PR #186 deployed? ===
+host HEAD: e5cb44f9171fae5c9883ee133175e8139591be4b
+host log:
 e5cb44f Merge pull request #186 from femibol/claude/crypto-trail-floor-profit-w3Krt
 ea4f7d3 fix: crypto trail floor at entry × 1.005 — eliminate breakeven-wick exits
 924204b Merge pull request #185 from femibol/claude/handoff-autotuner-overlay-mJp6r
+2aa2b9e Update HANDOFF.md — session 10: #182-#184 + DELL incident + auto-tuner overlay queued
+b211db9 Merge pull request #184 from femibol/claude/bracket-default-equity-rB8Pq
 
-=== restart trading-bot (bind-mount makes plain restart hot) ===
-trading-bot-trading-bot-1
-state: running  health: starting
-
-=== confirm new code is loaded ===
     def _trail_floor_price(self, symbol, entry_price):
         """Minimum price the trailing-stop may sit at for this symbol.
 
-=== quick state check ===
-positions: ['DELL']
+        For crypto, returns `entry_price × (1 + CRYPTO_TRAIL_ARM_PCT)` so a
+callers in engine.py:
+4
+
+=== uptime ===
+started: 2026-06-01T03:50:14.090272531Z  health: healthy
+
+=== confirm running container's engine.py also has the floor helper ===
+4
+
+=== trace XLM trailing_stop exit at 03:46 — what's the trail value vs exit price? ===
+
+=== Friday close trades — DELL/PLTA/MARA ===
+Friday closed trades: 8
+  2026-05-30T03:52:14  HBAR-USD   mean_reversion     time_exit              pnl=$   -5.10 pct=-1.05% hold=76m
+  2026-05-30T05:41:02  XLM-USD    mean_reversion     stop_loss              pnl=$   -4.55 pct=-0.37% hold=16m
+  2026-05-30T12:32:02  HBAR-USD   mean_reversion     time_exit              pnl=$   -8.20 pct=-1.65% hold=81m
+  2026-05-30T15:42:36  ALGO-USD   mean_reversion     time_exit              pnl=$   -0.15 pct=-0.02% hold=79m
+  2026-05-30T18:27:02  XLM-USD    mean_reversion     time_exit              pnl=$  -36.15 pct=-2.98% hold=79m
+  2026-05-30T19:40:18  XLM-USD    mean_reversion     trailing_stop          pnl=$  -11.65 pct=-1.01% hold=39m
+  2026-05-30T19:51:26  HBAR-USD   mean_reversion     time_exit              pnl=$   -2.35 pct=-0.49% hold=79m
+  2026-05-30T21:39:19  HBAR-USD   mean_reversion     webhook_exit           pnl=$   +6.90 pct=+1.47% hold=57m
+
+Friday net: $-61.25
