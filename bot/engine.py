@@ -5921,9 +5921,18 @@ class TradingEngine:
         # all sub-dollar legitimate pairs. The $0.50 floor is an equity
         # penny-stock guard, not an asset-class assertion. Mirror of the
         # crypto exemption on the price ceiling below.
+        # low_float_catalyst exempt: 2026-06-01 TGHL ran $0.30 → $2.48 (+575%)
+        # intraday on 133M volume / $34M market cap — textbook low-float setup,
+        # exactly the regime low_float_catalyst was built for (HANDOFF session
+        # 5(8)). The strategy's own min_price ($0.20) admits TGHL but the
+        # universal $0.50 floor blocks the asymmetric-edge entry window
+        # ($0.30-$0.50). Strategy-level exemption keeps the universal guard
+        # in place for momentum/rvol_*/etc. which still need it.
         min_price = self.config.settings.get("risk", {}).get("min_price", 0.50)
+        is_low_float_signal = signal.get("strategy") == "low_float_catalyst"
         if (action == "buy" and current_price < min_price
-                and not self._is_crypto_symbol(symbol)):
+                and not self._is_crypto_symbol(symbol)
+                and not is_low_float_signal):
             log.info(f"PRICE FILTER: {symbol} ${current_price:.2f} below ${min_price} floor")
             return
 
