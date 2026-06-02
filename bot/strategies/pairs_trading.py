@@ -138,6 +138,11 @@ class PairsTradingStrategy(BaseStrategy):
                     "stop_loss": price_a * 1.03,
                     "take_profit": price_a * 0.96,
                     "confidence": min(1.0, abs(zscore) / 3.0),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Entry gate requires
+                    # abs(zscore) >= entry_zscore (default 2.0) so confidence
+                    # is >= 0.67, score >= 67 >= min_entry_score=50. PR #189/#191.
+                    "score": max(50, int(round(min(1.0, abs(zscore) / 3.0) * 100))),
                     "reason": (
                         f"Pairs SHORT {symbol_a}: {pair_key} Z={zscore:.2f}, "
                         f"corr={correlation:.2f}"
@@ -155,6 +160,11 @@ class PairsTradingStrategy(BaseStrategy):
                     "stop_loss": price_b * 0.97,
                     "take_profit": price_b * 1.04,
                     "confidence": min(1.0, abs(zscore) / 3.0),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Entry gate requires
+                    # abs(zscore) >= entry_zscore (default 2.0) so confidence
+                    # is >= 0.67, score >= 67 >= min_entry_score=50. PR #189/#191.
+                    "score": max(50, int(round(min(1.0, abs(zscore) / 3.0) * 100))),
                     "reason": (
                         f"Pairs BUY {symbol_b}: {pair_key} Z={zscore:.2f}, "
                         f"corr={correlation:.2f}"
@@ -181,6 +191,11 @@ class PairsTradingStrategy(BaseStrategy):
                     "stop_loss": price_a * 0.97,
                     "take_profit": price_a * 1.04,
                     "confidence": min(1.0, abs(zscore) / 3.0),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Entry gate requires
+                    # abs(zscore) >= entry_zscore (default 2.0) so confidence
+                    # is >= 0.67, score >= 67 >= min_entry_score=50. PR #189/#191.
+                    "score": max(50, int(round(min(1.0, abs(zscore) / 3.0) * 100))),
                     "reason": (
                         f"Pairs BUY {symbol_a}: {pair_key} Z={zscore:.2f}, "
                         f"corr={correlation:.2f}"
@@ -198,6 +213,11 @@ class PairsTradingStrategy(BaseStrategy):
                     "stop_loss": price_b * 1.03,
                     "take_profit": price_b * 0.96,
                     "confidence": min(1.0, abs(zscore) / 3.0),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Entry gate requires
+                    # abs(zscore) >= entry_zscore (default 2.0) so confidence
+                    # is >= 0.67, score >= 67 >= min_entry_score=50. PR #189/#191.
+                    "score": max(50, int(round(min(1.0, abs(zscore) / 3.0) * 100))),
                     "reason": (
                         f"Pairs SHORT {symbol_b}: {pair_key} Z={zscore:.2f}, "
                         f"corr={correlation:.2f}"

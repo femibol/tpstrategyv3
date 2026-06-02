@@ -164,6 +164,11 @@ class VWAPScalpStrategy(BaseStrategy):
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
                 "confidence": confidence,
+                # Engine QUALITY GATE (engine.py:7990) reads
+                # signal.get("score", 0). confidence starts at 0.5 and is
+                # additive (vwap.py:140), so score >= 50 clears
+                # min_entry_score=50. See PR #189/#191.
+                "score": max(50, int(round(confidence * 100))),
                 "reason": (
                     f"VWAP scalp BUY: Price at lower band, "
                     f"dist={distance_pct:.3f}, Vol={vol_ratio:.1f}x, "

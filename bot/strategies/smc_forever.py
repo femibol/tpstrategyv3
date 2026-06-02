@@ -303,6 +303,11 @@ class SMCForeverStrategy(BaseStrategy):
                 "stop_loss": stop_loss,
                 "take_profit": target,
                 "confidence": confidence,
+                # Engine QUALITY GATE (engine.py:7990) reads
+                # signal.get("score", 0). confidence is bounded 0.5–1.0 by
+                # the formula above (base 0.5, additive), so score >= 50
+                # clears min_entry_score=50. See PR #189/#191.
+                "score": max(50, int(round(confidence * 100))),
                 "reason": f"Forever Model LONG: {', '.join(reasons)}",
                 "max_hold_bars": 80,
                 "bar_seconds": self._timeframe_to_seconds(),
