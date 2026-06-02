@@ -58,6 +58,15 @@ risk:
   # Set to false to revert to the old in-memory-stop behavior.
   use_server_bracket_equity_default: true
 
+  # Stale pending-SELL cancellation. At IBKR sync (boot + periodic resync),
+  # cancel any pending SELL order that has sat in "Submitted"/"PreSubmitted"
+  # state longer than this. Prevents the DELL incident pattern (2026-06-01):
+  # bracket STOP leg placed Sunday night at $313.88 sat unfilled because
+  # IBKR's price cap blocked the limit; sync skipped DELL on every restart
+  # for ~24h because "has pending SELL order". 2h is conservative — typical
+  # legitimate exits fill in seconds, anything older than 2h is stuck.
+  stale_pending_sell_max_hours: 2.0
+
 # Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
 # take_profit edge can't clear estimated round-trip cost by ratio×.
 # Ratio-based so cheap-stock momentum scalps with big % moves still
