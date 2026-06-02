@@ -229,6 +229,11 @@ class CryptoRunnerStrategy(BaseStrategy):
             "stop_loss": stop_loss,
             "take_profit": take_profit,
             "confidence": confidence,
+            # Score for the engine's QUALITY GATE (engine.py:7990). Crypto
+            # signals normally bypass via CRYPTO FAST LANE so this is
+            # defensive, but missing scores have already cost us SNBR
+            # (see low_float_catalyst comment). Don't repeat the bug here.
+            "score": int(round(confidence * 100)),
             "reason": " | ".join(reasons),
             "max_hold_bars": self.max_hold_minutes,
             "bar_seconds": 60,
