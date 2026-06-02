@@ -51,6 +51,20 @@ class LowFloatCatalystStrategy(BaseStrategy):
         self.max_price = config.get("max_price", 10.00)
         self.max_float_m = config.get("max_float_m", 75.0)
         self.min_rvol = config.get("min_rvol", 5.0)
+        # Ultra-low-float relaxation. Names with float ≤ N million shares get
+        # a looser RVOL threshold because tiny floats produce price moves on
+        # tiny absolute volume — a 5x RVOL screen on an 820K-share float
+        # (e.g. MASK on 2026-05-28: alerted at RVOL 1.00x, ran $1.72 → $6.73)
+        # misses the alert window entirely while the normal 5x screen on a
+        # 50M-share float legitimately filters out noise. Default thresholds
+        # tuned to catch the MASK-style setup without changing behavior for
+        # normal low-float (75M cap).
+        self.ultra_low_float_threshold_m = config.get(
+            "ultra_low_float_threshold_m", 2.0
+        )
+        self.ultra_low_float_min_rvol = config.get(
+            "ultra_low_float_min_rvol", 2.0
+        )
         self.max_spread_pct = config.get("max_spread_pct", 0.03)
         self.min_day_change_pct = config.get("min_day_change_pct", 15.0)
         self.hard_stop_pct = config.get("hard_stop_pct", 0.08)
@@ -167,14 +181,22 @@ class LowFloatCatalystStrategy(BaseStrategy):
         avg_vol = float(np.mean(volumes[-11:-1])) if len(volumes) > 11 else float(np.mean(volumes[:-1]))
         current_vol = float(volumes[-1])
         rvol = current_vol / avg_vol if avg_vol > 0 else 0
-        if rvol < self.min_rvol:
+
+        # First-pass RVOL screen using the most permissive threshold across
+        # normal + ultra-low-float regimes. Below this floor we reject early
+        # without spending a Finviz call on get_float. The strict threshold
+        # is applied AFTER float is known, below.
+        loose_min_rvol = min(self.min_rvol, self.ultra_low_float_min_rvol)
+        if rvol < loose_min_rvol:
             self.scan_results[symbol] = {
                 "status": "low_rvol", "rvol": round(rvol, 2),
                 "price": price, "change_pct": day_change,
             }
             return None
 
-        # Float gate — last because it's the slowest (network).
+        # Float gate — moved before strict RVOL check because the strict
+        # threshold depends on float size. Still a network call (Finviz)
+        # but the loose RVOL pre-screen above culls most candidates.
         float_m = get_float(symbol)
         if float_m is None:
             if self.require_known_float:
@@ -183,6 +205,24 @@ class LowFloatCatalystStrategy(BaseStrategy):
             self.scan_results[symbol] = {
                 "status": "float_too_large", "float_m": float_m,
                 "price": price, "change_pct": day_change,
+            }
+            return None
+
+        # Float-adjusted RVOL threshold. Ultra-low-float (≤ N million shares)
+        # uses the relaxed threshold; everything else above that uses the
+        # normal 5x. Names with unknown float fall back to the normal
+        # (stricter) threshold so we don't get over-permissive on missing data.
+        if float_m is not None and float_m <= self.ultra_low_float_threshold_m:
+            required_rvol = self.ultra_low_float_min_rvol
+            rvol_band = "ultra_low_float"
+        else:
+            required_rvol = self.min_rvol
+            rvol_band = "normal"
+        if rvol < required_rvol:
+            self.scan_results[symbol] = {
+                "status": "low_rvol", "rvol": round(rvol, 2),
+                "required_rvol": required_rvol, "rvol_band": rvol_band,
+                "float_m": float_m, "price": price, "change_pct": day_change,
             }
             return None
 
