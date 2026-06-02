@@ -1,36 +1,64 @@
-=== executed: 39799d18627fa0785e89b0483ff62c6ee6bba251
-=== started:  2026-06-02T00:11:25Z
+=== executed: 4f25a0aa3c9c14d4c9b08150c6a59d18175d891e
+=== started:  2026-06-02T15:45:04Z
 === exit:     
 === timeout:  90s
 ===
-=== pull #188 + stash auto-tuner edits ===
-No local changes to save
-From github-write:femibol/tpstrategyv3
- * branch            main       -> FETCH_HEAD
-   08415c5..43ef86a  main       -> origin/main
-M	data/signal_log.json
-M	data/trade_history.json
-Your branch is behind 'origin/main' by 2 commits, and can be fast-forwarded.
-  (use "git pull" to update your local branch)
-Fast-forward
- bot/engine.py                              |  11 ++-
- tests/test_low_float_price_floor_exempt.py | 112 +++++++++++++++++++++++++++++
- 2 files changed, 122 insertions(+), 1 deletion(-)
- create mode 100644 tests/test_low_float_price_floor_exempt.py
-Dropped stash@{0} (6b4d46b9f03a40867fe0b797dac62d60194cf4eb)
-43ef86a Merge pull request #188 from femibol/claude/low-float-price-floor-exempt-rQ8Vw
-e2adc0e fix: exempt low_float_catalyst from $0.50 price floor (TGHL miss)
-08415c5 Merge pull request #187 from femibol/claude/cancel-stale-pending-exits-7vJpQ
+=== SNBR signal lifecycle today — find where it died ===
+2026-06-02 10:49:49 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNBR | Score: 85 | RVOL: 3.0x | Change: +4.5% | R:R 4.0
+2026-06-02 10:49:49 | INFO     | trading_bot.strategy.low_float_catalyst | LOW-FLOAT SIGNAL: SNBR @ $1.46 | RVOL 5.2x | +17.3% | float 18.58M | conf 0.72
+2026-06-02 10:49:49 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNBR @ $1.46 conf=0.85
+2026-06-02 10:49:49 | INFO     | trading_bot.engine   |   -> low_float_catalyst: buy SNBR @ $1.46 conf=0.72
+2026-06-02 10:49:49 | INFO     | trading_bot.risk.manager | APPROVED: buy SNBR | Very high RVOL 3.0x | Strong move +4.5% | EMA trend bullish | MACD histogram positive
+2026-06-02 10:49:49 | INFO     | trading_bot.risk.manager | APPROVED: buy SNBR | RVOL 5.2x | change +17.3% | float 18.6M | spread 0.69%
+  ✅ SNBR: score 85/100 — Very high RVOL 3.0x | Strong move
+2026-06-02 10:49:52 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SNBR — score 0 below min 50
 
-=== restart bot ===
-trading-bot-trading-bot-1
-state: running  health: starting
+=== Where do equity APPROVED signals die today? Sample some ===
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Momentum BUY: pullback entry, ADX=57, higher lows, Vol=3.7x
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | APPROVED: buy LFVN | Extreme RVOL 186.9x | Strong move +5.0% | EMA trend bullish | MACD histogram positive
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | APPROVED: buy TGHL | Extreme RVOL 582.8x | Moving up +1.9% | RSI oversold bounce (29)
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | APPROVED: buy QTTB | Extreme RVOL 12.8x | Moving up +0.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTN | Extreme RVOL 4.6x | Moving up +0.4% | Volume accelerating bar-over-bar | Short-term trend bullish
 
-=== confirm fix in running code ===
-        is_low_float_signal = signal.get("strategy") == "low_float_catalyst"
-        if (action == "buy" and current_price < min_price
---
-                and not is_low_float_signal):
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:45:38 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:48:38 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:48:38 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:51:44 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:51:44 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:54:44 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:54:44 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:59:23 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 03:59:23 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 04:05:39 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 04:05:39 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 04:08:51 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
+2026-06-02 04:08:51 | INFO     | trading_bot.risk.manager | REJECTED: buy YANG | Cost gate: edge 23bps < 2× cost 12bps (need 24bps)
+2026-06-02 04:12:35 | INFO     | trading_bot.risk.manager | REJECTED: buy CWEB | Cost gate: edge 17bps < 2× cost 12bps (need 24bps)
 
-=== current state ===
-positions: []
+=== Today equity rejection counts by reason ===
+     30 Setup broke
+
+=== RNDR -$64.77 trade today — what happened ===
+2026-06-02 10:06:31 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.17, RSI=9, BB=lower, Vol=3.3x | RNDR-USD @ $2.18
+2026-06-02 10:06:31 | INFO     | trading_bot.risk.manager | APPROVED: buy RNDR-USD | Mean reversion BUY: Z=-2.17, RSI=9, BB=lower, Vol=3.3x
+2026-06-02 10:06:31 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy RNDR-USD from mean_reversion conf=1.00 price=2.18 reason=Mean reversion BUY: Z=-2.17, RSI=9, BB=lower, Vol=3.3x
+2026-06-02 10:06:31 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: RNDR-USD entry=$2.1800 stop=$2.1603 (0.90% gap). Setting 5% minimum stop.
+2026-06-02 10:06:31 | INFO     | trading_bot.engine   | R/R STRETCH: RNDR-USD entry=$2.1800 stop=$2.0710 (risk=$0.1090) target=$2.2327 (reward=$0.0527, R/R=0.48) — stretching target to $2.3980 for 2:1 minimum.
+2026-06-02 10:06:31 | INFO     | trading_bot.engine   | Executing RNDR-USD via TradersPost (CRYPTO)...
+2026-06-02 10:06:31 | INFO     | trading_bot.broker.traderspost | Routing RNDR-USD to CRYPTO webhook
+2026-06-02 10:06:31 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "RNDR-USD", "action": "buy", "sentiment": "bullish", "quantity": 1321.82257, "price": 2.18, "stopLoss": {"type": "stop", "stopPrice": 2.07}, "takeProfit": {"type": "limit", "limitPrice": 2.4}}
+2026-06-02 10:06:32 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"e55ad894-c4d4-4a2f-ae84-c606117c7804","logId":"e55ad894-c4d4-4a2f-ae84-c606117c7804","payload":{"ticker":"RNDR-USD","action":"buy","sentiment":"bullish","quantity":1321.82257,"price":2.18,"stopLoss":{"type":"stop","stopPrice":2.07},"takeProfit":{"type":"limit","limitPrice":2.4}
+2026-06-02 10:06:32 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY RNDR-USD | Strategy: unknown | Qty: 1321.82257 @ $2.18 = $2,881.57 | Risk: $144.08 | Reward: $288.16 | R:R 2.0:1 | Response: 200
+2026-06-02 10:06:32 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: RNDR-USD qty=1321.82257. SL $2.07 / TP $2.40 managed by bot (no broker-side bracket).
+2026-06-02 10:06:32 | INFO     | trading_bot.engine   | ORDER BUY RNDR-USD via TradersPost | Qty: 1321.82257 | Price: $2.18 | Cost: $2,881.57 | Stop: $2.07 (risk $144.08) | Target: $2.40 (reward $288.16) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-02 10:06:32 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: RNDR-USD**
+2026-06-02 10:34:44 | INFO     | trading_bot.broker.traderspost | EXIT signal for RNDR-USD - bypassing rate limits
+2026-06-02 10:34:44 | INFO     | trading_bot.broker.traderspost | Routing RNDR-USD to CRYPTO webhook
+2026-06-02 10:34:44 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "RNDR-USD", "action": "exit", "quantity": 1321.82257, "price": 2.131}
+2026-06-02 10:34:44 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"6cdd3163-1143-43d3-9456-b0a9bc39daa0","logId":"6cdd3163-1143-43d3-9456-b0a9bc39daa0","payload":{"ticker":"RNDR-USD","action":"exit","quantity":1321.82257,"price":2.131}}
+2026-06-02 10:34:44 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL RNDR-USD | Strategy: unknown | Qty: 1321.82257 @ $2.13 = $2,816.80 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-02 10:34:44 | INFO     | trading_bot.engine   | CLOSED RNDR-USD via TradersPost | trailing_stop | P&L: $-64.77 | Trailing stop at $2.13 (trail 1.5%)
+2026-06-02 10:34:44 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: RNDR-USD** (trailing_stop)
+
+=== Auto-tuner ran today — what did it change? ===
