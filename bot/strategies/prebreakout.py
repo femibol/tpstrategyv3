@@ -388,6 +388,12 @@ class PreBreakoutStrategy(BaseStrategy):
                     "take_profit": round(take_profit, 2),
                     "targets": targets,
                     "confidence": round(confidence, 2),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Pass the strategy's own
+                    # additive score (0-100) — the verdict gate already
+                    # requires score >= min_score (default 65) so this
+                    # always clears min_entry_score=50. PR #189/#191.
+                    "score": int(score),
                     "reason": " | ".join(score_reasons[:5]),
                     "max_hold_bars": 0,  # Use day-based hold, not bar-based
                     "max_hold_days": self.max_hold_days,

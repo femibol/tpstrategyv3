@@ -419,6 +419,12 @@ class RvolMomentumStrategy(BaseStrategy):
                     "take_profit": round(take_profit, 2),
                     "targets": [round(t, 2) for t in targets],
                     "confidence": round(confidence, 2),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Pass the strategy's own
+                    # additive score directly — verdict gate already
+                    # requires score >= min_score so this clears
+                    # min_entry_score=50 by construction. PR #189/#191.
+                    "score": int(score),
                     "reason": " | ".join(score_reasons[:4]),
                     "max_hold_bars": int(self.max_hold_minutes / 5),  # 5-min bars
                     "max_hold_days": hold_days,
@@ -674,6 +680,8 @@ class RvolMomentumStrategy(BaseStrategy):
                     "take_profit": round(take_profit, 2),
                     "targets": [round(t, 2) for t in targets],
                     "confidence": round(confidence, 2),
+                    # Engine QUALITY GATE (engine.py:7990) — see PR #189/#191.
+                    "score": int(score),
                     "reason": "[FAST] " + " | ".join(score_reasons[:4]),
                     "max_hold_bars": int(self.max_hold_minutes / 5),
                     "max_hold_days": hold_days,

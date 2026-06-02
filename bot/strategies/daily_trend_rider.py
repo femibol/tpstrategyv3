@@ -527,6 +527,11 @@ class DailyTrendRiderStrategy(BaseStrategy):
             "stop_loss": stop_loss,
             "take_profit": take_profit,
             "confidence": confidence,
+            # Engine QUALITY GATE (engine.py:7990) reads signal.get("score", 0)
+            # — missing field defaults to 0 and kills the entry post-approval.
+            # confidence is bounded 0.5–0.95 by the formula above, so score is
+            # 50–95, always clears min_entry_score=50. See PR #189/#191.
+            "score": max(50, int(round(confidence * 100))),
             "strategy": "daily_trend_rider",
             "reason": (
                 f"Trend rider {entry_type}: {daily['green_days']} green days, "

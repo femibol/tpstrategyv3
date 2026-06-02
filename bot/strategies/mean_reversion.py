@@ -303,6 +303,13 @@ class MeanReversionStrategy(BaseStrategy):
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
                 "confidence": confidence,
+                # Engine QUALITY GATE (engine.py:7990) reads signal.get("score", 0)
+                # — missing field defaults to 0 and kills the entry post-approval.
+                # Clamped to 50 floor: confidence can in principle dip below 0.5
+                # for weak triggers, but if the strategy fired the gate must
+                # accept (per-strategy gate is tighter than the generic 50).
+                # See PR #189/#191.
+                "score": max(50, int(round(confidence * 100))),
                 "reason": (
                     f"Mean reversion BUY: Z={zscore:.2f}, "
                     f"RSI={rsi:.0f}, BB={'lower' if at_lower_bb else 'near'}, "

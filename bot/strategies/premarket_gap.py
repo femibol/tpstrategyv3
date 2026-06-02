@@ -315,6 +315,12 @@ class PreMarketGapStrategy(BaseStrategy):
                         round(runner_target, 2),
                     ],
                     "confidence": round(confidence, 2),
+                    # Engine QUALITY GATE (engine.py:7990) reads
+                    # signal.get("score", 0). Strategy's own additive score
+                    # (0-100); verdict gate requires score >= min_score, so
+                    # this clears min_entry_score=50 by construction.
+                    # PR #189/#191.
+                    "score": int(score),
                     "reason": " | ".join(reasons[:4]),
                     "max_hold_bars": int(self.max_hold_minutes / 5),
                     "max_hold_days": 1,
