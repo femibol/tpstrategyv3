@@ -223,6 +223,17 @@ class LowFloatCatalystStrategy(BaseStrategy):
             "stop_loss": stop_loss,
             "take_profit": take_profit,
             "confidence": confidence,
+            # `score` is the 0-100 conviction the engine's QUALITY GATE reads
+            # (engine.py:7990 — `signal.get("score", 0)`). Strategies that omit
+            # this field default to 0, which fails `min_entry_score = 50` and
+            # kills the entry post-approval. Live case 2026-06-02: SNBR fired
+            # at $1.46 with RVOL 5.2x / +17.3% / float 18.6M — every strategy-
+            # level gate cleared, risk_manager APPROVED, then the QUALITY GATE
+            # logged "score 0 below min 50" 3 seconds later and skipped the
+            # buy. confidence × 100 maps cleanly: confidence is bounded
+            # 0.5–1.0 by the formula above, so score is 50–100 — always
+            # passes the gate when the strategy itself has decided to fire.
+            "score": int(round(confidence * 100)),
             "reason": " | ".join(reasons),
             # The engine reads these to size the position and configure exit
             # machinery. max_hold_bars × bar_seconds = hard time-stop.
