@@ -1,60 +1,40 @@
-=== executed: e49eee8d8acba65be2df7577029a3036b2d90cbc
-=== started:  2026-06-01T23:48:03Z
+=== executed: cf16db691fab3859368a739dbffd3fcc2277d462
+=== started:  2026-06-02T00:06:39Z
 === exit:     
 === timeout:  90s
 ===
-=== ALL DELL/PLTA/MARA trades in the 500-trade buffer (any date) ===
-matches: 14
-  2026-05-15T04:33:56  AAPL   synced_from_ibkr   trailing_stop          pnl=$ +277.20
-  2026-05-18T16:05:08  AAPL   momentum           eod_close              pnl=$   -0.60
-  2026-05-20T19:10:40  PLTR   momentum           trailing_stop          pnl=$   -5.98
-  2026-05-27T12:40:01  AAPL   momentum           stale_exit             pnl=$   +7.92
-  2026-05-27T13:40:21  TSLA   momentum           stale_exit             pnl=$   +5.52
-  2026-05-29T09:58:34  DELL   momentum           stop_loss              pnl=$   -1.76
-  2026-05-29T10:43:58  PLTA   momentum           partial_target_-1      pnl=$  +18.50
-  2026-05-29T10:44:03  PLTA   momentum           trailing_stop          pnl=$  +24.75
-  2026-05-29T11:25:33  DELL   momentum           trailing_stop          pnl=$   +8.00
-  2026-05-29T12:26:21  MARA   momentum           stop_loss              pnl=$   +0.00
-  2026-05-29T14:59:24  MARA   momentum           partial_target_-1      pnl=$  +11.88
-  2026-05-29T15:02:11  MARA   momentum           trailing_stop          pnl=$  +15.30
-  2026-05-29T16:05:17  DELL   momentum           eod_close              pnl=$  +98.32
-  2026-05-29T17:25:54  DELL   momentum           trailing_stop          pnl=$   -8.00
+=== pull #187 + stash any auto-tuner edits ===
+Saved working directory and index state On main: auto-tuner-pre-187-1780358762
+From github-write:femibol/tpstrategyv3
+ * branch            main       -> FETCH_HEAD
+M	data/signal_log.json
+M	data/trade_history.json
+Your branch is behind 'origin/main' by 2 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+ bot/engine.py                           |  42 ++++++++++++-
+ config/settings.yaml                    |   9 +++
+ tests/test_stale_pending_sell_cancel.py | 107 ++++++++++++++++++++++++++++++++
+ 3 files changed, 156 insertions(+), 2 deletions(-)
+ create mode 100644 tests/test_stale_pending_sell_cancel.py
+Dropped stash@{0} (39890c4436369e7029bd4de0ce039db1125ca2b5)
+08415c5 Merge pull request #187 from femibol/claude/cancel-stale-pending-exits-7vJpQ
+d37f7e1 fix: cancel pending SELL orders stuck > 2h in IBKR sync (DELL incident)
+e5cb44f Merge pull request #186 from femibol/claude/crypto-trail-floor-profit-w3Krt
 
-=== EOD close events in docker logs since Fri close ===
-2026-06-01 16:05:00 | INFO     | trading_bot.engine   | === END OF DAY ===
+=== restart bot ===
+trading-bot-trading-bot-1
+state: running  health: starting
 
-=== TradersPost SUBMITTED events for DELL/PLTA/MARA since Friday ===
-2026-05-31 23:50:36 | INFO     | trading_bot.engine   | IBKR SYNC: Skipping DELL — has pending SELL order (position is being closed from previous session)
-2026-05-31 23:50:36 | WARNING  | trading_bot.engine   | MIRROR RECONCILE: 3 ORPHAN equity position(s) likely open on the TradersPost mirror account but NOT tracked by the engine: PLTA=50, MARA=33, DELL=8. IBKR is the source of truth; the bot does not manage stops/exits on these.
-⚠️ MIRROR ORPHAN POSITIONS: 3 equity symbol(s) adrift on the TradersPost mirror without engine tracking. PLTA=50, MARA=33, DELL=8. Check the mirror broker and close manually, or P
-2026-06-01 00:04:32 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: PreSubmitted | Filled: 0.0/8.0
-2026-06-01 00:05:00 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 00:05:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: SELL 8 DELL NYSE @ 313.88  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 409.43 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
-2026-06-01 00:28:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: SELL 8 DELL NYSE @ 313.88  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 409.43 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
-2026-06-01 00:28:41 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 01:27:48 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:41:16 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:42:49 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:44:38 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:45:58 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:46:53 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:47:41 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 02:52:30 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 03:28:13 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 03:30:49 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 03:51:10 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
-2026-06-01 03:52:20 | INFO     | trading_bot.broker.ibkr | Order update: DELL | Status: Submitted | Filled: 0.0/8.0
+=== watch for the cancel firing ===
+2026-06-01 20:06:16 | INFO     | trading_bot.broker.ibkr | IBKR worker thread started (single-threaded ib_async access)
+2026-06-01 20:06:17 | INFO     | trading_bot.engine   | IBKR BALANCE SYNC: $24,009.51 (overrides settings.yaml starting_balance $25,000.00)
+2026-06-01 20:06:27 | INFO     | trading_bot.engine   | IBKR SYNC: no open positions at IBKR after 6 polls — treating account as flat.
+2026-06-01 20:06:27 | INFO     | trading_bot.engine   | Active Capital: $24,009.51 (after broker sync)
+2026-06-01 20:06:28 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 284 trades | 121W/163L | Net P&L: $-127.89 | Strategies: mean_reversion, crypto_test, synced_from_ibkr, momentum
 
-=== Mirror reconcile output (orphans?) ===
-{"closed":false,"orphans":[],"status":"Mirror reconcile complete"}
+=== current positions ===
+count: 0
 
-=== Search code for OTHER paths that set trailing_stop directly ===
-794:                    pos["trailing_stop"] = 0
-3296:                        pos["trailing_stop"] = new_trail
-3338:                            pos["trailing_stop"] = new_trail
-3391:                        pos["trailing_stop"] = 0
-3421:                        pos["trailing_stop"] = new_trail
-3541:                            pos["trailing_stop"] = new_trail
-3644:                        pos["trailing_stop"] = new_trail
-4366:                    pos["trailing_stop"] = new_trail
-4376:                    pos["trailing_stop"] = new_trail
+=== check IBKR for any remaining pending DELL order ===
+[]
+
