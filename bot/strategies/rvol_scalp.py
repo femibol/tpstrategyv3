@@ -310,6 +310,15 @@ class RvolScalpStrategy(BaseStrategy):
                     "take_profit": round(take_profit, 2),
                     "targets": targets,
                     "confidence": round(confidence, 2),
+                    # `score` is the 0-100 conviction read by the engine's
+                    # QUALITY GATE (engine.py:7990 — `signal.get("score", 0)`).
+                    # Without it, the gate defaults to 0 and skips every entry
+                    # post-approval. Live case 2026-06-02: NU and IBIT fired
+                    # SCALP signals every 3 minutes at internal score 85/90,
+                    # but the QUALITY GATE logged "score 0 below min 50" and
+                    # killed every one — no rvol_scalp fills all session.
+                    # Same fix shipped for low_float_catalyst in PR #189.
+                    "score": int(score),
                     "reason": " | ".join(score_reasons[:4]),
                     "max_hold_bars": self.max_hold_minutes,  # 1 bar = 1 min
                     "bar_seconds": 60,  # 1-minute bars
