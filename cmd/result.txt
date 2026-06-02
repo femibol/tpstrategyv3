@@ -1,40 +1,36 @@
-=== executed: cf16db691fab3859368a739dbffd3fcc2277d462
-=== started:  2026-06-02T00:06:39Z
+=== executed: 39799d18627fa0785e89b0483ff62c6ee6bba251
+=== started:  2026-06-02T00:11:25Z
 === exit:     
 === timeout:  90s
 ===
-=== pull #187 + stash any auto-tuner edits ===
-Saved working directory and index state On main: auto-tuner-pre-187-1780358762
+=== pull #188 + stash auto-tuner edits ===
+No local changes to save
 From github-write:femibol/tpstrategyv3
  * branch            main       -> FETCH_HEAD
+   08415c5..43ef86a  main       -> origin/main
 M	data/signal_log.json
 M	data/trade_history.json
 Your branch is behind 'origin/main' by 2 commits, and can be fast-forwarded.
   (use "git pull" to update your local branch)
- bot/engine.py                           |  42 ++++++++++++-
- config/settings.yaml                    |   9 +++
- tests/test_stale_pending_sell_cancel.py | 107 ++++++++++++++++++++++++++++++++
- 3 files changed, 156 insertions(+), 2 deletions(-)
- create mode 100644 tests/test_stale_pending_sell_cancel.py
-Dropped stash@{0} (39890c4436369e7029bd4de0ce039db1125ca2b5)
+Fast-forward
+ bot/engine.py                              |  11 ++-
+ tests/test_low_float_price_floor_exempt.py | 112 +++++++++++++++++++++++++++++
+ 2 files changed, 122 insertions(+), 1 deletion(-)
+ create mode 100644 tests/test_low_float_price_floor_exempt.py
+Dropped stash@{0} (6b4d46b9f03a40867fe0b797dac62d60194cf4eb)
+43ef86a Merge pull request #188 from femibol/claude/low-float-price-floor-exempt-rQ8Vw
+e2adc0e fix: exempt low_float_catalyst from $0.50 price floor (TGHL miss)
 08415c5 Merge pull request #187 from femibol/claude/cancel-stale-pending-exits-7vJpQ
-d37f7e1 fix: cancel pending SELL orders stuck > 2h in IBKR sync (DELL incident)
-e5cb44f Merge pull request #186 from femibol/claude/crypto-trail-floor-profit-w3Krt
 
 === restart bot ===
 trading-bot-trading-bot-1
 state: running  health: starting
 
-=== watch for the cancel firing ===
-2026-06-01 20:06:16 | INFO     | trading_bot.broker.ibkr | IBKR worker thread started (single-threaded ib_async access)
-2026-06-01 20:06:17 | INFO     | trading_bot.engine   | IBKR BALANCE SYNC: $24,009.51 (overrides settings.yaml starting_balance $25,000.00)
-2026-06-01 20:06:27 | INFO     | trading_bot.engine   | IBKR SYNC: no open positions at IBKR after 6 polls — treating account as flat.
-2026-06-01 20:06:27 | INFO     | trading_bot.engine   | Active Capital: $24,009.51 (after broker sync)
-2026-06-01 20:06:28 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 284 trades | 121W/163L | Net P&L: $-127.89 | Strategies: mean_reversion, crypto_test, synced_from_ibkr, momentum
+=== confirm fix in running code ===
+        is_low_float_signal = signal.get("strategy") == "low_float_catalyst"
+        if (action == "buy" and current_price < min_price
+--
+                and not is_low_float_signal):
 
-=== current positions ===
-count: 0
-
-=== check IBKR for any remaining pending DELL order ===
-[]
-
+=== current state ===
+positions: []
