@@ -37,6 +37,15 @@ class MomentumStrategy(BaseStrategy):
         self.atr_target_mult = config.get("atr_target_multiplier", 4.0)
         self.max_hold = config.get("max_holding_bars", 40)
         self.breakout_lookback = config.get("breakout_lookback", 20)
+        # Skip entries on stocks already DOWN more than this percent today.
+        # A real momentum breakout is on a name with bullish day action; a
+        # stock down -3% today on an EMA crossover is a falling-knife trap.
+        # Default -2.0%: very permissive — allows neutral and slightly-red
+        # names (no signal kill on chop). Tightening to -1 or 0 cuts more
+        # but risks killing pullback entries on flat names. Negative number
+        # = lower bound on today's change_pct; signal needs change >= this.
+        # Set to None / -100 to disable.
+        self.min_day_change_pct = config.get("min_day_change_pct", -2.0)
 
         # Dynamic symbols fed in from the engine's IBKR scanner discovery.
         # Without this the strategy would only scan its hardcoded 13-symbol
@@ -134,6 +143,24 @@ class MomentumStrategy(BaseStrategy):
         quote = market_data.get_quote(symbol) if market_data else None
         live_price = float(quote.get("price")) if quote and quote.get("price") else None
         current_price = live_price if live_price and live_price > 0 else bar_close
+
+        # Skip already-down stocks: 2026-06-02 audit of 52 momentum trades
+        # showed clusters of losses on names that were already trading
+        # well in the red when our EMA crossover fired (FBYD -$130 across
+        # 3 trades, all on a day the stock was down). Default threshold
+        # -2% is permissive: only kills entries on names truly bleeding,
+        # leaves flat/neutral pullback setups alone.
+        if quote and "change_pct" in quote and self.min_day_change_pct is not None:
+            try:
+                day_change = float(quote.get("change_pct") or 0)
+                if day_change < self.min_day_change_pct:
+                    self.scan_results[symbol] = {
+                        "status": "down_today", "change_pct": day_change,
+                        "threshold": self.min_day_change_pct, "price": current_price,
+                    }
+                    return None
+            except (TypeError, ValueError):
+                pass  # missing change_pct → fall through, don't block
 
         # EMAs
         fast_ema = self.indicators.ema(closes, self.fast_ema)

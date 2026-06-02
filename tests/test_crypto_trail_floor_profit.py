@@ -45,7 +45,7 @@ def _new_engine():
 def test_crypto_floor_is_entry_plus_50bps():
     eng = _new_engine()
     floor = eng._trail_floor_price("NEAR-USD", entry_price=2.50)
-    expected = 2.50 * 1.005
+    expected = 2.50 * (1 + TradingEngine.CRYPTO_TRAIL_ARM_PCT)
     assert abs(floor - expected) < 1e-9
 
 
@@ -65,26 +65,28 @@ def test_all_crypto_suffix_variants_get_floor():
     eng = _new_engine()
     for sym in ("BTC-USD", "ETH-USDT", "WLD-USD", "ADA-BTC", "DOGE-ETH"):
         floor = eng._trail_floor_price(sym, 100.0)
-        assert abs(floor - 100.5) < 1e-9, f"Floor wrong for {sym}: {floor}"
+        expected = 100.0 * (1 + TradingEngine.CRYPTO_TRAIL_ARM_PCT)
+        assert abs(floor - expected) < 1e-9, f"Floor wrong for {sym}: {floor}"
 
 
 def test_trail_at_floor_when_arm_pct_just_reached():
-    """Wick scenario: price just hit the arm threshold (+0.5%) and starts
-    drifting back. Trail should sit at the floor (entry × 1.005), and any
-    exit would lock in +0.5% — NOT below entry."""
+    """Wick scenario: price just hit the arm threshold and starts drifting
+    back. Trail should sit at the floor (entry × (1 + ARM_PCT)), and any
+    exit would lock in +ARM_PCT — NOT below entry."""
     eng = _new_engine()
     entry = 100.0
     trail_pct = 0.015  # 1.5% trail
-    # Price at +0.5% — just at arm threshold
-    price_at_arm = 100.5
+    arm_pct = TradingEngine.CRYPTO_TRAIL_ARM_PCT
+    # Price at arm threshold
+    price_at_arm = entry * (1 + arm_pct)
     floor = eng._trail_floor_price("BTC-USD", entry)
     new_trail = max(price_at_arm * (1 - trail_pct), floor)
-    # Trail should be the FLOOR (100.5), not 100.5 * 0.985 = 98.9925
-    assert abs(new_trail - 100.5) < 1e-9
-    # Exit triggers when current price <= trail.
-    # Even at the worst case (price drops to 100.5), exit price ≈ 100.5
-    # = +0.5% gain. NEVER below entry.
-    assert new_trail >= entry * 1.005
+    # Trail should be the FLOOR (price_at_arm), not price_at_arm * (1 - trail_pct)
+    assert abs(new_trail - price_at_arm) < 1e-9
+    # Exit triggers when current price <= trail. Even at the worst case
+    # (price drops to price_at_arm), exit price ≈ price_at_arm = +arm_pct
+    # gain. NEVER below entry.
+    assert new_trail >= entry * (1 + arm_pct)
 
 
 def test_trail_ratchets_up_normally_past_floor():
