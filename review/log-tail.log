@@ -1,75 +1,3 @@
-2026-06-01 14:37:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:37:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:37:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-01 14:37:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-01 14:38:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-01 14:38:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-01 14:38:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-01 14:38:02 | INFO     | trading_bot.engine   | IBKR scanner: 122 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
-2026-06-01 14:38:02 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-01 14:38:02 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-01 14:38:02 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 106 low-priority equity names; max 90)
-2026-06-01 14:38:02 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
-2026-06-01 14:38:02 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-01 14:38:02 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
-2026-06-01 14:40:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, higher lows, Vol=2.2x | BBAI @ $5.41
-2026-06-01 14:40:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>4.23, Vol=3.3x | QH @ $4.37
-2026-06-01 14:40:31 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
-2026-06-01 14:40:31 | INFO     | trading_bot.engine   |   -> momentum: buy BBAI @ $5.41 conf=0.75
-2026-06-01 14:40:31 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $4.37 conf=0.95
-2026-06-01 14:40:31 | INFO     | trading_bot.risk.manager | APPROVED: buy BBAI | Momentum BUY: EMA trend, ADX=44, higher lows, Vol=2.2x
-2026-06-01 14:40:31 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, breakout>4.23, Vol=3.3x
-2026-06-01 14:40:31 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 981 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 2
-  ✅ BBAI: score 75/100 — Momentum BUY: EMA trend, ADX=44, higher lows, Vol=2.2x
-  ✅ QH: score 95/100 — Momentum BUY: EMA cross
-2026-06-01 14:40:31 | WARNING  | trading_bot.engine   | SLOW CYCLE (153.9s total): update_data=132.0s, update_scalp=16.9s
-2026-06-01 14:40:34 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: BBAI — bearish EMA imbalance -0.48
-2026-06-01 14:40:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-01 14:40:36 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: QH — wide spread 14.2% (>2%)
-2026-06-01 14:40:39 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-6.8%)), ADA-USD(weak 3d trend (-0.7%)), ALGO-USD(weak 3d trend (+3.4%)), APT-USD(weak 3d trend (-1.8%)), ARB-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.4%)), AVAX-USD(weak 3d trend (+0.4%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (-2.9%)), COMP-USD(weak 3d trend (+1.9%)), CRV-USD(weak 3d trend (-0.7%)), DOGE-USD(weak 3d trend (+0.1%)), DOT-USD(weak 3d trend (-3.5%)), ETC-USD(weak 3d trend (-0.2%)), ETH-USD(weak 3d trend (-1.4%)), FLOKI-USD(weak 3d trend (+2.6%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (+1.4%)), IMX-USD(weak 3d trend (-16.0%)), LINK-USD(weak 3d trend (+0.4%)), LTC-USD(weak 3d trend (-1.9%)), NEAR-USD(weak 3d trend (-1.1%)), OP-USD(weak 3d trend (+3.3%)), PEPE-USD(weak 3d trend (-0.3%)), RNDR-USD(weak 3d trend (+1.7%)), SHIB-USD(weak 3d trend (+2.4%)), SNX-USD(weak 3d trend (-4.6%)), SOL-USD(weak 3d trend (-1.8%)), SUI-USD(weak 3d trend (-3.3%)), TIA-USD(weak 3d trend (-10.2%)), TON-USD(weak 3d trend (+0.4%)), TRX-USD(weak 3d trend (+1.6%)), UNI-USD(weak 3d trend (-2.1%)), WIF-USD(weak 3d trend (-0.5%)), XRP-USD(weak 3d trend (-1.9%)) | warming=1 | neutral=5 | no_data=1
-2026-06-01 14:40:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; 
-2026-06-01 14:40:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; Unknown market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:40:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; Unknown market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:40:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:40:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:40:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-01 14:40:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-01 14:40:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-01 14:40:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-01 14:40:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-01 14:40:50 | INFO     | trading_bot.engine   | IBKR scanner: 121 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
-2026-06-01 14:40:50 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-01 14:40:50 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-01 14:40:50 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 105 low-priority equity names; max 90)
-2026-06-01 14:43:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, higher lows, Vol=2.2x | BBAI @ $5.41
-2026-06-01 14:43:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>4.23, Vol=3.3x | QH @ $4.37
-2026-06-01 14:43:43 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
-2026-06-01 14:43:43 | INFO     | trading_bot.engine   |   -> momentum: buy BBAI @ $5.41 conf=0.75
-2026-06-01 14:43:43 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $4.37 conf=0.95
-2026-06-01 14:43:43 | INFO     | trading_bot.risk.manager | APPROVED: buy BBAI | Momentum BUY: EMA trend, ADX=44, higher lows, Vol=2.2x
-2026-06-01 14:43:43 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, breakout>4.23, Vol=3.3x
-2026-06-01 14:43:43 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 975 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 2
-  ✅ BBAI: score 75/100 — Momentum BUY: EMA trend, ADX=44, higher lows, Vol=2.2x
-  ✅ QH: score 95/100 — Momentum BUY: EMA cross
-2026-06-01 14:43:43 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.6s total): update_data=156.2s, update_scalp=16.4s
-2026-06-01 14:43:46 | WARNING  | trading_bot.engine   | LEARNING BLOCK: BBAI avoided — consistent loser (score: -348.4)
-2026-06-01 14:43:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-01 14:43:48 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: QH — wide spread 14.2% (>2%)
-2026-06-01 14:43:51 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-6.8%)), ADA-USD(weak 3d trend (-0.7%)), ALGO-USD(weak 3d trend (+3.4%)), APT-USD(weak 3d trend (-1.8%)), ARB-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.4%)), AVAX-USD(weak 3d trend (+0.4%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (-2.9%)), COMP-USD(weak 3d trend (+1.9%)), CRV-USD(weak 3d trend (-0.7%)), DOGE-USD(weak 3d trend (+0.1%)), DOT-USD(weak 3d trend (-3.5%)), ETC-USD(weak 3d trend (-0.2%)), ETH-USD(weak 3d trend (-1.4%)), FLOKI-USD(weak 3d trend (+2.6%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (+1.4%)), IMX-USD(weak 3d trend (-16.0%)), LINK-USD(weak 3d trend (+0.4%)), LTC-USD(weak 3d trend (-1.9%)), NEAR-USD(weak 3d trend (-1.1%)), OP-USD(weak 3d trend (+3.3%)), PEPE-USD(weak 3d trend (-0.3%)), RNDR-USD(weak 3d trend (+1.7%)), SHIB-USD(weak 3d trend (+2.4%)), SNX-USD(weak 3d trend (-4.6%)), SOL-USD(weak 3d trend (-1.8%)), SUI-USD(weak 3d trend (-3.3%)), TIA-USD(weak 3d trend (-10.2%)), TON-USD(weak 3d trend (+0.4%)), TRX-USD(weak 3d trend (+1.6%)), UNI-USD(weak 3d trend (-2.1%)), WIF-USD(weak 3d trend (-0.5%)), XRP-USD(weak 3d trend (-1.9%)) | warming=1 | neutral=5 | no_data=1
-2026-06-01 14:43:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; CHX; T24X; EDGEA; LTSE; Need additional market data permissions - Depth: NASDAQ; ARCA; NYSE; Unknown market data permissions - Depth: BATS; BEX; Top: AMEX; IBEOS; NYSENAT; PSX; MEMX; OVERNIGHT; ISE; DRCTEDGE; 
-2026-06-01 14:43:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; BEX; Unknown market data permissions - Depth: NASDAQ; ARCA; NYSE; IEX; 
-2026-06-01 14:43:55 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; BEX; Unknown market data permissions - Depth: NASDAQ; ARCA; NYSE; IEX; 
-2026-06-01 14:43:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:43:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-01 14:43:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-01 14:43:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-01 14:44:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-01 14:44:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-01 14:44:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-01 14:44:01 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 48 gainers, 11 gaps, 20 losers
 2026-06-01 14:44:02 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
 2026-06-01 14:44:02 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 105 low-priority equity names; max 90)
@@ -19998,3 +19926,75 @@ Approved: 1 trades
 2026-06-02 14:52:54 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
 2026-06-02 14:52:54 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-02 14:52:54 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-02 14:55:30 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-02 14:55:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.0x | STAK @ $1.72
+2026-06-02 14:55:38 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: GXAI | Score: 60 | RVOL: 3.8x | Change: +0.7% | R:R 2.7
+2026-06-02 14:55:38 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-02 14:55:38 | INFO     | trading_bot.engine   |   -> momentum: buy STAK @ $1.72 conf=0.75
+2026-06-02 14:55:38 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy GXAI @ $1.40 conf=0.60
+2026-06-02 14:55:38 | INFO     | trading_bot.risk.manager | APPROVED: buy STAK | Momentum BUY: pullback entry, higher lows, Vol=0.0x
+2026-06-02 14:55:38 | INFO     | trading_bot.risk.manager | APPROVED: buy GXAI | Very high RVOL 3.8x | Trending up +0.7% | MACD histogram positive | RSI healthy (36)
+2026-06-02 14:55:38 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1023 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ STAK: score 75/100 — Momentum BUY: pullback entry, higher lows, Vol=0.0x
+  ✅ GXAI: score 60/100 — Very high RVOL 3.8x | T
+2026-06-02 14:55:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (168.7s total): update_data=146.8s, update_scalp=17.0s
+2026-06-02 14:55:41 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 0.30% risk
+2026-06-02 14:55:41 | INFO     | trading_bot.risk.position_sizer | Position size: 420 shares @ $1.76 = $739.20 | Risk: $72.02 (0.3% of account) [tier: 10-5000 shares]
+2026-06-02 14:55:41 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: STAK live ask $1.76 has drifted 2.3% above signal $1.72 (max 0.8%) — entry R:R already invalid, skipping order.
+2026-06-02 14:55:43 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: GXAI EMA imbalance +0.61 ramping → score 0 → 10
+2026-06-02 14:55:43 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: GXAI — score 0 below min 50
+2026-06-02 14:55:46 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[38]: AAVE-USD(weak 3d trend (-8.8%)), ADA-USD(weak 3d trend (-8.9%)), ALGO-USD(weak 3d trend (-7.9%)), APT-USD(weak 3d trend (-10.4%)), ARB-USD(weak 3d trend (-6.8%)), ATOM-USD(weak 3d trend (-9.1%)), AVAX-USD(weak 3d trend (-7.0%)), BONK-USD(weak 3d trend (-7.1%)), BTC-USD(weak 3d trend (-9.1%)), COMP-USD(weak 3d trend (-5.5%)), CRV-USD(weak 3d trend (-5.7%)), DOGE-USD(weak 3d trend (-6.9%)), DOT-USD(weak 3d trend (-8.1%)), ETC-USD(weak 3d trend (-4.9%)), ETH-USD(weak 3d trend (-5.8%)), FET-USD(weak 3d trend (-6.2%)), FLOKI-USD(weak 3d trend (-5.8%)), GRT-USD(weak 3d trend (-11.3%)), HBAR-USD(weak 3d trend (-10.7%)), ICP-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (-16.0%)), LINK-USD(weak 3d trend (-7.5%)), LTC-USD(weak 3d trend (-7.7%)), MATIC-USD(weak 3d trend (-0.1%)), OP-USD(weak 3d trend (-0.8%)), PEPE-USD(weak 3d trend (-6.4%)), RNDR-USD(weak 3d trend (-1.4%)), SEI-USD(weak 3d trend (-1.6%)), SHIB-USD(weak 3d trend (-4.7%)), SOL-USD(weak 3d trend (-8.2%)), SUI-USD(weak 3d trend (-9.2%)), TIA-USD(weak 3d trend (-10.4%)), TON-USD(weak 3d trend (+1.2%)), TRX-USD(weak 3d trend (-4.2%)), UNI-USD(weak 3d trend (-7.2%)), WIF-USD(weak 3d trend (-6.7%)), XLM-USD(weak 3d trend (-12.1%)), XRP-USD(weak 3d trend (-9.5%)) | warming=1 | no_data=3
+2026-06-02 14:55:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; ARCA; Unknown market data permissions - Depth: NASDAQ; BEX; NYSE; 
+2026-06-02 14:55:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BEX; NYSE; Unknown market data permissions - Depth: BATS; ARCA; IEX; 
+2026-06-02 14:55:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BEX; NYSE; Unknown market data permissions - Depth: BATS; ARCA; IEX; 
+2026-06-02 14:55:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; 
+2026-06-02 14:55:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-02 14:55:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-02 14:55:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-02 14:55:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-02 14:55:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-02 14:55:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-02 14:55:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-02 14:55:56 | INFO     | trading_bot.engine   | IBKR scanner: 127 unique symbols discovered | 50 gainers, 13 gaps, 20 losers
+2026-06-02 14:55:57 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-02 14:55:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 114 low-priority equity names; max 90)
+2026-06-02 14:58:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=100, higher lows, Vol=0.0x | SDOG @ $69.05
+2026-06-02 14:58:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.0x | STAK @ $1.75
+2026-06-02 14:58:38 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: GXAI | Score: 60 | RVOL: 3.8x | Change: +0.7% | R:R 2.7
+2026-06-02 14:58:38 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-02 14:58:38 | INFO     | trading_bot.engine   |   -> momentum: buy SDOG @ $69.05 conf=0.75
+2026-06-02 14:58:38 | INFO     | trading_bot.engine   |   -> momentum: buy STAK @ $1.75 conf=0.75
+2026-06-02 14:58:38 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy GXAI @ $1.40 conf=0.60
+2026-06-02 14:58:38 | INFO     | trading_bot.risk.manager | REJECTED: buy SDOG | Cost gate: edge 10bps < 2× cost 12bps (need 24bps)
+2026-06-02 14:58:38 | INFO     | trading_bot.risk.manager | APPROVED: buy STAK | Momentum BUY: pullback entry, higher lows, Vol=0.0x
+2026-06-02 14:58:38 | INFO     | trading_bot.risk.manager | APPROVED: buy GXAI | Very high RVOL 3.8x | Trending up +0.7% | MACD histogram positive | RSI healthy (36)
+2026-06-02 14:58:38 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1029 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ SDOG: score 75/100 — Momentum BUY: pullback entry, ADX=100, higher lows, Vol=0.0x
+  ✅ STAK: score 75/100 — Momentum BUY: 
+2026-06-02 14:58:38 | WARNING  | trading_bot.engine   | SLOW CYCLE (166.4s total): update_data=144.3s, update_scalp=16.9s
+2026-06-02 14:58:41 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: STAK — bearish EMA imbalance -0.37
+2026-06-02 14:58:43 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: GXAI EMA imbalance +0.36 ramping → score 0 → 10
+2026-06-02 14:58:43 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: GXAI — score 0 below min 50
+2026-06-02 14:58:46 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[39]: AAVE-USD(weak 3d trend (-8.8%)), ADA-USD(weak 3d trend (-9.0%)), ALGO-USD(weak 3d trend (-9.9%)), APT-USD(weak 3d trend (-10.7%)), ARB-USD(weak 3d trend (-6.8%)), ATOM-USD(weak 3d trend (-9.9%)), AVAX-USD(weak 3d trend (-7.3%)), BONK-USD(weak 3d trend (-7.7%)), BTC-USD(weak 3d trend (-9.2%)), COMP-USD(weak 3d trend (-5.5%)), CRV-USD(weak 3d trend (-5.7%)), DOGE-USD(weak 3d trend (-7.0%)), DOT-USD(weak 3d trend (-7.4%)), ETC-USD(weak 3d trend (-4.9%)), ETH-USD(weak 3d trend (-6.0%)), FET-USD(weak 3d trend (-6.0%)), FLOKI-USD(weak 3d trend (-6.4%)), GRT-USD(weak 3d trend (-11.3%)), HBAR-USD(weak 3d trend (-10.6%)), ICP-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (-16.0%)), LINK-USD(weak 3d trend (-7.5%)), LTC-USD(weak 3d trend (-8.0%)), MATIC-USD(weak 3d trend (-0.3%)), NEAR-USD(needs green bar), OP-USD(weak 3d trend (-1.7%)), PEPE-USD(weak 3d trend (-7.0%)), RNDR-USD(weak 3d trend (-1.7%)), SEI-USD(weak 3d trend (-1.6%)), SHIB-USD(weak 3d trend (-4.3%)), SOL-USD(weak 3d trend (-8.6%)), SUI-USD(weak 3d trend (-9.9%)), TIA-USD(weak 3d trend (-10.4%)), TON-USD(weak 3d trend (+1.2%)), TRX-USD(weak 3d trend (-4.2%)), UNI-USD(weak 3d trend (-7.6%)), WIF-USD(weak 3d trend (-6.7%)), XLM-USD(weak 3d trend (-12.1%)), XRP-USD(weak 3d trend (-9.6%)) | no_data=3
+2026-06-02 14:58:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: AMEX; CHX; NYSENAT; IBEOS; PSX; T24X; MEMX; OVERNIGHT; EDGEA; LTSE; ISE; DRCTEDGE; 
+2026-06-02 14:58:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-02 14:58:50 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-02 14:58:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; 
+2026-06-02 14:58:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-02 14:58:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: IBEOS; OVERNIGHT; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; Top: BYX; AMEX; PEARL; CHX; NYSENAT; T24X; PSX; MEMX; EDGEA; LTSE; ISE; 
+2026-06-02 14:58:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-02 14:58:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-02 14:58:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-02 14:58:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-02 14:58:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-02 14:58:57 | INFO     | trading_bot.engine   | IBKR scanner: 128 unique symbols discovered | 50 gainers, 13 gaps, 20 losers
+2026-06-02 14:58:57 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-02 14:58:57 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-02 14:58:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 114 low-priority equity names; max 90)
+2026-06-02 14:58:57 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-02 14:58:57 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-02 14:58:57 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
