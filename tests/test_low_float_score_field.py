@@ -160,8 +160,9 @@ def test_strategy_source_files_include_score_field():
     silent runtime skip."""
     from bot.strategies import low_float_catalyst as lfc
     from bot.strategies import crypto_runner as cr
+    from bot.strategies import rvol_scalp as rs
 
-    for module in (lfc, cr):
+    for module in (lfc, cr, rs):
         src = inspect.getsource(module)
         assert '"score"' in src, (
             f"{module.__name__} signal dict must include a 'score' field "
