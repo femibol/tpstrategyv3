@@ -337,6 +337,13 @@ low_float_catalyst:
   max_price: 10.00
   max_float_m: 75.0                 # Catches GOVX 2.9M, VRAX 19.6M, SBFM 4.9M, WGRX 62.7M
   min_rvol: 5.0                     # 5x average volume — catalyst already firing
+  # Ultra-low-float relaxation. Names with float ≤ N million shares get a
+  # looser RVOL gate because tiny floats produce price moves on tiny
+  # absolute volume (MASK 820K float ran $1.72→$6.73 with RVOL only 1.00x
+  # at alert time 2026-05-28). Default catches MASK-class setups without
+  # changing behavior for normal sub-75M-float names.
+  ultra_low_float_threshold_m: 2.0  # below this (M shares), use relaxed RVOL
+  ultra_low_float_min_rvol: 2.0     # relaxed RVOL gate for ultra-low-float
   max_spread_pct: 0.03              # Reject anything wider than 3% spread
   min_day_change_pct: 15.0          # Today's move ≥ 15% — confirmed catalyst, not pre-speculation
   hard_stop_pct: 0.08               # -8% server-side stop, no trailing
