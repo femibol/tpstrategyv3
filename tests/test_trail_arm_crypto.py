@@ -34,26 +34,29 @@ def _allow(engine, symbol, pnl_pct, strategy="mean_reversion", runner=False):
 
 def test_crypto_trail_blocked_below_arm_threshold():
     eng = _new_engine()
+    arm = TradingEngine.CRYPTO_TRAIL_ARM_PCT
     # _is_crypto_symbol only inspects the suffix, no engine state needed.
     assert _allow(eng, "BTC-USD", 0.000) is False
-    assert _allow(eng, "BTC-USD", 0.001) is False
-    assert _allow(eng, "BTC-USD", 0.004) is False
+    assert _allow(eng, "BTC-USD", arm * 0.2) is False
+    assert _allow(eng, "BTC-USD", arm - 0.001) is False
 
 
 def test_crypto_trail_arms_at_threshold():
     eng = _new_engine()
-    assert _allow(eng, "ETH-USD", 0.005) is True
-    assert _allow(eng, "NEAR-USD", 0.010) is True
-    assert _allow(eng, "SOL-USDT", 0.030) is True
+    arm = TradingEngine.CRYPTO_TRAIL_ARM_PCT
+    assert _allow(eng, "ETH-USD", arm) is True
+    assert _allow(eng, "NEAR-USD", arm + 0.005) is True
+    assert _allow(eng, "SOL-USDT", arm * 3) is True
 
 
 def test_crypto_gate_does_not_depend_on_strategy():
     eng = _new_engine()
+    arm = TradingEngine.CRYPTO_TRAIL_ARM_PCT
     # Even momentum-runner crypto (if it ever existed) must clear the
     # crypto floor, since the bug is about wick-back-through-entry, not
     # about the strategy's chosen trail width.
-    assert _allow(eng, "BTC-USD", 0.001, strategy="momentum", runner=True) is False
-    assert _allow(eng, "BTC-USD", 0.006, strategy="momentum", runner=True) is True
+    assert _allow(eng, "BTC-USD", arm * 0.2, strategy="momentum", runner=True) is False
+    assert _allow(eng, "BTC-USD", arm + 0.001, strategy="momentum", runner=True) is True
 
 
 def test_equity_momentum_still_uses_momentum_floor():

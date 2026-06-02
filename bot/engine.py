@@ -101,6 +101,17 @@ class TradingEngine:
         self.sheets_logger = None
         self.scheduler = None
 
+        # Trail-arm thresholds overridable via risk config so tuning doesn't
+        # require a code change. Defaults live on the class constants below.
+        if config is not None:
+            rc = getattr(config, "risk_config", None) or {}
+            self.CRYPTO_TRAIL_ARM_PCT = float(rc.get(
+                "crypto_trail_arm_pct", self.__class__.CRYPTO_TRAIL_ARM_PCT
+            ))
+            self.MOMENTUM_TRAIL_ARM_PCT = float(rc.get(
+                "momentum_trail_arm_pct", self.__class__.MOMENTUM_TRAIL_ARM_PCT
+            ))
+
         # Gateway auto-recovery state. After N consecutive reconnect
         # failures we try restarting the ib-gateway container via the
         # Docker socket, bounded by per-day + cooldown caps so a bad
@@ -2958,10 +2969,17 @@ class TradingEngine:
     # crypto trades (2026-05-17..05-26) found 12 trail exits in the -0.04%
     # to -1.29% band, net -$150, with `final_stop` still pinned at the
     # initial 5%-below-entry stop_loss — meaning the trail had armed at
-    # entry and fired on slippage. Require ≥0.5% pnl before the trail can
-    # arm so brief wicks above entry don't install a breakeven stop;
-    # the static stop_loss continues to bound the downside.
-    CRYPTO_TRAIL_ARM_PCT = 0.005
+    # entry and fired on slippage.
+    #
+    # 2026-06-02 trade audit on 145 mean_reversion trades: trailing_stop
+    # path delivered 8W/30L at 21% WR for -$150 cumulative. The 0.5% arm
+    # threshold survives most slippage but still fires on the next
+    # normal-volatility pullback. Widening to 1.0% gives the trade ~1
+    # ATR of breathing room on a typical crypto runner before the trail
+    # engages — pulls the median trail-exit further above entry, lets
+    # more half-winning trades reach time_exit or partial_target where
+    # the strategy's actual edge lives (time_exit: 28W/24L 54% WR).
+    CRYPTO_TRAIL_ARM_PCT = 0.01
 
     def _trail_floor_price(self, symbol, entry_price):
         """Minimum price the trailing-stop may sit at for this symbol.
@@ -7964,8 +7982,39 @@ class TradingEngine:
             except Exception as e:
                 log.debug(f"Order book check error for {symbol}: {e}")
 
-        # === 2. PER-SYMBOL HISTORY CHECK ===
-        # If we've traded this symbol before, what's the track record?
+        # === 2. PER-(STRATEGY, SYMBOL) CONSECUTIVE-LOSS FAST-TRACK ===
+        # Per-strategy rather than global so a symbol that wins on
+        # mean_reversion isn't blocked because momentum bled on it. Fires
+        # BEFORE the aggregate per-symbol check below so the user sees
+        # the specific (strategy, symbol) reason in the log.
+        # 2026-06-02 trade audit: catches FBYD/momentum (0/3 -$130),
+        # RKLB/momentum (last 3 were losses), without touching healthy
+        # paths like NEAR/mean_reversion (22 trades, 50% WR).
+        # Disabled via `risk.consecutive_loss_block_n: 0`.
+        strat_name = signal.get("strategy") or signal.get("source", "")
+        consec_n = int(self.config.risk_config.get(
+            "consecutive_loss_block_n", 3
+        ))
+        if strat_name and consec_n > 0:
+            strat_sym_trades = [
+                t for t in self.trade_history
+                if t.get("symbol") == symbol and t.get("strategy") == strat_name
+            ]
+            last_n = strat_sym_trades[-consec_n:]
+            if len(last_n) >= consec_n and all(
+                t.get("pnl", 0) < 0 for t in last_n
+            ):
+                cum_pnl = sum(t.get("pnl", 0) for t in last_n)
+                return False, (
+                    f"{consec_n} consecutive losses on {strat_name}/{symbol}: "
+                    f"${cum_pnl:+.2f}"
+                )
+
+        # === 2b. AGGREGATE PER-SYMBOL HISTORY CHECK ===
+        # If we've traded this symbol before across any strategy, what's
+        # the track record? Catches symbols that are structurally bad
+        # across the board even when no single (strategy, symbol) hits the
+        # consecutive-loss bar.
         symbol_trades = [t for t in self.trade_history if t.get("symbol") == symbol]
         if len(symbol_trades) >= 3:
             wins = sum(1 for t in symbol_trades if t.get("pnl", 0) > 0)
