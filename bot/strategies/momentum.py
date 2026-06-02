@@ -117,7 +117,23 @@ class MomentumStrategy(BaseStrategy):
         highs = bars["high"].values
         lows = bars["low"].values
         volumes = bars["volume"].values
-        current_price = closes[-1]
+        # bar_close is the most recent CLOSED bar's price — used for indicators
+        # (EMA/ADX/RSI all want closed-bar data). For the SIGNAL entry price
+        # we want the LIVE quote: bars are 5-min, so by the time the engine
+        # processes a signal the bar_close can be 5+ min stale. On a runner
+        # the live price drifts up faster than the bar refreshes; engine's
+        # drift gate then rejects every cycle as "stale signal" while the
+        # strategy keeps re-emitting the same anchor price.
+        #
+        # Live case 2026-06-02: MRVU bar_close $249.15, live ask climbed to
+        # $279 (+12%) over 2 hours — strategy fired every 3 min at $249.15,
+        # engine rejected each with "STALE SIGNAL SKIP: 5.4%/6.3%/12% drift".
+        # Same pattern on MRVL ($290 → $314) and many others. Cost: every
+        # legit breakout missed in that window.
+        bar_close = float(closes[-1])
+        quote = market_data.get_quote(symbol) if market_data else None
+        live_price = float(quote.get("price")) if quote and quote.get("price") else None
+        current_price = live_price if live_price and live_price > 0 else bar_close
 
         # EMAs
         fast_ema = self.indicators.ema(closes, self.fast_ema)

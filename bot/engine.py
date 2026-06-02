@@ -2154,8 +2154,8 @@ class TradingEngine:
                             sig_score = sig.get("score")
                             if sig_rvol is not None and sig_rvol < min_rvol:
                                 log.info(
-                                    f"POSTMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.1f}x "
-                                    f"(need RVOL>={min_rvol})"
+                                    f"POSTMARKET REJECT: {sig['symbol']} RVOL={sig_rvol:.2f}x "
+                                    f"(need RVOL>={min_rvol:.2f})"
                                 )
                                 continue
                             if sig_score is not None and sig_score < min_score:
