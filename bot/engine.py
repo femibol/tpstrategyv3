@@ -6397,8 +6397,24 @@ class TradingEngine:
                 and current_price and current_price > 0
                 and stop_loss_price and take_profit_price
             )
+            # Toggle: force MARKET-parent bracket on equity. Resolves IBKR
+            # Error 2152 "PendingSubmit → cancelled" when account doesn't
+            # have top-of-book market-data subscriptions for NASDAQ/NYSE/
+            # BATS/ARCA. Live observation 2026-06-05: every equity bracket
+            # order all morning timed out at 15s in PendingSubmit, blocking
+            # every fill on SNBR/BGMS/ETHD-class runners.
+            # Trade-off: worse fills (no LIMIT price guarantee), but actually
+            # fills. Per-fill slippage is logged at the broker layer so the
+            # cost can be measured. Disable via setting to False once IBKR
+            # market-data permissions are restored.
+            force_market_bracket = self.config.risk_config.get(
+                "use_market_orders_on_bracket", False
+            )
             if use_server_bracket and not use_midprice:
-                entry_order_type = "LIMIT"
+                if force_market_bracket:
+                    entry_order_type = "MARKET"
+                else:
+                    entry_order_type = "LIMIT"
                 entry_limit_price = round(current_price * 1.02, 2)
             else:
                 entry_order_type = "MIDPRICE" if use_midprice else "MARKET"

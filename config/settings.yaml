@@ -42,6 +42,15 @@ risk:
   # rationale (PR #197). Empty dict = disabled for all strategies.
   max_dollar_risk_per_strategy:
     mean_reversion: 50            # 9.5:1 loss/win asymmetry seen 2026-06-04 (NEAR -$128 vs +$15 avg win)
+  # 2026-06-05: switch to MARKET-parent server brackets on equity. IBKR
+  # paper account lacks Top-of-Book subs for NASDAQ/NYSE/BATS/ARCA, so
+  # LIMIT brackets sit in PendingSubmit until the bot's 15s timeout kills
+  # them. MARKET parents skip the price validation and actually fill.
+  # Trade-off: worse fills on micro-cap runners. Per-fill slippage is
+  # logged at bot/brokers/ibkr.py (BRACKET FILLED line includes signal
+  # vs fill price). Flip to false when market-data permissions are
+  # restored to get tighter fills back.
+  use_market_orders_on_bracket: true
   max_universe_symbols: 90        # Cap on symbols given a bar refresh per cycle — positions+crypto always kept, equity-discovery tail trimmed (keeps update_data fast so position monitoring isn't blocked)
   max_correlated_positions: 2     # Max 2 in same sector - stay diversified across runners
   stop_loss_pct: 0.03             # 3% stop loss fallback

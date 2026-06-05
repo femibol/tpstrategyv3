@@ -434,10 +434,11 @@ class IBKRBroker(BaseBroker):
             bracket_tp = kwargs.get("take_profit")
             bracket_sl = kwargs.get("stop_loss")
 
-            if bracket_tp and bracket_sl and order_type.upper() in ("LIMIT", "MIDPRICE") and limit_price:
+            if bracket_tp and bracket_sl and order_type.upper() in ("LIMIT", "MIDPRICE", "MARKET"):
                 return self._place_bracket_order(
                     contract, symbol, action, quantity,
-                    limit_price, bracket_sl, bracket_tp, outside_rth
+                    limit_price or 0, bracket_sl, bracket_tp, outside_rth,
+                    entry_order_type=order_type.upper(),
                 )
 
             # --- Single Order ---
@@ -688,26 +689,65 @@ class IBKRBroker(BaseBroker):
 
     def _place_bracket_order(self, contract, symbol, action, quantity,
                              entry_price, stop_loss_price, take_profit_price,
-                             outside_rth=False):
+                             outside_rth=False, entry_order_type="LIMIT"):
         """
         Place a bracket order: entry + stop-loss + take-profit as linked OCA orders.
         IBKR manages the stop and target server-side — no need for the bot to
         monitor prices for these exits (faster, survives bot restarts).
 
+        entry_order_type:
+          - "LIMIT"  (default): parent is a LIMIT order at entry_price.
+            Best fills but IBKR will validate the limit price against your
+            account's market-data subscription on the relevant exchange. If
+            you don't have Top-of-Book for NASDAQ/NYSE/BATS/ARCA, IBKR
+            leaves the order stuck in PendingSubmit (Error 2152) and the
+            order ultimately gets cancelled.
+          - "MARKET": parent is a MARKET order. Skips price validation
+            entirely — orders submit regardless of market-data subscription.
+            Trade-off: fills at whatever ask is alive at execution time,
+            so worse fills on micro-cap runners (the gap from signal to fill
+            can be 2–5% on a fast mover). The bot's tiered spread + size-down
+            (PR #196) mitigate this on low-priced names.
+          - "MIDPRICE": fills at bid/ask midpoint, capped by entry_price.
+
+        2026-06-05 context: every IBKR bracket order this morning hit
+        PendingSubmit then got cancelled at the 15s timeout. Switching the
+        bracket parent to MARKET is the workaround for accounts without
+        real-time exchange subscriptions. See engine.py
+        `risk.use_market_orders_on_bracket` for the engine-side toggle.
+
         Returns:
             dict with order details including child order IDs, or None if failed.
         """
         try:
+            # ib_async's bracketOrder() always returns LIMIT-parent triplets.
+            # We swap the parent to MarketOrder/MidPrice after the fact so
+            # the parentId / OCA linkage that ties TP+SL to the parent stays
+            # intact. The bracketOrder() call still needs a limitPrice as
+            # an anchor for the TP/SL placement — we use entry_price as a
+            # reference even when the actual parent will be a MARKET order.
+            ref_limit_price = entry_price if entry_price > 0 else take_profit_price
             bracket = self.ib.bracketOrder(
                 action=action.upper(),
                 quantity=quantity,
-                limitPrice=entry_price,
+                limitPrice=ref_limit_price,
                 takeProfitPrice=take_profit_price,
                 stopLossPrice=stop_loss_price,
             )
 
             # bracket is a list of 3 orders: [parent, takeProfit, stopLoss]
             parent_order, tp_order, sl_order = bracket
+
+            # Convert the parent if MARKET requested. The TP/SL children
+            # keep their LimitOrder/StopOrder types — they need price
+            # triggers regardless of how the entry executes.
+            if entry_order_type.upper() == "MARKET":
+                parent_order.orderType = "MKT"
+                parent_order.lmtPrice = 0.0  # Required for MKT parents
+                log.info(
+                    f"BRACKET PARENT → MARKET: {symbol} (Error 2152 bypass — "
+                    f"will fill at live ask, not LIMIT validation)"
+                )
 
             # Apply outside-RTH to all legs
             if outside_rth:
@@ -755,9 +795,24 @@ class IBKRBroker(BaseBroker):
                         if total_qty > 0:
                             avg_fill_price = total_cost / total_qty
                             filled_qty = int(total_qty)
+                    # Fill-quality log: slippage vs the signal price the
+                    # engine sent. With MARKET-parent brackets (Option C
+                    # 2026-06-05), fills will be worse than LIMIT — measure
+                    # the cost so we can decide whether to stay on MARKET
+                    # or revisit once IBKR market-data permissions are
+                    # restored. Signal price = the engine-side reference
+                    # price, passed as `entry_price` to this method.
+                    slippage_pct = 0.0
+                    if entry_price > 0 and avg_fill_price > 0:
+                        if action.upper() == "BUY":
+                            slippage_pct = (avg_fill_price - entry_price) / entry_price * 100
+                        else:
+                            slippage_pct = (entry_price - avg_fill_price) / entry_price * 100
                     log.info(
                         f"BRACKET FILLED: {action} {filled_qty}/{quantity} {symbol} "
-                        f"@ ${avg_fill_price:.2f}"
+                        f"@ ${avg_fill_price:.4f} "
+                        f"| signal ${entry_price:.4f} | slippage {slippage_pct:+.2f}% "
+                        f"| parent={entry_order_type}"
                     )
                     break
                 elif fill_status in ("Cancelled", "ApiCancelled", "Inactive"):
