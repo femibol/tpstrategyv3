@@ -1,1 +1,1 @@
-curl -s ifconfig.me ; echo ' (external IP)' ; echo '---' ; iptables -L INPUT -n --line-numbers 2>/dev/null | head -15 ; echo '---' ; ufw status 2>/dev/null | head -10
+ufw allow from 104.28.133.13 to any port 5000 proto tcp && ufw allow from 104.28.133.13 to any port 8080 proto tcp && echo '---NEW STATE---' && ufw status numbered | head -20
