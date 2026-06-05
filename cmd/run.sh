@@ -1,1 +1,1 @@
-cd ~/tpstrategyv3 && git fetch origin main && git log --oneline HEAD..origin/main | head -10 && echo '---PULL---' && git pull origin main 2>&1 | tail -5 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -5 && echo '---NEW HEAD---' && git log --oneline -1
+find / -name 'docker-compose.yml' -path '*tpstrategy*' 2>/dev/null | head -3 ; echo '---' ; find / -type d -name 'tpstrategyv3' 2>/dev/null | head -3
