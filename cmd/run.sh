@@ -1,1 +1,1 @@
-docker logs trading-bot-trading-bot-1 --since 2h 2>&1 | grep -B1 -A2 'PendingSubmit\|reject\|Error 2' | tail -40
+cd /opt/trading-bot && git stash 2>&1 | tail -1 && git pull origin main 2>&1 | tail -3 && git checkout --theirs config/settings.yaml 2>/dev/null ; git stash drop 2>&1 | tail -1 && echo '---NEW HEAD---' && git log --oneline -1 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -3 && sleep 30 && docker ps --filter name=trading-bot --format '{{.Names}}\t{{.Status}}'
