@@ -1,1 +1,1 @@
-docker logs --tail 60 trading-bot-trading-bot-1 2>&1 | grep -v 'GET /health' | grep -v HEARTBEAT
+sleep 60 && docker logs trading-bot-trading-bot-1 --since 8m 2>&1 | grep -iE 'ORDER ROUTING|HXHX|BRACKET|Executing|approved' | grep -v HEARTBEAT | tail -30
