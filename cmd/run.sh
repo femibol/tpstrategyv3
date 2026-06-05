@@ -1,1 +1,1 @@
-ufw allow from 104.28.133.13 to any port 5000 proto tcp && ufw allow from 104.28.133.13 to any port 8080 proto tcp && echo '---NEW STATE---' && ufw status numbered | head -20
+cd ~/tpstrategyv3 && git fetch origin main && git log --oneline HEAD..origin/main | head -10 && echo '---PULL---' && git pull origin main 2>&1 | tail -5 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -5 && echo '---NEW HEAD---' && git log --oneline -1
