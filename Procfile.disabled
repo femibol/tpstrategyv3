@@ -1,0 +1,5 @@
+# DISABLED 2026-06-05 — bot moved to VPS (see render.yaml.disabled for context).
+# Heroku/Render auto-detect uses Procfile as a fallback to render.yaml; renamed
+# to keep both providers from auto-launching the bot on push. To revive on a
+# PaaS, rename back to Procfile.
+web: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
