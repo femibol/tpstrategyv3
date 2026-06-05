@@ -1,1 +1,1 @@
-cd /opt/trading-bot && git stash 2>&1 | tail -2 && git pull origin main 2>&1 | tail -3 && git checkout --theirs config/settings.yaml 2>/dev/null ; git stash drop 2>&1 | tail -1 && echo '---NEW HEAD---' && git log --oneline -1 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -3 && sleep 8 && echo '---STATUS---' && docker ps --filter name=trading-bot --format '{{.Names}}\t{{.Status}}'
+sleep 25 && docker ps --filter name=trading-bot --format '{{.Names}}\t{{.Status}}' && echo '---LOG---' && docker logs --tail 15 trading-bot-trading-bot-1 2>&1 | tail -15
