@@ -66,6 +66,25 @@ class PositionSizer:
         self.penny_runner_price_min = config.risk_config.get("penny_runner_price_min", 0.20)
         self.penny_runner_price_max = config.risk_config.get("penny_runner_price_max", 15.00)
 
+        # Per-strategy absolute dollar cap on risk-per-trade. Resolves the
+        # mean_reversion asymmetry: 5% min stop × $2,872 position = -$143
+        # max risk vs +$15 typical win = 9.5:1 loss/win ratio that erases
+        # weekly gains on a single bad entry (see 2026-06-04 NEAR-USD trade,
+        # -$127.94 in 77 minutes that wiped Tue + Wed combined).
+        #
+        # Applied AFTER all multiplicative sizing (Kelly/DD/Session/etc.) so
+        # this is the final ceiling on risk_dollars. Position size shrinks
+        # accordingly: at $50 cap with 5% stop, position is $1,000 not
+        # $2,872 — same trade fires, same stop %, but max loss bounded.
+        #
+        # Conservative defaults — only mean_reversion is currently capped
+        # because that's where the 200-trade audit showed the asymmetry.
+        # Extend per strategy as data warrants. Set value to 0 / null to
+        # disable for a strategy.
+        self.max_dollar_risk_per_strategy = (
+            config.risk_config.get("max_dollar_risk_per_strategy", {}) or {}
+        )
+
     def update_tier(self, tier):
         """Update sizing parameters from scaling tier."""
         if tier:
@@ -324,6 +343,19 @@ class PositionSizer:
 
         # Risk per trade in dollars
         risk_dollars = balance * adjusted_risk_pct
+
+        # Per-strategy absolute risk cap. See __init__ docstring for the
+        # mean_reversion asymmetry that triggered this. Capping risk_dollars
+        # here shrinks the share count below; the strategy's own gates
+        # remain in force, only the position SIZE on the resulting trade
+        # changes.
+        strat_cap = self.max_dollar_risk_per_strategy.get(strategy) if strategy else None
+        if strat_cap and strat_cap > 0 and risk_dollars > strat_cap:
+            log.info(
+                f"STRATEGY RISK CAP: {strategy} risk ${risk_dollars:.2f} → "
+                f"${strat_cap:.2f} (per-strategy ceiling)"
+            )
+            risk_dollars = float(strat_cap)
 
         # Per-share risk
         per_share_risk = abs(price - stop_loss)
