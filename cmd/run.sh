@@ -1,1 +1,1 @@
-sleep 75 && echo '---ACTIVITY---' && docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -E 'ORDER ROUTING|BRACKET (FILLED|PARENT|ORDER placed|NOT FILLED)|SIGNAL:|APPROVED|CYCLE' | grep -v HEARTBEAT | tail -30
+docker logs trading-bot-trading-bot-1 --since 6m 2>&1 | grep -E 'CYCLE #|bars_warm|signals=|approved=' | tail -8
