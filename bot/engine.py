@@ -7951,9 +7951,57 @@ class TradingEngine:
                         ema_imbalance = current_imbalance
                         imbalance_ramping = False
 
-                    # Reject wide spreads (>2% = poor liquidity, bad fills likely)
-                    if spread_pct > 0.02:
-                        return False, f"wide spread {spread_pct*100:.1f}% (>2%)"
+                    # Tiered spread allowance + auto size-down for runners.
+                    #
+                    # The flat 2% rule was tuned for mid-cap equity. On the
+                    # micro-cap runners we actually want (LGPS, TSAT, MASK
+                    # class) the spread is naturally 3-8% — those names
+                    # were blocked for HOURS on 2026-06-04, exactly when
+                    # they were running. By price tier:
+                    #   - $5+      : strict 2% (mid-cap, tight spreads)
+                    #   - $2-$5    : up to 3% (small-cap)
+                    #   - sub-$2   : up to 5% (micro-cap runners)
+                    # Override via config: risk.max_spread_pct_tiers.
+                    price_for_spread = float(signal.get("price", 0) or 0)
+                    spread_tiers = self.config.risk_config.get(
+                        "max_spread_pct_tiers",
+                        {"lt_2": 0.05, "lt_5": 0.03, "default": 0.02},
+                    )
+                    strict_spread = float(spread_tiers.get("default", 0.02))
+                    if price_for_spread > 0 and price_for_spread < 2.0:
+                        max_spread = float(spread_tiers.get("lt_2", 0.05))
+                    elif price_for_spread > 0 and price_for_spread < 5.0:
+                        max_spread = float(spread_tiers.get("lt_5", 0.03))
+                    else:
+                        max_spread = strict_spread
+
+                    if spread_pct > max_spread:
+                        return False, (
+                            f"wide spread {spread_pct*100:.1f}% "
+                            f"(>{max_spread*100:.0f}% for ${price_for_spread:.2f})"
+                        )
+
+                    # Size-down when spread is above strict but within tier.
+                    # Linear scale: at strict, mult=1.0; at tier ceiling,
+                    # mult=0.5. Caps risk-per-trade on names with wider
+                    # spreads so a 5% slippage cost on a low-float runner
+                    # doesn't pair with a full-size position.
+                    if (
+                        spread_pct > strict_spread
+                        and max_spread > strict_spread
+                    ):
+                        over = spread_pct - strict_spread
+                        rng = max_spread - strict_spread
+                        scale = max(0.5, 1.0 - (over / rng) * 0.5)
+                        existing_mult = float(signal.get("size_multiplier", 1.0))
+                        signal["size_multiplier"] = existing_mult * scale
+                        log.info(
+                            f"SPREAD SIZE-DOWN: {symbol} spread "
+                            f"{spread_pct*100:.1f}% (price ${price_for_spread:.2f}, "
+                            f"tier max {max_spread*100:.0f}%) → "
+                            f"size {existing_mult:.2f} × {scale:.2f} = "
+                            f"{signal['size_multiplier']:.2f}"
+                        )
 
                     # Reject consistently bearish EMA imbalance
                     if ema_imbalance < -0.3:
