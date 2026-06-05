@@ -1,1 +1,1 @@
-sleep 25 && docker ps --filter name=trading-bot --format '{{.Names}}\t{{.Status}}' && echo '---LOG---' && docker logs --tail 15 trading-bot-trading-bot-1 2>&1 | tail -15
+ss -tlnp 2>/dev/null | grep ':5000' ; echo '---UFW---' ; ufw status numbered 2>&1 | head -15 ; echo '---HEALTH---' ; curl -s -o /dev/null -w 'local /health → HTTP %{http_code}\n' http://localhost:5000/health
