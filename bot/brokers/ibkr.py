@@ -772,12 +772,34 @@ class IBKRBroker(BaseBroker):
             # an anchor for the TP/SL placement — we use entry_price as a
             # reference even when the actual parent will be a MARKET order.
             ref_limit_price = entry_price if entry_price > 0 else take_profit_price
+            # Tick-size rounding (IBKR Error 110 fix). IBKR rejects orders
+            # where prices don't conform to the minimum price variation:
+            #   - price < $1     → tick $0.0001 (4 decimals)
+            #   - price ≥ $1     → tick $0.01   (2 decimals)
+            # Engine math (R/R-stretch, ATR multipliers) frequently produces
+            # 4-decimal SL/TP values on >$1 stocks (e.g. IREZ stop=$6.7027,
+            # target=$7.3246). The legacy log message rounded to :.2f for
+            # display but the actual values flowed into bracketOrder()
+            # unrounded, triggering Error 110 → PendingSubmit lock → 15s
+            # timeout cancel. Every regular-session order all morning
+            # 2026-06-05 died this way (root cause behind PR #202 + #203
+            # which fixed symptoms, not cause). Round bracket inputs to
+            # the appropriate tick before placing.
+            def _round_to_tick(p):
+                if p is None or p <= 0:
+                    return p
+                return round(p, 4) if p < 1.0 else round(p, 2)
+
+            ref_limit_price_t = _round_to_tick(ref_limit_price)
+            take_profit_price_t = _round_to_tick(take_profit_price)
+            stop_loss_price_t = _round_to_tick(stop_loss_price)
+
             bracket = self.ib.bracketOrder(
                 action=action.upper(),
                 quantity=quantity,
-                limitPrice=ref_limit_price,
-                takeProfitPrice=take_profit_price,
-                stopLossPrice=stop_loss_price,
+                limitPrice=ref_limit_price_t,
+                takeProfitPrice=take_profit_price_t,
+                stopLossPrice=stop_loss_price_t,
             )
 
             # bracket is a list of 3 orders: [parent, takeProfit, stopLoss]
