@@ -9251,6 +9251,61 @@ class TradingEngine:
         except Exception:
             pass
 
+    def _log_strategy_signal_summary(self):
+        """Daily observability: one log line per enabled strategy showing
+        signals fired vs filled SINCE THE LAST EOD CALL.
+
+        Catches the "enabled but silent" failure mode. Three multi-day
+        bleeds in the 2026-05-27..06-04 window were strategies firing
+        signals that never converted to fills (SNBR/low_float_catalyst
+        QUALITY GATE score=0, NU/IBIT rvol_scalp same bug, LGPS/TSAT
+        wide-spread block). Each was visible in the per-cycle log noise
+        but invisible in summary form — operators had to grep to find
+        them. This summary makes the pattern impossible to miss: a
+        strategy with N fired / 0 filled stands out at a glance.
+
+        The strategies' `signals_generated` and `trades_taken` counters
+        are monotonic since boot, so we snapshot them after each EOD log
+        and report the DELTA next time. First EOD post-boot reports
+        cumulative-since-boot; every subsequent EOD reports since the
+        last EOD.
+        """
+        if not getattr(self, "strategies", None):
+            return
+
+        # Snapshots persisted across EOD calls. Initialized on first use.
+        last_fired = getattr(self, "_last_eod_signals_fired", {})
+        last_filled = getattr(self, "_last_eod_signals_filled", {})
+
+        rows = []
+        new_fired = {}
+        new_filled = {}
+        for name, strat in self.strategies.items():
+            cum_fired = getattr(strat, "signals_generated", 0)
+            cum_filled = getattr(strat, "trades_taken", 0)
+            new_fired[name] = cum_fired
+            new_filled[name] = cum_filled
+            delta_fired = cum_fired - last_fired.get(name, 0)
+            delta_filled = cum_filled - last_filled.get(name, 0)
+            rows.append((name, delta_fired, delta_filled))
+        # Sort by fired desc so the noisiest strategy is at the top
+        rows.sort(key=lambda r: -r[1])
+
+        log.info("=== STRATEGY SIGNAL SUMMARY (since last EOD) ===")
+        for name, fired, filled in rows:
+            if fired > 0 and filled == 0:
+                marker = "  FIRED-BUT-NEVER-FILLED"
+            elif fired == 0 and filled == 0:
+                marker = "  (silent)"
+            else:
+                conv = filled / fired * 100 if fired else 0
+                marker = f"  ({conv:.0f}% conversion)"
+            log.info(f"  {name:<22} fired={fired:>3}  filled={filled:>3}{marker}")
+
+        # Persist new baselines for next EOD's delta
+        self._last_eod_signals_fired = new_fired
+        self._last_eod_signals_filled = new_filled
+
     def _end_of_day(self):
         """End of day routine with smart position evaluation.
 
@@ -9262,6 +9317,17 @@ class TradingEngine:
         After-hours selling uses IBKR outside-RTH limit orders.
         """
         log.info("=== END OF DAY ===")
+
+        # --- Per-strategy signal/fill summary ---
+        # One log line per enabled strategy with the day's signals_generated
+        # vs trades_taken. Catches the "strategy is enabled but never
+        # produces fills" pattern that hid the QUALITY GATE score-field
+        # bugs for weeks (silent signals == silent failure). Counters are
+        # zeroed by each strategy's daily-reset in generate_signals().
+        try:
+            self._log_strategy_signal_summary()
+        except Exception as e:
+            log.debug(f"strategy signal summary failed: {e}")
 
         # --- Check for stock split candidates (NEVER hold these overnight) ---
         split_candidates = self._check_split_candidates()
