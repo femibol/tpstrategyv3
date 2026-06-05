@@ -1,1 +1,1 @@
-docker logs trading-bot-trading-bot-1 --since 60m 2>&1 | grep -E 'JLHL|SMCZ|SOFI|RMSG' | grep -v HEARTBEAT | tail -30
+cd /opt/trading-bot && git stash 2>&1 | tail -1 && git pull origin main 2>&1 | tail -3 && git checkout --theirs config/settings.yaml 2>/dev/null ; git stash drop 2>&1 | tail -1 && echo '---NEW HEAD---' && git log --oneline -1 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -3
