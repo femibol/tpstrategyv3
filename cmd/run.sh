@@ -1,1 +1,1 @@
-find / -name 'docker-compose.yml' -path '*tpstrategy*' 2>/dev/null | head -3 ; echo '---' ; find / -type d -name 'tpstrategyv3' 2>/dev/null | head -3
+docker ps --format '{{.Names}} {{.Image}}' ; echo '---' ; docker inspect trading-bot-trading-bot-1 --format '{{.HostConfig.Binds}}{{.Mounts}}' 2>&1 | head -3
