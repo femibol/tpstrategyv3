@@ -6734,15 +6734,51 @@ class TradingEngine:
         self._pending_orders.discard(symbol)
 
         # Process slippage close queue — close positions where fill slippage
-        # exceeded max_slippage_pct (R:R is ruined, better to exit immediately)
+        # exceeded max_slippage_pct (R:R is ruined, better to exit immediately).
+        #
+        # FLOOR (added 2026-06-05): if the live price is already AT/BELOW the
+        # position's stop_loss, the bracket's server-side stop_loss is about
+        # to fire anyway. Sending a duplicate MARKET SELL via slippage_reject
+        # just races at the same bad price — or worse, fills before the
+        # bracket and locks in a price WORSE than the strategy's predefined
+        # stop. HIBS on 2026-06-05: entry $25.25, stop_loss $23.12, but
+        # slippage_reject MARKET SELL filled at $22.73 (-$0.39 below stop
+        # = -$58 extra damage on top of the planned -$317 max). Total loss
+        # -$375 instead of the strategy-bounded -$317.
+        #
+        # Fix: skip the slippage_reject MARKET when price has already crashed
+        # past the stop. Let the bracket stop_loss handle it at its predefined
+        # trigger price.
         if hasattr(self, '_slippage_close_queue') and self._slippage_close_queue:
             close_syms = list(self._slippage_close_queue)
             self._slippage_close_queue.clear()
             for close_sym in close_syms:
-                if close_sym in self.positions:
-                    log.warning(f"SLIPPAGE CLOSE: Closing {close_sym} — excessive entry slippage")
-                    self._close_position(close_sym, "slippage_reject",
-                                         "Excessive slippage on entry — R:R invalid")
+                if close_sym not in self.positions:
+                    continue
+                pos = self.positions[close_sym]
+                stop_loss = float(pos.get("stop_loss", 0) or 0)
+                current_price = None
+                try:
+                    quote = self.market_data.get_quote(close_sym) if self.market_data else None
+                    if quote:
+                        current_price = quote.get("price") or 0
+                except Exception:
+                    pass
+                if (
+                    stop_loss > 0
+                    and current_price
+                    and float(current_price) <= stop_loss
+                ):
+                    log.warning(
+                        f"SLIPPAGE EXIT FLOOR: {close_sym} live "
+                        f"${float(current_price):.2f} already at/below stop_loss "
+                        f"${stop_loss:.2f} — skipping slippage_reject MARKET SELL. "
+                        f"Bracket stop_loss will handle exit at the predefined level."
+                    )
+                    continue
+                log.warning(f"SLIPPAGE CLOSE: Closing {close_sym} — excessive entry slippage")
+                self._close_position(close_sym, "slippage_reject",
+                                     "Excessive slippage on entry — R:R invalid")
 
     def _close_position(self, symbol, reason_type, reason_msg):
         """Close a position through IBKR. Thread-safe with double-close guard."""
