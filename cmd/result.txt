@@ -1,25 +1,25 @@
-=== executed: 1f916193b7e29cd913dd55d6afe2504320ec5cd6
-=== started:  2026-06-05T18:41:02Z
+=== executed: 215ed13e2bc2e8f34062a04370ff754c444c4347
+=== started:  2026-06-05T22:27:02Z
 === exit:     
 === timeout:  90s
 ===
-2026-06-05 14:38:43 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for RMSG: This event loop is already running
-2026-06-05 14:38:43 | ERROR    | trading_bot.engine   | IBKR close order FAILED for RMSG
-2026-06-05 14:38:43 | ERROR    | trading_bot.engine   | CLOSE FAILED for RMSG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-05 14:38:43 | INFO     | trading_bot.engine   | Cancelled broker stop order for RMSG
-2026-06-05 14:38:43 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for RMSG: This event loop is already running
-2026-06-05 14:38:43 | ERROR    | trading_bot.engine   | IBKR close order FAILED for RMSG
-2026-06-05 14:38:43 | ERROR    | trading_bot.engine   | CLOSE FAILED for RMSG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-05 14:38:43 | INFO     | trading_bot.engine   | Cancelled broker stop order for RMSG
-2026-06-05 14:38:43 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: RMSG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-05 14:38:43 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: PreSubmitted | Filled: 0.0/1.0
-2026-06-05 14:38:43 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: ValidationError | Filled: 0.0/1.0
-2026-06-05 14:38:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: SELL 1 RMSG NASDAQ.SCM  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 2.21 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
-2026-06-05 14:38:43 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Submitted | Filled: 0.0/1.0
-2026-06-05 14:38:44 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 1 RMSG @ MARKET MKT | Order ID: 669221
-2026-06-05 14:38:47 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Filled | Filled: 1.0/1.0 | AvgPrice: $2.21
-2026-06-05 14:38:47 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 1/1 RMSG @ $2.21 | Order ID: 669221
-2026-06-05 14:38:47 | INFO     | trading_bot.engine   | CLOSED RMSG via IBKR | stop_loss | P&L: $+0.00 | Stop hit at $2.21
-2026-06-05 14:38:47 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT RMSG qty=1 @ $2.21 → primary webhook (200)
-2026-06-05 14:38:47 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: RMSG** (stop_loss)
-2026-06-05 14:38:48 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: RMSG +0.00 (207 total in history)
+2026-06-05 16:02:59 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIBS | Score: 70 | RVOL: 4.0x | Change: +0.1% | R:R 2.0 | Target: $23.94 (+1.2%)
+2026-06-05 16:02:59 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIBS @ $23.84 conf=0.70
+2026-06-05 16:02:59 | INFO     | trading_bot.risk.manager | APPROVED: buy HIBS | Extreme RVOL 4.0x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (69)
+2026-06-05 16:02:59 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 5 buy signal(s) — GDXD, HIBS, IONZ, SOXS, TZA
+  ✅ HIBS: score 70/100 — Extreme RVOL 4
+2026-06-05 16:06:16 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIBS | Score: 70 | RVOL: 4.0x | Change: +0.1% | R:R 2.0 | Target: $23.94 (+1.2%)
+2026-06-05 16:06:16 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIBS @ $23.84 conf=0.70
+2026-06-05 16:06:16 | INFO     | trading_bot.risk.manager | APPROVED: buy HIBS | Extreme RVOL 4.0x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (69)
+  ✅ HIBS: score 70/100 — Extreme RVOL 4
+2026-06-05 16:06:24 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: HIBS — wide spread 20.4% (>2% for $23.84)
+2026-06-05 16:10:12 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIBS | Score: 70 | RVOL: 4.0x | Change: +0.1% | R:R 2.0 | Target: $23.94 (+1.2%)
+2026-06-05 16:10:12 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIBS @ $23.84 conf=0.70
+2026-06-05 16:10:12 | INFO     | trading_bot.risk.manager | APPROVED: buy HIBS | Extreme RVOL 4.0x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (69)
+  ✅ HIBS: score 70/100 — Extreme RVOL 4
+2026-06-05 16:10:15 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: HIBS — wide spread 20.4% (>2% for $23.84)
+2026-06-05 16:16:21 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIBS | Score: 70 | RVOL: 4.0x | Change: +0.1% | R:R 2.0 | Target: $23.94 (+1.2%)
+2026-06-05 16:16:21 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIBS @ $23.84 conf=0.70
+2026-06-05 16:16:21 | INFO     | trading_bot.risk.manager | APPROVED: buy HIBS | Extreme RVOL 4.0x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (69)
+2026-06-05 16:16:27 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: HIBS — wide spread 20.7% (>2% for $23.84)
+2026-06-05 16:20:11 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIBS | Score: 70 | RVOL: 4.0x | Change: +0.1% | R:R 2.0 | Target: $23.94 (+1.2%)
