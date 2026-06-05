@@ -1,1 +1,1 @@
-tail -5000 /opt/tpstrategyv3/logs/trading.log | grep -B1 -A8 'Balance' | tail -40
+find / -name 'trading.log' 2>/dev/null | head -3 && echo '---' && ls -la ~/tpstrategyv3/logs/ 2>/dev/null | head -10
