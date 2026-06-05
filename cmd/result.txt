@@ -1,5 +1,28 @@
-=== executed: 39b4f8763cc514b79ae1145de2737b84ec5210ef
-=== started:  2026-06-05T18:31:32Z
-=== exit:     124
+=== executed: cb60a2d47c6bdf14bffbd31c1cb3b66ec822848e
+=== started:  2026-06-05T18:31:48Z
+=== exit:     
 === timeout:  90s
 ===
+=== TEST: RMSG buy 1 ===
+{"results":[{"action":"buy","status":"executed","symbol":"RMSG"}],"status":"ok"}
+---TRACE---
+2026-06-05 14:31:02 | INFO     | trading_bot.engine   | Manual signal received: {'symbol': 'RMSG', 'action': 'buy', 'confidence': 0.7, 'source': 'manual', 'strategy': 'manual', 'reason': 'Manual signal via API', 'price': 2.21, 'quantity': 1}
+2026-06-05 14:31:02 | INFO     | trading_bot.risk.manager | APPROVED: buy RMSG | Manual signal via API
+2026-06-05 14:31:11 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: RMSG entry=$2.2100 stop=$2.1437 (3.00% gap). Setting 6% minimum stop.
+2026-06-05 14:31:11 | INFO     | trading_bot.engine   | Executing RMSG via IBKR...
+2026-06-05 14:31:11 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: RMSG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-05 14:31:11 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: RMSG (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: PreSubmitted | Filled: 0.0/1.0
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: PreSubmitted | Filled: 0.0/1.0
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: PreSubmitted | Filled: 0.0/1.0
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Filled | Filled: 1.0/1.0 | AvgPrice: $2.21
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: PreSubmitted | Filled: 0.0/1.0
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: PreSubmitted | Filled: 0.0/1.0
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Submitted | Filled: 0.0/1.0
+2026-06-05 14:31:12 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 1 RMSG @ LIMIT $2.25 | TP: $2210.00 | SL: $2.08 | Parent ID: 668769
+2026-06-05 14:31:13 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 1/1 RMSG @ $2.2100 | signal $2.2500 | slippage -1.78% | parent=MARKET
+2026-06-05 14:31:13 | INFO     | trading_bot.engine   | BRACKET ORDER active: RMSG | SL: $2.08 | TP: $2210.00 (managed by IBKR server-side)
+2026-06-05 14:31:13 | INFO     | trading_bot.engine   | ORDER BUY RMSG via IBKR | Qty: 1 | Price: $2.21 | Cost: $2.21 | Stop: $2.08 (risk $0.13) | Target: $2210.00 (reward $2,207.79) | R:R 16650.0:1 | Strategy: manual
+2026-06-05 14:31:13 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: RMSG**
+2026-06-05 14:31:14 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY RMSG qty=1 @ $2.21 → primary webhook (200)
+2026-06-05 14:31:23 | INFO     | trading_bot.dashboard | Manual signal submitted: BUY RMSG | Result: [{'symbol': 'RMSG', 'action': 'buy', 'status': 'executed'}]
