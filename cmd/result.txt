@@ -1,19 +1,24 @@
-=== executed: 3e94a36fc74acc94b8d768fee31534529a8733e9
-=== started:  2026-06-05T13:42:21Z
+=== executed: a179f2c987de72ac8c91e4357e40e68085c29db5
+=== started:  2026-06-05T13:43:27Z
 === exit:     
 === timeout:  90s
 ===
-Saved working directory and index state WIP on main: f765ddc Merge pull request #196 from femibol/claude/dashboard-health-check-R8bOS
- create mode 100644 tests/test_dashboard_strategies_activity.py
- create mode 100644 tests/test_strategy_risk_cap.py
- create mode 100644 tests/test_strategy_signal_summary.py
-Dropped refs/stash@{0} (a3f1c88c4fff4f08ff21538c1f6561140d863976)
----NEW HEAD---
-f0b35e4 Merge pull request #201 from femibol/claude/dashboard-health-check-R8bOS
----RESTART---
- Container trading-bot-trading-bot-1 Restarting 
- Container trading-bot-trading-bot-1 Started 
----STATUS---
-trading-bot-trading-bot-1	Up 8 seconds (health: starting)
+trading-bot-trading-bot-1	Up About a minute (healthy)
 trading-bot-autoheal-1	Up 10 hours (healthy)
 trading-bot-ib-gateway-1	Up 10 hours (healthy)
+---LOG---
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'SOL-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'BONK-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'SEI-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'SUI-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'UNI-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'AAVE-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'XLM-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'DOGE-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETC-USD' — skipping streaming
+2026-06-05 09:42:26 | INFO     | trading_bot.broker.ibkr | No security definition for 'TIA-USD' — skipping streaming
+2026-06-05 09:42:32 | INFO     | trading_bot.broker.ibkr | No security definition for 'SQ' — skipping streaming
+2026-06-05 09:42:33 | INFO     | trading_bot.broker.ibkr | Subscribed to 47 live market data streams
+2026-06-05 09:42:33 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+127.0.0.1 - - [05/Jun/2026 09:42:43] "GET /health HTTP/1.1" 200 -
+127.0.0.1 - - [05/Jun/2026 09:43:14] "GET /health HTTP/1.1" 200 -
