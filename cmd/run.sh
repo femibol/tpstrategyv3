@@ -1,1 +1,1 @@
-sleep 30 && docker ps --filter name=trading-bot-trading-bot-1 --format '{{.Status}}' && echo '---SIGNAL ACTIVITY---' && docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -E 'BRACKET (FILLED|ORDER placed|PARENT)|MARKET' | tail -10
+sleep 150 && echo '---BRACKET ACTIVITY (last 5min)---' && docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -E 'BRACKET (FILLED|ORDER placed|PARENT|NOT FILLED)' | tail -30
