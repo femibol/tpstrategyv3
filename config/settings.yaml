@@ -51,6 +51,15 @@ risk:
   # vs fill price). Flip to false when market-data permissions are
   # restored to get tighter fills back.
   use_market_orders_on_bracket: true
+  # SMART-routing bypass. 2026-06-05 incident: every regular-session
+  # bracket sat in PendingSubmit until 15s timeout cancelled it. Root
+  # cause: SMART router needs real-time market-data subscriptions on the
+  # underlying exchanges (BATS/NASDAQ/ARCA/NYSE) to validate liquidity.
+  # The Error 2152 dump shows we DO have IEX subs, so route there
+  # directly. Premarket orders (which use outside_rth and bypass SMART)
+  # were filling fine — this is RTH-specific.
+  # Set to "SMART" to restore old behavior once data subs are added.
+  ibkr_routing_exchange: "IEX"
   max_universe_symbols: 90        # Cap on symbols given a bar refresh per cycle — positions+crypto always kept, equity-discovery tail trimmed (keeps update_data fast so position monitoring isn't blocked)
   max_correlated_positions: 2     # Max 2 in same sector - stay diversified across runners
   stop_loss_pct: 0.03             # 3% stop loss fallback
