@@ -37,6 +37,31 @@ import pandas as pd
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _clock_outside_dead_zone():
+    """Pin datetime.now() to Friday 2026-06-05 11:00 ET. low_float_catalyst
+    blocks signals in the 9:05-10:05 ET window, so CI runs that overlap
+    that hour flake every assertion. Same fixture in
+    test_low_float_score_field.py."""
+    from datetime import datetime as _real_dt
+    from zoneinfo import ZoneInfo
+
+    ET = ZoneInfo("America/New_York")
+    fixed = _real_dt(2026, 6, 5, 11, 0, 0, tzinfo=ET)
+
+    class _FrozenDateTime(_real_dt):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[override]
+            if tz is not None:
+                return fixed.astimezone(tz)
+            return fixed.replace(tzinfo=None)
+
+    with mock.patch(
+        "bot.strategies.low_float_catalyst.datetime", _FrozenDateTime
+    ):
+        yield
+
+
 def _strat():
     from bot.strategies.low_float_catalyst import LowFloatCatalystStrategy
 
