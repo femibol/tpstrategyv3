@@ -1,1 +1,1 @@
-docker logs --tail 25 trading-bot-trading-bot-1 2>&1 | grep -v 'GET /health'
+docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -iE 'HXHX|ORDER ROUTING|BRACKET' | tail -25
