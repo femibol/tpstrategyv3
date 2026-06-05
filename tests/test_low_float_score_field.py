@@ -40,6 +40,32 @@ import pandas as pd
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _clock_outside_dead_zone():
+    """Pin datetime.now() to Friday 2026-06-05 11:00 ET. Without this
+    pin the tests are flaky in CI for ~1 hour each day: low_float_catalyst
+    has a 9:05-10:05 ET dead zone, and runs inside that window return
+    empty signal lists regardless of the test fixture. Same time-flake
+    affects test_low_float_ultra_rvol.py."""
+    from datetime import datetime as _real_dt
+    from zoneinfo import ZoneInfo
+
+    ET = ZoneInfo("America/New_York")
+    fixed = _real_dt(2026, 6, 5, 11, 0, 0, tzinfo=ET)
+
+    class _FrozenDateTime(_real_dt):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[override]
+            if tz is not None:
+                return fixed.astimezone(tz)
+            return fixed.replace(tzinfo=None)
+
+    with mock.patch(
+        "bot.strategies.low_float_catalyst.datetime", _FrozenDateTime
+    ):
+        yield
+
+
 def _strat_with_min_signal():
     """Build a low_float_catalyst with config + a minimum-strength signal
     that just-barely clears the strategy's own gates."""
