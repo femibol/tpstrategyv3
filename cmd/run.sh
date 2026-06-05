@@ -1,1 +1,1 @@
-find / -name 'trading.log' 2>/dev/null | head -3 && echo '---' && ls -la ~/tpstrategyv3/logs/ 2>/dev/null | head -10
+ss -tlnp 2>/dev/null | grep ':5000' || netstat -tlnp 2>/dev/null | grep ':5000' ; echo '---DOCKER---' ; docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null ; echo '---DASHBOARD LOG---' ; docker logs --tail 20 tpstrat-bot 2>&1 | grep -iE 'dashboard|flask|5000|error' | tail -10
