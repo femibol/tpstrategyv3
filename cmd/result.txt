@@ -1,14 +1,25 @@
-=== executed: 717b02808c9367db3eccf9ca000519e191a3a760
-=== started:  2026-06-05T05:00:02Z
+=== executed: a596d958fc9144bfd65854fe3de2b433d07545ed
+=== started:  2026-06-05T05:01:01Z
 === exit:     
 === timeout:  90s
 ===
-LISTEN 0      4096         0.0.0.0:5000      0.0.0.0:*    users:(("docker-proxy",pid=2492238,fd=8))                 
-LISTEN 0      4096            [::]:5000         [::]:*    users:(("docker-proxy",pid=2492243,fd=8))                 
----DOCKER---
-NAMES                       STATUS                       PORTS
-trading-bot-trading-bot-1   Up About an hour (healthy)   
-trading-bot-autoheal-1      Up About an hour (healthy)   
-trading-bot-ib-gateway-1    Up About an hour (healthy)   0.0.0.0:4001-4002->4001-4002/tcp, [::]:4001-4002->4001-4002/tcp, 0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp, 127.0.0.1:5900->5900/tcp
----DASHBOARD LOG---
-Error response from daemon: No such container: tpstrat-bot
+2600:3c03::2000:f2ff:fe77:4a9d (external IP)
+---
+Chain INPUT (policy DROP)
+num  target     prot opt source               destination         
+1    ufw-before-logging-input  0    --  0.0.0.0/0            0.0.0.0/0           
+2    ufw-before-input  0    --  0.0.0.0/0            0.0.0.0/0           
+3    ufw-after-input  0    --  0.0.0.0/0            0.0.0.0/0           
+4    ufw-after-logging-input  0    --  0.0.0.0/0            0.0.0.0/0           
+5    ufw-reject-input  0    --  0.0.0.0/0            0.0.0.0/0           
+6    ufw-track-input  0    --  0.0.0.0/0            0.0.0.0/0           
+---
+Status: active
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW       Anywhere                  
+5000/tcp                   ALLOW       170.199.64.21             
+8080/tcp                   ALLOW       170.199.64.21             
+22/tcp (v6)                ALLOW       Anywhere (v6)             
+
