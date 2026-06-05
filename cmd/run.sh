@@ -1,1 +1,1 @@
-docker logs trading-bot-trading-bot-1 --since 6m 2>&1 | grep -iE 'HXHX|APPROVED|BRACKET|ORDER ROUTING|REJECTED|QUALITY GATE' | grep -v HEARTBEAT | tail -25
+docker logs --tail 60 trading-bot-trading-bot-1 2>&1 | grep -v 'GET /health' | grep -v HEARTBEAT
