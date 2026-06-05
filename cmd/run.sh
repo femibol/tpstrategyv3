@@ -1,1 +1,1 @@
-ss -tlnp 2>/dev/null | grep ':5000' || netstat -tlnp 2>/dev/null | grep ':5000' ; echo '---DOCKER---' ; docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null ; echo '---DASHBOARD LOG---' ; docker logs --tail 20 tpstrat-bot 2>&1 | grep -iE 'dashboard|flask|5000|error' | tail -10
+curl -s ifconfig.me ; echo ' (external IP)' ; echo '---' ; iptables -L INPUT -n --line-numbers 2>/dev/null | head -15 ; echo '---' ; ufw status 2>/dev/null | head -10
