@@ -1,16 +1,20 @@
-=== executed: 87c53711b9b1912daa18fe024e617858cd864d96
-=== started:  2026-06-05T18:11:31Z
+=== executed: fb7dbf7503b6c78d7e18576c007597704612690b
+=== started:  2026-06-05T18:12:01Z
 === exit:     
 === timeout:  90s
 ===
-Sending test signal: AAPL buy 1 share
-{"results":[{"action":"buy","reason":"downstream gate (falling-knife / news / spread / slippage \u2014 see logs)","status":"blocked","symbol":"AAPL"}],"status":"ok"}
----SIGNAL TRACE---
-2026-06-05 14:11:06 | INFO     | trading_bot.engine   | Manual signal received: {'symbol': 'AAPL', 'action': 'buy', 'confidence': 0.7, 'source': 'manual', 'strategy': 'manual', 'reason': 'Manual signal via API', 'price': 313.23, 'quantity': 1}
-2026-06-05 14:11:06 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Manual signal via API
-2026-06-05 14:11:06 | WARNING  | trading_bot.engine   | LEARNING BLOCK: AAPL avoided — consistent loser (score: -44.7)
-2026-06-05 14:11:06 | INFO     | trading_bot.dashboard | Manual signal submitted: BUY AAPL | Result: [{'symbol': 'AAPL', 'action': 'buy', 'status': 'blocked', 'reason': 'downstream gate (falling-knife / news / spread / slippage — see logs)'}]
+2026-06-05 14:11:21 | INFO     | trading_bot.engine   |   -> momentum: buy IREZ @ $6.92 conf=0.70
+2026-06-05 14:11:21 | INFO     | trading_bot.risk.manager | APPROVED: buy IREZ | Momentum BUY: EMA trend, ADX=51, higher lows, Vol=1.4x
+  ✅ IREZ: score 70/100 — Momentum BUY: EMA trend, ADX=51, higher lows, Vol=1.4x
+2026-06-05 14:11:23 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: IREZ entry=$6.9100 stop=$6.8129 (1.41% gap). Setting 3% minimum stop.
+2026-06-05 14:11:23 | WARNING  | trading_bot.engine   | R/R STRETCH: IREZ entry=$6.9100 stop=$6.7027 (risk=$0.2073) target=$7.2771 (reward=$0.3671, R/R=1.77) — stretching target to $7.3246 for 2:1 minimum.
 2026-06-05 14:11:23 | INFO     | trading_bot.engine   | Executing IREZ via IBKR...
 2026-06-05 14:11:23 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: IREZ → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
 2026-06-05 14:11:23 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: IREZ (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-05 14:11:23 | INFO     | trading_bot.broker.ibkr | Order update: IREZ | Status: Cancelled | Filled: 0.0/172
+2026-06-05 14:11:23 | INFO     | trading_bot.broker.ibkr | Order update: IREZ | Status: Cancelled | Filled: 0.0/172
 2026-06-05 14:11:24 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 172 IREZ @ LIMIT $7.05 | TP: $7.32 | SL: $6.70 | Parent ID: 667801
+2026-06-05 14:11:39 | WARNING  | trading_bot.broker.ibkr | Bracket NOT FILLED after 15s: IREZ (status=PendingSubmit). Cancelling all bracket orders.
+2026-06-05 14:11:39 | INFO     | trading_bot.broker.ibkr | Order update: IREZ | Status: Cancelled | Filled: 0.0/172
+2026-06-05 14:11:40 | WARNING  | trading_bot.engine   | IBKR order failed for IREZ.
+2026-06-05 14:11:40 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY IREZ. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
