@@ -1,8 +1,16 @@
-=== executed: 80b72675ea8fcfcbb6ef207e985b3a8e5ff7c8ca
-=== started:  2026-06-05T18:06:02Z
+=== executed: 87c53711b9b1912daa18fe024e617858cd864d96
+=== started:  2026-06-05T18:11:31Z
 === exit:     
 === timeout:  90s
 ===
-2026-06-05 13:58:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, Vol=2.7x | HXHX @ $0.45
-2026-06-05 14:00:07 | INFO     | trading_bot.engine   |   -> momentum: buy HXHX @ $0.45 conf=0.70
-2026-06-05 14:03:27 | INFO     | trading_bot.engine   | CYCLE #1: regime=sideways | signals=0->approved=0 | positions=0/15 | bars_warm=62/62 | equity_open=True | pm=False pwr_hr=False
+Sending test signal: AAPL buy 1 share
+{"results":[{"action":"buy","reason":"downstream gate (falling-knife / news / spread / slippage \u2014 see logs)","status":"blocked","symbol":"AAPL"}],"status":"ok"}
+---SIGNAL TRACE---
+2026-06-05 14:11:06 | INFO     | trading_bot.engine   | Manual signal received: {'symbol': 'AAPL', 'action': 'buy', 'confidence': 0.7, 'source': 'manual', 'strategy': 'manual', 'reason': 'Manual signal via API', 'price': 313.23, 'quantity': 1}
+2026-06-05 14:11:06 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Manual signal via API
+2026-06-05 14:11:06 | WARNING  | trading_bot.engine   | LEARNING BLOCK: AAPL avoided — consistent loser (score: -44.7)
+2026-06-05 14:11:06 | INFO     | trading_bot.dashboard | Manual signal submitted: BUY AAPL | Result: [{'symbol': 'AAPL', 'action': 'buy', 'status': 'blocked', 'reason': 'downstream gate (falling-knife / news / spread / slippage — see logs)'}]
+2026-06-05 14:11:23 | INFO     | trading_bot.engine   | Executing IREZ via IBKR...
+2026-06-05 14:11:23 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: IREZ → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-05 14:11:23 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: IREZ (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-05 14:11:24 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 172 IREZ @ LIMIT $7.05 | TP: $7.32 | SL: $6.70 | Parent ID: 667801
