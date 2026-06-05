@@ -1,7 +1,45 @@
-=== executed: c865d19503a46bc250fb326eb1ad1b98e58ef3b2
-=== started:  2026-06-05T18:02:01Z
+=== executed: aa8193cb09cb1a4cd1d4782765edd3bdd9c93ac2
+=== started:  2026-06-05T18:03:02Z
 === exit:     
 === timeout:  90s
 ===
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'GRT-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'FLOKI-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'LTC-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'MKR-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'LINK-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'SEI-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'RNDR-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ATOM-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'AAVE-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'SHIB-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'HBAR-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'IMX-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ARB-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'SNX-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETH-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'XRP-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'SOL-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'JUP-USD' — skipping streaming
+2026-06-05 13:55:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'OP-USD' — skipping streaming
+2026-06-05 13:55:39 | INFO     | trading_bot.broker.ibkr | Subscribed to 48 live market data streams
+2026-06-05 13:55:39 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
 2026-06-05 13:58:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, Vol=2.7x | HXHX @ $0.45
+/app/bot/strategies/daily_trend_rider.py:629: RuntimeWarning: invalid value encountered in divide
+  plus_di = np.where(atr_smooth > 0, 100 * plus_di_smooth / atr_smooth, 0)
+/app/bot/strategies/daily_trend_rider.py:630: RuntimeWarning: invalid value encountered in divide
+  minus_di = np.where(atr_smooth > 0, 100 * minus_di_smooth / atr_smooth, 0)
+/app/bot/strategies/daily_trend_rider.py:633: RuntimeWarning: invalid value encountered in divide
+  dx = np.where(dx_sum > 0, 100 * np.abs(plus_di - minus_di) / dx_sum, 0)
+2026-06-05 14:00:07 | INFO     | trading_bot.strategy.daily_trend_rider | TREND RIDER: 1 candidates from 120 scanned — STI
+2026-06-05 14:00:07 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
 2026-06-05 14:00:07 | INFO     | trading_bot.engine   |   -> momentum: buy HXHX @ $0.45 conf=0.70
+2026-06-05 14:00:07 | INFO     | trading_bot.engine   | Scanner cycle complete - 172 symbols scanned
+2026-06-05 14:00:07 | INFO     | trading_bot.engine   | Initial scan complete - main loop starting
+2026-06-05 14:00:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-05 14:00:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-05 14:00:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 28 results
+2026-06-05 14:00:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-05 14:00:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-05 14:00:17 | INFO     | trading_bot.engine   | IBKR scanner: 120 unique symbols discovered | 50 gainers, 11 gaps, 20 losers
+2026-06-05 14:00:18 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 91 low-priority equity names; max 90)
