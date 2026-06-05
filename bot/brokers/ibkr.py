@@ -102,6 +102,19 @@ class IBKRBroker(BaseBroker):
         self._connected = False
         self._order_id_counter = 0
 
+        # Order routing bypass for accounts without SMART market-data subs.
+        # See `place_order` comment block for the 2026-06-05 incident — every
+        # regular-session bracket hit PendingSubmit until the bot's 15s
+        # timeout cancelled it. Workaround: route to a specific exchange
+        # instead of SMART. Default "SMART" preserves the old behavior;
+        # set risk.ibkr_routing_exchange in settings.yaml to "IEX" or
+        # similar to bypass. Market-data queries continue using SMART
+        # (only order placement uses this).
+        risk_cfg = getattr(config, "risk_config", {}) or {}
+        self._order_routing_exchange = str(
+            risk_cfg.get("ibkr_routing_exchange", "SMART")
+        )
+
         # Real-time streaming data
         self._streaming_contracts = {}   # symbol -> Contract
         self._streaming_tickers = {}     # symbol -> Ticker object
@@ -396,6 +409,38 @@ class IBKRBroker(BaseBroker):
             except Exception as qe:
                 log.error(f"Contract qualification failed for {symbol}: {qe}")
                 return None
+
+            # SMART-routing bypass: 2026-06-05 every regular-session bracket
+            # order died in PendingSubmit. IBKR's SMART router requires
+            # real-time market-data subscriptions on each underlying
+            # exchange to validate liquidity — without subs SMART silently
+            # refuses to route. The Error 2152 warnings ("Need additional
+            # market data permissions - Depth: BATS; NASDAQ; ARCA; BEX;
+            # NYSE") confirm the cause. Premarket SOFI fill at 04:52 ET
+            # worked because outside_rth=True uses a different routing
+            # path. Workaround: after qualification (which still uses
+            # SMART to resolve the conId), reroute the order to a specific
+            # exchange that the account has subscriptions on. IEX is the
+            # default — present in the account's data subscriptions per
+            # the Error 2152 dump, accepts most US equities. Override via
+            # `risk.ibkr_routing_exchange` in settings.yaml; "SMART"
+            # restores the old behavior.
+            order_routing_exchange = getattr(
+                self, "_order_routing_exchange", None
+            )
+            if (
+                order_routing_exchange
+                and order_routing_exchange.upper() != "SMART"
+                and kwargs.get("asset_type") != "option"
+                and contract.conId != 0
+            ):
+                # Preserve original exchange on the qualified contract; only
+                # change routing for this specific order placement.
+                contract.exchange = order_routing_exchange
+                log.info(
+                    f"ORDER ROUTING: {symbol} → {order_routing_exchange} "
+                    f"(SMART bypass for Error 2152 / PendingSubmit lock)"
+                )
 
             # Check if contract resolution failed (e.g. delisted, bad symbol).
             # GUARD: if the broker holds shares, the symbol is by definition
