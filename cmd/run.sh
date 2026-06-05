@@ -1,1 +1,1 @@
-cd /opt/trading-bot && git stash 2>&1 | tail -1 && git pull origin main 2>&1 | tail -3 && git checkout --theirs config/settings.yaml 2>/dev/null ; git stash drop 2>&1 | tail -1 && echo '---NEW HEAD---' && git log --oneline -1 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -3
+sleep 30 && docker ps --filter name=trading-bot-trading-bot-1 --format '{{.Status}}' && echo '---SIGNAL ACTIVITY---' && docker logs trading-bot-trading-bot-1 --since 5m 2>&1 | grep -E 'BRACKET (FILLED|ORDER placed|PARENT)|MARKET' | tail -10
