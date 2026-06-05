@@ -1,25 +1,19 @@
-=== executed: a596d958fc9144bfd65854fe3de2b433d07545ed
-=== started:  2026-06-05T05:01:01Z
+=== executed: c1bf0f52b13c982f3baa72a7a387c3ba12105abd
+=== started:  2026-06-05T05:06:02Z
 === exit:     
 === timeout:  90s
 ===
-2600:3c03::2000:f2ff:fe77:4a9d (external IP)
----
-Chain INPUT (policy DROP)
-num  target     prot opt source               destination         
-1    ufw-before-logging-input  0    --  0.0.0.0/0            0.0.0.0/0           
-2    ufw-before-input  0    --  0.0.0.0/0            0.0.0.0/0           
-3    ufw-after-input  0    --  0.0.0.0/0            0.0.0.0/0           
-4    ufw-after-logging-input  0    --  0.0.0.0/0            0.0.0.0/0           
-5    ufw-reject-input  0    --  0.0.0.0/0            0.0.0.0/0           
-6    ufw-track-input  0    --  0.0.0.0/0            0.0.0.0/0           
----
+Rule added
+Rule added
+---NEW STATE---
 Status: active
 
-To                         Action      From
---                         ------      ----
-22/tcp                     ALLOW       Anywhere                  
-5000/tcp                   ALLOW       170.199.64.21             
-8080/tcp                   ALLOW       170.199.64.21             
-22/tcp (v6)                ALLOW       Anywhere (v6)             
+     To                         Action      From
+     --                         ------      ----
+[ 1] 22/tcp                     ALLOW IN    Anywhere                  
+[ 2] 5000/tcp                   ALLOW IN    170.199.64.21             
+[ 3] 8080/tcp                   ALLOW IN    170.199.64.21             
+[ 4] 5000/tcp                   ALLOW IN    104.28.133.13             
+[ 5] 8080/tcp                   ALLOW IN    104.28.133.13             
+[ 6] 22/tcp (v6)                ALLOW IN    Anywhere (v6)             
 
