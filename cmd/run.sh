@@ -1,1 +1,1 @@
-docker ps --format '{{.Names}} {{.Image}}' ; echo '---' ; docker inspect trading-bot-trading-bot-1 --format '{{.HostConfig.Binds}}{{.Mounts}}' 2>&1 | head -3
+cd /opt/trading-bot && git fetch origin main 2>&1 | tail -2 && echo '---NEW COMMITS---' && git log --oneline HEAD..origin/main | head -10 && echo '---PULL---' && git pull origin main 2>&1 | tail -5 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -3 && echo '---NEW HEAD---' && git log --oneline -1
