@@ -1,1 +1,1 @@
-ufw allow 5000/tcp 2>&1 | tail -2 && echo '---DELETE OLD NARROW RULES---' && ufw --force delete allow from 170.199.64.21 to any port 5000 proto tcp 2>&1 | tail -2 && ufw --force delete allow from 104.28.133.13 to any port 5000 proto tcp 2>&1 | tail -2 && echo '---NEW STATE---' && ufw status numbered | head -15 && echo '---PROBE---' && curl -s -o /dev/null -w 'public /health (no auth) → HTTP %{http_code}\n' http://localhost:5000/health
+docker logs trading-bot-trading-bot-1 --since 2h 2>&1 | grep -E 'error|rejection|reject|warning' | grep -iE 'ibkr|order' | tail -30
