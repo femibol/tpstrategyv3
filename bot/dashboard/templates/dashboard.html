@@ -588,6 +588,128 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
         }
+
+        /* === STRATEGY DASHBOARD VIZ (PR #199) === */
+        /* Per-strategy P&L horizontal bar chart */
+        .pnl-bar-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 90px;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        .pnl-bar-row:hover { background: var(--surface); }
+        .pnl-bar-label { font-size: 0.9em; color: var(--text); font-weight: 600; }
+        .pnl-bar-track {
+            position: relative;
+            height: 22px;
+            background: var(--surface);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .pnl-bar-track::before {
+            /* center zero line */
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0; bottom: 0;
+            width: 1px;
+            background: var(--border);
+        }
+        .pnl-bar-fill {
+            position: absolute;
+            top: 0; bottom: 0;
+            border-radius: 3px;
+            transition: width 0.3s ease-out;
+        }
+        .pnl-bar-fill.positive { background: linear-gradient(90deg, var(--green), #1ea65f); left: 50%; }
+        .pnl-bar-fill.negative { background: linear-gradient(90deg, #d83545, var(--red)); right: 50%; }
+        .pnl-bar-value { text-align: right; font-family: var(--mono); font-size: 0.9em; font-weight: 700; }
+
+        /* Hourly P&L heatmap */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 3px;
+            margin-top: 8px;
+        }
+        .heatmap-cell {
+            aspect-ratio: 1;
+            min-height: 28px;
+            border-radius: 4px;
+            position: relative;
+            cursor: help;
+            transition: transform 0.1s;
+            border: 1px solid var(--border-soft);
+        }
+        .heatmap-cell:hover { transform: scale(1.15); z-index: 2; }
+        .heatmap-axis {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 3px;
+            margin-top: 4px;
+            font-size: 0.65em;
+            color: var(--muted);
+            text-align: center;
+            font-family: var(--mono);
+        }
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.78em;
+            color: var(--muted);
+        }
+        .heatmap-legend-bar {
+            width: 120px;
+            height: 10px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--red), var(--surface) 50%, var(--green));
+        }
+
+        /* Strategy activity cards (signals fired vs filled) */
+        .activity-card {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--surface);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--border);
+        }
+        .activity-card.alert { border-left-color: var(--red); animation: pulse-alert 2s infinite; }
+        @keyframes pulse-alert {
+            0%, 100% { background: var(--surface); }
+            50% { background: rgba(255, 93, 108, 0.08); }
+        }
+        .activity-name { font-weight: 700; font-size: 0.95em; }
+        .activity-name .disabled-tag {
+            font-size: 0.7em;
+            color: var(--muted);
+            font-weight: 400;
+            margin-left: 6px;
+        }
+        .activity-stat {
+            font-family: var(--mono);
+            font-size: 0.85em;
+            color: var(--muted);
+        }
+        .activity-stat strong { color: var(--text); }
+        .activity-badge {
+            font-size: 0.7em;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+        .activity-badge.ok { background: rgba(46, 207, 125, 0.12); color: var(--green); }
+        .activity-badge.silent { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+        .activity-badge.alert { background: rgba(255, 93, 108, 0.15); color: var(--red); }
     </style>
 </head>
 <body>
@@ -681,6 +803,7 @@
     <div class="tab" data-tab="history" onclick="switchTab('history')">History</div>
     <div class="tab" data-tab="watchlist" onclick="switchTab('watchlist')">Watchlist</div>
     <div class="tab" data-tab="performance" onclick="switchTab('performance')">W/L Stats</div>
+    <div class="tab" data-tab="strategies" onclick="switchTab('strategies')">Strategies</div>
     <div class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analysis</div>
     <div class="tab" data-tab="daily" onclick="switchTab('daily')">Daily Stats</div>
     <div class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</div>
@@ -779,6 +902,32 @@
         <h2>By Strategy</h2>
         <div id="perfByStrategy">
             <div class="empty">No strategy data</div>
+        </div>
+    </div>
+</div>
+
+<!-- STRATEGIES TAB -->
+<div class="tab-content" id="tab-strategies">
+    <div class="section">
+        <h2>Strategy P&L</h2>
+        <div id="stratPnlBars">
+            <div class="empty">Loading strategy data...</div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Hourly P&L Heatmap (last 30 days)</h2>
+        <div id="stratHourlyHeatmap">
+            <div class="empty">Loading hourly data...</div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Live Strategy Activity <span class="count" id="activityCount">0</span></h2>
+        <div style="font-size:0.8em;color:var(--muted);margin-bottom:8px;">
+            Today's signals fired vs filled per strategy. Red badge =
+            FIRED-BUT-NEVER-FILLED (potential silent failure).
+        </div>
+        <div id="stratActivityList">
+            <div class="empty">Loading strategy activity...</div>
         </div>
     </div>
 </div>
@@ -1871,6 +2020,132 @@ async function setProfile(name) {
     } catch(e) { /* silent */ }
 }
 
+// === STRATEGY DASHBOARD VIZ (PR #199) ===
+// Three widgets in the Strategies tab — designed to surface the
+// per-strategy patterns the EOD log summary (PR #198) catches at end of
+// day, but live and at-a-glance during the session.
+
+function renderStratPnlBars(summary) {
+    var el = document.getElementById('stratPnlBars');
+    if (!el) return;
+    if (!summary || !summary.by_strategy ||
+        Object.keys(summary.by_strategy).length === 0) {
+        el.innerHTML = '<div class="empty">No strategy P&L data yet</div>';
+        return;
+    }
+    var rows = Object.entries(summary.by_strategy).map(function(e) {
+        return { name: e[0], pnl: +e[1].pnl, trades: e[1].trades,
+                 wr: e[1].win_rate };
+    });
+    // Sort: most-positive first, most-negative last
+    rows.sort(function(a, b) { return b.pnl - a.pnl; });
+    var maxAbs = Math.max.apply(null, rows.map(function(r) {
+        return Math.abs(r.pnl);
+    })) || 1;
+    el.innerHTML = rows.map(function(r) {
+        var pct = Math.min(100, Math.abs(r.pnl) / maxAbs * 50);  // half-width
+        var cls = r.pnl >= 0 ? 'positive' : 'negative';
+        var fillStyle = 'width:' + pct + '%';
+        var sign = r.pnl >= 0 ? '+' : '';
+        return '<div class="pnl-bar-row" onclick="switchTab(\'trades\')">' +
+            '<div class="pnl-bar-label">' + r.name + '</div>' +
+            '<div class="pnl-bar-track">' +
+                '<div class="pnl-bar-fill ' + cls + '" style="' + fillStyle + '"></div>' +
+            '</div>' +
+            '<div class="pnl-bar-value ' + cls + '">' + sign + '$' + fmtMoney(r.pnl) +
+                ' <span style="color:var(--muted);font-weight:400;">(' + r.trades + ' / ' +
+                r.wr + '%)</span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function renderStratHeatmap(summary) {
+    var el = document.getElementById('stratHourlyHeatmap');
+    if (!el) return;
+    if (!summary || !summary.by_hour || Object.keys(summary.by_hour).length === 0) {
+        el.innerHTML = '<div class="empty">No hourly P&L data yet</div>';
+        return;
+    }
+    // by_hour comes back as {"9": {pnl, trades, win_rate}, ...}
+    var cells = [];
+    var maxAbs = 0;
+    for (var h = 0; h < 24; h++) {
+        var entry = summary.by_hour[String(h)] || null;
+        var pnl = entry ? +entry.pnl : 0;
+        if (Math.abs(pnl) > maxAbs) maxAbs = Math.abs(pnl);
+        cells.push({ hour: h, pnl: pnl,
+                     trades: entry ? entry.trades : 0,
+                     wr: entry ? entry.win_rate : 0 });
+    }
+    if (maxAbs === 0) maxAbs = 1;
+    var grid = cells.map(function(c) {
+        var intensity = Math.abs(c.pnl) / maxAbs;
+        var bg;
+        if (c.pnl > 0) {
+            // green tint, alpha scales with intensity
+            bg = 'rgba(46, 207, 125, ' + (0.15 + intensity * 0.75).toFixed(2) + ')';
+        } else if (c.pnl < 0) {
+            bg = 'rgba(255, 93, 108, ' + (0.15 + intensity * 0.75).toFixed(2) + ')';
+        } else {
+            bg = 'transparent';
+        }
+        var label = c.hour + ':00 — ' + (c.pnl >= 0 ? '+' : '') + '$' +
+            fmtMoney(c.pnl) + ' (' + c.trades + ' trades, ' + c.wr + '% WR)';
+        return '<div class="heatmap-cell" style="background:' + bg +
+            ';" title="' + label + '"></div>';
+    }).join('');
+    var axis = '';
+    for (var i = 0; i < 24; i++) {
+        // Only show even hours to avoid clutter
+        axis += '<div>' + (i % 2 === 0 ? i : '') + '</div>';
+    }
+    el.innerHTML =
+        '<div class="heatmap-grid">' + grid + '</div>' +
+        '<div class="heatmap-axis">' + axis + '</div>' +
+        '<div class="heatmap-legend">' +
+            '<span>Loss</span>' +
+            '<div class="heatmap-legend-bar"></div>' +
+            '<span>Profit</span>' +
+            '<span style="margin-left:auto">Hover a cell for details</span>' +
+        '</div>';
+}
+
+function renderStratActivity(activity) {
+    var el = document.getElementById('stratActivityList');
+    var countEl = document.getElementById('activityCount');
+    if (!el) return;
+    if (!activity || !activity.strategies || activity.strategies.length === 0) {
+        el.innerHTML = '<div class="empty">No strategy activity yet today</div>';
+        if (countEl) countEl.textContent = '0';
+        return;
+    }
+    var rows = activity.strategies;
+    if (countEl) countEl.textContent = String(rows.length);
+    el.innerHTML = rows.map(function(r) {
+        var badge, badgeText;
+        if (r.alert_silent_fill) {
+            badge = 'alert';
+            badgeText = 'NO FILLS';
+        } else if (r.fired_today === 0 && r.filled_today === 0) {
+            badge = 'silent';
+            badgeText = 'IDLE';
+        } else {
+            badge = 'ok';
+            badgeText = 'ACTIVE';
+        }
+        var disabled = r.enabled ? '' :
+            '<span class="disabled-tag">disabled</span>';
+        return '<div class="activity-card ' +
+            (r.alert_silent_fill ? 'alert' : '') + '">' +
+            '<div class="activity-name">' + r.strategy + disabled + '</div>' +
+            '<div class="activity-stat">fired <strong>' + r.fired_today + '</strong></div>' +
+            '<div class="activity-stat">filled <strong>' + r.filled_today + '</strong></div>' +
+            '<div class="activity-badge ' + badge + '">' + badgeText + '</div>' +
+        '</div>';
+    }).join('');
+}
+
 // === UPDATE ALL ===
 async function update() {
     var results = await Promise.all([
@@ -1878,14 +2153,21 @@ async function update() {
         api('notifications'), api('daily'), api('equity'),
         api('scanner'), api('analysis'), api('watchlist'),
         api('performance'), api('tips'), api('rvol'),
-        api('suggestions'), api('movers'), api('runners')
+        api('suggestions'), api('movers'), api('runners'),
+        api('trades/summary'), api('strategies/activity')
     ]);
     var status = results[0], positions = results[1], trades = results[2],
         notifs = results[3], daily = results[4], equity = results[5],
         scanner = results[6], analysisData = results[7],
         watchlistData = results[8], perfData = results[9], tipsData = results[10],
         rvolData = results[11], suggestionsData = results[12],
-        moversData = results[13], runnersData = results[14];
+        moversData = results[13], runnersData = results[14],
+        tradesSummary = results[15], stratActivity = results[16];
+
+    // Strategy dashboard viz — three widgets in the Strategies tab.
+    renderStratPnlBars(tradesSummary);
+    renderStratHeatmap(tradesSummary);
+    renderStratActivity(stratActivity);
 
     // Regime badge (from status)
     if (status && status.regime) {

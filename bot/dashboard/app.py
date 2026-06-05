@@ -351,6 +351,73 @@ class Dashboard:
         def equity():
             return jsonify(self.engine.equity_curve[-500:])
 
+        @self.app.route("/api/strategies/activity")
+        def strategies_activity():
+            """Per-strategy live activity for the dashboard's strategy
+            widgets. Returns cumulative-since-boot counts (signals fired,
+            trades taken) + today's deltas. Powers the "FIRED-BUT-NEVER-
+            FILLED" alert badge that catches QUALITY-GATE-style silent
+            failures (see PR #198 for the same data at EOD log)."""
+            strategies = getattr(self.engine, "strategies", {}) or {}
+            today_baseline_fired = getattr(
+                self.engine, "_dashboard_day_baseline_fired", None
+            )
+            today_baseline_filled = getattr(
+                self.engine, "_dashboard_day_baseline_filled", None
+            )
+            # Initialize baselines on first call. The day-rollover trigger
+            # (midnight ET) re-baselines below.
+            from datetime import datetime as _dt
+            try:
+                from zoneinfo import ZoneInfo as _ZI
+                today_et = _dt.now(_ZI("America/New_York")).date()
+            except Exception:
+                today_et = _dt.utcnow().date()
+            last_baseline_date = getattr(
+                self.engine, "_dashboard_baseline_date", None
+            )
+            if (
+                today_baseline_fired is None
+                or last_baseline_date != today_et
+            ):
+                today_baseline_fired = {
+                    n: getattr(s, "signals_generated", 0)
+                    for n, s in strategies.items()
+                }
+                today_baseline_filled = {
+                    n: getattr(s, "trades_taken", 0)
+                    for n, s in strategies.items()
+                }
+                self.engine._dashboard_day_baseline_fired = today_baseline_fired
+                self.engine._dashboard_day_baseline_filled = today_baseline_filled
+                self.engine._dashboard_baseline_date = today_et
+
+            rows = []
+            for name, strat in strategies.items():
+                cum_fired = getattr(strat, "signals_generated", 0)
+                cum_filled = getattr(strat, "trades_taken", 0)
+                today_fired = max(0, cum_fired - today_baseline_fired.get(name, 0))
+                today_filled = max(0, cum_filled - today_baseline_filled.get(name, 0))
+                # Alert: signals firing but nothing filling — the SNBR /
+                # LGPS pattern. Threshold of 3 avoids flagging noise on a
+                # single signal that lost a race condition.
+                alert_silent_fill = today_fired >= 3 and today_filled == 0
+                rows.append({
+                    "strategy": name,
+                    "enabled": getattr(strat, "enabled", True),
+                    "fired_total": cum_fired,
+                    "filled_total": cum_filled,
+                    "fired_today": today_fired,
+                    "filled_today": today_filled,
+                    "conversion_pct": round(
+                        cum_filled / cum_fired * 100, 1
+                    ) if cum_fired else 0.0,
+                    "alert_silent_fill": alert_silent_fill,
+                })
+            # Sort by today's activity desc — noisy strategies at top
+            rows.sort(key=lambda r: (-r["fired_today"], -r["fired_total"]))
+            return jsonify({"strategies": rows, "as_of": _dt.utcnow().isoformat()})
+
         @self.app.route("/api/daily")
         def daily():
             return jsonify(self.engine.daily_stats[-30:])
