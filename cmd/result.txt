@@ -1,36 +1,35 @@
-=== executed: 47885d3d6717e7afb9ede6e56e90057167952712
-=== started:  2026-06-05T16:21:01Z
+=== executed: 1fb073efccbfcf8982a92e420872cbd9b38f1b91
+=== started:  2026-06-05T16:23:01Z
 === exit:     
 === timeout:  90s
 ===
-2026-06-05 11:53:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=35, higher lows, Vol=0.2x | RMSG @ $2.28
-2026-06-05 11:53:21 | INFO     | trading_bot.risk.manager | APPROVED: buy RMSG | Momentum BUY: pullback entry, ADX=35, higher lows, Vol=0.2x
-Approved: 1 trades
-2026-06-05 11:53:21 | INFO     | trading_bot.engine   | CYCLE #13: regime=sideways | signals=1->approved=1 | positions=0/15 | bars_warm=84/85 | equity_open=True | pm=False pwr_hr=False
-2026-06-05 11:53:23 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: RMSG (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-05 11:53:24 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 329 RMSG @ LIMIT $2.32 | TP: $3.04 | SL: $2.05 | Parent ID: 661421
-2026-06-05 11:53:39 | WARNING  | trading_bot.broker.ibkr | Bracket NOT FILLED after 15s: RMSG (status=PendingSubmit). Cancelling all bracket orders.
-2026-06-05 11:59:48 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 65 | RVOL: 4.4x | Change: +0.8% | R:R 2.7
-2026-06-05 11:59:48 | INFO     | trading_bot.risk.manager | APPROVED: buy SDOT | Very high RVOL 4.4x | Trending up +0.8% | EMA trend bullish | RSI healthy (48)
-Approved: 1 trades
-2026-06-05 11:59:51 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SDOT — wide spread 4.9% (>2% for $13.26)
-2026-06-05 12:03:23 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 65 | RVOL: 3.9x | Change: +0.8% | R:R 2.7
-2026-06-05 12:03:24 | INFO     | trading_bot.risk.manager | APPROVED: buy SDOT | Very high RVOL 3.9x | Trending up +0.8% | EMA trend bullish | RSI healthy (48)
-Approved: 1 trades
-2026-06-05 12:03:26 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SDOT — wide spread 4.1% (>2% for $13.26)
-2026-06-05 12:06:30 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 65 | RVOL: 3.9x | Change: +0.8% | R:R 2.7
-2026-06-05 12:06:30 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: SMCZ | Score: 75 | RVOL: 10.2x | Change: +0.3% | R:R 2.0 | Target: $7.11 (+1.2%)
-2026-06-05 12:06:30 | INFO     | trading_bot.risk.manager | APPROVED: buy SDOT | Very high RVOL 3.9x | Trending up +0.8% | EMA trend bullish | RSI healthy (48)
 2026-06-05 12:06:30 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCZ | Extreme RVOL 10.2x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-06-05 12:06:33 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SDOT — wide spread 4.0% (>2% for $13.26)
+  ✅ SMCZ: score 75/100 — Extreme RVOL 10
+2026-06-05 12:06:35 | WARNING  | trading_bot.engine   | FALLING KNIFE BLOCK (no quote): SMCZ — cannot verify day change, blocking entry as precaution | Strategy: rvol_scalp
 2026-06-05 12:09:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=43, Vol=4.2x | JLHL @ $47.37
-2026-06-05 12:09:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 65 | RVOL: 3.9x | Change: +0.8% | R:R 2.7
-2026-06-05 12:15:00 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 65 | RVOL: 3.9x | Change: +0.8% | R:R 2.7
-2026-06-05 12:15:00 | INFO     | trading_bot.risk.manager | APPROVED: buy SDOT | Very high RVOL 3.9x | Trending up +0.8% | EMA trend bullish | RSI healthy (48)
-Approved: 1 trades
-2026-06-05 12:15:00 | INFO     | trading_bot.engine   | CYCLE #19: regime=sideways | signals=1->approved=1 | positions=0/15 | bars_warm=84/85 | equity_open=True | pm=False pwr_hr=False
-2026-06-05 12:15:03 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SDOT — wide spread 5.1% (>2% for $13.26)
+2026-06-05 12:11:26 | INFO     | trading_bot.engine   |   -> momentum: buy JLHL @ $47.37 conf=0.70
+2026-06-05 12:11:26 | INFO     | trading_bot.risk.manager | REJECTED: buy JLHL | Setup broke: signal $47.37 → market $43.84 (-7.5%, max -3%)
+  ✅ JLHL: score 70/100 — Momentum BUY: EMA trend, ADX=43, Vol=4.2x
 2026-06-05 12:18:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=68, breakout>2.55, higher lows, Vol=1.4x | RMSG @ $3.00
-2026-06-05 12:18:36 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 65 | RVOL: 3.9x | Change: +0.8% | R:R 2.7
+2026-06-05 12:18:36 | INFO     | trading_bot.engine   |   -> momentum: buy RMSG @ $3.00 conf=0.85
 2026-06-05 12:18:36 | INFO     | trading_bot.risk.manager | APPROVED: buy RMSG | Momentum BUY: EMA trend, ADX=68, breakout>2.55, higher lows, Vol=1.4x
+  ✅ RMSG: score 85/100 — Momentum BUY: EMA trend, ADX=68, breakout>2.55, higher lows,
 2026-06-05 12:18:39 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RMSG — bearish EMA imbalance -0.64
+2026-06-05 12:21:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=76, breakout>2.55, higher lows, Vol=4.6x | RMSG @ $2.72
+2026-06-05 12:21:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=60, Vol=3.4x | JLHL @ $45.86
+2026-06-05 12:21:41 | INFO     | trading_bot.engine   |   -> momentum: buy RMSG @ $2.72 conf=0.90
+2026-06-05 12:21:41 | INFO     | trading_bot.engine   |   -> momentum: buy JLHL @ $45.86 conf=0.85
+2026-06-05 12:21:41 | INFO     | trading_bot.risk.manager | APPROVED: buy RMSG | Momentum BUY: EMA trend, ADX=76, breakout>2.55, higher lows, Vol=4.6x
+2026-06-05 12:21:41 | INFO     | trading_bot.risk.manager | APPROVED: buy JLHL | Momentum BUY: EMA cross, ADX=60, Vol=3.4x
+  ✅ RMSG: score 90/100 — Momentum BUY: EMA trend, ADX=76, breakout>2.55, higher lows,
+  ✅ JLHL: score 85/100 — Momentum BUY: E
+2026-06-05 12:21:44 | INFO     | trading_bot.engine   | Executing RMSG via IBKR...
+2026-06-05 12:21:44 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: RMSG (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-05 12:21:44 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Cancelled | Filled: 0.0/391
+2026-06-05 12:21:45 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Cancelled | Filled: 0.0/391
+2026-06-05 12:21:45 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 391 RMSG @ LIMIT $2.76 | TP: $3.52 | SL: $2.48 | Parent ID: 662895
+2026-06-05 12:22:00 | WARNING  | trading_bot.broker.ibkr | Bracket NOT FILLED after 15s: RMSG (status=PendingSubmit). Cancelling all bracket orders.
+2026-06-05 12:22:00 | INFO     | trading_bot.broker.ibkr | Order update: RMSG | Status: Cancelled | Filled: 0.0/391
+2026-06-05 12:22:01 | WARNING  | trading_bot.engine   | IBKR order failed for RMSG.
+2026-06-05 12:22:01 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY RMSG. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-05 12:22:03 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: JLHL — wide spread 20.4% (>2% for $45.86)
