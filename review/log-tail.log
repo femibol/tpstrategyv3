@@ -1,53 +1,3 @@
-Signals found: 6
-  ✅ EDZ: score 75/100 — Momentum BUY: EMA trend, breakout>18.69, Vol=2.4x
-  ✅ GDXD: score 75/100 — Extreme RVOL 4.7x | Moving 
-2026-06-05 16:26:33 | WARNING  | trading_bot.engine   | SLOW CYCLE (175.9s total): update_data=149.1s, update_scalp=22.0s
-2026-06-05 16:26:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-05 16:26:36 | INFO     | trading_bot.engine   | EQUITY RE-ENTRY COOLDOWN: GDXD closed at a loss ($-5.60) 836s ago (cooldown 1800s) — skipping new entry
-2026-06-05 16:26:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-05 16:26:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-05 16:26:42 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: HIBS no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: rvol_scalp
-2026-06-05 16:26:42 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: HIBS entry=$23.8400 stop=$23.7900 (0.21% gap). Setting 3% minimum stop.
-2026-06-05 16:26:42 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_scalp] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-05 16:26:42 | INFO     | trading_bot.risk.position_sizer | Position size: 149 shares @ $23.84 = $3,552.16 | Risk: $106.56 (0.4% of account) [tier: 3-500 shares]
-2026-06-05 16:26:42 | WARNING  | trading_bot.engine   | R/R STRETCH: HIBS entry=$23.8400 stop=$23.1248 (risk=$0.7152) target=$23.9400 (reward=$0.1000, R/R=0.14) — stretching target to $25.2704 for 2:1 minimum.
-2026-06-05 16:26:42 | INFO     | trading_bot.engine   | Executing HIBS via IBKR  [OUTSIDE RTH]...
-2026-06-05 16:26:42 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: HIBS → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-05 16:26:42 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: HIBS (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-05 16:26:42 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: ValidationError | Filled: 0.0/149
-2026-06-05 16:26:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: ValidationError | Filled: 0.0/149
-2026-06-05 16:26:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: ValidationError | Filled: 0.0/149
-2026-06-05 16:26:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: ValidationError | Filled: 0.0/149
-2026-06-05 16:26:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 149 HIBS ARCA Warning: Your order will not be placed at the exchange until 2026-06-08 09:30:00 US/Eastern.
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: PreSubmitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: PreSubmitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: PreSubmitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: Submitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: Filled | Filled: 149.0/149.0 | AvgPrice: $25.25
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: PreSubmitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: PreSubmitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | Order update: HIBS | Status: Submitted | Filled: 0.0/149.0
-2026-06-05 16:26:43 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 149 HIBS @ LIMIT $24.32 | TP: $25.27 | SL: $23.12 | Parent ID: 674701
-2026-06-05 16:26:44 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 149/149 HIBS @ $25.2500 | signal $24.3200 | slippage +3.82% | parent=MARKET
-2026-06-05 16:26:44 | INFO     | trading_bot.engine   | BRACKET ORDER active: HIBS | SL: $23.12 | TP: $25.27 (managed by IBKR server-side)
-2026-06-05 16:26:44 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: HIBS expected $23.84 but filled @ $25.25
-2026-06-05 16:26:44 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: HIBS chased +5.9% above market (max 1.5%, EXT) — closing position immediately | Signal $23.84 → Live $23.84 → Fill $25.25
-2026-06-05 16:26:44 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: HIBS filled $25.25 (signal $23.84, slippage +5.9%). Closing immediately.
-```
-2026-06-05 16:26:44 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; Unknown market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-05 16:26:44 | INFO     | trading_bot.engine   | ORDER BUY HIBS via IBKR | Qty: 149 | Price: $25.25 | Cost: $3,762.25 | Stop: $23.12 (risk $316.65) | Target: $25.27 (reward $3.04) | R:R 0.0:1 | Strategy: rvol_scalp
-2026-06-05 16:26:44 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: HIBS**
-```
-  Entry: $25.25 x 149 shares = $3,762.25
-  Stop:  $23.12 (-$316.65 | -8.4%)
-  Targets: $23.94, $24.44
-  Risk/Reward: 2.0
-```
 Strategy: **rvol_scalp** | Confidence
 2026-06-05 16:26:45 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY HIBS qty=149 @ $25.25 → primary webhook (200)
 2026-06-05 16:26:45 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
@@ -19998,3 +19948,53 @@ Signals found: 7
 2026-06-06 17:24:57 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[40]: AAVE-USD(weak 3d trend (-21.0%)), ADA-USD(weak 3d trend (-22.1%)), ALGO-USD(weak 3d trend (-13.2%)), APT-USD(weak 3d trend (-22.0%)), ARB-USD(weak 3d trend (-14.4%)), ATOM-USD(weak 3d trend (-13.2%)), AVAX-USD(weak 3d trend (-17.7%)), BONK-USD(weak 3d trend (-17.1%)), BTC-USD(weak 3d trend (-7.1%)), COMP-USD(weak 3d trend (-12.5%)), CRV-USD(weak 3d trend (-10.0%)), DOGE-USD(weak 3d trend (-11.8%)), DOT-USD(weak 3d trend (-16.8%)), ETC-USD(weak 3d trend (-11.4%)), ETH-USD(weak 3d trend (-13.4%)), FET-USD(weak 3d trend (-23.7%)), FLOKI-USD(weak 3d trend (-13.5%)), GRT-USD(weak 3d trend (-15.5%)), HBAR-USD(weak 3d trend (-7.9%)), ICP-USD(weak 3d trend (-28.1%)), IMX-USD(weak 3d trend (-15.0%)), JUP-USD(weak 3d trend (-1.8%)), LINK-USD(weak 3d trend (-11.4%)), LTC-USD(weak 3d trend (-13.0%)), MATIC-USD(weak 3d trend (-18.9%)), NEAR-USD(weak 3d trend (-34.6%)), OP-USD(weak 3d trend (-26.0%)), PEPE-USD(weak 3d trend (-14.7%)), RNDR-USD(weak 3d trend (-26.1%)), SEI-USD(weak 3d trend (-20.1%)), SHIB-USD(weak 3d trend (-13.1%)), SNX-USD(weak 3d trend (-23.8%)), SOL-USD(weak 3d trend (-13.6%)), SUI-USD(weak 3d trend (-13.9%)), TIA-USD(weak 3d trend (-18.8%)), TRX-USD(weak 3d trend (-4.5%)), UNI-USD(weak 3d trend (-14.3%)), WIF-USD(weak 3d trend (-22.4%)), XLM-USD(weak 3d trend (-1.3%)), XRP-USD(weak 3d trend (-9.8%)) | neutral=1 | no_data=1
 2026-06-06 17:24:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
 2026-06-06 17:25:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
+2026-06-06 17:25:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
+2026-06-06 17:25:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-06 17:25:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-06 17:25:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-06 17:25:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-06 17:25:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 19 results
+2026-06-06 17:25:07 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 50 gainers, 13 gaps, 19 losers
+2026-06-06 17:25:07 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-06 17:25:07 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, Vol=4.5x | JLHL @ $42.00
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: IONZ | Score: 70 | RVOL: 3.4x | Change: +0.6% | R:R 1.9 | Target: $2.76 (+1.2%)
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: GDXD | Score: 75 | RVOL: 4.7x | Change: +0.6% | R:R 1.8 | Target: $50.89 (+1.2%)
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NOK | Score: 85 | RVOL: 3.1x | Change: +0.1% | R:R 1.9 | Target: $14.45 (+1.2%)
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIBS | Score: 70 | RVOL: 4.0x | Change: +0.1% | R:R 1.9 | Target: $23.96 (+1.2%)
+2026-06-06 17:28:24 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: ABTS | Score: 51 | Squeeze: True | Vol: 4.2x | R:R 2.4 | Target: $2.22
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> momentum: buy JLHL @ $42.00 conf=0.85
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> momentum: buy RIOT @ $27.04 conf=0.85
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy IONZ @ $2.73 conf=0.70
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy GDXD @ $50.29 conf=0.75
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NOK @ $14.35 conf=0.85
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIBS @ $23.84 conf=0.70
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   |   -> prebreakout: buy ABTS @ $2.03 conf=0.51
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy JLHL | Momentum BUY: EMA cross, ADX=100, Vol=4.5x
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy RIOT | Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy IONZ | Very high RVOL 3.4x | Moving up +0.6% | Volume accelerating bar-over-bar | Short-term trend bullish
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy GDXD | Extreme RVOL 4.7x | Moving up +0.6% | Volume accelerating bar-over-bar | Short-term trend bullish
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy NOK | Very high RVOL 3.1x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar | Short-term trend bullish
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy HIBS | Extreme RVOL 4.0x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (69)
+2026-06-06 17:28:24 | INFO     | trading_bot.risk.manager | APPROVED: buy ABTS | BB squeeze (11% tight) | Volume accumulating 4.2x | Breakout candle! | RSI 46 (room to run)
+2026-06-06 17:28:24 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 7 buy signal(s) — JLHL, RIOT, IONZ, GDXD, NOK, HIBS, ABTS
+2026-06-06 17:28:24 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 918 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 7
+  ✅ JLHL: score 85/100 — Momentum BUY: EMA cross, ADX=100, Vol=4.5x
+  ✅ RIOT: score 85/100 — Momentum BUY: EMA trend, ADX=33, 
+2026-06-06 17:28:24 | WARNING  | trading_bot.engine   | SLOW CYCLE (201.3s total): update_data=175.8s, update_scalp=21.3s
+2026-06-06 17:28:27 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[40]: AAVE-USD(weak 3d trend (-21.0%)), ADA-USD(weak 3d trend (-22.0%)), ALGO-USD(weak 3d trend (-13.2%)), APT-USD(weak 3d trend (-22.0%)), ARB-USD(weak 3d trend (-14.4%)), ATOM-USD(weak 3d trend (-13.4%)), AVAX-USD(weak 3d trend (-17.7%)), BONK-USD(weak 3d trend (-17.8%)), BTC-USD(weak 3d trend (-7.1%)), COMP-USD(weak 3d trend (-12.5%)), CRV-USD(weak 3d trend (-10.0%)), DOGE-USD(weak 3d trend (-12.0%)), DOT-USD(weak 3d trend (-16.8%)), ETC-USD(weak 3d trend (-11.4%)), ETH-USD(weak 3d trend (-14.0%)), FET-USD(weak 3d trend (-24.2%)), FLOKI-USD(weak 3d trend (-13.5%)), GRT-USD(weak 3d trend (-15.9%)), HBAR-USD(weak 3d trend (-8.0%)), ICP-USD(weak 3d trend (-28.5%)), IMX-USD(weak 3d trend (-15.0%)), JUP-USD(weak 3d trend (-1.8%)), LINK-USD(weak 3d trend (-11.9%)), LTC-USD(weak 3d trend (-13.0%)), MATIC-USD(weak 3d trend (-18.9%)), NEAR-USD(weak 3d trend (-35.1%)), OP-USD(weak 3d trend (-26.0%)), PEPE-USD(weak 3d trend (-15.3%)), RNDR-USD(weak 3d trend (-26.5%)), SEI-USD(weak 3d trend (-20.1%)), SHIB-USD(weak 3d trend (-13.2%)), SNX-USD(weak 3d trend (-23.8%)), SOL-USD(weak 3d trend (-13.8%)), SUI-USD(weak 3d trend (-14.4%)), TIA-USD(weak 3d trend (-18.8%)), TRX-USD(weak 3d trend (-3.3%)), UNI-USD(weak 3d trend (-14.3%)), WIF-USD(weak 3d trend (-22.4%)), XLM-USD(weak 3d trend (-2.7%)), XRP-USD(weak 3d trend (-10.0%)) | neutral=1 | no_data=1
+2026-06-06 17:28:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
+2026-06-06 17:28:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
+2026-06-06 17:28:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=33, breakout>24.84, Vol=4.0x | RIOT @ $27.04
+2026-06-06 17:28:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-06 17:28:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-06 17:28:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-06 17:28:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-06 17:28:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 19 results
+2026-06-06 17:28:37 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 50 gainers, 13 gaps, 19 losers
+2026-06-06 17:28:37 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-06 17:28:37 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
