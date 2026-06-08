@@ -1,66 +1,3 @@
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 12 signals from strategies
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> momentum: buy COIN @ $156.74 conf=0.90
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> momentum: buy NEXR @ $1.59 conf=0.70
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> momentum: buy DLTH @ $3.37 conf=0.75
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> momentum: buy SNXX @ $24.02 conf=0.80
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> momentum: buy MARA @ $12.57 conf=0.90
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> momentum: buy RKLB @ $111.80 conf=0.85
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ETHT @ $7.76 conf=0.65
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CMND @ $3.98 conf=1.00
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $43.21 conf=0.75
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy MSTU @ $3.41 conf=0.75
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ETHT @ $7.76 conf=0.85
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NOK @ $14.35 conf=0.85
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy COIN | Momentum BUY: EMA trend, ADX=71, breakout>152.68, higher lows, Vol=3.8x
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | REJECTED: buy NEXR | Setup broke: signal $1.59 → market $1.23 (-22.6%, max -5%)
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy DLTH | Momentum BUY: EMA trend, breakout>3.36, Vol=4.6x
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $24.02 → market $22.73 (-5.4%, max -5%)
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | REJECTED: buy MARA | Already in position: MARA
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy RKLB | Momentum BUY: EMA trend, ADX=52, breakout>110.56, Vol=2.2x
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy ETHT | Extreme RVOL 18.4x | Trending up +0.4% | MACD histogram positive | RSI healthy (60)
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy CMND | Extreme RVOL 33.8x | Strong move +10.2% | EMA trend bullish | MACD histogram positive
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 16.1x | Moving up +1.0% | EMA trend bullish | RSI healthy (60)
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy MSTU | Extreme RVOL 21.8x | Moving up +2.7% | EMA trend bullish | MACD histogram positive
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy ETHT | Very high RVOL 3.4x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-06-08 07:06:34 | INFO     | trading_bot.risk.manager | APPROVED: buy NOK | Very high RVOL 3.1x | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   | PREMARKET REJECT: RKLB RVOL=2.2x (need RVOL>=3.0)
-2026-06-08 07:06:34 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 965 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 12
-  ✅ COIN: score 90/100 — Momentum BUY: EMA trend, ADX=71, breakout>152.68, higher low
-  ✅ NEXR: score 70/100 — Momentum BUY: 
-2026-06-08 07:06:34 | WARNING  | trading_bot.engine   | SLOW CYCLE (293.1s total): update_data=180.5s, run_strategies=67.8s, monitor_positions=22.6s, update_scalp=18.0s
-2026-06-08 07:06:34 | INFO     | trading_bot.engine   | DEDUP: 8 signals -> 7 (merged duplicate symbols)
-2026-06-08 07:06:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-08 07:06:36 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: COIN entry=$156.7400 stop=$155.4596 (0.82% gap). Setting 2% minimum stop.
-2026-06-08 07:06:36 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x = 0.38% risk
-2026-06-08 07:06:36 | INFO     | trading_bot.risk.position_sizer | Position size: 22 shares @ $156.74 = $3,448.28 | Risk: $68.97 (0.3% of account) [tier: 1-50 shares]
-2026-06-08 07:06:36 | WARNING  | trading_bot.engine   | R/R STRETCH: COIN entry=$156.7400 stop=$153.6052 (risk=$3.1348) target=$161.0079 (reward=$4.2679, R/R=1.36) — stretching target to $163.0096 for 2:1 minimum.
-2026-06-08 07:06:36 | INFO     | trading_bot.engine   | Executing COIN via IBKR  [OUTSIDE RTH]...
-2026-06-08 07:06:36 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: COIN → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 07:06:36 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: COIN (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: ValidationError | Filled: 0.0/22
-2026-06-08 07:06:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: ValidationError | Filled: 0.0/22
-2026-06-08 07:06:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: ValidationError | Filled: 0.0/22
-2026-06-08 07:06:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: ValidationError | Filled: 0.0/22
-2026-06-08 07:06:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 22 COIN NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-08 09:30:00 US/Eastern.
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: PreSubmitted | Filled: 0.0/22.0
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: PreSubmitted | Filled: 0.0/22.0
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: PreSubmitted | Filled: 0.0/22.0
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: Filled | Filled: 22.0/22.0 | AvgPrice: $156.90
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: PreSubmitted | Filled: 0.0/22.0
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: PreSubmitted | Filled: 0.0/22.0
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | Order update: COIN | Status: Submitted | Filled: 0.0/22.0
-2026-06-08 07:06:37 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 22 COIN @ LIMIT $159.87 | TP: $163.01 | SL: $153.61 | Parent ID: 697517
-2026-06-08 07:06:38 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 22/22 COIN @ $156.9000 | signal $159.8700 | slippage -1.86% | parent=MARKET
-2026-06-08 07:06:38 | INFO     | trading_bot.engine   | BRACKET ORDER active: COIN | SL: $153.61 | TP: $163.01 (managed by IBKR server-side)
-2026-06-08 07:06:38 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: COIN expected $156.74 but filled @ $156.90
-2026-06-08 07:06:38 | INFO     | trading_bot.engine   | ORDER BUY COIN via IBKR | Qty: 22 | Price: $156.90 | Cost: $3,451.80 | Stop: $153.61 (risk $72.49) | Target: $163.01 (reward $134.41) | R:R 1.9:1 | Strategy: momentum
-2026-06-08 07:06:38 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: COIN**
-```
   Entry: $156.90 x 22 shares = $3,451.80
   Stop:  $153.61 (-$72.49 | -2.1%)
   Targets: $163.01
@@ -19998,3 +19935,66 @@ Signals found: 2
 2026-06-08 13:49:21 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-08 13:49:21 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
 2026-06-08 13:49:21 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 106 low-priority equity names; max 90)
+2026-06-08 13:50:44 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-08 13:50:44 | INFO     | trading_bot.signals.politician_tracker | No new trades found
+2026-06-08 13:51:52 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 43
+2026-06-08 13:52:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>163.08, higher lows, Vol=1.7x | COIN @ $163.38
+2026-06-08 13:52:08 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-08 13:52:08 | INFO     | trading_bot.engine   |   -> momentum: buy COIN @ $163.38 conf=0.75
+2026-06-08 13:52:08 | INFO     | trading_bot.risk.manager | REJECTED: buy COIN | Already in position: COIN
+2026-06-08 13:52:08 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 981 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ COIN: score 75/100 — Momentum BUY: EMA trend, breakout>163.08, higher lows, Vol=1
+Filtered: 1 signals rejected by risk man
+2026-06-08 13:52:09 | WARNING  | trading_bot.engine   | SLOW CYCLE (172.6s total): update_data=150.5s, update_scalp=16.4s
+2026-06-08 13:52:12 | INFO     | trading_bot.engine   | BREAK-EVEN: MARA stop → $13.55 (was $13.15, P&L: 1.0%)
+2026-06-08 13:52:12 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[28]: AAVE-USD(weak 3d trend (+4.0%)), ALGO-USD(weak 3d trend (+1.0%)), APT-USD(weak 3d trend (-0.1%)), ARB-USD(weak 3d trend (+2.1%)), ATOM-USD(weak 3d trend (+5.0%)), AVAX-USD(weak 3d trend (-3.1%)), BONK-USD(weak 3d trend (+2.1%)), BTC-USD(weak 3d trend (+4.3%)), COMP-USD(weak 3d trend (-0.9%)), DOGE-USD(weak 3d trend (+4.8%)), DOT-USD(weak 3d trend (+2.3%)), FLOKI-USD(weak 3d trend (+4.8%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (+1.5%)), ICP-USD(weak 3d trend (+4.6%)), IMX-USD(weak 3d trend (+3.2%)), JUP-USD(weak 3d trend (-23.8%)), LTC-USD(weak 3d trend (-1.4%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-5.1%)), PEPE-USD(weak 3d trend (+1.8%)), RNDR-USD(weak 3d trend (-0.8%)), SNX-USD(weak 3d trend (+3.8%)), SOL-USD(weak 3d trend (+3.1%)), TRX-USD(weak 3d trend (-0.9%)), UNI-USD(weak 3d trend (+4.0%)), WIF-USD(weak 3d trend (+1.9%)), XLM-USD(weak 3d trend (+1.6%)) | warming=4 | neutral=9 | no_data=1
+2026-06-08 13:52:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>163.08, higher lows, Vol=1.7x | COIN @ $163.44
+2026-06-08 13:52:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>163.08, higher lows, Vol=1.7x | COIN @ $163.41
+2026-06-08 13:52:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>163.08, higher lows, Vol=1.7x | COIN @ $163.34
+2026-06-08 13:52:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-08 13:52:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-08 13:52:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-08 13:52:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-08 13:52:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-08 13:52:23 | INFO     | trading_bot.engine   | IBKR scanner: 122 unique symbols discovered | 48 gainers, 10 gaps, 20 losers
+2026-06-08 13:52:23 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-08 13:52:23 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 107 low-priority equity names; max 90)
+2026-06-08 13:52:23 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-08 13:52:23 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-08 13:52:23 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order 719901 cancelled
+2026-06-08 13:53:07 | INFO     | trading_bot.engine   | Cancelled broker stop order for MARA
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order 719901 cancelled
+2026-06-08 13:53:07 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for MARA: This event loop is already running
+2026-06-08 13:53:07 | ERROR    | trading_bot.engine   | IBKR close order FAILED for MARA
+2026-06-08 13:53:07 | ERROR    | trading_bot.engine   | CLOSE FAILED for MARA — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order 719901 cancelled
+2026-06-08 13:53:07 | INFO     | trading_bot.engine   | Cancelled broker stop order for MARA
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order 719901 cancelled
+2026-06-08 13:53:07 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for MARA: This event loop is already running
+2026-06-08 13:53:07 | ERROR    | trading_bot.engine   | IBKR close order FAILED for MARA
+2026-06-08 13:53:07 | ERROR    | trading_bot.engine   | CLOSE FAILED for MARA — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order 719901 cancelled
+2026-06-08 13:53:07 | INFO     | trading_bot.engine   | Cancelled broker stop order for MARA
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order 719901 cancelled
+2026-06-08 13:53:07 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for MARA: This event loop is already running
+2026-06-08 13:53:07 | ERROR    | trading_bot.engine   | IBKR close order FAILED for MARA
+2026-06-08 13:53:07 | ERROR    | trading_bot.engine   | CLOSE FAILED for MARA — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PendingCancel | Filled: 0.0/85.0
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: Cancelled | Filled: 0.0/85.0
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-08 13:53:07 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: Cancelled | Filled: 0.0/85.0
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 719901 that needs to be cancelled cannot be cancelled, state: Cancelled.
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 719901 that needs to be cancelled cannot be cancelled, state: Cancelled.
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 719901 that needs to be cancelled cannot be cancelled, state: Cancelled.
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 719901 that needs to be cancelled cannot be cancelled, state: Cancelled.
+2026-06-08 13:53:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 719901 that needs to be cancelled cannot be cancelled, state: Cancelled.
