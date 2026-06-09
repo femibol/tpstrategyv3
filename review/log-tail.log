@@ -1,71 +1,3 @@
-2026-06-08 09:40:59 | INFO     | trading_bot.risk.manager | APPROVED: buy RKLB | Momentum BUY: EMA trend, ADX=52, Vol=2.2x
-2026-06-08 09:40:59 | INFO     | trading_bot.risk.manager | APPROVED: buy AAOX | Extreme RVOL 5.3x | Strong move +3.6% | MACD histogram positive | RSI healthy (57)
-2026-06-08 09:40:59 | INFO     | trading_bot.risk.manager | APPROVED: buy LASE | Extreme RVOL 5.1x | Trending up +1.0% | EMA trend bullish | MACD histogram positive
-2026-06-08 09:40:59 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Already in position: SNXX
-2026-06-08 09:40:59 | INFO     | trading_bot.risk.manager | APPROVED: buy AMA | Very high RVOL 3.2x | Moving up +0.8% | Volume accelerating bar-over-bar | Short-term trend bullish
-2026-06-08 09:40:59 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1199 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ LASE: score 90/100 — Momentum BUY: EMA cross, ADX=34, higher lows, Vol=3.3x
-  ✅ NEXR: score 75/100 — Momentum BUY: EMA tr
-2026-06-08 09:40:59 | WARNING  | trading_bot.engine   | SLOW CYCLE (173.8s total): update_data=141.9s, update_scalp=22.6s, discover=5.4s
-2026-06-08 09:40:59 | INFO     | trading_bot.engine   | CYCLE #169: regime=sideways | signals=8->approved=6 | positions=3/15 | bars_warm=134/134 | equity_open=True | pm=False pwr_hr=False
-2026-06-08 09:40:59 | INFO     | trading_bot.engine   | DEDUP: 6 signals -> 5 (merged duplicate symbols)
-2026-06-08 09:41:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-08 09:41:01 | INFO     | trading_bot.engine   | VOL REGIME: LASE short=0.0448 long=0.0252 ratio=1.78x → sizing mult 0.91x
-2026-06-08 09:41:01 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 0.91x = 0.34% risk
-2026-06-08 09:41:01 | INFO     | trading_bot.risk.position_sizer | Position size: 320 shares @ $3.65 = $1,168.00 | Risk: $60.02 (0.3% of account) [tier: 10-2000 shares]
-2026-06-08 09:41:01 | INFO     | trading_bot.engine   | Executing LASE via IBKR...
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: LASE → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: LASE (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PreSubmitted | Filled: 0.0/320.0
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PreSubmitted | Filled: 0.0/320.0
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Submitted | Filled: 0.0/320.0
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Filled | Filled: 320.0/320.0 | AvgPrice: $3.68
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PreSubmitted | Filled: 0.0/320.0
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PreSubmitted | Filled: 0.0/320.0
-2026-06-08 09:41:01 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Submitted | Filled: 0.0/320.0
-2026-06-08 09:41:02 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 320 LASE @ LIMIT $3.72 | TP: $4.36 | SL: $3.46 | Parent ID: 707788
-2026-06-08 09:41:03 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 320/320 LASE @ $3.6800 | signal $3.7200 | slippage -1.08% | parent=MARKET
-2026-06-08 09:41:03 | INFO     | trading_bot.engine   | BRACKET ORDER active: LASE | SL: $3.46 | TP: $4.36 (managed by IBKR server-side)
-2026-06-08 09:41:03 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: LASE expected $3.65 but filled @ $3.68
-2026-06-08 09:41:03 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: LASE chased +0.8% above market (max 0.8%, RTH) — closing position immediately | Signal $3.67 → Live $3.65 → Fill $3.68
-2026-06-08 09:41:03 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: LASE filled $3.68 (signal $3.67, slippage +0.8%). Closing immediately.
-```
-2026-06-08 09:41:03 | INFO     | trading_bot.engine   | ORDER BUY LASE via IBKR | Qty: 320 | Price: $3.68 | Cost: $1,177.60 | Stop: $3.46 (risk $69.62) | Target: $4.36 (reward $218.21) | R:R 3.1:1 | Strategy: momentum
-2026-06-08 09:41:03 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: LASE**
-```
-  Entry: $3.68 x 320 shares = $1,177.60
-  Stop:  $3.46 (-$69.62 | -5.9%)
-  Targets: $4.36
-  Risk/Reward: 3.1
-```
-Strategy: **momentum** | Confidence: **90%**
-Reas
-2026-06-08 09:41:03 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY LASE qty=320 @ $3.68 → primary webhook (200)
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-08 09:41:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10190: Max number of tick-by-tick requests has been reached.
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-08 09:41:04 | WARNING  | trading_bot.engine   | SLIPPAGE CLOSE: Closing LASE — excessive entry slippage
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PendingCancel | Filled: 0.0/320.0
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order 707790 cancelled
-2026-06-08 09:41:04 | INFO     | trading_bot.engine   | Cancelled broker stop order for LASE
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PendingCancel | Filled: 0.0/320.0
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order 707790 cancelled
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Cancelled | Filled: 0.0/320.0
-2026-06-08 09:41:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 707790 that needs to be cancelled cannot be cancelled, state: PendingCancel.
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PendingCancel | Filled: 0.0/320.0
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Cancelled | Filled: 0.0/320.0
-2026-06-08 09:41:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: LASE → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Cancelled | Filled: 0.0/320.0
-2026-06-08 09:41:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: PreSubmitted | Filled: 0.0/320.0
-2026-06-08 09:41:04 | INFO     | trading_bot.broker.ibkr | Order update: LASE | Status: Filled | Filled: 320.0/320.0 | AvgPrice: $3.67
-2026-06-08 09:41:05 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 320 LASE @ MARKET MKT | Order ID: 707796
-2026-06-08 09:41:05 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 320/320 LASE @ $3.67 | Order ID: 707796
 2026-06-08 09:41:05 | INFO     | trading_bot.engine   | CLOSED LASE via IBKR | slippage_reject | P&L: $-3.20 | Excessive slippage on entry — R:R invalid
 2026-06-08 09:41:05 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT LASE qty=320 @ $3.67 → primary webhook (200)
 2026-06-08 09:41:05 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: LASE** (slippage_reject)
@@ -19998,3 +19930,71 @@ Signals found: 10
 2026-06-09 03:32:13 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
 2026-06-09 03:32:13 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-09 03:32:13 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-09 03:35:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CPSH | Score: 80 | RVOL: 165.6x | Change: +2.7% | R:R 2.7
+2026-06-09 03:35:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: NOK | Score: 70 | RVOL: 276.6x | Change: +0.3% | R:R 2.7
+2026-06-09 03:35:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 80 | RVOL: 224.0x | Change: +3.1% | R:R 4.0
+2026-06-09 03:35:18 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AMPG | Score: 85 | RVOL: 4.8x | Change: +1.3% | R:R 1.5 | Target: $6.65 (+1.2%)
+2026-06-09 03:35:18 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-09 03:35:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CPSH @ $7.74 conf=0.80
+2026-06-09 03:35:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy NOK @ $14.59 conf=0.70
+2026-06-09 03:35:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SDOT @ $19.90 conf=0.80
+2026-06-09 03:35:18 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AMPG @ $6.57 conf=0.85
+2026-06-09 03:35:18 | INFO     | trading_bot.risk.manager | APPROVED: buy CPSH | Extreme RVOL 165.6x | Moving up +2.7% | EMA trend bullish | RSI healthy (56)
+2026-06-09 03:35:18 | INFO     | trading_bot.risk.manager | APPROVED: buy NOK | Extreme RVOL 276.6x | Trending up +0.3% | MACD histogram positive | RSI healthy (40)
+2026-06-09 03:35:18 | INFO     | trading_bot.risk.manager | APPROVED: buy SDOT | Extreme RVOL 224.0x | Strong move +3.1% | RSI healthy (42) | Small gap +1.1%
+2026-06-09 03:35:18 | INFO     | trading_bot.risk.manager | APPROVED: buy AMPG | Extreme RVOL 4.8x | Strong move +1.3% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 03:35:18 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — CPSH, NOK, SDOT, AMPG
+2026-06-09 03:35:18 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 911 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ CPSH: score 80/100 — Extreme RVOL 165.6x | Moving up +2.7% | EMA trend bullish | 
+  ✅ NOK: score 70/100 — Extreme RVOL 276
+2026-06-09 03:35:19 | WARNING  | trading_bot.engine   | SLOW CYCLE (189.5s total): update_data=169.2s, update_scalp=16.1s
+2026-06-09 03:35:22 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[28]: AAVE-USD(weak 3d trend (+3.2%)), ALGO-USD(weak 3d trend (+0.9%)), ARB-USD(weak 3d trend (+3.9%)), AVAX-USD(weak 3d trend (+1.0%)), BONK-USD(weak 3d trend (+4.7%)), BTC-USD(weak 3d trend (+3.6%)), DOGE-USD(needs vol>=1.1x), DOT-USD(weak 3d trend (+3.7%)), ETC-USD(weak 3d trend (+4.9%)), ETH-USD(needs green bar), FET-USD(needs green bar), GRT-USD(weak 3d trend (+1.5%)), HBAR-USD(weak 3d trend (+2.4%)), ICP-USD(weak 3d trend (+2.4%)), JUP-USD(weak 3d trend (-23.8%)), LINK-USD(needs green bar), LTC-USD(weak 3d trend (+0.4%)), MATIC-USD(weak 3d trend (+0.8%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>1.3x), RNDR-USD(weak 3d trend (+2.1%)), SOL-USD(needs green bar), SUI-USD(needs green bar), TRX-USD(weak 3d trend (+3.8%)), UNI-USD(weak 3d trend (+3.8%)), WIF-USD(weak 3d trend (+3.3%)), XLM-USD(weak 3d trend (+0.2%)), XRP-USD(needs vol>=1.1x) | warming=3 | neutral=7 | no_data=4
+2026-06-09 03:35:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-09 03:35:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 03:35:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 03:35:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-09 03:35:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-09 03:35:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 03:35:32 | INFO     | trading_bot.engine   | IBKR scanner: 108 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-09 03:35:32 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-09 03:35:32 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-09 03:35:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
+2026-06-09 03:35:32 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-09 03:35:32 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-09 03:35:32 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-09 03:38:51 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CPSH | Score: 80 | RVOL: 165.6x | Change: +2.7% | R:R 2.7
+2026-06-09 03:38:51 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: NOK | Score: 70 | RVOL: 276.6x | Change: +0.3% | R:R 2.7
+2026-06-09 03:38:51 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SDOT | Score: 80 | RVOL: 224.0x | Change: +3.1% | R:R 4.0
+2026-06-09 03:38:51 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AMPG | Score: 85 | RVOL: 4.8x | Change: +1.3% | R:R 1.5 | Target: $6.65 (+1.2%)
+2026-06-09 03:38:51 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-09 03:38:51 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CPSH @ $7.74 conf=0.80
+2026-06-09 03:38:51 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy NOK @ $14.59 conf=0.70
+2026-06-09 03:38:51 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SDOT @ $19.90 conf=0.80
+2026-06-09 03:38:51 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AMPG @ $6.57 conf=0.85
+2026-06-09 03:38:51 | INFO     | trading_bot.risk.manager | APPROVED: buy CPSH | Extreme RVOL 165.6x | Moving up +2.7% | EMA trend bullish | RSI healthy (56)
+2026-06-09 03:38:51 | INFO     | trading_bot.risk.manager | APPROVED: buy NOK | Extreme RVOL 276.6x | Trending up +0.3% | MACD histogram positive | RSI healthy (40)
+2026-06-09 03:38:51 | INFO     | trading_bot.risk.manager | APPROVED: buy SDOT | Extreme RVOL 224.0x | Strong move +3.1% | RSI healthy (42) | Small gap +1.1%
+2026-06-09 03:38:51 | INFO     | trading_bot.risk.manager | APPROVED: buy AMPG | Extreme RVOL 4.8x | Strong move +1.3% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 03:38:51 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — CPSH, NOK, SDOT, AMPG
+2026-06-09 03:38:51 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 911 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ CPSH: score 80/100 — Extreme RVOL 165.6x | Moving up +2.7% | EMA trend bullish | 
+  ✅ NOK: score 70/100 — Extreme RVOL 276
+2026-06-09 03:38:51 | WARNING  | trading_bot.engine   | SLOW CYCLE (203.2s total): update_data=183.1s, update_scalp=15.7s
+2026-06-09 03:38:54 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[28]: AAVE-USD(weak 3d trend (+3.2%)), ALGO-USD(weak 3d trend (+0.9%)), ARB-USD(weak 3d trend (+3.9%)), AVAX-USD(weak 3d trend (+1.0%)), BONK-USD(weak 3d trend (+4.7%)), BTC-USD(weak 3d trend (+3.4%)), DOGE-USD(needs vol>=1.1x), DOT-USD(weak 3d trend (+3.7%)), ETC-USD(weak 3d trend (+4.9%)), ETH-USD(needs vol>=1.1x), FET-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (+1.5%)), HBAR-USD(weak 3d trend (+2.4%)), ICP-USD(weak 3d trend (+2.4%)), JUP-USD(weak 3d trend (-23.8%)), LINK-USD(needs vol>=1.1x), LTC-USD(weak 3d trend (+0.4%)), MATIC-USD(weak 3d trend (+0.5%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (+2.1%)), SOL-USD(needs vol>=1.1x), SUI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+3.8%)), UNI-USD(weak 3d trend (+3.8%)), WIF-USD(weak 3d trend (+3.3%)), XLM-USD(weak 3d trend (+0.5%)), XRP-USD(needs vol>1.3x) | warming=3 | neutral=7 | no_data=4
+2026-06-09 03:39:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-09 03:39:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 03:39:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 03:39:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-09 03:39:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-09 03:39:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 03:39:04 | INFO     | trading_bot.engine   | IBKR scanner: 107 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-09 03:39:04 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-09 03:39:04 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-09 03:39:04 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-09 03:39:04 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-09 03:39:04 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-09 03:39:04 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
