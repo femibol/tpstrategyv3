@@ -1,93 +1,3 @@
-2026-06-08 19:30:18 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy BTGO @ $5.48 conf=0.90
-2026-06-08 19:30:18 | INFO     | trading_bot.risk.manager | APPROVED: buy FLOKI-USD | Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:18 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
-2026-06-08 19:30:18 | INFO     | trading_bot.risk.manager | APPROVED: buy BGL | Momentum BUY: EMA trend, ADX=63, breakout>0.59, Vol=5.2x
-2026-06-08 19:30:18 | INFO     | trading_bot.risk.manager | APPROVED: buy BTGO | Very high RVOL 3.1x | Moving up +0.4% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-06-08 19:30:18 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 911 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 4
-  ✅ FLOKI-USD: score 84/100 — Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-  ✅ ATOM-USD: score 100/100 — Mean reversi
-2026-06-08 19:30:19 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.1s total): update_data=155.5s, update_scalp=15.8s
-2026-06-08 19:30:19 | INFO     | trading_bot.engine   | CYCLE #343: regime=sideways | signals=4->approved=2 | positions=0/15 | bars_warm=181/181 | equity_open=True | pm=False pwr_hr=False
-2026-06-08 19:30:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-08 19:30:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-08 19:30:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-08 19:30:21 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: BGL — wide spread 19.9% (>5% for $0.61)
-2026-06-08 19:30:21 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-08 19:30:24 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BTGO no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: rvol_scalp
-2026-06-08 19:30:24 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: BTGO entry=$5.4800 stop=$5.4500 (0.55% gap). Setting 3% minimum stop.
-2026-06-08 19:30:24 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_scalp] 1.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x = 1.50% risk
-2026-06-08 19:30:24 | INFO     | trading_bot.risk.position_sizer | Position size: 210 shares @ $5.48 = $1,150.80 | Risk: $34.52 (0.1% of account) [tier: 5-1000 shares]
-2026-06-08 19:30:24 | WARNING  | trading_bot.engine   | R/R STRETCH: BTGO entry=$5.4800 stop=$5.3156 (risk=$0.1644) target=$5.5400 (reward=$0.0600, R/R=0.36) — stretching target to $5.8088 for 2:1 minimum.
-2026-06-08 19:30:24 | INFO     | trading_bot.engine   | Executing BTGO via IBKR  [OUTSIDE RTH]...
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: BTGO → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: BTGO (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: ValidationError | Filled: 0.0/210
-2026-06-08 19:30:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: ValidationError | Filled: 0.0/210
-2026-06-08 19:30:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: ValidationError | Filled: 0.0/210
-2026-06-08 19:30:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: ValidationError | Filled: 0.0/210
-2026-06-08 19:30:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 210 BTGO NYSE Warning: Your order will not be placed at the exchange until 2026-06-09 09:30:00 US/Eastern.
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: PreSubmitted | Filled: 0.0/210.0
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: PreSubmitted | Filled: 0.0/210.0
-2026-06-08 19:30:24 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: PreSubmitted | Filled: 0.0/210.0
-2026-06-08 19:30:25 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 210 BTGO @ LIMIT $5.59 | TP: $5.81 | SL: $5.32 | Parent ID: 741081
-2026-06-08 19:30:27 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: PendingCancel | Filled: 0.0/210.0
-2026-06-08 19:30:27 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: Cancelled | Filled: 0.0/210.0
-2026-06-08 19:30:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:No market data on major exchange for market order.
-2026-06-08 19:30:27 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: Cancelled | Filled: 0.0/210.0
-2026-06-08 19:30:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 19:30:27 | INFO     | trading_bot.broker.ibkr | Order update: BTGO | Status: Cancelled | Filled: 0.0/210.0
-2026-06-08 19:30:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 19:30:27 | WARNING  | trading_bot.broker.ibkr | Bracket order Cancelled: BTGO
-2026-06-08 19:30:27 | WARNING  | trading_bot.engine   | IBKR order failed for BTGO.
-2026-06-08 19:30:27 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY BTGO. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-08 19:30:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-08 19:30:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; BEX; Unknown market data permissions - Depth: ARCA; NYSE; IEX; 
-2026-06-08 19:30:30 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[2]: ATOM-USD(z=-3.24 rsi=0.0 bb=LOWER), FLOKI-USD(z=-1.44 rsi=0.0 bb=MIDDLE) | WAIT[23]: AAVE-USD(weak 3d trend (-0.4%)), ALGO-USD(weak 3d trend (-0.3%)), APT-USD(weak 3d trend (+4.0%)), ARB-USD(weak 3d trend (+4.9%)), AVAX-USD(weak 3d trend (+1.9%)), BONK-USD(weak 3d trend (+4.0%)), BTC-USD(weak 3d trend (+4.1%)), COMP-USD(weak 3d trend (+1.4%)), DOT-USD(weak 3d trend (+3.2%)), GRT-USD(weak 3d trend (+0.5%)), HBAR-USD(weak 3d trend (+2.1%)), ICP-USD(weak 3d trend (+4.1%)), JUP-USD(weak 3d trend (-23.8%)), LINK-USD(needs vol>=1.1x), LTC-USD(weak 3d trend (+1.2%)), MATIC-USD(weak 3d trend (+0.4%)), OP-USD(weak 3d trend (-3.1%)), RNDR-USD(weak 3d trend (-1.1%)), SNX-USD(weak 3d trend (+3.8%)), TIA-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (+1.9%)), XLM-USD(weak 3d trend (+2.4%)) | warming=8 | neutral=8 | no_data=1
-2026-06-08 19:30:30 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x | FLOKI-USD @ $0.00
-2026-06-08 19:30:30 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.24, RSI=0, BB=lower, Vol=6.7x | ATOM-USD @ $1.77
-2026-06-08 19:30:30 | INFO     | trading_bot.risk.manager | APPROVED: buy FLOKI-USD | Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:30 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
-2026-06-08 19:30:30 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy FLOKI-USD from mean_reversion conf=0.84 price=2.435e-05 reason=Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:31 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: FLOKI-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-08 19:30:31 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: FLOKI-USD entry=$0.0000 stop=$0.0000 (0.12% gap). Setting 5% minimum stop.
-2026-06-08 19:30:31 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 2.00% risk
-2026-06-08 19:30:31 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $461.12 → $50.00 (per-strategy ceiling)
-2026-06-08 19:30:31 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 41067761.80698 FLOKI-USD @ $0.00 = $1,000.00 | Risk: $50.00 (0.2% of account)
-2026-06-08 19:30:31 | WARNING  | trading_bot.engine   | TIER CAP: FLOKI-USD signal qty=41067761.80698 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
-2026-06-08 19:30:31 | INFO     | trading_bot.engine   | R/R STRETCH: FLOKI-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.23) — stretching target to $0.0000 for 2:1 minimum.
-2026-06-08 19:30:31 | INFO     | trading_bot.engine   | Executing FLOKI-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-08 19:30:31 | INFO     | trading_bot.broker.traderspost | Routing FLOKI-USD to CRYPTO webhook
-2026-06-08 19:30:31 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "FLOKI-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 2.435e-05, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
-2026-06-08 19:30:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; BEX; Unknown market data permissions - Depth: ARCA; NYSE; IEX; 
-2026-06-08 19:30:31 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"d201fb3d-b293-448d-80d2-5c4a785f0f60","logId":"d201fb3d-b293-448d-8
-2026-06-08 19:30:31 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
-2026-06-08 19:30:31 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for FLOKI-USD — no execution.
-2026-06-08 19:30:31 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY FLOKI-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-08 19:30:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-08 19:30:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-08 19:30:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x | FLOKI-USD @ $0.00
-2026-06-08 19:30:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.24, RSI=0, BB=lower, Vol=6.7x | ATOM-USD @ $1.77
-2026-06-08 19:30:34 | INFO     | trading_bot.risk.manager | APPROVED: buy FLOKI-USD | Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:34 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
-2026-06-08 19:30:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy FLOKI-USD from mean_reversion conf=0.84 price=2.435e-05 reason=Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:34 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: FLOKI-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-08 19:30:34 | WARNING  | trading_bot.engine   | COOLDOWN BLOCKED: FLOKI-USD signal rejected - last signal 3s ago (min 30s)
-2026-06-08 19:30:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x | FLOKI-USD @ $0.00
-2026-06-08 19:30:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.24, RSI=0, BB=lower, Vol=6.7x | ATOM-USD @ $1.77
-2026-06-08 19:30:37 | INFO     | trading_bot.risk.manager | APPROVED: buy FLOKI-USD | Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:37 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
-2026-06-08 19:30:37 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy FLOKI-USD from mean_reversion conf=0.84 price=2.435e-05 reason=Mean reversion BUY: Z=-1.44, RSI=0, BB=near, Vol=7.5x
-2026-06-08 19:30:37 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: FLOKI-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-08 19:30:37 | WARNING  | trading_bot.engine   | COOLDOWN BLOCKED: FLOKI-USD signal rejected - last signal 6s ago (min 30s)
-2026-06-08 19:30:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-08 19:30:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-08 19:30:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-08 19:30:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
 2026-06-08 19:30:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-08 19:30:41 | INFO     | trading_bot.engine   | IBKR scanner: 124 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
 2026-06-08 19:30:41 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
@@ -19998,3 +19908,93 @@ Signals found: 5
 2026-06-09 17:47:20 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
 2026-06-09 17:47:20 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
 2026-06-09 17:47:20 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PendingCancel | Filled: 0.0/201.0
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order 800421 cancelled
+2026-06-09 17:50:07 | INFO     | trading_bot.engine   | Cancelled broker stop order for ADUR
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PendingCancel | Filled: 0.0/201.0
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order 800421 cancelled
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PendingCancel | Filled: 0.0/201.0
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: Cancelled | Filled: 0.0/201.0
+2026-06-09 17:50:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: Cancelled | Filled: 0.0/201.0
+2026-06-09 17:50:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-09 17:50:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 800421 that needs to be cancelled cannot be cancelled, state: Cancelled.
+2026-06-09 17:50:07 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: ADUR → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-09 17:50:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-09 17:50:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 201 ADUR
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: ValidationError | Filled: 0.0/201
+2026-06-09 17:50:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PreSubmitted | Filled: 0.0/201.0
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: ValidationError | Filled: 0.0/201.0
+2026-06-09 17:50:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 201 ADUR NASDAQ.SCM Warning: Your order will not be placed at the exchange until 2026-06-10 08:00:00 US/Eastern.
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PreSubmitted | Filled: 0.0/201.0
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PreSubmitted | Filled: 141.0/201.0 | AvgPrice: $16.90
+2026-06-09 17:50:18 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: Submitted | Filled: 141.0/201.0 | AvgPrice: $16.90
+2026-06-09 17:50:19 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 201 ADUR @ MARKET MKT [OUTSIDE RTH] | Order ID: 801232
+2026-06-09 17:50:52 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-09 17:52:19 | WARNING  | trading_bot.broker.ibkr | PARTIAL FILL TIMEOUT: SELL ADUR filled 141/201 after 120s. Cancelling remaining 60 shares.
+2026-06-09 17:52:19 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: PendingCancel | Filled: 141.0/201.0 | AvgPrice: $16.90
+2026-06-09 17:52:19 | INFO     | trading_bot.broker.ibkr | Order update: ADUR | Status: Cancelled | Filled: 141.0/201.0 | AvgPrice: $16.90
+2026-06-09 17:52:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-09 17:52:20 | WARNING  | trading_bot.engine   | PARTIAL FILL ON CLOSE: ADUR filled 141/201 — 60 shares still held. Will retry next cycle.
+2026-06-09 17:52:20 | INFO     | trading_bot.engine   | PARTIAL CLOSED ADUR via IBKR | time_exit | Closed 141/201 shares | P&L: $-42.30 | 60 shares remain | Max holding period exceeded
+2026-06-09 17:52:20 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT ADUR qty=141 @ $16.90 → primary webhook (200)
+2026-06-09 17:52:20 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: ADUR** (time_exit)
+```
+  Entry: $17.20 → Exit: $16.90
+  P&L: $-42.30 (-1.74%)
+  Shares: 141 | Value: $2,382.90
+  Hold: 18m
+```
+Strategy: **rvol_scalp** | Max holding period exceeded
+Vi
+2026-06-09 17:52:21 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: ADUR -42.30 (257 total in history)
+2026-06-09 17:52:21 | WARNING  | trading_bot.engine   | POSITION KEPT (partial fill): ADUR reduced to 60 shares — will retry close next cycle
+2026-06-09 17:52:21 | WARNING  | trading_bot.engine   | STOP WATCHDOG: ADUR has NO broker-side stop! Placing emergency stop @ $16.48 for 60 shares
+2026-06-09 17:52:21 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.51, RSI=32, BB=lower, Vol=1.1x | LINK-USD @ $7.86
+2026-06-09 17:52:21 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: ADUR | Score: 95 | RVOL: 5.5x | Change: +0.8% | R:R 1.6 | Target: $17.19 (+1.2%)
+2026-06-09 17:52:21 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: ODC | Score: 80 | RVOL: 4.5x | Change: +0.6% | R:R 1.8 | Target: $100.18 (+1.2%)
+2026-06-09 17:52:21 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: ONDS | Score: 71 | Squeeze: True | Vol: 1.5x | R:R 2.2 | Target: $9.99
+2026-06-09 17:52:21 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [SPIKE]: UFG | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 51.9x | Change: +11.0% | R:R 2.9 | Size: 25%
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   |   -> mean_reversion: buy LINK-USD @ $7.86 conf=0.96
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ADUR @ $16.99 conf=0.95
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ODC @ $98.99 conf=0.80
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   |   -> prebreakout: buy ONDS @ $9.64 conf=0.71
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   |   -> momentum_runner: buy UFG @ $1.01 conf=0.60
+2026-06-09 17:52:21 | INFO     | trading_bot.risk.manager | REJECTED: buy LINK-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-09 17:52:21 | INFO     | trading_bot.risk.manager | REJECTED: buy ADUR | Already in position: ADUR
+2026-06-09 17:52:21 | INFO     | trading_bot.risk.manager | APPROVED: buy ODC | Extreme RVOL 4.5x | Moving up +0.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 17:52:21 | INFO     | trading_bot.risk.manager | APPROVED: buy ONDS | BB squeeze (10% tight) | Volume accumulating 1.5x | MACD turning up | EMA trend bullish | Breakout candle!
+2026-06-09 17:52:21 | INFO     | trading_bot.risk.manager | APPROVED: buy UFG | [SPIKE] Score:6/12 RVOL:51.9x | Confirmed | Chg:+11.0%
+2026-06-09 17:52:21 | INFO     | trading_bot.engine   | POSTMARKET REJECT: UFG score=6 (need score>=60)
+2026-06-09 17:52:21 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 912 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ LINK-USD: score 96/100 — Mean reversion BUY: Z=-2.51, RSI=32, BB=lower, Vol=1.1x
+  ✅ ADUR: score 95/100 — Extreme RVOL 5.5
+2026-06-09 17:52:22 | WARNING  | trading_bot.engine   | SLOW CYCLE (306.3s total): update_data=151.5s, monitor_positions=134.2s, update_scalp=15.7s
+2026-06-09 17:52:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-09 17:52:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-09 17:52:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-09 17:52:29 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
+```
+STRATEGY PAUSED: rvol_scalp down $-61.20 (-6.17% on $992 allocated). Cooling off for the rest of today. Auto-resumes tomorrow.
+```
+2026-06-09 17:52:29 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: ODC via rvol_scalp — rvol_scalp hit daily DD limit (-6.17%)
+2026-06-09 17:52:32 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: LINK-USD(z=-2.51 rsi=32.1 bb=LOWER) | WAIT[32]: AAVE-USD(weak 3d trend (+0.4%)), ADA-USD(needs vol>=1.1x), ALGO-USD(weak 3d trend (-1.3%)), APT-USD(weak 3d trend (+2.0%)), ARB-USD(weak 3d trend (+1.4%)), AVAX-USD(weak 3d trend (-0.3%)), BTC-USD(weak 3d trend (+1.5%)), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (+3.8%)), DOT-USD(weak 3d trend (+2.2%)), ETC-USD(weak 3d trend (+4.6%)), ETH-USD(needs vol>=1.1x), FET-USD(weak 3d trend (+1.2%)), GRT-USD(weak 3d trend (+0.5%)), HBAR-USD(weak 3d trend (+0.6%)), ICP-USD(weak 3d trend (+1.6%)), JUP-USD(weak 3d trend (-10.6%)), LTC-USD(weak 3d trend (+3.4%)), MATIC-USD(weak 3d trend (-2.3%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+4.5%)), RNDR-USD(weak 3d trend (+1.6%)), SEI-USD(weak 3d trend (-0.8%)), SHIB-USD(weak 3d trend (+3.5%)), SOL-USD(weak 3d trend (+4.7%)), SUI-USD(weak 3d trend (+5.0%)), TON-USD(weak 3d trend (-0.7%)), TRX-USD(weak 3d trend (+1.2%)), UNI-USD(weak 3d trend (+1.9%)), WIF-USD(weak 3d trend (+4.0%)), XLM-USD(weak 3d trend (-7.5%)), XRP-USD(weak 3d trend (+4.2%)) | warming=4 | neutral=4 | no_data=1
+2026-06-09 17:52:32 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.51, RSI=32, BB=lower, Vol=1.1x | LINK-USD @ $7.86
+2026-06-09 17:52:32 | INFO     | trading_bot.risk.manager | REJECTED: buy LINK-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-09 17:52:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-09 17:52:35 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.51, RSI=32, BB=lower, Vol=1.1x | LINK-USD @ $7.86
+2026-06-09 17:52:35 | INFO     | trading_bot.risk.manager | REJECTED: buy LINK-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-09 17:52:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.51, RSI=32, BB=lower, Vol=1.1x | LINK-USD @ $7.86
+2026-06-09 17:52:38 | INFO     | trading_bot.risk.manager | REJECTED: buy LINK-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-09 17:52:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-09 17:52:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 17:52:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 17:52:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-09 17:52:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 17:52:42 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
+2026-06-09 17:52:43 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
