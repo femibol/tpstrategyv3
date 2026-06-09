@@ -1,76 +1,3 @@
-2026-06-08 18:45:46 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: PendingCancel | Filled: 258.0/1845.0 | AvgPrice: $0.64
-2026-06-08 18:45:46 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: Cancelled | Filled: 258.0/1845.0 | AvgPrice: $0.64
-2026-06-08 18:45:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 18:45:47 | INFO     | trading_bot.engine   | BRACKET ORDER active: BGL | SL: $0.59 | TP: $0.70 (managed by IBKR server-side)
-2026-06-08 18:45:47 | INFO     | trading_bot.engine   | FILL QTY ADJUSTED: BGL requested 1845 but filled 258 (partial fill). Tracking actual qty.
-2026-06-08 18:45:47 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: BGL expected $0.62 but filled @ $0.64
-2026-06-08 18:45:47 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: BGL chased +2.4% above market (max 1.5%, EXT) — closing position immediately | Signal $0.63 → Live $0.62 → Fill $0.64
-2026-06-08 18:45:47 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: BGL filled $0.64 (signal $0.63, slippage +2.4%). Closing immediately.
-```
-2026-06-08 18:45:47 | INFO     | trading_bot.engine   | ORDER BUY BGL via IBKR | Qty: 258 | Price: $0.64 | Cost: $165.12 | Stop: $0.59 (risk $13.62) | Target: $0.70 (reward $15.39) | R:R 1.1:1 | Strategy: momentum
-2026-06-08 18:45:47 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: BGL**
-```
-  Entry: $0.64 x 258 shares = $165.12
-  Stop:  $0.59 (-$13.62 | -8.2%)
-  Targets: $0.70
-  Risk/Reward: 1.1
-```
-Strategy: **momentum** | Confidence: **85%**
-Reason:
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY BGL qty=258 @ $0.64 → primary webhook (200)
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-08 18:45:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10190: Max number of tick-by-tick requests has been reached.
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-08 18:45:48 | WARNING  | trading_bot.engine   | SLIPPAGE CLOSE: Closing BGL — excessive entry slippage
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: PendingCancel | Filled: 0.0/258.0
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order 738826 cancelled
-2026-06-08 18:45:48 | INFO     | trading_bot.engine   | Cancelled broker stop order for BGL
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: PendingCancel | Filled: 0.0/258.0
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order 738826 cancelled
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: PendingCancel | Filled: 0.0/258.0
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: Cancelled | Filled: 0.0/258.0
-2026-06-08 18:45:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: Cancelled | Filled: 0.0/258.0
-2026-06-08 18:45:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 18:45:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 738826 that needs to be cancelled cannot be cancelled, state: Cancelled.
-2026-06-08 18:45:48 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: BGL → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 18:45:59 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $0.62 for SELL 258 BGL
-2026-06-08 18:45:59 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: ValidationError | Filled: 0.0/258
-2026-06-08 18:45:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-08 18:45:59 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: PreSubmitted | Filled: 0.0/258.0
-2026-06-08 18:45:59 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: ValidationError | Filled: 0.0/258.0
-2026-06-08 18:45:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 258 BGL NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-09 08:00:00 US/Eastern.
-2026-06-08 18:45:59 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: PreSubmitted | Filled: 0.0/258.0
-2026-06-08 18:45:59 | INFO     | trading_bot.broker.ibkr | Order update: BGL | Status: Filled | Filled: 258.0/258.0 | AvgPrice: $0.63
-2026-06-08 18:46:00 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 258 BGL @ MARKET MKT [OUTSIDE RTH] | Order ID: 738833
-2026-06-08 18:46:01 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 258/258 BGL @ $0.63 | Order ID: 738833
-2026-06-08 18:46:01 | INFO     | trading_bot.engine   | CLOSED BGL via IBKR | slippage_reject | P&L: $-3.04 | Excessive slippage on entry — R:R invalid
-2026-06-08 18:46:01 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT BGL qty=258 @ $0.63 → primary webhook (200)
-2026-06-08 18:46:01 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: BGL** (slippage_reject)
-```
-  Entry: $0.64 → Exit: $0.63
-  P&L: $-3.04 (-1.84%)
-  Shares: 258 | Value: $162.08
-  Hold: 0m
-```
-Strategy: **momentum** | Excessive slippage on entry — R:R
-2026-06-08 18:46:01 | WARNING  | trading_bot.engine   | PSYCHOLOGY FLAG: 4 consecutive losses — review strategy mix; consider manual pause
-2026-06-08 18:46:01 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: BGL -3.04 (242 total in history)
-2026-06-08 18:46:05 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [BGL]: **AVOID:momentum_low_float_sub1**
-
-BGL @ $0.64 = sub-$1 low float. Slippage_reject exit on a 0-min hold + 41% win rate = structural edge problem, not a one-off. Stop trading momentum on sub-$1 symbols
-2026-06-08 18:46:05 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'momentum_low_float_sub1' (total avoids: 1)
-2026-06-08 18:46:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-08 18:46:07 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: BTGO — wide spread 2.7% (>2% for $5.48)
-2026-06-08 18:46:10 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[34]: AAVE-USD(weak 3d trend (-0.4%)), ADA-USD(needs vol>=1.1x), ALGO-USD(weak 3d trend (-2.0%)), APT-USD(weak 3d trend (+4.0%)), ARB-USD(weak 3d trend (+2.3%)), AVAX-USD(weak 3d trend (-0.5%)), BONK-USD(weak 3d trend (+4.0%)), BTC-USD(weak 3d trend (+2.6%)), COMP-USD(weak 3d trend (+1.4%)), DOGE-USD(weak 3d trend (+4.8%)), DOT-USD(weak 3d trend (+3.8%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (+3.7%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (+0.5%)), ICP-USD(weak 3d trend (-0.7%)), JUP-USD(weak 3d trend (-23.8%)), LINK-USD(needs vol>=1.1x), LTC-USD(weak 3d trend (-0.2%)), MATIC-USD(weak 3d trend (+3.6%)), OP-USD(weak 3d trend (-3.1%)), PEPE-USD(weak 3d trend (+4.1%)), RNDR-USD(weak 3d trend (-1.4%)), SEI-USD(weak 3d trend (+1.8%)), SHIB-USD(weak 3d trend (+3.5%)), SNX-USD(weak 3d trend (+3.8%)), SOL-USD(weak 3d trend (+4.1%)), SUI-USD(needs vol>=1.1x), TIA-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-0.8%)), UNI-USD(weak 3d trend (+3.4%)), WIF-USD(weak 3d trend (+1.9%)), XLM-USD(weak 3d trend (+1.0%)), XRP-USD(needs vol>=1.1x) | warming=3 | neutral=3 | no_data=1
-2026-06-08 18:46:16 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-08 18:46:16 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-08 18:46:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-08 18:46:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-08 18:46:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-08 18:46:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
 2026-06-08 18:46:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-08 18:46:20 | INFO     | trading_bot.engine   | IBKR scanner: 124 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
 2026-06-08 18:46:20 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
@@ -19998,3 +19925,76 @@ Signals found: 4
 2026-06-09 17:24:15 | INFO     | trading_bot.engine   | IBKR scanner: 124 unique symbols discovered | 48 gainers, 13 gaps, 20 losers
 2026-06-09 17:24:15 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
 2026-06-09 17:24:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
+2026-06-09 17:26:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-09 17:26:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-09 17:26:54 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: ADUR | Score: 95 | RVOL: 5.5x | Change: +0.8% | R:R 1.6 | Target: $17.19 (+1.2%)
+2026-06-09 17:26:54 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: ODC | Score: 80 | RVOL: 4.5x | Change: +0.6% | R:R 1.8 | Target: $100.18 (+1.2%)
+2026-06-09 17:26:54 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: ONDS | Score: 71 | Squeeze: True | Vol: 1.5x | R:R 2.2 | Target: $9.99
+2026-06-09 17:26:54 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [SPIKE]: UFG | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 51.9x | Change: +11.0% | R:R 2.9 | Size: 25%
+2026-06-09 17:26:54 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-09 17:26:54 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ADUR @ $16.99 conf=0.95
+2026-06-09 17:26:54 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy ODC @ $98.99 conf=0.80
+2026-06-09 17:26:54 | INFO     | trading_bot.engine   |   -> prebreakout: buy ONDS @ $9.64 conf=0.71
+2026-06-09 17:26:54 | INFO     | trading_bot.engine   |   -> momentum_runner: buy UFG @ $1.01 conf=0.60
+2026-06-09 17:26:54 | INFO     | trading_bot.risk.manager | APPROVED: buy ADUR | Extreme RVOL 5.5x | Moving up +0.8% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 17:26:54 | INFO     | trading_bot.risk.manager | APPROVED: buy ODC | Extreme RVOL 4.5x | Moving up +0.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 17:26:54 | INFO     | trading_bot.risk.manager | APPROVED: buy ONDS | BB squeeze (10% tight) | Volume accumulating 1.5x | MACD turning up | EMA trend bullish | Breakout candle!
+2026-06-09 17:26:54 | INFO     | trading_bot.risk.manager | APPROVED: buy UFG | [SPIKE] Score:6/12 RVOL:51.9x | Confirmed | Chg:+11.0%
+2026-06-09 17:26:54 | INFO     | trading_bot.engine   | POSTMARKET REJECT: UFG score=6 (need score>=60)
+2026-06-09 17:26:54 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 930 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ ADUR: score 95/100 — Extreme RVOL 5.5x | Moving up +0.8% | Breakout confirmed (2 
+  ✅ ODC: score 80/100 — Extreme RVOL 4.5
+2026-06-09 17:26:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (163.4s total): update_data=143.3s, update_scalp=15.6s
+2026-06-09 17:26:55 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-09 17:26:55 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-09 17:26:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 17:26:58 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: ADUR — wide spread 20.5% (>2% for $16.99)
+2026-06-09 17:26:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 17:27:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 17:27:05 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: ODC no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: rvol_scalp
+2026-06-09 17:27:05 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: ODC entry=$98.9900 stop=$98.3300 (0.67% gap). Setting 2% minimum stop.
+2026-06-09 17:27:05 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_scalp] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
+2026-06-09 17:27:05 | INFO     | trading_bot.risk.position_sizer | Position size: 34 shares @ $98.99 = $3,365.66 | Risk: $67.31 (0.3% of account) [tier: 1-150 shares]
+2026-06-09 17:27:05 | WARNING  | trading_bot.engine   | R/R STRETCH: ODC entry=$98.9900 stop=$97.0102 (risk=$1.9798) target=$100.1800 (reward=$1.1900, R/R=0.60) — stretching target to $102.9496 for 2:1 minimum.
+2026-06-09 17:27:05 | INFO     | trading_bot.engine   | Executing ODC via IBKR  [OUTSIDE RTH]...
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: ODC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: ODC (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: ValidationError | Filled: 0.0/34
+2026-06-09 17:27:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: ValidationError | Filled: 0.0/34
+2026-06-09 17:27:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: ValidationError | Filled: 0.0/34
+2026-06-09 17:27:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: ValidationError | Filled: 0.0/34
+2026-06-09 17:27:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 34 ODC NYSE Warning: Your order will not be placed at the exchange until 2026-06-10 09:30:00 US/Eastern.
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: PreSubmitted | Filled: 0.0/34.0
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: PreSubmitted | Filled: 0.0/34.0
+2026-06-09 17:27:05 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: PreSubmitted | Filled: 0.0/34.0
+2026-06-09 17:27:06 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 34 ODC @ LIMIT $100.97 | TP: $102.95 | SL: $97.01 | Parent ID: 800087
+2026-06-09 17:27:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-09 17:27:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-09 17:27:08 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: PendingCancel | Filled: 0.0/34.0
+2026-06-09 17:27:08 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: Cancelled | Filled: 0.0/34.0
+2026-06-09 17:27:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:No market data on major exchange for market order.
+2026-06-09 17:27:08 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: Cancelled | Filled: 0.0/34.0
+2026-06-09 17:27:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-09 17:27:08 | INFO     | trading_bot.broker.ibkr | Order update: ODC | Status: Cancelled | Filled: 0.0/34.0
+2026-06-09 17:27:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-09 17:27:08 | WARNING  | trading_bot.broker.ibkr | Bracket order Cancelled: ODC
+2026-06-09 17:27:08 | WARNING  | trading_bot.engine   | IBKR order failed for ODC.
+2026-06-09 17:27:08 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY ODC. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-09 17:27:10 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-09 17:27:11 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[31]: AAVE-USD(weak 3d trend (+0.4%)), ADA-USD(needs vol>1.3x), ALGO-USD(weak 3d trend (-0.8%)), APT-USD(weak 3d trend (+4.8%)), ARB-USD(weak 3d trend (+1.4%)), AVAX-USD(weak 3d trend (+0.6%)), BTC-USD(weak 3d trend (+1.7%)), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (+4.6%)), DOT-USD(weak 3d trend (+3.5%)), ETC-USD(weak 3d trend (+4.6%)), ETH-USD(needs vol>=1.1x), FET-USD(weak 3d trend (+3.6%)), GRT-USD(weak 3d trend (+1.5%)), HBAR-USD(weak 3d trend (+0.6%)), ICP-USD(weak 3d trend (+2.5%)), JUP-USD(weak 3d trend (-10.6%)), LTC-USD(weak 3d trend (+4.8%)), MATIC-USD(weak 3d trend (-2.5%)), OP-USD(weak 3d trend (-1.0%)), RNDR-USD(weak 3d trend (+2.5%)), SEI-USD(weak 3d trend (-0.8%)), SHIB-USD(weak 3d trend (+3.5%)), SOL-USD(needs green bar), SUI-USD(needs vol>=1.1x), TON-USD(weak 3d trend (+0.3%)), TRX-USD(weak 3d trend (+0.1%)), UNI-USD(weak 3d trend (+1.9%)), WIF-USD(weak 3d trend (+4.0%)), XLM-USD(weak 3d trend (-5.9%)), XRP-USD(weak 3d trend (+4.3%)) | warming=1 | neutral=9 | no_data=1
+2026-06-09 17:27:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-09 17:27:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 17:27:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 17:27:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-09 17:27:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 17:27:22 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 48 gainers, 13 gaps, 20 losers
+2026-06-09 17:27:22 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-09 17:27:22 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
+2026-06-09 17:27:22 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-09 17:27:22 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-09 17:27:22 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
