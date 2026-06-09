@@ -1,83 +1,3 @@
-2026-06-08 10:08:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-08 10:08:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-08 10:08:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-08 10:08:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
-2026-06-08 10:08:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 19 results
-2026-06-08 10:08:36 | INFO     | trading_bot.engine   | IBKR scanner: 112 unique symbols discovered | 50 gainers, 5 gaps, 19 losers
-2026-06-08 10:08:36 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-08 10:08:36 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 96 stale symbols across strategies
-2026-06-08 10:08:36 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 131 low-priority equity names; max 90)
-2026-06-08 10:08:36 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
-2026-06-08 10:08:36 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
-2026-06-08 10:08:36 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: PendingCancel | Filled: 0.0/347.0
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order 707806 cancelled
-2026-06-08 10:11:37 | INFO     | trading_bot.engine   | Cancelled broker stop order for NEXR
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: PendingCancel | Filled: 0.0/347.0
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order 707806 cancelled
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: Cancelled | Filled: 0.0/347.0
-2026-06-08 10:11:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 707806 that needs to be cancelled cannot be cancelled, state: PendingCancel.
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: Cancelled | Filled: 0.0/347.0
-2026-06-08 10:11:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: Cancelled | Filled: 0.0/347.0
-2026-06-08 10:11:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: NEXR → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: PreSubmitted | Filled: 0.0/347.0
-2026-06-08 10:11:37 | INFO     | trading_bot.broker.ibkr | Order update: NEXR | Status: Filled | Filled: 347.0/347.0 | AvgPrice: $1.54
-2026-06-08 10:11:38 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 347 NEXR @ MARKET MKT | Order ID: 710568
-2026-06-08 10:11:38 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 347/347 NEXR @ $1.54 | Order ID: 710568
-2026-06-08 10:11:38 | INFO     | trading_bot.engine   | CLOSED NEXR via IBKR | stop_loss | P&L: $-104.10 | Stop hit at $1.59
-2026-06-08 10:11:38 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT NEXR qty=347 @ $1.54 → primary webhook (200)
-2026-06-08 10:11:38 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: NEXR** (stop_loss)
-```
-  Entry: $1.84 → Exit: $1.54
-  P&L: $-104.10 (-16.30%)
-  Shares: 347 | Value: $534.38
-  Hold: 30m
-```
-Strategy: **momentum** | Stop hit at $1.59
-Via: IBKR | 10:1
-2026-06-08 10:11:39 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: NEXR -104.10 (229 total in history)
-2026-06-08 10:11:41 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [NEXR]: **AVOID:momentum_low_float_sub2**
-
-27% win rate on 11 trades = pattern failure, not noise. NEXR sub-$2 momentum is repeatedly losing. Stop trading this setup until win rate exceeds 45%.
-2026-06-08 10:11:41 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'momentum_low_float_sub2' (total avoids: 1)
-2026-06-08 10:11:41 | WARNING  | trading_bot.engine   | STOP WATCHDOG: AAOX has NO broker-side stop! Placing emergency stop @ $56.02 for 59 shares
-2026-06-08 10:11:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=66, higher lows, Vol=0.1x | MARA @ $12.76
-2026-06-08 10:11:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=52, Vol=2.2x | RKLB @ $110.08
-2026-06-08 10:11:41 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: BITO | Score: 60 | RVOL: 4.1x | Change: +0.5% | R:R 2.7
-2026-06-08 10:11:41 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-08 10:11:41 | INFO     | trading_bot.engine   |   -> momentum: buy MARA @ $12.76 conf=0.75
-2026-06-08 10:11:41 | INFO     | trading_bot.engine   |   -> momentum: buy RKLB @ $110.08 conf=0.70
-2026-06-08 10:11:41 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy BITO @ $8.69 conf=0.60
-2026-06-08 10:11:41 | INFO     | trading_bot.risk.manager | APPROVED: buy MARA | Momentum BUY: pullback entry, ADX=66, higher lows, Vol=0.1x
-2026-06-08 10:11:41 | INFO     | trading_bot.risk.manager | APPROVED: buy RKLB | Momentum BUY: EMA trend, ADX=52, Vol=2.2x
-2026-06-08 10:11:41 | INFO     | trading_bot.risk.manager | APPROVED: buy BITO | Very high RVOL 4.1x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
-2026-06-08 10:11:41 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1124 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ MARA: score 75/100 — Momentum BUY: pullback entry, ADX=66, higher lows, Vol=0.1x
-  ✅ RKLB: score 70/100 — Momentum BUY: E
-2026-06-08 10:11:42 | WARNING  | trading_bot.engine   | SLOW CYCLE (191.1s total): update_data=163.6s, update_scalp=17.4s, discover=5.2s
-2026-06-08 10:11:44 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-STRATEGY PAUSED: momentum down $-85.29 (-5.21% on $1,637 allocated). Cooling off for the rest of today. Auto-resumes tomorrow.
-```
-2026-06-08 10:11:45 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: MARA via momentum — momentum hit daily DD limit (-5.21%)
-2026-06-08 10:11:47 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: RKLB EMA imbalance +0.36 ramping → score 70 → 80
-2026-06-08 10:11:47 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: RKLB via momentum — momentum hit daily DD limit (-5.21%)
-2026-06-08 10:11:50 | INFO     | trading_bot.engine   | VOL REGIME: BITO short=0.0152 long=0.0076 ratio=1.99x → sizing mult 0.84x
-2026-06-08 10:11:50 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.00x × Regime 1.00x × Vol 0.84x = 0.84% risk
-2026-06-08 10:11:50 | INFO     | trading_bot.risk.position_sizer | Position size: 132 shares @ $8.68 = $1,145.76 | Risk: $33.00 (0.1% of account) [tier: 5-1000 shares]
-2026-06-08 10:11:50 | INFO     | trading_bot.engine   | Executing BITO via IBKR...
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: BITO → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: BITO (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: PreSubmitted | Filled: 0.0/132.0
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: PreSubmitted | Filled: 0.0/132.0
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: Submitted | Filled: 0.0/132.0
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: Filled | Filled: 132.0/132.0 | AvgPrice: $8.70
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: PreSubmitted | Filled: 0.0/132.0
-2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: PreSubmitted | Filled: 0.0/132.0
 2026-06-08 10:11:50 | INFO     | trading_bot.broker.ibkr | Order update: BITO | Status: Submitted | Filled: 0.0/132.0
 2026-06-08 10:11:51 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 132 BITO @ LIMIT $8.85 | TP: $9.39 | SL: $8.43 | Parent ID: 710588
 2026-06-08 10:11:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; CHX; IBEOS; PSX; MEMX; OVERNIGHT; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; NYSE; Unknown market data permissions - Depth: BATS; BEX; Top: AMEX; NYSENAT; T24X; EDGEA; 
@@ -19998,3 +19918,83 @@ Signals found: 6
 2026-06-09 07:38:34 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 44/95
 2026-06-09 07:38:34 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
 2026-06-09 07:38:34 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-09 07:40:57 | INFO     | trading_bot.engine   | DATA COVERAGE: 84/90 symbols have bars, 89/90 have prices | IBKR blacklisted: 43
+2026-06-09 07:41:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>7.28, Vol=9.7x | PANL @ $8.00
+2026-06-09 07:41:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: DBI | Score: 80 | RVOL: 14.2x | Change: +1.8% | R:R 2.7
+2026-06-09 07:41:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: NOK | Score: 70 | RVOL: 20.7x | Change: +0.3% | R:R 2.7
+2026-06-09 07:41:15 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AMPG | Score: 85 | RVOL: 4.8x | Change: +1.3% | R:R 1.5 | Target: $6.65 (+1.2%)
+2026-06-09 07:41:15 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: DBI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 12.2x | Change: +1.8% | R:R 3.0 | Size: 100%
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   |   -> momentum: buy PANL @ $8.00 conf=0.75
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy DBI @ $9.00 conf=0.80
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy NOK @ $14.59 conf=0.70
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AMPG @ $6.57 conf=0.85
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   |   -> momentum_runner: buy DBI @ $9.00 conf=0.60
+2026-06-09 07:41:15 | INFO     | trading_bot.risk.manager | REJECTED: buy PANL | Setup broke: signal $8.00 → market $7.23 (-9.6%, max -5%)
+2026-06-09 07:41:15 | INFO     | trading_bot.risk.manager | APPROVED: buy DBI | Extreme RVOL 14.2x | Moving up +1.8% | EMA trend bullish | MACD histogram positive
+2026-06-09 07:41:15 | INFO     | trading_bot.risk.manager | APPROVED: buy NOK | Extreme RVOL 20.7x | Trending up +0.3% | MACD histogram positive | RSI healthy (40)
+2026-06-09 07:41:15 | INFO     | trading_bot.risk.manager | APPROVED: buy AMPG | Extreme RVOL 4.8x | Strong move +1.3% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 07:41:15 | INFO     | trading_bot.risk.manager | APPROVED: buy DBI | [BREAKOUT] Score:6/12 RVOL:12.2x | Confirmed | Chg:+1.8%
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   | PREMARKET REJECT: DBI score=6 (need score>=60)
+2026-06-09 07:41:15 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 995 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ PANL: score 75/100 — Momentum BUY: EMA trend, breakout>7.28, Vol=9.7x
+  ✅ DBI: score 80/100 — Extreme RVOL 14.2x | Moving 
+2026-06-09 07:41:15 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.4s total): update_data=143.2s, update_scalp=17.6s
+2026-06-09 07:41:15 | INFO     | trading_bot.engine   | CYCLE #139: regime=sideways | signals=5->approved=3 | positions=0/15 | bars_warm=139/139 | equity_open=True | pm=True pwr_hr=False
+2026-06-09 07:41:18 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: DBI — wide spread 35.0% (>2% for $9.00)
+2026-06-09 07:41:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 07:41:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 07:41:21 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: NOK — bearish EMA imbalance -0.30
+2026-06-09 07:41:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 07:41:24 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: AMPG no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: rvol_scalp
+2026-06-09 07:41:24 | INFO     | trading_bot.engine   | SLIPPAGE BLOCK: AMPG had a slippage_reject close 6448s ago — blocked for the rest of the session (structural liquidity problem, not timing)
+2026-06-09 07:41:26 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-09 07:41:26 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-09 07:41:27 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[24]: AAVE-USD(weak 3d trend (+2.9%)), ALGO-USD(weak 3d trend (+0.9%)), ARB-USD(weak 3d trend (+2.7%)), AVAX-USD(weak 3d trend (-0.1%)), BONK-USD(weak 3d trend (+4.6%)), BTC-USD(weak 3d trend (+2.9%)), DOT-USD(weak 3d trend (+2.4%)), ETC-USD(weak 3d trend (+4.7%)), FLOKI-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (+2.1%)), HBAR-USD(weak 3d trend (+2.6%)), ICP-USD(weak 3d trend (+0.3%)), JUP-USD(weak 3d trend (-11.4%)), LINK-USD(needs vol>1.3x), LTC-USD(weak 3d trend (-1.1%)), MATIC-USD(weak 3d trend (-0.3%)), OP-USD(weak 3d trend (-1.0%)), RNDR-USD(weak 3d trend (+2.1%)), SHIB-USD(weak 3d trend (+4.7%)), TRX-USD(weak 3d trend (+0.9%)), UNI-USD(weak 3d trend (+3.6%)), WIF-USD(weak 3d trend (+2.0%)), XLM-USD(weak 3d trend (-1.0%)), XRP-USD(needs vol>=1.1x) | warming=5 | neutral=9 | no_data=4
+2026-06-09 07:41:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-09 07:41:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-09 07:41:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-09 07:41:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-09 07:41:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-09 07:41:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 07:41:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 07:41:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-09 07:41:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-09 07:41:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 07:41:37 | INFO     | trading_bot.engine   | IBKR scanner: 94 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-09 07:41:37 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-09 07:41:37 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 30 stale symbols across strategies
+2026-06-09 07:41:37 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 108 low-priority equity names; max 90)
+2026-06-09 07:41:37 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 45/95
+2026-06-09 07:41:37 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-09 07:41:37 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-09 07:44:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-09 07:44:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-09 07:44:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>7.28, Vol=9.7x | PANL @ $8.00
+2026-06-09 07:44:57 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: DBI | Score: 80 | RVOL: 14.2x | Change: +1.8% | R:R 2.7
+2026-06-09 07:44:57 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: NOK | Score: 70 | RVOL: 20.7x | Change: +0.3% | R:R 2.7
+2026-06-09 07:44:57 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: AMPG | Score: 85 | RVOL: 4.8x | Change: +1.3% | R:R 1.5 | Target: $6.65 (+1.2%)
+2026-06-09 07:44:57 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: DBI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 12.2x | Change: +1.8% | R:R 3.0 | Size: 100%
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   |   -> momentum: buy PANL @ $8.00 conf=0.75
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy DBI @ $9.00 conf=0.80
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy NOK @ $14.59 conf=0.70
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy AMPG @ $6.57 conf=0.85
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   |   -> momentum_runner: buy DBI @ $9.00 conf=0.60
+2026-06-09 07:44:57 | INFO     | trading_bot.risk.manager | REJECTED: buy PANL | Setup broke: signal $8.00 → market $7.23 (-9.6%, max -5%)
+2026-06-09 07:44:57 | INFO     | trading_bot.risk.manager | APPROVED: buy DBI | Extreme RVOL 14.2x | Moving up +1.8% | EMA trend bullish | MACD histogram positive
+2026-06-09 07:44:57 | INFO     | trading_bot.risk.manager | APPROVED: buy NOK | Extreme RVOL 20.7x | Trending up +0.3% | MACD histogram positive | RSI healthy (40)
+2026-06-09 07:44:57 | INFO     | trading_bot.risk.manager | APPROVED: buy AMPG | Extreme RVOL 4.8x | Strong move +1.3% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-09 07:44:57 | INFO     | trading_bot.risk.manager | APPROVED: buy DBI | [BREAKOUT] Score:6/12 RVOL:12.2x | Confirmed | Chg:+1.8%
+2026-06-09 07:44:57 | INFO     | trading_bot.engine   | PREMARKET REJECT: DBI score=6 (need score>=60)
+2026-06-09 07:44:57 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 977 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ PANL: score 75/100 — Momentum BUY: EMA trend, breakout>7.28, Vol=9.7x
+  ✅ DBI: score 80/100 — Extreme RVOL 14.2x | Moving 
+2026-06-09 07:44:58 | WARNING  | trading_bot.engine   | SLOW CYCLE (204.6s total): update_data=183.4s, update_scalp=16.6s
+2026-06-09 07:44:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-09 07:45:00 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: DBI — wide spread 2.1% (>2% for $9.00)
+2026-06-09 07:45:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
