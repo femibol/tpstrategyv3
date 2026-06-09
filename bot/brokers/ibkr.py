@@ -115,6 +115,29 @@ class IBKRBroker(BaseBroker):
             risk_cfg.get("ibkr_routing_exchange", "SMART")
         )
 
+        # Leveraged/inverse ETF class filter — keyword match on the fund's
+        # registered longName from scanner contractDetails. Replaces the
+        # ticker blocklist as the primary defense (the list kept leaking:
+        # HIBS -$375 while ON the list, TSLL slipped through). Keywords are
+        # uppercase substrings; spaced variants (" BULL ") avoid false
+        # positives on company names like "Bullfrog AI". Overridable via
+        # risk.leveraged_etf_name_keywords in settings.yaml.
+        self._leveraged_etf_keywords = [
+            str(k).upper() for k in risk_cfg.get(
+                "leveraged_etf_name_keywords",
+                [
+                    "1.25X", "1.5X", "2X", "3X", "4X", "-1X",
+                    # "ULTRA " alone would false-positive on real companies
+                    # (Ultra Clean Holdings/UCTT) — scope to ProShares.
+                    "ULTRAPRO", "ULTRASHORT", "PROSHARES ULTRA",
+                    " BULL ", " BEAR ",
+                    "INVERSE", "LEVERAGED",
+                    "DIREXION DAILY", "DAILY TARGET",
+                    "PROSHARES SHORT", "GRANITESHARES",
+                ],
+            )
+        ]
+
         # Real-time streaming data
         self._streaming_contracts = {}   # symbol -> Contract
         self._streaming_tickers = {}     # symbol -> Ticker object
@@ -952,6 +975,23 @@ class IBKRBroker(BaseBroker):
         except Exception as e:
             log.debug(f"get_snapshot_price failed for {symbol}: {e}")
             return None
+
+    def _is_leveraged_etf_name(self, long_name):
+        """True if the fund's registered name marks it as a leveraged or
+        inverse ETF. Matched against `self._leveraged_etf_keywords`
+        (uppercase substrings). Real fund names this catches:
+          - "Direxion Daily Semiconductor Bull 3X Shares"  (SOXL)
+          - "ProShares UltraPro Short QQQ"                  (SQQQ)
+          - "Direxion Daily TSLA Bull 2X Shares"            (TSLL)
+          - "GraniteShares 2x Long NVDA Daily ETF"          (NVDL)
+          - "T-Rex 2X Inverse Tesla Daily Target ETF"       (TSLZ)
+        Padded with spaces before matching so edge keywords like " BULL "
+        hit names that BEGIN or END with the word, while still skipping
+        substrings inside real company names ("Bullfrog AI Holdings")."""
+        if not long_name:
+            return False
+        padded = f" {long_name.upper()} "
+        return any(kw in padded for kw in self._leveraged_etf_keywords)
 
     def _get_snap_price(self, contract, action):
         """Get a snapshot price for aggressive LIMIT order pricing.
@@ -2033,10 +2073,24 @@ class IBKRBroker(BaseBroker):
             self.ib.sleep(0.5)
 
             movers = []
+            skipped_leveraged = []
             for rank_data in results:
                 contract = rank_data.contractDetails.contract
                 sym = contract.symbol or ""
                 if not sym or "." in sym or len(sym) > 5:
+                    continue
+                # CLASS FILTER: drop leveraged/inverse ETFs at discovery.
+                # The ticker blocklist kept leaking (HIBS traded while ON the
+                # list 2026-06-05 -$375; TSLL slipped through 2026-06-09) and
+                # new leveraged products launch monthly — a name list can't
+                # win. The scanner's contractDetails carries the fund's
+                # longName ("Direxion Daily ... Bull 3X Shares", "ProShares
+                # UltraPro Short QQQ"), so we filter the CLASS here, before
+                # the symbol ever enters the trading universe. Zero extra
+                # network calls.
+                long_name = (rank_data.contractDetails.longName or "")
+                if self._is_leveraged_etf_name(long_name):
+                    skipped_leveraged.append(sym)
                     continue
                 # Extract what IBKR gives us from scanner
                 # rank_data has: rank, contractDetails, distance, benchmark, projection, legsStr
@@ -2047,6 +2101,11 @@ class IBKRBroker(BaseBroker):
                     "source": "ibkr_scanner",
                 })
 
+            if skipped_leveraged:
+                log.info(
+                    f"LEVERAGED ETF FILTER [{scan_code}]: dropped "
+                    f"{len(skipped_leveraged)} — {', '.join(skipped_leveraged[:10])}"
+                )
             log.info(f"IBKR scanner [{scan_code}]: {len(movers)} results")
             return movers
 

@@ -50,8 +50,12 @@ risk:
     premarket_gap: 50             # ditto
     low_float_catalyst: 40        # asymmetric bet pattern — already small by design, hold the line
     crypto_runner: 30             # bracket -6% stop, tight cap matches the small position thesis
-    # Disabled strategies (momentum, rvol_scalp) intentionally omitted —
-    # if re-enabled, add a cap below before flipping enabled: true.
+    # 2026-06-11: momentum + rvol_scalp re-enabled with tight caps after
+    # 6/11 day showed momentum CAN earn (+$170 on DAIC/LABX/RDWU lane).
+    # Class filter + slippage floor neutralize the catastrophic single-trade
+    # tail. The cap bounds the day-to-day damage from regular stop-outs.
+    momentum: 50                  # historically -$500/30d but 6/11 was +$170 — cap, don't kill
+    rvol_scalp: 40                # HIBS killer in place; cap belt-and-suspenders for the 14% WR profile
 
   # Time-of-day equity dead zones (2026-06-09 audit). Hours in ET (24h).
   # Block new equity BUY signals during these windows — the bot consistently
