@@ -2957,3 +2957,76 @@ Filtered: 1 signals rejected by risk manager
 2026-06-09 23:58:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-09 23:58:43 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
 2026-06-09 23:58:43 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
+2026-06-10 00:00:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2105: HMDS data farm connection is broken:ushmds
+2026-06-10 00:00:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:HMDS server disconnect occurred.  Attempting reconnection...
+2026-06-10 00:00:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:HMDS server connection was successful.
+2026-06-10 00:01:29 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.07, RSI=0, BB=lower, Vol=16.3x | ATOM-USD @ $1.78
+2026-06-10 00:01:29 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.12
+2026-06-10 00:01:29 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 00:01:29 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ATOM-USD @ $1.78 conf=1.00
+2026-06-10 00:01:29 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.12 conf=0.85
+2026-06-10 00:01:29 | INFO     | trading_bot.risk.manager | APPROVED: buy ATOM-USD | Mean reversion BUY: Z=-3.07, RSI=0, BB=lower, Vol=16.3x
+2026-06-10 00:01:29 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.12 → market $0.97 (-13.7%, max -3%)
+2026-06-10 00:01:29 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 923 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ATOM-USD: score 100/100 — Mean reversion BUY: Z=-3.07, RSI=0, BB=lower, Vol=16.3x
+  ✅ HAO: score 85/100 — Momentum BUY: EM
+2026-06-10 00:01:29 | WARNING  | trading_bot.engine   | SLOW CYCLE (169.7s total): update_data=132.8s, update_scalp=32.6s
+2026-06-10 00:01:30 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: ATOM-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-10 00:01:30 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: ATOM-USD entry=$1.7840 stop=$1.7806 (0.19% gap). Setting 5% minimum stop.
+2026-06-10 00:01:30 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x = 2.00% risk
+2026-06-10 00:01:30 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $454.48 → $50.00 (per-strategy ceiling)
+2026-06-10 00:01:30 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 560.53812 ATOM-USD @ $1.78 = $1,000.00 | Risk: $50.00 (0.2% of account)
+2026-06-10 00:01:30 | INFO     | trading_bot.engine   | R/R STRETCH: ATOM-USD entry=$1.7840 stop=$1.6948 (risk=$0.0892) target=$1.8056 (reward=$0.0216, R/R=0.24) — stretching target to $1.9624 for 2:1 minimum.
+2026-06-10 00:01:30 | INFO     | trading_bot.engine   | Executing ATOM-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-10 00:01:30 | INFO     | trading_bot.broker.traderspost | Routing ATOM-USD to CRYPTO webhook
+2026-06-10 00:01:30 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "ATOM-USD", "action": "buy", "sentiment": "bullish", "quantity": 560.53812, "price": 1.784, "stopLoss": {"type": "stop", "stopPrice": 1.69}, "takeProfit": {"type": "limit", "limitPrice": 1.96}}
+2026-06-10 00:01:30 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"800001c5-a2a9-4205-94b0-fa0a9d4decf8","logId":"800001c5-a2a9-4205-94b0-fa0a9d4decf8","payload":{"ticker":"ATOM-USD","action":"buy","sentiment":"bullish","quantity":560.53812,"price":1.784,"stopLoss":{"type":"stop","stopPrice":1.69},"takeProfit":{"type":"limit","limitPrice":1.96
+2026-06-10 00:01:30 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY ATOM-USD | Strategy: unknown | Qty: 560.53812 @ $1.78 = $1,000.00 | Risk: $50.00 | Reward: $100.00 | R:R 2.0:1 | Response: 200
+2026-06-10 00:01:30 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: ATOM-USD qty=560.53812. SL $1.69 / TP $1.96 managed by bot (no broker-side bracket).
+2026-06-10 00:01:30 | INFO     | trading_bot.engine   | ORDER BUY ATOM-USD via TradersPost | Qty: 560.53812 | Price: $1.78 | Cost: $1,000.00 | Stop: $1.69 (risk $50.00) | Target: $1.96 (reward $100.00) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-10 00:01:30 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: ATOM-USD**
+```
+  Entry: $1.78 x 560.53812 shares = $1,000.00
+  Stop:  $1.69 (-$50.00 | -5.0%)
+  Targets: $1.96
+  Risk/Reward: 2.0
+```
+Strategy: **mean_reversion** | Confiden
+2026-06-10 00:01:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[29]: ADA-USD(weak 3d trend (+1.1%)), ALGO-USD(weak 3d trend (-2.9%)), APT-USD(weak 3d trend (-1.6%)), AVAX-USD(weak 3d trend (-2.4%)), BONK-USD(weak 3d trend (-0.2%)), BTC-USD(weak 3d trend (-0.1%)), DOGE-USD(weak 3d trend (+0.7%)), DOT-USD(weak 3d trend (-1.6%)), ETH-USD(weak 3d trend (+2.4%)), FET-USD(weak 3d trend (-3.6%)), FLOKI-USD(weak 3d trend (+0.8%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-4.6%)), LINK-USD(weak 3d trend (+2.4%)), LTC-USD(weak 3d trend (+1.8%)), MATIC-USD(weak 3d trend (-4.4%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.5%)), SEI-USD(weak 3d trend (-2.6%)), SHIB-USD(weak 3d trend (+0.4%)), SOL-USD(weak 3d trend (+1.4%)), SUI-USD(weak 3d trend (-0.7%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-11.6%)), XRP-USD(weak 3d trend (+0.3%)) | warming=3 | neutral=3 | no_data=6
+2026-06-10 00:01:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 00:01:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 00:01:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 00:01:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 00:01:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 00:01:44 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 50 gainers, 20 gaps, 20 losers
+2026-06-10 00:01:44 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 118 low-priority equity names; max 90)
+2026-06-10 00:01:44 | INFO     | trading_bot.data.market_data | Pruned 6 stale IBKR streams — now 42/95
+2026-06-10 00:01:46 | INFO     | trading_bot.broker.ibkr | Subscribed to 6 live market data streams
+2026-06-10 00:01:46 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 00:04:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=68, breakout>2.10, higher lows, Vol=5.3x | AREC @ $2.20
+2026-06-10 00:04:25 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AREC | Score: 80 | RVOL: 366.1x | Change: +1.4% | R:R 2.7
+2026-06-10 00:04:25 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 00:04:25 | INFO     | trading_bot.engine   |   -> momentum: buy AREC @ $2.20 conf=0.90
+2026-06-10 00:04:25 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AREC @ $2.12 conf=0.80
+2026-06-10 00:04:25 | INFO     | trading_bot.risk.manager | REJECTED: buy AREC | Setup broke: signal $2.20 → market $2.12 (-3.4%, max -3%)
+2026-06-10 00:04:25 | INFO     | trading_bot.risk.manager | APPROVED: buy AREC | Extreme RVOL 366.1x | Moving up +1.4% | EMA trend bullish | MACD histogram positive
+2026-06-10 00:04:25 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — AREC
+2026-06-10 00:04:25 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1049 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ AREC: score 90/100 — Momentum BUY: EMA trend, ADX=68, breakout>2.10, higher lows,
+  ✅ AREC: score 80/100 — Extreme RVOL 3
+2026-06-10 00:04:25 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.5s total): update_data=137.8s, update_scalp=22.6s
+2026-06-10 00:04:28 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[29]: ADA-USD(weak 3d trend (+1.1%)), ALGO-USD(weak 3d trend (-2.9%)), APT-USD(weak 3d trend (-1.6%)), AVAX-USD(weak 3d trend (-2.4%)), BONK-USD(weak 3d trend (-0.2%)), BTC-USD(weak 3d trend (-0.1%)), DOGE-USD(weak 3d trend (+0.7%)), DOT-USD(weak 3d trend (-1.5%)), ETH-USD(weak 3d trend (+2.4%)), FET-USD(weak 3d trend (-3.6%)), FLOKI-USD(weak 3d trend (+0.8%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-4.6%)), LINK-USD(weak 3d trend (+2.3%)), LTC-USD(weak 3d trend (+1.8%)), MATIC-USD(weak 3d trend (-4.3%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-0.7%)), RNDR-USD(weak 3d trend (-3.5%)), SEI-USD(weak 3d trend (-3.0%)), SHIB-USD(weak 3d trend (+0.4%)), SOL-USD(weak 3d trend (+1.4%)), SUI-USD(weak 3d trend (-0.7%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-11.1%)), XRP-USD(weak 3d trend (+0.2%)) | warming=3 | neutral=3 | no_data=6
+2026-06-10 00:04:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 00:04:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 00:04:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 00:04:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 00:04:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 00:04:39 | INFO     | trading_bot.engine   | IBKR scanner: 120 unique symbols discovered | 50 gainers, 19 gaps, 20 losers
+2026-06-10 00:04:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 120 low-priority equity names; max 90)
+2026-06-10 00:04:39 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 00:04:39 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 00:04:39 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
