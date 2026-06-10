@@ -3193,3 +3193,48 @@ Signals found: 4
 2026-06-10 00:22:35 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-10 00:22:35 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-10 00:22:35 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 00:25:05 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-10 00:25:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=68, breakout>2.10, higher lows, Vol=5.3x | AREC @ $2.20
+2026-06-10 00:25:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>70.45, higher lows, Vol=7.2x | UBER @ $70.49
+2026-06-10 00:25:27 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AREC | Score: 80 | RVOL: 366.1x | Change: +1.4% | R:R 2.7
+2026-06-10 00:25:27 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LPL | Score: 80 | RVOL: 260.5x | Change: +0.4% | R:R 2.7
+2026-06-10 00:25:27 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-10 00:25:27 | INFO     | trading_bot.engine   |   -> momentum: buy AREC @ $2.20 conf=0.90
+2026-06-10 00:25:27 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $70.49 conf=1.00
+2026-06-10 00:25:27 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AREC @ $2.12 conf=0.80
+2026-06-10 00:25:27 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LPL @ $4.62 conf=0.80
+2026-06-10 00:25:27 | INFO     | trading_bot.risk.manager | REJECTED: buy AREC | Setup broke: signal $2.20 → market $2.12 (-3.4%, max -3%)
+2026-06-10 00:25:27 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: EMA cross, breakout>70.45, higher lows, Vol=7.2x
+2026-06-10 00:25:27 | INFO     | trading_bot.risk.manager | APPROVED: buy AREC | Extreme RVOL 366.1x | Moving up +1.4% | EMA trend bullish | MACD histogram positive
+2026-06-10 00:25:27 | INFO     | trading_bot.risk.manager | APPROVED: buy LPL | Extreme RVOL 260.5x | Trending up +0.4% | EMA trend bullish | MACD histogram positive
+2026-06-10 00:25:27 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — UBER, AREC, LPL
+2026-06-10 00:25:27 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1092 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ AREC: score 90/100 — Momentum BUY: EMA trend, ADX=68, breakout>2.10, higher lows,
+  ✅ UBER: score 100/100 — Momentum BUY:
+2026-06-10 00:25:28 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.8s total): update_data=150.5s, update_scalp=22.0s
+2026-06-10 00:25:31 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[29]: ADA-USD(weak 3d trend (+1.7%)), ALGO-USD(weak 3d trend (-2.9%)), APT-USD(weak 3d trend (-1.0%)), AVAX-USD(weak 3d trend (-1.8%)), BONK-USD(weak 3d trend (-0.5%)), BTC-USD(weak 3d trend (-0.0%)), DOGE-USD(weak 3d trend (+1.1%)), DOT-USD(weak 3d trend (-1.5%)), ETH-USD(weak 3d trend (+2.8%)), FET-USD(weak 3d trend (-3.3%)), FLOKI-USD(weak 3d trend (+0.8%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (-2.9%)), ICP-USD(weak 3d trend (-3.4%)), LINK-USD(weak 3d trend (+2.8%)), LTC-USD(weak 3d trend (+2.4%)), MATIC-USD(weak 3d trend (-4.2%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+0.4%)), RNDR-USD(weak 3d trend (-2.3%)), SEI-USD(weak 3d trend (-3.0%)), SHIB-USD(weak 3d trend (+0.4%)), SOL-USD(weak 3d trend (+1.9%)), SUI-USD(weak 3d trend (+0.1%)), TRX-USD(weak 3d trend (-0.7%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-10.8%)), XRP-USD(weak 3d trend (+1.0%)) | warming=3 | neutral=3 | no_data=6
+2026-06-10 00:25:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>70.45, higher lows, Vol=7.2x | UBER @ $70.49
+2026-06-10 00:25:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>70.45, higher lows, Vol=7.2x | UBER @ $70.49
+2026-06-10 00:25:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>70.45, higher lows, Vol=7.2x | UBER @ $70.49
+2026-06-10 00:25:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 00:25:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 00:25:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 00:25:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 00:25:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 00:25:41 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 50 gainers, 22 gaps, 20 losers
+2026-06-10 00:25:41 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-10 00:25:41 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 125 low-priority equity names; max 90)
+2026-06-10 00:27:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:27:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:27:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:28:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:28:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:28:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:28:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 366: No historical data query found for ticker id:803423
+2026-06-10 00:29:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:29:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:29:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 366: No historical data query found for ticker id:803424
+2026-06-10 00:29:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-10 00:29:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
