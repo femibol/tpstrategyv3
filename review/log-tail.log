@@ -17384,3 +17384,49 @@ Strategy: **momentum** | Trailing stop at $1.44 (trail 1.
 2026-06-10 15:27:37 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-10 15:27:37 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-10 15:27:37 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 15:30:41 | INFO     | trading_bot.broker.traderspost | EXIT signal for SNX-USD - bypassing rate limits
+2026-06-10 15:30:41 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
+2026-06-10 15:30:41 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "exit", "quantity": 4291.84549, "price": 0.233}
+2026-06-10 15:30:41 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"4907924b-9fca-4972-95ed-c52126827a0d","logId":"4907924b-9fca-4972-95ed-c52126827a0d","payload":{"ticker":"SNX-USD","action":"exit","quantity":4291.84549,"price":0.233}}
+2026-06-10 15:30:41 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL SNX-USD | Strategy: unknown | Qty: 4291.84549 @ $0.23 = $1,000.00 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-10 15:30:41 | INFO     | trading_bot.engine   | CLOSED SNX-USD via TradersPost | time_exit | P&L: $+0.00 | Max holding period exceeded
+2026-06-10 15:30:41 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: SNX-USD** (time_exit)
+```
+  Entry: $0.23 → Exit: $0.23
+  P&L: $+0.00 (+0.00%)
+  Shares: 4291.84549 | Value: $1,000.00
+  Hold: 1.3h
+```
+Strategy: **mean_reversion** | Max holding period
+2026-06-10 15:30:41 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SNX-USD +0.00 (274 total in history)
+2026-06-10 15:30:46 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [SNX-USD]: **NO_CHANGE**
+
+Flat trade ($0.00 P&L, 0.0% move) on mean_reversion SNX-USD. Time exit after 75min with no movement = dead market/illiquid asset. 50% WR on 14 trades is borderline. Monitor for liquidit
+2026-06-10 15:30:46 | WARNING  | trading_bot.engine   | SLOW CYCLE (194.1s total): update_data=168.3s, update_scalp=15.7s
+2026-06-10 15:30:49 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-1.8%)), ADA-USD(weak 3d trend (+2.0%)), ALGO-USD(weak 3d trend (-1.7%)), APT-USD(weak 3d trend (-5.0%)), ARB-USD(weak 3d trend (-0.8%)), AVAX-USD(weak 3d trend (-1.4%)), BONK-USD(weak 3d trend (+0.0%)), BTC-USD(weak 3d trend (+0.4%)), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-0.1%)), DOT-USD(weak 3d trend (-1.9%)), ETC-USD(weak 3d trend (-1.7%)), ETH-USD(weak 3d trend (+0.9%)), FET-USD(weak 3d trend (-7.5%)), FLOKI-USD(weak 3d trend (+1.9%)), GRT-USD(weak 3d trend (-3.1%)), HBAR-USD(weak 3d trend (-3.0%)), ICP-USD(weak 3d trend (-2.2%)), LINK-USD(weak 3d trend (+0.7%)), LTC-USD(weak 3d trend (+1.4%)), MATIC-USD(weak 3d trend (-6.8%)), NEAR-USD(weak 3d trend (+1.9%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(weak 3d trend (-4.6%)), SEI-USD(weak 3d trend (-2.1%)), SHIB-USD(weak 3d trend (+1.1%)), SOL-USD(weak 3d trend (-0.9%)), SUI-USD(weak 3d trend (+0.8%)), TIA-USD(weak 3d trend (+4.5%)), TON-USD(weak 3d trend (+2.8%)), TRX-USD(weak 3d trend (-2.9%)), UNI-USD(weak 3d trend (-2.5%)), WIF-USD(weak 3d trend (-6.9%)), XLM-USD(weak 3d trend (-8.7%)), XRP-USD(weak 3d trend (-2.5%)) | warming=2 | neutral=2 | no_data=2
+2026-06-10 15:30:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-10 15:30:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 15:30:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 15:30:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 15:30:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 15:30:59 | INFO     | trading_bot.engine   | IBKR scanner: 113 unique symbols discovered | 48 gainers, 10 gaps, 20 losers
+2026-06-10 15:30:59 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-10 15:30:59 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-10 15:30:59 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
+2026-06-10 15:30:59 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 15:30:59 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 15:30:59 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 15:34:18 | WARNING  | trading_bot.engine   | SLOW CYCLE (203.0s total): update_data=183.1s, update_scalp=15.6s
+2026-06-10 15:34:21 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-1.8%)), ADA-USD(weak 3d trend (+2.3%)), ALGO-USD(weak 3d trend (-1.7%)), APT-USD(weak 3d trend (-1.2%)), ARB-USD(weak 3d trend (-0.8%)), AVAX-USD(weak 3d trend (-1.4%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+0.9%)), DOGE-USD(weak 3d trend (+0.1%)), DOT-USD(weak 3d trend (-1.9%)), ETC-USD(weak 3d trend (-1.7%)), ETH-USD(weak 3d trend (+1.2%)), FET-USD(weak 3d trend (-7.0%)), FLOKI-USD(weak 3d trend (+1.9%)), GRT-USD(weak 3d trend (-3.1%)), HBAR-USD(weak 3d trend (-2.6%)), ICP-USD(weak 3d trend (-2.2%)), LINK-USD(weak 3d trend (+0.9%)), LTC-USD(weak 3d trend (+1.6%)), MATIC-USD(weak 3d trend (-6.3%)), NEAR-USD(weak 3d trend (+1.4%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(weak 3d trend (-4.2%)), SEI-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+1.1%)), SOL-USD(weak 3d trend (-0.3%)), SUI-USD(weak 3d trend (+0.8%)), TIA-USD(weak 3d trend (+0.3%)), TON-USD(weak 3d trend (+2.8%)), TRX-USD(weak 3d trend (-1.7%)), UNI-USD(weak 3d trend (-2.5%)), WIF-USD(weak 3d trend (-6.9%)), XLM-USD(weak 3d trend (-8.7%)), XRP-USD(weak 3d trend (-2.2%)) | warming=3 | neutral=2 | no_data=2
+2026-06-10 15:34:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-10 15:34:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 15:34:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 15:34:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 15:34:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 15:34:31 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 48 gainers, 9 gaps, 20 losers
+2026-06-10 15:34:32 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-06-10 15:34:32 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-10 15:34:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-06-10 15:34:32 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-10 15:34:32 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-10 15:34:32 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
