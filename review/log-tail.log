@@ -7200,3 +7200,58 @@ Filtered: 1 signals rejected by risk manag
 2026-06-10 07:22:31 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
 2026-06-10 07:22:32 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-10 07:22:32 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 07:25:31 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=0, BB=near, Vol=13.7x | ATOM-USD @ $1.79
+2026-06-10 07:25:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.97, Vol=20.0x | DZZ @ $2.20
+2026-06-10 07:25:31 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 07:25:31 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ATOM-USD @ $1.79 conf=0.82
+2026-06-10 07:25:31 | INFO     | trading_bot.engine   |   -> momentum: buy DZZ @ $2.20 conf=1.00
+2026-06-10 07:25:31 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
+2026-06-10 07:25:31 | INFO     | trading_bot.risk.manager | REJECTED: buy DZZ | Setup broke: signal $2.20 → market $1.98 (-9.8%, max -5%)
+2026-06-10 07:25:31 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 930 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ATOM-USD: score 82/100 — Mean reversion BUY: Z=-1.30, RSI=0, BB=near, Vol=13.7x
+  ✅ DZZ: score 100/100 — Momentum BUY: EMA
+2026-06-10 07:25:31 | WARNING  | trading_bot.engine   | SLOW CYCLE (183.9s total): update_data=163.1s, update_scalp=16.2s
+2026-06-10 07:25:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: ATOM-USD(z=-1.3 rsi=0.0 bb=MIDDLE) | WAIT[35]: AAVE-USD(weak 3d trend (-5.3%)), ADA-USD(weak 3d trend (-3.3%)), ALGO-USD(weak 3d trend (-7.7%)), APT-USD(weak 3d trend (-5.9%)), ARB-USD(weak 3d trend (-6.3%)), AVAX-USD(weak 3d trend (-3.8%)), BONK-USD(weak 3d trend (-3.0%)), BTC-USD(weak 3d trend (-2.1%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (-3.1%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (-0.4%)), FET-USD(weak 3d trend (-6.0%)), FLOKI-USD(weak 3d trend (-3.6%)), GRT-USD(weak 3d trend (-5.5%)), HBAR-USD(weak 3d trend (-4.2%)), ICP-USD(weak 3d trend (-6.0%)), LINK-USD(weak 3d trend (-1.1%)), LTC-USD(weak 3d trend (-0.6%)), MATIC-USD(weak 3d trend (-6.6%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-2.2%)), RNDR-USD(weak 3d trend (-6.8%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-2.9%)), SOL-USD(weak 3d trend (-2.0%)), SUI-USD(weak 3d trend (-2.1%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (-3.4%)), TRX-USD(weak 3d trend (-0.4%)), UNI-USD(weak 3d trend (-5.7%)), WIF-USD(weak 3d trend (-5.6%)), XLM-USD(weak 3d trend (-9.8%)), XRP-USD(weak 3d trend (-2.9%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 07:25:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=0, BB=near, Vol=13.7x | ATOM-USD @ $1.79
+2026-06-10 07:25:34 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
+2026-06-10 07:25:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=0, BB=near, Vol=13.7x | ATOM-USD @ $1.79
+2026-06-10 07:25:37 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
+2026-06-10 07:25:40 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=0, BB=near, Vol=13.7x | ATOM-USD @ $1.79
+2026-06-10 07:25:40 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 93bps < 2× cost 50bps (need 100bps)
+2026-06-10 07:25:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 07:25:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 07:25:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 07:25:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 07:25:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 07:25:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 07:25:44 | INFO     | trading_bot.engine   | IBKR scanner: 92 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 07:25:44 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-10 07:25:44 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
+2026-06-10 07:25:44 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 07:25:44 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 07:25:44 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 07:29:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.97, Vol=20.0x | DZZ @ $2.20
+2026-06-10 07:29:08 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-10 07:29:08 | INFO     | trading_bot.engine   |   -> momentum: buy DZZ @ $2.20 conf=1.00
+2026-06-10 07:29:08 | INFO     | trading_bot.risk.manager | REJECTED: buy DZZ | Setup broke: signal $2.20 → market $1.98 (-9.8%, max -5%)
+2026-06-10 07:29:08 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 942 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ DZZ: score 100/100 — Momentum BUY: EMA cross, ADX=100, breakout>1.97, Vol=20.0x
+Filtered: 1 signals rejected by risk manag
+2026-06-10 07:29:08 | WARNING  | trading_bot.engine   | SLOW CYCLE (207.6s total): update_data=186.2s, update_scalp=16.8s
+2026-06-10 07:29:11 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-5.3%)), ADA-USD(weak 3d trend (-3.2%)), ALGO-USD(weak 3d trend (-8.0%)), APT-USD(weak 3d trend (-5.9%)), ARB-USD(weak 3d trend (-6.3%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-4.4%)), BONK-USD(weak 3d trend (-3.0%)), BTC-USD(weak 3d trend (-2.1%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (-3.1%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (-0.9%)), FET-USD(weak 3d trend (-7.2%)), FLOKI-USD(weak 3d trend (-3.6%)), GRT-USD(weak 3d trend (-5.5%)), HBAR-USD(weak 3d trend (-4.5%)), ICP-USD(weak 3d trend (-6.0%)), LINK-USD(weak 3d trend (-1.0%)), LTC-USD(weak 3d trend (-0.6%)), MATIC-USD(weak 3d trend (-6.6%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-2.9%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-2.9%)), SOL-USD(weak 3d trend (-2.3%)), SUI-USD(weak 3d trend (-2.5%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (-3.4%)), TRX-USD(weak 3d trend (-0.4%)), UNI-USD(weak 3d trend (-5.7%)), WIF-USD(weak 3d trend (-6.9%)), XLM-USD(weak 3d trend (-10.6%)), XRP-USD(weak 3d trend (-2.8%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 07:29:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 07:29:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 07:29:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 07:29:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 07:29:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 07:29:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 07:29:21 | INFO     | trading_bot.engine   | IBKR scanner: 91 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 07:29:21 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 24 stale symbols across strategies
+2026-06-10 07:29:21 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 101 low-priority equity names; max 90)
+2026-06-10 07:29:21 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 07:29:21 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 07:29:21 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
