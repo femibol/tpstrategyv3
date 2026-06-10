@@ -4437,13 +4437,87 @@ class TradingEngine:
                     )
                     continue
 
+            # --- ADAPTIVE TIME EXIT (Tier 1 B, 2026-06-09) ---
+            # At max_hold / 2 ("half-life"), evaluate the position once:
+            #   - FLAT (-0.3% to +0.5%): close NOW — cull deadwood, recycle capital
+            #   - WINNING (>+0.5%): tighten trail + extend max_hold by 2x
+            #   - LOSING (<-0.3%): leave alone — stop_loss / normal time_exit handle
+            #
+            # 30d audit of 69 crypto time_exits: 39 closed near zero (deadwood
+            # that sat unproductively until force-close), 22 closed in profit
+            # mid-run (winners cut short). This rule culls the deadwood early
+            # and lets the winners breathe.
+            #
+            # Fires once per position (guarded by `_half_life_evaluated`).
+            # Disabled via `risk.adaptive_time_exit_enabled: false`.
+            if (
+                "entry_time" in pos
+                and not pos.get("_half_life_evaluated")
+                and self.config.risk_config.get("adaptive_time_exit_enabled", True)
+            ):
+                elapsed = (datetime.now(self.tz) - pos["entry_time"]).total_seconds()
+                # Compute the position's nominal max-hold in seconds.
+                max_hold_secs = 0
+                _max_hold_days = pos.get("max_hold_days", 0)
+                _max_hold_bars = pos.get("max_hold_bars", 0)
+                if _max_hold_days > 0:
+                    max_hold_secs = _max_hold_days * 86400
+                elif _max_hold_bars > 0:
+                    max_hold_secs = _max_hold_bars * pos.get("bar_seconds", 300)
+
+                if max_hold_secs > 0 and elapsed >= max_hold_secs / 2:
+                    pos["_half_life_evaluated"] = True
+                    flat_band = self.config.risk_config.get(
+                        "half_life_flat_band", [-0.003, 0.005]
+                    )
+                    extend_mult = self.config.risk_config.get(
+                        "half_life_extend_multiplier", 2.0
+                    )
+                    winner_trail = self.config.risk_config.get(
+                        "half_life_winner_trail_pct", 0.01
+                    )
+                    lo, hi = float(flat_band[0]), float(flat_band[1])
+                    if pnl_pct > hi:
+                        # WINNER: tighten trail, extend max_hold
+                        pos["trailing_stop_pct"] = min(
+                            pos.get("trailing_stop_pct", 0.02), winner_trail
+                        )
+                        pos["_half_life_extended"] = True
+                        pos["_half_life_extend_mult"] = float(extend_mult)
+                        log.info(
+                            f"HALF LIFE EXTEND: {symbol} winning {pnl_pct:+.1%} at "
+                            f"half-life — trail tightened to {winner_trail:.1%}, "
+                            f"max_hold × {extend_mult:.1f}"
+                        )
+                    elif lo <= pnl_pct <= hi:
+                        # DEADWOOD: cull now, recycle capital
+                        positions_to_close.append(
+                            (symbol, "time_exit_half_life",
+                             f"Flat at half-life ({pnl_pct:+.2%}) — recycling capital")
+                        )
+                        log.info(
+                            f"HALF LIFE CULL: {symbol} flat at {pnl_pct:+.2%} after "
+                            f"{elapsed/60:.0f}min — closing to recycle capital"
+                        )
+                        continue
+                    else:
+                        # LOSER: let stop_loss / normal time_exit handle it
+                        log.info(
+                            f"HALF LIFE LOSER: {symbol} {pnl_pct:+.1%} at half-life — "
+                            f"letting stop_loss handle"
+                        )
+
             # --- Max Holding Period ---
             if "entry_time" in pos:
                 elapsed = (datetime.now(self.tz) - pos["entry_time"]).total_seconds()
                 elapsed_days = elapsed / 86400
 
-                # Days-based hold limit (swing/momentum trades)
-                max_hold_days = pos.get("max_hold_days", 0)
+                # Days-based hold limit (swing/momentum trades).
+                # Adaptive: if HALF LIFE EXTEND fired earlier (winning at
+                # half-life), the effective max-hold doubles so the trade
+                # can keep running on the tightened trail.
+                _hl_mult = float(pos.get("_half_life_extend_mult", 1.0))
+                max_hold_days = pos.get("max_hold_days", 0) * _hl_mult
                 if max_hold_days > 0 and elapsed_days > max_hold_days:
                     # Breakout plays in profit: keep riding with trail
                     is_breakout = pos.get("breakout_play") or pos.get("source") == "prebreakout"
@@ -4478,10 +4552,12 @@ class TradingEngine:
                         )
                         continue
 
-                # Bars-based hold limit (scalp/intraday trades)
+                # Bars-based hold limit (scalp/intraday trades).
+                # Adaptive: HALF LIFE EXTEND doubles the bars budget for
+                # winners. _hl_mult was computed above (1.0 if not extended).
                 elif "max_hold_bars" in pos and pos["max_hold_bars"] > 0:
                     bar_seconds = pos.get("bar_seconds", 300)
-                    if elapsed > pos["max_hold_bars"] * bar_seconds:
+                    if elapsed > pos["max_hold_bars"] * bar_seconds * _hl_mult:
                         # Runner override: if up big, don't force exit - tighten trail instead
                         if pnl_pct >= 0.03 and not pos.get("scalp_mode"):
                             pos["trailing_stop_pct"] = min(
