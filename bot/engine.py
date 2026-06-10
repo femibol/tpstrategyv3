@@ -2103,6 +2103,36 @@ class TradingEngine:
                             )
                         approved = pre_filtered
 
+                    # Equity dead-hours filter (Tier 1 restructure 2026-06-09).
+                    # 30-day audit found two ET hours where the bot consistently
+                    # loses money on equity entries: 05:00 (premarket
+                    # slippage_reject pattern, -$203/30d) and 14:00 (early
+                    # afternoon lunch lull, -$133/30d). Block equity BUY
+                    # signals there; crypto bypasses (24/7 universe).
+                    # Config: risk.equity_dead_hours_et (list of hours).
+                    dead_hours = self.config.risk_config.get(
+                        "equity_dead_hours_et", []
+                    )
+                    if dead_hours and getattr(self, "_equity_market_open", False):
+                        now_hour = datetime.now(self.tz).hour
+                        if now_hour in dead_hours:
+                            pre_filtered = []
+                            dropped = []
+                            for sig in approved:
+                                if (sig.get("action") == "buy"
+                                        and not self._is_crypto_symbol(sig.get("symbol", ""))):
+                                    dropped.append(sig.get("symbol", "?"))
+                                    continue
+                                pre_filtered.append(sig)
+                            if dropped:
+                                log.info(
+                                    f"DEAD HOUR BLOCK ({now_hour:02d}:00 ET): "
+                                    f"dropped {len(dropped)} equity buy "
+                                    f"signal(s) — {', '.join(dropped[:10])}"
+                                    f"{'...' if len(dropped) > 10 else ''}"
+                                )
+                            approved = pre_filtered
+
                     # 7a. Pre-market / Post-market filtering: limit strategies, reduce size,
                     #     and enforce quality gate (RVOL + score minimums)
                     if getattr(self, "_in_premarket", False):

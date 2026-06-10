@@ -41,7 +41,27 @@ risk:
   # bot/risk/position_sizer.py __init__ for the mean_reversion / NEAR-USD
   # rationale (PR #197). Empty dict = disabled for all strategies.
   max_dollar_risk_per_strategy:
-    mean_reversion: 50            # 9.5:1 loss/win asymmetry seen 2026-06-04 (NEAR -$128 vs +$15 avg win)
+    # Tier 1 restructure 2026-06-09 — cap aligned to 30d track record.
+    # Proven engines unthrottled, unproven ones held back, bleeders capped tight.
+    mean_reversion: 100           # was $50. Workhorse +$722/30d crypto, 52% WR. Unthrottle.
+    rvol_momentum: 50             # neutral cap — 7 trades, near breakeven, needs more data
+    momentum_runner: 50           # neutral — silent so far; cap small until track record exists
+    prebreakout: 50               # ditto
+    premarket_gap: 50             # ditto
+    low_float_catalyst: 40        # asymmetric bet pattern — already small by design, hold the line
+    crypto_runner: 30             # bracket -6% stop, tight cap matches the small position thesis
+    # Disabled strategies (momentum, rvol_scalp) intentionally omitted —
+    # if re-enabled, add a cap below before flipping enabled: true.
+
+  # Time-of-day equity dead zones (2026-06-09 audit). Hours in ET (24h).
+  # Block new equity BUY signals during these windows — the bot consistently
+  # loses money in them per 30d data:
+  #   05:00-06:00 ET  →  premarket dead zone, slippage_reject pattern, -$203
+  #   14:00-15:00 ET  →  early afternoon lunch lull, -$133
+  # The 09:30-10:30 open hour stays OPEN — it's where most legit runners fire,
+  # even though WR is mixed.
+  # Crypto bypasses this filter entirely (24/7 universe).
+  equity_dead_hours_et: [5, 14]
   # 2026-06-05: switch to MARKET-parent server brackets on equity. IBKR
   # paper account lacks Top-of-Book subs for NASDAQ/NYSE/BATS/ARCA, so
   # LIMIT brackets sit in PendingSubmit until the bot's 15s timeout kills

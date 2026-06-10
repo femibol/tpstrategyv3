@@ -9,10 +9,16 @@
 allocation:
   smc_forever: 0.00
   mean_reversion: 0.15             # 15% — earns in sideways markets (regime detector scales up to 1.4x automatically)
-  momentum: 0.15                   # 15% — broadest trend-following strategy, catches what others miss
+  momentum: 0.00                   # DISABLED 2026-06-09 (-$500/30d, 26% WR). 80% redundant
+                                   # with momentum_runner. Its 20 hardcoded stocks
+                                   # (AAPL/MSFT/NVDA/etc.) are already covered by the
+                                   # dynamic scanner. Re-enable once momentum_runner
+                                   # has 30+ trades of data and we know its WR.
   momentum_runner: 0.30            # 30% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
   rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
-  rvol_scalp: 0.05                # 5% - Quick scalps on high-RVOL movers (premarket + regular)
+  rvol_scalp: 0.00                # DISABLED 2026-06-09. -$412/30d on 7 trades (14% WR).
+                                   # 1-min fast-path version of rvol_momentum but with no
+                                   # win edge. HIBS -$375 in 5s was via this lane.
   vwap_scalp: 0.00
   pairs_trading: 0.00
   prebreakout: 0.10               # 10% - enter BEFORE the breakout (accumulation detection, multi-bagger setups)
@@ -63,7 +69,7 @@ mean_reversion:
 # Broadest strategy: EMA crossover + ADX + volume surge. Works in any market
 # condition where individual stocks are trending, even if SPY is flat.
 momentum:
-  enabled: true
+  enabled: false  # DISABLED 2026-06-09 (-$500/30d, 26% WR) — see allocation comment
   timeframe: "5m"
   fast_ema: 8
   slow_ema: 21
@@ -183,7 +189,7 @@ rvol_momentum:
 
 # --- RVOL Scalp Strategy ---
 rvol_scalp:
-  enabled: true
+  enabled: false  # DISABLED 2026-06-09 (-$412/30d, 14% WR, HIBS -$375 here)
   timeframe: "1m"
   min_rvol: 3.0                    # Raised from 1.5 (conservative dial 2026-05-18). Scalps need extreme RVOL to overcome friction; weaker setups bleed to cost.
   min_score: 70                    # Raised from 40 → high bar for short-hold trades.
