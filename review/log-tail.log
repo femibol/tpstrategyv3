@@ -7673,3 +7673,25 @@ Signals found: 2
 2026-06-10 08:34:02 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
 2026-06-10 08:34:02 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
 2026-06-10 08:34:02 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 08:36:56 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion SELL: Z=3.30, RSI=86 | NEAR-USD @ $2.10
+2026-06-10 08:36:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>1.44, Vol=2.7x | CLWT @ $1.89
+2026-06-10 08:36:56 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 08:36:56 | INFO     | trading_bot.engine   |   -> mean_reversion: sell NEAR-USD @ $2.10 conf=1.00
+2026-06-10 08:36:56 | INFO     | trading_bot.engine   |   -> momentum: buy CLWT @ $1.89 conf=0.75
+2026-06-10 08:36:56 | INFO     | trading_bot.risk.manager | APPROVED: sell NEAR-USD | Mean reversion SELL: Z=3.30, RSI=86
+2026-06-10 08:36:56 | INFO     | trading_bot.risk.manager | REJECTED: buy CLWT | Setup broke: signal $1.89 → market $1.28 (-32.3%, max -5%)
+2026-06-10 08:36:56 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 948 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ NEAR-USD: score 100/100 — Mean reversion SELL: Z=3.30, RSI=86
+  ✅ CLWT: score 75/100 — Momentum BUY: EMA trend, breakout>1
+2026-06-10 08:36:57 | WARNING  | trading_bot.engine   | SLOW CYCLE (179.4s total): update_data=155.4s, update_scalp=18.8s
+2026-06-10 08:37:00 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[34]: AAVE-USD(weak 3d trend (-4.0%)), ADA-USD(weak 3d trend (+0.8%)), ALGO-USD(weak 3d trend (-6.8%)), APT-USD(weak 3d trend (-3.3%)), ARB-USD(weak 3d trend (-2.5%)), AVAX-USD(weak 3d trend (-0.7%)), BONK-USD(weak 3d trend (+0.2%)), BTC-USD(weak 3d trend (-0.2%)), DOGE-USD(weak 3d trend (+1.0%)), DOT-USD(weak 3d trend (-2.0%)), ETC-USD(weak 3d trend (-2.0%)), ETH-USD(weak 3d trend (+1.5%)), FET-USD(weak 3d trend (-4.5%)), FLOKI-USD(weak 3d trend (+0.0%)), GRT-USD(weak 3d trend (-2.5%)), HBAR-USD(weak 3d trend (-3.0%)), ICP-USD(weak 3d trend (-5.9%)), LINK-USD(weak 3d trend (+2.0%)), LTC-USD(weak 3d trend (+2.2%)), MATIC-USD(weak 3d trend (-5.1%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (+0.7%)), RNDR-USD(weak 3d trend (-3.1%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (+0.9%)), SOL-USD(weak 3d trend (+0.8%)), SUI-USD(weak 3d trend (+3.1%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (+0.2%)), TRX-USD(weak 3d trend (+1.8%)), UNI-USD(weak 3d trend (-0.3%)), WIF-USD(weak 3d trend (-6.9%)), XLM-USD(weak 3d trend (-7.1%)), XRP-USD(weak 3d trend (-0.2%)) | warming=1 | neutral=4 | no_data=2
+2026-06-10 08:37:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 08:37:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 08:37:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 08:37:09 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 08:37:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 08:37:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 08:37:10 | INFO     | trading_bot.engine   | IBKR scanner: 91 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 08:37:10 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 107 low-priority equity names; max 90)
