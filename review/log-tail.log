@@ -13712,3 +13712,42 @@ Strategy: **crypto_runner** | Confidence: **7
 2026-06-10 11:53:39 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
 2026-06-10 11:53:40 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-10 11:53:40 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 11:57:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion SELL: Z=2.94, RSI=84 | MATIC-USD @ $0.08
+2026-06-10 11:57:00 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-10 11:57:00 | INFO     | trading_bot.engine   |   -> mean_reversion: sell MATIC-USD @ $0.08 conf=0.98
+2026-06-10 11:57:00 | INFO     | trading_bot.risk.manager | APPROVED: sell MATIC-USD | Mean reversion SELL: Z=2.94, RSI=84
+2026-06-10 11:57:00 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1005 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ MATIC-USD: score 98/100 — Mean reversion SELL: Z=2.94, RSI=84
+Approved: 1 trades
+2026-06-10 11:57:01 | WARNING  | trading_bot.engine   | SLOW CYCLE (206.3s total): update_data=183.7s, update_scalp=16.9s, discover=5.0s
+2026-06-10 11:57:01 | INFO     | trading_bot.engine   | Webhook exit signal: routing SELL MATIC-USD through close path
+2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | EXIT signal for MATIC-USD - bypassing rate limits
+2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | Routing MATIC-USD to CRYPTO webhook
+2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "MATIC-USD", "action": "exit", "quantity": 5000, "price": 0.0807}
+2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"2b189d44-0081-4674-8304-b5edc05b1984","logId":"2b189d44-0081-4674-8304-b5edc05b1984","payload":{"ticker":"MATIC-USD","action":"exit","quantity":5000,"price":0.0807}}
+2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL MATIC-USD | Strategy: unknown | Qty: 5000 @ $0.08 = $403.50 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-10 11:57:01 | INFO     | trading_bot.engine   | CLOSED MATIC-USD via TradersPost | webhook_exit | P&L: $+0.00 | External sell signal from mean_reversion
+2026-06-10 11:57:01 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: MATIC-USD** (webhook_exit)
+```
+  Entry: $0.08 → Exit: $0.08
+  P&L: $+0.00 (+0.00%)
+  Shares: 5000 | Value: $403.50
+  Hold: 7m
+```
+Strategy: **crypto_runner** | External sell signal fro
+2026-06-10 11:57:01 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: MATIC-USD +0.00 (266 total in history)
+2026-06-10 11:57:04 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[35]: AAVE-USD(weak 3d trend (-4.0%)), ADA-USD(weak 3d trend (+1.5%)), ALGO-USD(weak 3d trend (-4.5%)), APT-USD(weak 3d trend (-4.9%)), ARB-USD(weak 3d trend (-0.5%)), AVAX-USD(weak 3d trend (-2.0%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+0.8%)), DOGE-USD(weak 3d trend (+0.0%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-0.6%)), ETH-USD(weak 3d trend (+1.1%)), FET-USD(weak 3d trend (-9.1%)), FLOKI-USD(weak 3d trend (+0.1%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-2.4%)), ICP-USD(weak 3d trend (-4.9%)), LINK-USD(weak 3d trend (+0.4%)), LTC-USD(weak 3d trend (+1.5%)), MATIC-USD(weak 3d trend (+1.5%)), NEAR-USD(weak 3d trend (+3.1%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (+1.9%)), SOL-USD(weak 3d trend (+0.0%)), SUI-USD(weak 3d trend (+0.8%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (+2.5%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (+0.0%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-6.8%)), XRP-USD(weak 3d trend (-0.7%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 11:57:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 11:57:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 11:57:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 11:57:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 11:57:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 11:57:15 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
+2026-06-10 11:57:15 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-10 11:57:15 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 24 stale symbols across strategies
+2026-06-10 11:57:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 108 low-priority equity names; max 90)
+2026-06-10 11:57:15 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 11:57:15 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 11:57:15 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
