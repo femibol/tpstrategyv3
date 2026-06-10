@@ -6511,3 +6511,29 @@ Signals found: 2
 2026-06-10 05:59:10 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
 2026-06-10 05:59:11 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
 2026-06-10 05:59:11 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 06:02:20 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.13
+2026-06-10 06:02:20 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>0.65, higher lows, Vol=2.9x | CAST @ $0.70
+2026-06-10 06:04:27 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 06:04:27 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.13 conf=0.85
+2026-06-10 06:04:27 | INFO     | trading_bot.engine   |   -> momentum: buy CAST @ $0.70 conf=0.80
+2026-06-10 06:04:27 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.13 → market $0.97 (-14.4%, max -5%)
+2026-06-10 06:04:27 | INFO     | trading_bot.risk.manager | REJECTED: buy CAST | Setup broke: signal $0.70 → market $0.65 (-7.6%, max -5%)
+2026-06-10 06:04:27 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 978 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ HAO: score 85/100 — Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x
+  ✅ CAST: score 80/100 — Momentum BUY: EMA tr
+2026-06-10 06:04:28 | WARNING  | trading_bot.engine   | SLOW CYCLE (321.7s total): update_data=166.6s, run_strategies=126.8s, update_scalp=23.8s
+2026-06-10 06:04:31 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-5.2%)), ADA-USD(weak 3d trend (-2.5%)), ALGO-USD(weak 3d trend (-7.5%)), APT-USD(weak 3d trend (-5.3%)), ARB-USD(weak 3d trend (-8.6%)), AVAX-USD(weak 3d trend (-4.7%)), BONK-USD(weak 3d trend (-3.0%)), BTC-USD(weak 3d trend (-1.8%)), CRV-USD(weak 3d trend (+4.8%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (-2.0%)), ETC-USD(weak 3d trend (-3.5%)), ETH-USD(weak 3d trend (-0.3%)), FET-USD(weak 3d trend (-4.3%)), FLOKI-USD(weak 3d trend (-4.3%)), GRT-USD(weak 3d trend (-6.4%)), HBAR-USD(weak 3d trend (-4.5%)), ICP-USD(weak 3d trend (-10.8%)), LINK-USD(weak 3d trend (-1.4%)), LTC-USD(weak 3d trend (-0.2%)), MATIC-USD(weak 3d trend (-7.1%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-2.2%)), RNDR-USD(weak 3d trend (-6.8%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-2.1%)), SOL-USD(weak 3d trend (-1.8%)), SUI-USD(weak 3d trend (-1.6%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (-3.4%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (-5.7%)), WIF-USD(weak 3d trend (-5.6%)), XLM-USD(weak 3d trend (-9.6%)), XRP-USD(weak 3d trend (-2.8%)) | warming=1 | neutral=4 | no_data=2
+2026-06-10 06:04:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 06:04:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 06:04:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 06:04:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 06:04:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 06:04:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 06:04:41 | INFO     | trading_bot.engine   | IBKR scanner: 94 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 06:04:41 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 54 stale symbols across strategies
+2026-06-10 06:04:41 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 100 low-priority equity names; max 90)
+2026-06-10 06:04:41 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
+2026-06-10 06:04:41 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
+2026-06-10 06:04:41 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
