@@ -14358,3 +14358,45 @@ Approved: 1 trades
 2026-06-10 13:12:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
 2026-06-10 13:12:07 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-10 13:12:07 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 13:15:29 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CHAI | Score: 80 | RVOL: 7.9x | Change: +0.4% | R:R 2.7
+2026-06-10 13:15:29 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: HWH | Score: 105 | RVOL: 4.0x | Change: +9.6% | R:R 4.0
+2026-06-10 13:17:15 | INFO     | trading_bot.strategy.daily_trend_rider | TREND RIDER: 1 candidates from 132 scanned — DSY
+2026-06-10 13:17:15 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 13:17:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CHAI @ $1.38 conf=0.80
+2026-06-10 13:17:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy HWH @ $1.76 conf=1.00
+2026-06-10 13:17:15 | INFO     | trading_bot.risk.manager | APPROVED: buy CHAI | Extreme RVOL 7.9x | Trending up +0.4% | EMA trend bullish | MACD histogram positive
+2026-06-10 13:17:15 | INFO     | trading_bot.risk.manager | APPROVED: buy HWH | Very high RVOL 4.0x | Strong move +9.6% | EMA trend bullish | MACD histogram positive
+2026-06-10 13:17:15 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 957 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ CHAI: score 80/100 — Extreme RVOL 7.9x | Trending up +0.4% | EMA trend bullish | 
+  ✅ HWH: score 100/100 — Very high RVOL 
+2026-06-10 13:17:16 | WARNING  | trading_bot.engine   | SLOW CYCLE (312.9s total): update_data=186.5s, run_strategies=105.6s, update_scalp=15.4s
+2026-06-10 13:17:16 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-10 13:17:18 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: CHAI spread 2.2% (price $1.38, tier max 5%) → size 1.00 × 0.97 = 0.97
+2026-06-10 13:17:18 | WARNING  | trading_bot.engine   | FALLING KNIFE BLOCK: CHAI down -25.8% today — skipping long entry (threshold: -5.0%) | Strategy: rvol_momentum
+2026-06-10 13:17:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-10 13:17:20 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: HWH spread 4.6% (price $1.76, tier max 5%) → size 1.00 × 0.57 = 0.57
+2026-06-10 13:17:20 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: HWH entry=$1.7550 stop=$1.6900 (3.70% gap). Setting 6% minimum stop.
+2026-06-10 13:17:20 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x = 1.50% risk
+2026-06-10 13:17:20 | INFO     | trading_bot.risk.position_sizer | Position size: 646 shares @ $1.75 = $1,133.73 | Risk: $68.02 (0.3% of account) [tier: 10-5000 shares]
+2026-06-10 13:17:20 | INFO     | trading_bot.engine   | RUNNER SIZING: HWH size_mult=57% — reduced from 646 to 366 shares (entry_type=n/a)
+2026-06-10 13:17:20 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: HWH live ask $1.78 has drifted 0.8% above signal $1.76 (max 0.8%) — entry R:R already invalid, skipping order.
+2026-06-10 13:17:23 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-4.6%)), ADA-USD(weak 3d trend (-0.5%)), ALGO-USD(weak 3d trend (-3.4%)), APT-USD(weak 3d trend (-5.0%)), ARB-USD(weak 3d trend (-1.7%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-3.4%)), BONK-USD(weak 3d trend (-0.7%)), BTC-USD(weak 3d trend (-0.4%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-0.6%)), ETH-USD(weak 3d trend (+0.2%)), FET-USD(weak 3d trend (-9.1%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-2.0%)), HBAR-USD(weak 3d trend (-3.4%)), ICP-USD(weak 3d trend (-4.8%)), LINK-USD(weak 3d trend (-0.6%)), LTC-USD(weak 3d trend (+0.4%)), MATIC-USD(weak 3d trend (-8.2%)), NEAR-USD(weak 3d trend (-0.4%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (-1.8%)), RNDR-USD(weak 3d trend (-7.9%)), SEI-USD(weak 3d trend (-3.6%)), SHIB-USD(weak 3d trend (+2.1%)), SOL-USD(weak 3d trend (-1.5%)), SUI-USD(weak 3d trend (-0.6%)), TIA-USD(weak 3d trend (+0.3%)), TON-USD(weak 3d trend (+2.8%)), TRX-USD(weak 3d trend (-2.6%)), UNI-USD(weak 3d trend (-0.8%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-9.6%)), XRP-USD(weak 3d trend (-2.8%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 13:17:26 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: AMEX; PEARL; NYSENAT; T24X; MEMX; EDGEA; LTSE; ISE; Need additional market data permissions - Depth: NYSE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; Top: BYX; CHX; IBEOS; PSX; OVERNIGHT; DRCTEDGE; 
+2026-06-10 13:17:26 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-10 13:17:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-10 13:17:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-10 13:17:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-10 13:17:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 13:17:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 13:17:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 13:17:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 13:17:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 13:17:34 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
+2026-06-10 13:17:35 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-06-10 13:17:35 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-10 13:17:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-10 13:17:35 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 13:17:35 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 13:17:35 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
