@@ -6956,3 +6956,32 @@ Signals found: 3
 2026-06-10 06:54:10 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
 2026-06-10 06:54:11 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-10 06:54:11 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 06:57:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.97, Vol=20.0x | DZZ @ $2.25
+2026-06-10 06:57:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.07
+2026-06-10 06:57:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>3.75, Vol=3.4x | SSII @ $3.94
+2026-06-10 06:57:02 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-10 06:57:02 | INFO     | trading_bot.engine   |   -> momentum: buy DZZ @ $2.25 conf=1.00
+2026-06-10 06:57:02 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.07 conf=0.85
+2026-06-10 06:57:02 | INFO     | trading_bot.engine   |   -> momentum: buy SSII @ $3.94 conf=0.80
+2026-06-10 06:57:02 | INFO     | trading_bot.risk.manager | REJECTED: buy DZZ | Setup broke: signal $2.25 → market $1.98 (-11.8%, max -5%)
+2026-06-10 06:57:02 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.07 → market $0.97 (-9.6%, max -5%)
+2026-06-10 06:57:02 | INFO     | trading_bot.risk.manager | REJECTED: buy SSII | Setup broke: signal $3.94 → market $3.63 (-7.9%, max -5%)
+2026-06-10 06:57:02 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 876 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ DZZ: score 100/100 — Momentum BUY: EMA cross, ADX=100, breakout>1.97, Vol=20.0x
+  ✅ HAO: score 85/100 — Momentum BUY: EMA 
+2026-06-10 06:57:03 | WARNING  | trading_bot.engine   | SLOW CYCLE (175.9s total): update_data=156.7s, update_scalp=14.9s
+2026-06-10 06:57:06 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-5.3%)), ADA-USD(weak 3d trend (-2.4%)), ALGO-USD(weak 3d trend (-7.1%)), APT-USD(weak 3d trend (-6.3%)), ARB-USD(weak 3d trend (-8.6%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-3.4%)), BONK-USD(weak 3d trend (-3.0%)), BTC-USD(weak 3d trend (-1.5%)), CRV-USD(weak 3d trend (+4.8%)), DOGE-USD(weak 3d trend (-0.4%)), DOT-USD(weak 3d trend (-3.1%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (+0.1%)), FET-USD(weak 3d trend (-5.3%)), FLOKI-USD(weak 3d trend (-3.4%)), GRT-USD(weak 3d trend (-4.5%)), HBAR-USD(weak 3d trend (-3.8%)), ICP-USD(weak 3d trend (-6.1%)), LINK-USD(weak 3d trend (-0.1%)), LTC-USD(weak 3d trend (-0.1%)), MATIC-USD(weak 3d trend (-6.2%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-2.2%)), RNDR-USD(weak 3d trend (-6.3%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-2.9%)), SOL-USD(weak 3d trend (-1.7%)), SUI-USD(weak 3d trend (-1.0%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (-3.4%)), TRX-USD(weak 3d trend (-2.6%)), UNI-USD(weak 3d trend (-5.7%)), WIF-USD(weak 3d trend (-5.6%)), XLM-USD(weak 3d trend (-9.3%)), XRP-USD(weak 3d trend (-2.3%)) | warming=2 | neutral=2 | no_data=2
+2026-06-10 06:57:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 06:57:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 06:57:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 06:57:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 06:57:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 06:57:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 06:57:15 | INFO     | trading_bot.engine   | IBKR scanner: 91 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 06:57:16 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-06-10 06:57:16 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 89 low-priority equity names; max 90)
+2026-06-10 06:57:16 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 06:57:16 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 06:57:16 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
