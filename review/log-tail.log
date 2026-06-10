@@ -5204,3 +5204,27 @@ Signals found: 2
 2026-06-10 03:38:45 | INFO     | trading_bot.engine   | IBKR scanner: 108 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
 2026-06-10 03:38:45 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
 2026-06-10 03:38:45 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 89 low-priority equity names; max 90)
+2026-06-10 03:41:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.29
+2026-06-10 03:41:43 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AREC | Score: 80 | RVOL: 366.1x | Change: +1.4% | R:R 2.7
+2026-06-10 03:41:44 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 03:41:44 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.29 conf=0.85
+2026-06-10 03:41:44 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AREC @ $2.12 conf=0.80
+2026-06-10 03:41:44 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.29 → market $0.97 (-25.0%, max -3%)
+2026-06-10 03:41:44 | INFO     | trading_bot.risk.manager | APPROVED: buy AREC | Extreme RVOL 366.1x | Moving up +1.4% | EMA trend bullish | MACD histogram positive
+2026-06-10 03:41:44 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — AREC
+2026-06-10 03:41:44 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 875 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ HAO: score 85/100 — Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x
+  ✅ AREC: score 80/100 — Extreme RVOL 366.1x 
+2026-06-10 03:41:44 | WARNING  | trading_bot.engine   | SLOW CYCLE (183.0s total): update_data=164.0s, update_scalp=14.7s
+2026-06-10 03:41:47 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[34]: AAVE-USD(weak 3d trend (-0.9%)), ADA-USD(weak 3d trend (-0.1%)), ALGO-USD(weak 3d trend (-4.7%)), APT-USD(weak 3d trend (-5.3%)), ATOM-USD(weak 3d trend (+2.9%)), AVAX-USD(weak 3d trend (-3.9%)), BONK-USD(weak 3d trend (-0.7%)), BTC-USD(weak 3d trend (-0.8%)), COMP-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-0.4%)), DOT-USD(weak 3d trend (-2.0%)), ETC-USD(weak 3d trend (-0.1%)), ETH-USD(weak 3d trend (+1.9%)), FET-USD(weak 3d trend (-4.1%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-1.0%)), HBAR-USD(weak 3d trend (-3.7%)), ICP-USD(weak 3d trend (-7.6%)), LINK-USD(weak 3d trend (+1.1%)), LTC-USD(weak 3d trend (+1.8%)), MATIC-USD(weak 3d trend (-6.3%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-6.2%)), SEI-USD(weak 3d trend (-3.0%)), SHIB-USD(weak 3d trend (-1.7%)), SOL-USD(weak 3d trend (-0.2%)), SUI-USD(weak 3d trend (+0.0%)), TON-USD(weak 3d trend (-4.5%)), TRX-USD(weak 3d trend (-0.5%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-10.3%)), XRP-USD(weak 3d trend (-1.3%)) | warming=1 | neutral=4 | no_data=3
+2026-06-10 03:41:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 03:41:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 03:41:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 03:41:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 03:41:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 03:41:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 03:41:57 | INFO     | trading_bot.engine   | IBKR scanner: 108 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 03:41:57 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-10 03:41:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 88 low-priority equity names; max 90)
