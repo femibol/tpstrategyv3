@@ -13751,3 +13751,63 @@ Strategy: **crypto_runner** | External sell signal fro
 2026-06-10 11:57:15 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-10 11:57:15 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-10 11:57:15 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 12:00:12 | INFO     | trading_bot.strategy.low_float_catalyst | LOW-FLOAT SIGNAL: ENHA @ $4.69 | RVOL 7.9x | +19.6% | float 69.25M | conf 0.80
+2026-06-10 12:00:12 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-10 12:00:12 | INFO     | trading_bot.engine   |   -> low_float_catalyst: buy ENHA @ $4.69 conf=0.80
+2026-06-10 12:00:12 | INFO     | trading_bot.risk.manager | APPROVED: buy ENHA | RVOL 7.9x | change +19.6% | float 69.2M | spread 1.06%
+2026-06-10 12:00:12 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 993 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ ENHA: score 80/100 — RVOL 7.9x | change +19.6% | float 69.2M | spread 1.06%
+Approved: 1 trades
+2026-06-10 12:00:12 | WARNING  | trading_bot.engine   | SLOW CYCLE (181.8s total): update_data=159.8s, update_scalp=16.5s
+2026-06-10 12:00:12 | INFO     | trading_bot.engine   | CYCLE #211: regime=sideways | signals=1->approved=1 | positions=1/15 | bars_warm=160/160 | equity_open=True | pm=False pwr_hr=False
+2026-06-10 12:00:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-10 12:00:14 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: ENHA spread 2.3% (price $4.69, tier max 3%) → size 1.00 × 0.84 = 0.84
+2026-06-10 12:00:14 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: ENHA EMA imbalance +0.34 ramping → score 80 → 90
+2026-06-10 12:00:14 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[low_float_catalyst] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
+2026-06-10 12:00:14 | INFO     | trading_bot.risk.position_sizer | Position size: 240 shares @ $4.72 = $1,132.80 | Risk: $98.40 (0.4% of account) [tier: 10-2000 shares]
+2026-06-10 12:00:14 | INFO     | trading_bot.engine   | RUNNER SIZING: ENHA size_mult=84% — reduced from 240 to 201 shares (entry_type=n/a)
+2026-06-10 12:00:14 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: ENHA live ask $4.74 has drifted 1.1% above signal $4.69 (max 0.8%) — entry R:R already invalid, skipping order.
+2026-06-10 12:00:17 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[35]: AAVE-USD(weak 3d trend (-4.6%)), ADA-USD(weak 3d trend (+2.0%)), ALGO-USD(weak 3d trend (-3.1%)), APT-USD(weak 3d trend (-4.9%)), ARB-USD(weak 3d trend (-0.5%)), AVAX-USD(weak 3d trend (-1.3%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+1.0%)), DOGE-USD(weak 3d trend (+0.8%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-0.6%)), ETH-USD(weak 3d trend (+2.0%)), FET-USD(weak 3d trend (-8.0%)), FLOKI-USD(weak 3d trend (+1.5%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-2.4%)), ICP-USD(weak 3d trend (-4.9%)), LINK-USD(weak 3d trend (+1.3%)), LTC-USD(weak 3d trend (+2.3%)), MATIC-USD(weak 3d trend (-6.9%)), NEAR-USD(weak 3d trend (+3.7%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (+1.9%)), SOL-USD(weak 3d trend (+0.8%)), SUI-USD(weak 3d trend (+2.1%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (+2.5%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (+0.0%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-6.3%)), XRP-USD(weak 3d trend (-0.3%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 12:00:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: PSX; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; LTSE; ISE; DRCTEDGE; 
+2026-06-10 12:00:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-10 12:00:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-10 12:00:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 12:00:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 12:00:26 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 12:00:27 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 12:00:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 12:00:28 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 11 gaps, 20 losers
+2026-06-10 12:00:28 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-10 12:00:28 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-06-10 12:00:28 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 108 low-priority equity names; max 90)
+2026-06-10 12:00:28 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-10 12:00:28 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-10 12:00:28 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 12:02:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-10 12:02:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-10 12:03:23 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=43, higher lows, Vol=0.2x | GLE @ $0.65
+2026-06-10 12:03:23 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-10 12:03:23 | INFO     | trading_bot.engine   |   -> momentum: buy GLE @ $0.65 conf=0.75
+2026-06-10 12:03:23 | INFO     | trading_bot.risk.manager | APPROVED: buy GLE | Momentum BUY: pullback entry, ADX=43, higher lows, Vol=0.2x
+2026-06-10 12:03:23 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 993 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ GLE: score 75/100 — Momentum BUY: pullback entry, ADX=43, higher lows, Vol=0.2x
+Approved: 1 trades
+2026-06-10 12:03:23 | WARNING  | trading_bot.engine   | SLOW CYCLE (179.6s total): update_data=158.9s, update_scalp=15.7s
+2026-06-10 12:03:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-10 12:03:25 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: GLE — bearish EMA imbalance -0.80
+2026-06-10 12:03:28 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[35]: AAVE-USD(weak 3d trend (-4.6%)), ADA-USD(weak 3d trend (+1.8%)), ALGO-USD(weak 3d trend (-3.1%)), APT-USD(weak 3d trend (-5.0%)), ARB-USD(weak 3d trend (-0.5%)), AVAX-USD(weak 3d trend (-1.3%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+1.0%)), DOGE-USD(weak 3d trend (+0.6%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-0.6%)), ETH-USD(weak 3d trend (+1.9%)), FET-USD(weak 3d trend (-8.0%)), FLOKI-USD(weak 3d trend (+1.5%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-2.0%)), ICP-USD(weak 3d trend (-4.9%)), LINK-USD(weak 3d trend (+1.3%)), LTC-USD(weak 3d trend (+2.0%)), MATIC-USD(weak 3d trend (-6.9%)), NEAR-USD(weak 3d trend (+3.0%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-7.9%)), SHIB-USD(weak 3d trend (+2.1%)), SOL-USD(weak 3d trend (+0.8%)), SUI-USD(weak 3d trend (+1.6%)), TIA-USD(weak 3d trend (+0.3%)), TON-USD(weak 3d trend (+2.5%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (+0.0%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-6.9%)), XRP-USD(weak 3d trend (-0.5%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 12:03:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: CHX; PSX; MEMX; EDGEA; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NYSE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Top: BYX; AMEX; PEARL; IBEOS; NYSENAT; T24X; OVERNIGHT; 
+2026-06-10 12:03:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-10 12:03:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-10 12:03:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 12:03:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 12:03:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 12:03:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 12:03:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 12:03:39 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 11 gaps, 20 losers
+2026-06-10 12:03:39 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-10 12:03:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 108 low-priority equity names; max 90)
