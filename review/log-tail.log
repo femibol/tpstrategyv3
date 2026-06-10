@@ -7255,3 +7255,67 @@ Filtered: 1 signals rejected by risk manag
 2026-06-10 07:29:21 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-10 07:29:21 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-10 07:29:21 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 07:32:07 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.94, RSI=0, BB=near, Vol=2.3x | NEAR-USD @ $2.03
+2026-06-10 07:32:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.97, Vol=20.0x | DZZ @ $2.20
+2026-06-10 07:32:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.06
+2026-06-10 07:32:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>3.75, Vol=3.4x | SSII @ $3.76
+2026-06-10 07:32:07 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-10 07:32:07 | INFO     | trading_bot.engine   |   -> mean_reversion: buy NEAR-USD @ $2.03 conf=0.92
+2026-06-10 07:32:07 | INFO     | trading_bot.engine   |   -> momentum: buy DZZ @ $2.20 conf=1.00
+2026-06-10 07:32:07 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.06 conf=0.85
+2026-06-10 07:32:07 | INFO     | trading_bot.engine   |   -> momentum: buy SSII @ $3.76 conf=0.80
+2026-06-10 07:32:07 | INFO     | trading_bot.risk.manager | APPROVED: buy NEAR-USD | Mean reversion BUY: Z=-1.94, RSI=0, BB=near, Vol=2.3x
+2026-06-10 07:32:07 | INFO     | trading_bot.risk.manager | REJECTED: buy DZZ | Setup broke: signal $2.20 → market $1.98 (-9.8%, max -5%)
+2026-06-10 07:32:07 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.06 → market $0.97 (-8.8%, max -5%)
+2026-06-10 07:32:07 | INFO     | trading_bot.risk.manager | APPROVED: buy SSII | Momentum BUY: EMA trend, breakout>3.75, Vol=3.4x
+2026-06-10 07:32:07 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 936 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ NEAR-USD: score 92/100 — Mean reversion BUY: Z=-1.94, RSI=0, BB=near, Vol=2.3x
+  ✅ DZZ: score 100/100 — Momentum BUY: EMA 
+2026-06-10 07:32:08 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.9s total): update_data=149.6s, update_scalp=16.3s
+2026-06-10 07:32:08 | INFO     | trading_bot.engine   | CYCLE #133: regime=sideways | signals=4->approved=1 | positions=0/15 | bars_warm=134/134 | equity_open=True | pm=True pwr_hr=False
+2026-06-10 07:32:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-10 07:32:11 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SSII — wide spread 13.7% (>3% for $3.76)
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: NEAR-USD(z=-1.94 rsi=0.0 bb=MIDDLE) | WAIT[35]: AAVE-USD(weak 3d trend (-5.3%)), ADA-USD(weak 3d trend (-3.1%)), ALGO-USD(weak 3d trend (-7.8%)), APT-USD(weak 3d trend (-7.1%)), ARB-USD(weak 3d trend (-6.3%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-4.4%)), BONK-USD(weak 3d trend (-3.0%)), BTC-USD(weak 3d trend (-2.1%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (-3.1%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (-0.8%)), FET-USD(weak 3d trend (-7.2%)), FLOKI-USD(weak 3d trend (-3.6%)), GRT-USD(weak 3d trend (-6.0%)), HBAR-USD(weak 3d trend (-4.5%)), ICP-USD(weak 3d trend (-6.0%)), LINK-USD(weak 3d trend (-1.0%)), LTC-USD(weak 3d trend (-0.7%)), MATIC-USD(weak 3d trend (-6.6%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-2.9%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-2.9%)), SOL-USD(weak 3d trend (-2.3%)), SUI-USD(weak 3d trend (-2.5%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (-3.4%)), TRX-USD(weak 3d trend (-0.4%)), UNI-USD(weak 3d trend (-5.7%)), WIF-USD(weak 3d trend (-6.9%)), XLM-USD(weak 3d trend (-10.6%)), XRP-USD(weak 3d trend (-2.8%)) | warming=1 | neutral=3 | no_data=2
+2026-06-10 07:32:14 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.94, RSI=0, BB=near, Vol=2.3x | NEAR-USD @ $2.03
+2026-06-10 07:32:14 | INFO     | trading_bot.risk.manager | APPROVED: buy NEAR-USD | Mean reversion BUY: Z=-1.94, RSI=0, BB=near, Vol=2.3x
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy NEAR-USD from mean_reversion conf=0.92 price=2.033 reason=Mean reversion BUY: Z=-1.94, RSI=0, BB=near, Vol=2.3x
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: NEAR-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: NEAR-USD entry=$2.0330 stop=$2.0260 (0.34% gap). Setting 5% minimum stop.
+2026-06-10 07:32:14 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x = 2.00% risk
+2026-06-10 07:32:14 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $454.48 → $50.00 (per-strategy ceiling)
+2026-06-10 07:32:14 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 491.88392 NEAR-USD @ $2.03 = $1,000.00 | Risk: $50.00 (0.2% of account)
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | R/R STRETCH: NEAR-USD entry=$2.0330 stop=$1.9313 (risk=$0.1017) target=$2.0598 (reward=$0.0268, R/R=0.26) — stretching target to $2.2363 for 2:1 minimum.
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | Executing NEAR-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-10 07:32:14 | INFO     | trading_bot.broker.traderspost | Routing NEAR-USD to CRYPTO webhook
+2026-06-10 07:32:14 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "NEAR-USD", "action": "buy", "sentiment": "bullish", "quantity": 491.88392, "price": 2.033, "stopLoss": {"type": "stop", "stopPrice": 1.93}, "takeProfit": {"type": "limit", "limitPrice": 2.24}}
+2026-06-10 07:32:14 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"f337321b-7253-4e35-a39b-c7e54546c6d5","logId":"f337321b-7253-4e35-a39b-c7e54546c6d5","payload":{"ticker":"NEAR-USD","action":"buy","sentiment":"bullish","quantity":491.88392,"price":2.033,"stopLoss":{"type":"stop","stopPrice":1.93},"takeProfit":{"type":"limit","limitPrice":2.24
+2026-06-10 07:32:14 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY NEAR-USD | Strategy: unknown | Qty: 491.88392 @ $2.03 = $1,000.00 | Risk: $50.00 | Reward: $100.00 | R:R 2.0:1 | Response: 200
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: NEAR-USD qty=491.88392. SL $1.93 / TP $2.24 managed by bot (no broker-side bracket).
+2026-06-10 07:32:14 | INFO     | trading_bot.engine   | ORDER BUY NEAR-USD via TradersPost | Qty: 491.88392 | Price: $2.03 | Cost: $1,000.00 | Stop: $1.93 (risk $50.00) | Target: $2.24 (reward $100.00) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-10 07:32:14 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: NEAR-USD**
+```
+  Entry: $2.03 x 491.88392 shares = $1,000.00
+  Stop:  $1.93 (-$50.00 | -5.0%)
+  Targets: $2.24
+  Risk/Reward: 2.0
+```
+Strategy: **mean_reversion** | Confiden
+2026-06-10 07:32:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Top: PEARL; CHX; IBEOS; NYSENAT; PSX; T24X; MEMX; OVERNIGHT; EDGEA; LTSE; ISE; 
+2026-06-10 07:32:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-10 07:32:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-10 07:32:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 07:32:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 07:32:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 07:32:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-10 07:32:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-10 07:32:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 07:32:24 | INFO     | trading_bot.engine   | IBKR scanner: 93 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-10 07:32:24 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 60 stale symbols across strategies
+2026-06-10 07:32:24 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
+2026-06-10 07:32:24 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-10 07:32:25 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-10 07:32:25 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-10 07:34:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-10 07:34:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
