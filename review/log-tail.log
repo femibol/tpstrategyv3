@@ -2900,3 +2900,60 @@ Signals found: 2
 2026-06-09 23:50:52 | INFO     | trading_bot.broker.ibkr | Subscribed to 48 live market data streams
 2026-06-09 23:50:52 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
 2026-06-09 23:53:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.10
+2026-06-09 23:55:07 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-09 23:55:07 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.10 conf=0.85
+2026-06-09 23:55:07 | INFO     | trading_bot.engine   | Scanner cycle complete - 164 symbols scanned
+2026-06-09 23:55:07 | INFO     | trading_bot.engine   | Initial scan complete - main loop starting
+2026-06-09 23:55:07 | INFO     | trading_bot.broker.traderspost | EXIT signal for NEAR-USD - bypassing rate limits
+2026-06-09 23:55:07 | INFO     | trading_bot.broker.traderspost | Routing NEAR-USD to CRYPTO webhook
+2026-06-09 23:55:07 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "NEAR-USD", "action": "exit", "quantity": 465.98322, "price": 2.159}
+2026-06-09 23:55:07 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"508a21b2-0bb8-43b7-af5a-00bc210af4c5","logId":"508a21b2-0bb8-43b7-af5a-00bc210af4c5","payload":{"ticker":"NEAR-USD","action":"exit","quantity":465.98322,"price":2.159}}
+2026-06-09 23:55:07 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL NEAR-USD | Strategy: unknown | Qty: 465.98322 @ $2.16 = $1,006.06 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-09 23:55:07 | INFO     | trading_bot.engine   | CLOSED NEAR-USD via TradersPost | trailing_stop | P&L: $+6.06 | Trail stop at $2.16 | P&L: +0.6% | trail: 3.4%
+2026-06-09 23:55:07 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: NEAR-USD** (trailing_stop)
+```
+  Entry: $2.15 → Exit: $2.16
+  P&L: $+6.06 (+0.61%)
+  Shares: 465.98322 | Value: $1,006.06
+  Hold: 1.3h
+```
+Strategy: **mean_reversion** | Trail stop at 
+2026-06-09 23:55:08 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: NEAR-USD +6.06 (260 total in history)
+2026-06-09 23:55:10 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [NEAR-USD]: **BOOST:mean_reversion**
+
+62% win rate on 13 trades is solid. NEAR-USD responded cleanly. Trailing stop captured +0.6% in 78min — working as intended. No adjustment needed; reinforce this pattern.
+2026-06-09 23:55:10 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'mean_reversion' (total boosts: 1)
+2026-06-09 23:55:15 | INFO     | trading_bot.engine   | AI INSIGHT: **Stop trading during low-conviction setups across too many strategies simultaneously.**
+
+With 4 different strategies running concurrently and a net loss of $168.62 on a 40% win rate, you're diluting 
+2026-06-09 23:55:15 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: AI Quick Insight (after 260 trades):
+**Stop trading during low-conviction setups across too many strategies simultaneously.**
+
+With 4 different strategies running concurrently and a net
+2026-06-09 23:55:15 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[29]: ADA-USD(weak 3d trend (+1.1%)), ALGO-USD(weak 3d trend (-2.9%)), APT-USD(weak 3d trend (-1.6%)), AVAX-USD(weak 3d trend (-2.4%)), BONK-USD(weak 3d trend (-0.2%)), BTC-USD(weak 3d trend (-0.2%)), DOGE-USD(weak 3d trend (+0.8%)), DOT-USD(weak 3d trend (-1.6%)), ETH-USD(weak 3d trend (+2.2%)), FET-USD(weak 3d trend (-3.6%)), FLOKI-USD(weak 3d trend (+0.8%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-3.6%)), LINK-USD(weak 3d trend (+2.5%)), LTC-USD(weak 3d trend (+1.4%)), MATIC-USD(weak 3d trend (-4.3%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.5%)), SEI-USD(weak 3d trend (-0.8%)), SHIB-USD(weak 3d trend (+0.6%)), SOL-USD(weak 3d trend (+1.2%)), SUI-USD(weak 3d trend (-0.9%)), TRX-USD(weak 3d trend (-0.8%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-11.6%)), XRP-USD(weak 3d trend (+0.0%)) | warming=3 | neutral=4 | no_data=6
+2026-06-09 23:55:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-09 23:55:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 23:55:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 23:55:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-09 23:55:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 23:55:25 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
+2026-06-09 23:55:25 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
+2026-06-09 23:58:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.12
+2026-06-09 23:58:30 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-09 23:58:30 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.12 conf=0.85
+2026-06-09 23:58:30 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.12 → market $0.97 (-13.7%, max -3%)
+2026-06-09 23:58:30 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 923 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ HAO: score 85/100 — Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x
+Filtered: 1 signals rejected by risk manager
+2026-06-09 23:58:31 | WARNING  | trading_bot.engine   | SLOW CYCLE (189.3s total): update_data=168.1s, update_scalp=16.6s
+2026-06-09 23:58:31 | INFO     | trading_bot.engine   | CYCLE #1: regime=sideways | signals=1->approved=0 | positions=0/15 | bars_warm=62/62 | equity_open=False | pm=False pwr_hr=False
+2026-06-09 23:58:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[30]: ADA-USD(weak 3d trend (+1.1%)), ALGO-USD(weak 3d trend (-2.9%)), APT-USD(weak 3d trend (-1.6%)), ATOM-USD(needs vol>1.3x), AVAX-USD(weak 3d trend (-2.4%)), BONK-USD(weak 3d trend (-0.2%)), BTC-USD(weak 3d trend (-0.1%)), DOGE-USD(weak 3d trend (+0.7%)), DOT-USD(weak 3d trend (-1.6%)), ETH-USD(weak 3d trend (+2.4%)), FET-USD(weak 3d trend (-3.6%)), FLOKI-USD(weak 3d trend (+0.8%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-4.6%)), LINK-USD(weak 3d trend (+2.4%)), LTC-USD(weak 3d trend (+1.8%)), MATIC-USD(weak 3d trend (-4.4%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.5%)), SEI-USD(weak 3d trend (-2.6%)), SHIB-USD(weak 3d trend (+0.4%)), SOL-USD(weak 3d trend (+1.4%)), SUI-USD(weak 3d trend (-0.7%)), TRX-USD(weak 3d trend (-0.8%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-11.6%)), XRP-USD(weak 3d trend (+0.5%)) | warming=2 | neutral=4 | no_data=6
+2026-06-09 23:58:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-09 23:58:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 23:58:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 23:58:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-09 23:58:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 23:58:43 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
+2026-06-09 23:58:43 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
