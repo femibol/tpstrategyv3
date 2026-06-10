@@ -15101,3 +15101,68 @@ Reas
 2026-06-10 13:44:14 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
 2026-06-10 13:44:14 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
 2026-06-10 13:44:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 91 low-priority equity names; max 90)
+2026-06-10 13:46:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-10 13:46:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-10 13:47:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=43, higher lows, Vol=1.0x | CLWT @ $1.37
+2026-06-10 13:47:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: HWH | Score: 75 | RVOL: 4.4x | Change: +0.5% | R:R 2.7
+2026-06-10 13:47:16 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-10 13:47:16 | INFO     | trading_bot.engine   |   -> momentum: buy CLWT @ $1.37 conf=0.75
+2026-06-10 13:47:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy HWH @ $1.69 conf=0.75
+2026-06-10 13:47:16 | INFO     | trading_bot.risk.manager | REJECTED: buy CLWT | Already in position: CLWT
+2026-06-10 13:47:16 | INFO     | trading_bot.risk.manager | APPROVED: buy HWH | Very high RVOL 4.4x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
+2026-06-10 13:47:16 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 896 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ CLWT: score 75/100 — Momentum BUY: pullback entry, ADX=43, higher lows, Vol=1.0x
+  ✅ HWH: score 75/100 — Very high RVOL 4.
+2026-06-10 13:47:17 | WARNING  | trading_bot.engine   | SLOW CYCLE (187.9s total): update_data=168.1s, update_scalp=14.4s
+2026-06-10 13:47:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-10 13:47:19 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
+2026-06-10 13:47:19 | INFO     | trading_bot.risk.position_sizer | Position size: 671 shares @ $1.69 = $1,133.99 | Risk: $60.39 (0.3% of account) [tier: 10-5000 shares]
+2026-06-10 13:47:19 | INFO     | trading_bot.engine   | Executing HWH via IBKR...
+2026-06-10 13:47:19 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: HWH → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-10 13:47:19 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: HWH (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: Submitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/554.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/554.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: Submitted | Filled: 554.0/671.0 | AvgPrice: $1.69
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: Submitted | Filled: 0.0/554.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: Filled | Filled: 671.0/671.0 | AvgPrice: $1.69
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: ValidationError | Filled: 0.0/671.0
+2026-06-10 13:47:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 404: Order held while securities are located.
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | Order update: HWH | Status: PreSubmitted | Filled: 0.0/671.0
+2026-06-10 13:47:20 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 671 HWH @ LIMIT $1.72 | TP: $1.94 | SL: $1.60 | Parent ID: 844015
+2026-06-10 13:47:21 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 671/671 HWH @ $1.6900 | signal $1.7200 | slippage -1.74% | parent=MARKET
+2026-06-10 13:47:21 | INFO     | trading_bot.engine   | BRACKET ORDER active: HWH | SL: $1.60 | TP: $1.94 (managed by IBKR server-side)
+2026-06-10 13:47:21 | INFO     | trading_bot.engine   | ORDER BUY HWH via IBKR | Qty: 671 | Price: $1.69 | Cost: $1,133.99 | Stop: $1.60 (risk $60.39) | Target: $1.94 (reward $167.75) | R:R 2.8:1 | Strategy: rvol_momentum
+2026-06-10 13:47:21 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: HWH**
+```
+  Entry: $1.69 x 671 shares = $1,133.99
+  Stop:  $1.60 (-$60.39 | -5.3%)
+  Targets: $1.78, $1.88, $2.07
+  Risk/Reward: 2.7
+```
+Strategy: **rvol_momentum** | Confid
+2026-06-10 13:47:22 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY HWH qty=671 @ $1.69 → primary webhook (200)
+2026-06-10 13:47:22 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
+2026-06-10 13:47:25 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-2.1%)), ADA-USD(weak 3d trend (-1.8%)), ALGO-USD(weak 3d trend (-3.4%)), APT-USD(weak 3d trend (-5.0%)), ARB-USD(weak 3d trend (-4.2%)), AVAX-USD(weak 3d trend (-3.7%)), BONK-USD(weak 3d trend (-1.2%)), BTC-USD(weak 3d trend (-0.6%)), DOGE-USD(weak 3d trend (-1.9%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-1.1%)), ETH-USD(weak 3d trend (-0.5%)), FET-USD(weak 3d trend (-9.4%)), FLOKI-USD(weak 3d trend (-1.9%)), GRT-USD(weak 3d trend (-3.1%)), HBAR-USD(weak 3d trend (-4.3%)), ICP-USD(weak 3d trend (-4.8%)), LINK-USD(weak 3d trend (-1.1%)), LTC-USD(weak 3d trend (-0.8%)), MATIC-USD(weak 3d trend (-8.7%)), NEAR-USD(weak 3d trend (-0.4%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (-2.9%)), RNDR-USD(weak 3d trend (-8.6%)), SEI-USD(weak 3d trend (-3.5%)), SHIB-USD(weak 3d trend (+1.1%)), SOL-USD(weak 3d trend (-2.3%)), SUI-USD(weak 3d trend (-2.0%)), TIA-USD(weak 3d trend (+0.3%)), TON-USD(weak 3d trend (+2.8%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (-0.8%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-10.2%)), XRP-USD(weak 3d trend (-3.4%)) | warming=1 | neutral=4 | no_data=2
+2026-06-10 13:47:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; CHX; NYSENAT; PSX; T24X; MEMX; DRCTEDGE; Need additional market data permissions - Depth: BATS; BEX; Unknown market data permissions - Depth: NASDAQ; ARCA; NYSE; Top: IBEOS; OVERNIGHT; EDGEA; LTSE; ISE; 
+2026-06-10 13:47:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; NYSE; Unknown market data permissions - Depth: BATS; BEX; IEX; 
+2026-06-10 13:47:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; NYSE; Unknown market data permissions - Depth: BATS; BEX; IEX; 
+2026-06-10 13:47:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-10 13:47:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 13:47:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 13:47:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 13:47:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 13:47:35 | INFO     | trading_bot.engine   | IBKR scanner: 110 unique symbols discovered | 48 gainers, 10 gaps, 20 losers
+2026-06-10 13:47:35 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-06-10 13:47:35 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-10 13:47:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 91 low-priority equity names; max 90)
+2026-06-10 13:47:35 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-10 13:47:35 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-10 13:47:35 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
