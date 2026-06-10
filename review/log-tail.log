@@ -3940,3 +3940,32 @@ Signals found: 3
 2026-06-10 01:39:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-10 01:39:48 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
 2026-06-10 01:39:48 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 103 low-priority equity names; max 90)
+2026-06-10 01:42:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.26
+2026-06-10 01:42:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
+2026-06-10 01:42:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LPL | Score: 80 | RVOL: 260.5x | Change: +0.4% | R:R 2.7
+2026-06-10 01:42:59 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-10 01:42:59 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.26 conf=0.85
+2026-06-10 01:42:59 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $70.31 conf=0.95
+2026-06-10 01:42:59 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LPL @ $4.62 conf=0.80
+2026-06-10 01:42:59 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.26 → market $0.97 (-23.2%, max -3%)
+2026-06-10 01:42:59 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: EMA cross, higher lows, Vol=7.2x
+2026-06-10 01:42:59 | INFO     | trading_bot.risk.manager | APPROVED: buy LPL | Extreme RVOL 260.5x | Trending up +0.4% | EMA trend bullish | MACD histogram positive
+2026-06-10 01:42:59 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — UBER, LPL
+2026-06-10 01:42:59 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 960 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ HAO: score 85/100 — Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x
+  ✅ UBER: score 95/100 — Momentum BUY: EMA cr
+2026-06-10 01:42:59 | WARNING  | trading_bot.engine   | SLOW CYCLE (194.8s total): update_data=171.7s, update_scalp=19.0s
+2026-06-10 01:43:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[31]: ADA-USD(weak 3d trend (+0.1%)), ALGO-USD(weak 3d trend (-3.3%)), APT-USD(weak 3d trend (-3.8%)), ATOM-USD(weak 3d trend (+4.6%)), AVAX-USD(weak 3d trend (-4.1%)), BONK-USD(weak 3d trend (-0.7%)), BTC-USD(weak 3d trend (-1.0%)), DOGE-USD(weak 3d trend (-0.6%)), DOT-USD(weak 3d trend (-1.4%)), ETH-USD(weak 3d trend (+1.2%)), FET-USD(weak 3d trend (-5.2%)), FLOKI-USD(weak 3d trend (-1.8%)), GRT-USD(weak 3d trend (-3.5%)), HBAR-USD(weak 3d trend (-4.2%)), ICP-USD(weak 3d trend (-7.3%)), LINK-USD(weak 3d trend (+0.8%)), LTC-USD(weak 3d trend (+1.5%)), MATIC-USD(weak 3d trend (-5.8%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-1.1%)), RNDR-USD(weak 3d trend (-5.5%)), SEI-USD(weak 3d trend (-3.0%)), SHIB-USD(weak 3d trend (-0.9%)), SOL-USD(weak 3d trend (-0.5%)), SUI-USD(weak 3d trend (-2.0%)), TON-USD(weak 3d trend (-3.2%)), TRX-USD(weak 3d trend (-0.7%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-12.7%)), XRP-USD(weak 3d trend (-0.9%)) | warming=3 | neutral=2 | no_data=5
+2026-06-10 01:43:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
+2026-06-10 01:43:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
+2026-06-10 01:43:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
+2026-06-10 01:43:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-10 01:43:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-10 01:43:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-10 01:43:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-10 01:43:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-10 01:43:12 | INFO     | trading_bot.engine   | IBKR scanner: 124 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
+2026-06-10 01:43:12 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-10 01:43:12 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 101 low-priority equity names; max 90)
