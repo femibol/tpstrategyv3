@@ -1587,3 +1587,32 @@ Filtered: 1 signals rejected by risk manager
 2026-06-09 21:14:48 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
 2026-06-09 21:14:48 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-09 21:14:48 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-09 21:18:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>0.37, Vol=3.4x | CHOW @ $0.61
+2026-06-09 21:18:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>108.54, higher lows, Vol=3.9x | RKLB @ $108.88
+2026-06-09 21:18:08 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-09 21:18:08 | INFO     | trading_bot.engine   |   -> momentum: buy CHOW @ $0.61 conf=0.75
+2026-06-09 21:18:08 | INFO     | trading_bot.engine   |   -> momentum: buy RKLB @ $108.88 conf=0.80
+2026-06-09 21:18:08 | INFO     | trading_bot.risk.manager | REJECTED: buy CHOW | Setup broke: signal $0.61 → market $0.35 (-43.3%, max -3%)
+2026-06-09 21:18:08 | INFO     | trading_bot.risk.manager | APPROVED: buy RKLB | Momentum BUY: EMA trend, breakout>108.54, higher lows, Vol=3.9x
+2026-06-09 21:18:08 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — RKLB
+2026-06-09 21:18:08 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 960 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ CHOW: score 75/100 — Momentum BUY: EMA trend, breakout>0.37, Vol=3.4x
+  ✅ RKLB: score 80/100 — Momentum BUY: EMA trend, br
+2026-06-09 21:18:09 | WARNING  | trading_bot.engine   | SLOW CYCLE (204.0s total): update_data=183.4s, update_scalp=16.2s
+2026-06-09 21:18:12 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[34]: AAVE-USD(weak 3d trend (+0.4%)), ADA-USD(weak 3d trend (+3.5%)), ALGO-USD(weak 3d trend (-2.6%)), APT-USD(weak 3d trend (+0.3%)), ARB-USD(weak 3d trend (+1.4%)), AVAX-USD(weak 3d trend (-1.7%)), BONK-USD(weak 3d trend (+0.5%)), BTC-USD(weak 3d trend (+0.5%)), DOGE-USD(weak 3d trend (+1.7%)), DOT-USD(weak 3d trend (+0.9%)), ETC-USD(weak 3d trend (+0.9%)), ETH-USD(weak 3d trend (+2.9%)), FET-USD(weak 3d trend (-2.4%)), FLOKI-USD(weak 3d trend (+1.9%)), GRT-USD(weak 3d trend (-2.5%)), HBAR-USD(weak 3d trend (-1.6%)), ICP-USD(weak 3d trend (-1.1%)), JUP-USD(weak 3d trend (-10.6%)), LINK-USD(weak 3d trend (+4.5%)), LTC-USD(weak 3d trend (+2.7%)), MATIC-USD(weak 3d trend (-2.4%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (+1.8%)), RNDR-USD(weak 3d trend (-0.5%)), SEI-USD(weak 3d trend (-0.8%)), SHIB-USD(weak 3d trend (+0.4%)), SOL-USD(weak 3d trend (+2.2%)), SUI-USD(weak 3d trend (+1.4%)), TON-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-0.5%)), UNI-USD(weak 3d trend (-1.9%)), WIF-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-12.0%)), XRP-USD(weak 3d trend (+2.1%)) | warming=1 | neutral=6 | no_data=1
+2026-06-09 21:18:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>108.54, higher lows, Vol=3.9x | RKLB @ $108.88
+2026-06-09 21:18:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>108.54, higher lows, Vol=3.9x | RKLB @ $108.88
+2026-06-09 21:18:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>108.54, higher lows, Vol=3.9x | RKLB @ $108.88
+2026-06-09 21:18:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-09 21:18:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-09 21:18:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-09 21:18:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-09 21:18:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-09 21:18:21 | INFO     | trading_bot.engine   | IBKR scanner: 110 unique symbols discovered | 50 gainers, 14 gaps, 20 losers
+2026-06-09 21:18:22 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 42 stale symbols across strategies
+2026-06-09 21:18:22 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 98 low-priority equity names; max 90)
+2026-06-09 21:18:22 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 44/95
+2026-06-09 21:18:22 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
+2026-06-09 21:18:22 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
