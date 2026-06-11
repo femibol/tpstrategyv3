@@ -1,55 +1,3 @@
-2026-06-10 01:14:07 | INFO     | trading_bot.engine   | IBKR scanner: 122 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
-2026-06-10 01:14:07 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
-2026-06-10 01:17:00 | INFO     | trading_bot.broker.traderspost | EXIT signal for ATOM-USD - bypassing rate limits
-2026-06-10 01:17:00 | INFO     | trading_bot.broker.traderspost | Routing ATOM-USD to CRYPTO webhook
-2026-06-10 01:17:00 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "ATOM-USD", "action": "exit", "quantity": 560.53812, "price": 1.784}
-2026-06-10 01:17:01 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"250b892e-62ef-4152-b898-5e666d6fd127","logId":"250b892e-62ef-4152-b898-5e666d6fd127","payload":{"ticker":"ATOM-USD","action":"exit","quantity":560.53812,"price":1.784}}
-2026-06-10 01:17:01 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL ATOM-USD | Strategy: unknown | Qty: 560.53812 @ $1.78 = $1,000.00 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
-2026-06-10 01:17:01 | INFO     | trading_bot.engine   | CLOSED ATOM-USD via TradersPost | time_exit | P&L: $+0.00 | Max holding period exceeded
-2026-06-10 01:17:01 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: ATOM-USD** (time_exit)
-```
-  Entry: $1.78 → Exit: $1.78
-  P&L: $+0.00 (+0.00%)
-  Shares: 560.53812 | Value: $1,000.00
-  Hold: 1.3h
-```
-Strategy: **mean_reversion** | Max holding period
-2026-06-10 01:17:01 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: ATOM-USD +0.00 (261 total in history)
-2026-06-10 01:17:04 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [ATOM-USD]: **AVOID:mean_reversion_time_exit**
-
-Zero P&L after 76min hold = strategy found no edge. 54% win rate but time_exits suggest targets/stops need tightening. Stop wasting time on flat ATOM mean_reversion
-2026-06-10 01:17:04 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'mean_reversion_time_exit' (total avoids: 1)
-2026-06-10 01:17:04 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.29
-2026-06-10 01:17:04 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
-2026-06-10 01:17:04 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LPL | Score: 80 | RVOL: 260.5x | Change: +0.4% | R:R 2.7
-2026-06-10 01:17:04 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-10 01:17:04 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.29 conf=0.85
-2026-06-10 01:17:04 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $70.31 conf=0.95
-2026-06-10 01:17:04 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LPL @ $4.62 conf=0.80
-2026-06-10 01:17:04 | INFO     | trading_bot.risk.manager | REJECTED: buy HAO | Setup broke: signal $1.29 → market $0.97 (-25.0%, max -3%)
-2026-06-10 01:17:04 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: EMA cross, higher lows, Vol=7.2x
-2026-06-10 01:17:04 | INFO     | trading_bot.risk.manager | APPROVED: buy LPL | Extreme RVOL 260.5x | Trending up +0.4% | EMA trend bullish | MACD histogram positive
-2026-06-10 01:17:04 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — UBER, LPL
-2026-06-10 01:17:04 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ HAO: score 85/100 — Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x
-  ✅ UBER: score 95/100 — Momentum BUY: EMA cr
-2026-06-10 01:17:05 | WARNING  | trading_bot.engine   | SLOW CYCLE (180.9s total): update_data=156.7s, update_scalp=16.3s
-2026-06-10 01:17:08 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[31]: ADA-USD(weak 3d trend (-0.1%)), ALGO-USD(weak 3d trend (-3.4%)), APT-USD(weak 3d trend (-3.2%)), AVAX-USD(weak 3d trend (-3.4%)), BONK-USD(weak 3d trend (-0.7%)), BTC-USD(weak 3d trend (-1.5%)), DOGE-USD(weak 3d trend (-0.2%)), DOT-USD(weak 3d trend (-1.4%)), ETH-USD(weak 3d trend (+0.9%)), FET-USD(weak 3d trend (-5.5%)), FLOKI-USD(weak 3d trend (-1.8%)), GRT-USD(weak 3d trend (-3.5%)), HBAR-USD(weak 3d trend (-3.8%)), ICP-USD(weak 3d trend (-5.7%)), LINK-USD(weak 3d trend (+0.8%)), LTC-USD(weak 3d trend (+1.5%)), MATIC-USD(weak 3d trend (-4.8%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-0.7%)), RNDR-USD(weak 3d trend (-4.8%)), SEI-USD(weak 3d trend (-3.0%)), SHIB-USD(weak 3d trend (-0.9%)), SOL-USD(weak 3d trend (-0.4%)), SUI-USD(weak 3d trend (-1.9%)), TON-USD(weak 3d trend (-3.1%)), TRX-USD(weak 3d trend (-0.7%)), UNI-USD(weak 3d trend (-0.6%)), WIF-USD(weak 3d trend (-3.2%)), XLM-USD(weak 3d trend (-11.9%)), XRP-USD(weak 3d trend (-0.8%)) | warming=3 | neutral=3 | no_data=5
-2026-06-10 01:17:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
-2026-06-10 01:17:11 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
-2026-06-10 01:17:14 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
-2026-06-10 01:17:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-10 01:17:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-10 01:17:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-10 01:17:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-10 01:17:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-10 01:17:17 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 50 gainers, 21 gaps, 20 losers
-2026-06-10 01:17:17 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
-2026-06-10 01:20:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=31, breakout>0.97, Vol=2.8x | HAO @ $1.29
-2026-06-10 01:20:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, higher lows, Vol=7.2x | UBER @ $70.31
-2026-06-10 01:20:07 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LPL | Score: 80 | RVOL: 260.5x | Change: +0.4% | R:R 2.7
 2026-06-10 01:20:07 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
 2026-06-10 01:20:07 | INFO     | trading_bot.engine   |   -> momentum: buy HAO @ $1.29 conf=0.85
 2026-06-10 01:20:07 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $70.31 conf=0.95
@@ -19998,3 +19946,55 @@ Signals found: 4
 2026-06-11 03:52:15 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-11 03:52:15 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
 2026-06-11 03:52:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-06-11 03:55:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x | SNAP @ $5.40
+2026-06-11 03:55:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.66
+2026-06-11 03:55:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: IONZ | Score: 80 | RVOL: 328.6x | Change: +1.6% | R:R 2.7
+2026-06-11 03:55:34 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: MTVA | Score: 100 | RVOL: 8.2x | Change: +1.6% | R:R 2.7 | Target: $1.99 (+1.2%)
+2026-06-11 03:55:34 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-11 03:55:34 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.40 conf=0.90
+2026-06-11 03:55:34 | INFO     | trading_bot.engine   |   -> momentum: buy RIOT @ $24.66 conf=0.90
+2026-06-11 03:55:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy IONZ @ $2.58 conf=0.80
+2026-06-11 03:55:34 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy MTVA @ $1.97 conf=1.00
+2026-06-11 03:55:34 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x
+2026-06-11 03:55:34 | INFO     | trading_bot.risk.manager | APPROVED: buy RIOT | Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x
+2026-06-11 03:55:34 | INFO     | trading_bot.risk.manager | APPROVED: buy IONZ | Extreme RVOL 328.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
+2026-06-11 03:55:34 | INFO     | trading_bot.risk.manager | APPROVED: buy MTVA | Extreme RVOL 8.2x | Strong move +1.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-11 03:55:34 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — SNAP, RIOT, IONZ, MTVA
+2026-06-11 03:55:34 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 911 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ SNAP: score 90/100 — Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x
+  ✅ RIOT: score 90/100 — Momentum BUY: EMA trend, AD
+2026-06-11 03:55:34 | WARNING  | trading_bot.engine   | SLOW CYCLE (202.5s total): update_data=183.2s, update_scalp=15.1s
+2026-06-11 03:55:37 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-0.8%)), ADA-USD(weak 3d trend (+1.4%)), ALGO-USD(weak 3d trend (-4.3%)), APT-USD(weak 3d trend (-4.9%)), ARB-USD(weak 3d trend (-0.5%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-1.6%)), BONK-USD(weak 3d trend (-1.8%)), BTC-USD(weak 3d trend (-1.0%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (-2.4%)), ETH-USD(weak 3d trend (-1.2%)), FET-USD(weak 3d trend (-9.6%)), FLOKI-USD(weak 3d trend (+1.1%)), GRT-USD(weak 3d trend (-3.5%)), HBAR-USD(weak 3d trend (-3.4%)), ICP-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-1.9%)), LTC-USD(weak 3d trend (-0.9%)), MATIC-USD(weak 3d trend (-7.4%)), NEAR-USD(weak 3d trend (-4.7%)), OP-USD(weak 3d trend (-6.0%)), PEPE-USD(weak 3d trend (-1.4%)), RNDR-USD(weak 3d trend (-3.9%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (-1.5%)), SNX-USD(weak 3d trend (-4.9%)), SOL-USD(weak 3d trend (-1.7%)), SUI-USD(weak 3d trend (-1.4%)), TIA-USD(weak 3d trend (+1.3%)), TRX-USD(weak 3d trend (-1.4%)), UNI-USD(weak 3d trend (-2.2%)), WIF-USD(weak 3d trend (-3.8%)), XLM-USD(weak 3d trend (-6.4%)), XRP-USD(weak 3d trend (-2.9%)) | warming=2 | neutral=1 | no_data=4
+2026-06-11 03:55:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x | SNAP @ $5.40
+2026-06-11 03:55:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.66
+2026-06-11 03:55:40 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x | SNAP @ $5.40
+2026-06-11 03:55:40 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.66
+2026-06-11 03:55:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x | SNAP @ $5.40
+2026-06-11 03:55:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.66
+2026-06-11 03:55:44 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-11 03:55:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 0 results
+2026-06-11 03:55:44 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-11 03:55:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 0 results
+2026-06-11 03:55:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-11 03:55:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 0 results
+2026-06-11 03:55:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-11 03:55:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-11 03:55:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-11 03:55:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 0 results
+2026-06-11 03:55:47 | INFO     | trading_bot.engine   | IBKR scanner: 0 unique symbols discovered | 0 gainers, 0 gaps, 0 losers
+2026-06-11 03:55:47 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-11 03:55:47 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-06-11 03:55:47 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 92 low-priority equity names; max 90)
+2026-06-11 03:55:47 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-11 03:55:47 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-11 03:55:47 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-11 03:58:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x | SNAP @ $5.40
+2026-06-11 03:58:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.66
+2026-06-11 03:58:33 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: IONZ | Score: 80 | RVOL: 328.6x | Change: +1.6% | R:R 2.7
+2026-06-11 03:58:33 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: MTVA | Score: 100 | RVOL: 8.2x | Change: +1.6% | R:R 2.7 | Target: $1.99 (+1.2%)
+2026-06-11 04:00:00 | INFO     | trading_bot.engine   | === PRE-MARKET SCAN ===
+2026-06-11 04:00:00 | INFO     | trading_bot.engine   | LEARNING: crypto_runner allocation 1% -> 3%
+2026-06-11 04:00:00 | INFO     | trading_bot.engine   | DAILY RESET: Cleared 873 dynamic symbols across all strategies
+2026-06-11 04:00:00 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: Pre-market scan complete. Balance: $22,576.30 | Regime: SIDEWAYS
