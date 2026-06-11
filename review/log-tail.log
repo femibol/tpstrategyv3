@@ -1,18 +1,3 @@
-2026-06-11 03:14:25 | INFO     | trading_bot.engine   | IBKR scanner: 106 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-11 03:14:25 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-11 03:14:25 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 88 low-priority equity names; max 90)
-2026-06-11 03:14:25 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-11 03:14:25 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-11 03:14:25 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-11 03:17:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x | SNAP @ $5.40
-2026-06-11 03:17:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.46
-2026-06-11 03:17:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: IONZ | Score: 80 | RVOL: 328.6x | Change: +1.6% | R:R 2.7
-2026-06-11 03:17:18 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: MTVA | Score: 100 | RVOL: 8.2x | Change: +1.6% | R:R 2.7 | Target: $1.99 (+1.2%)
-2026-06-11 03:17:18 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
-2026-06-11 03:17:18 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.40 conf=0.90
-2026-06-11 03:17:18 | INFO     | trading_bot.engine   |   -> momentum: buy RIOT @ $24.46 conf=0.90
-2026-06-11 03:17:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy IONZ @ $2.58 conf=0.80
-2026-06-11 03:17:18 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy MTVA @ $1.97 conf=1.00
 2026-06-11 03:17:18 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA cross, breakout>5.36, Vol=5.3x
 2026-06-11 03:17:18 | INFO     | trading_bot.risk.manager | APPROVED: buy RIOT | Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x
 2026-06-11 03:17:18 | INFO     | trading_bot.risk.manager | APPROVED: buy IONZ | Extreme RVOL 328.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
@@ -19998,3 +19983,18 @@ Signals found: 7
 2026-06-11 19:09:58 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-11 19:09:59 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-11 19:09:59 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-11 19:12:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-11 19:12:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-11 19:12:56 | WARNING  | trading_bot.broker.ibkr | Order 909457 not found
+2026-06-11 19:12:56 | INFO     | trading_bot.engine   | Cancelled broker stop order for HOFT
+2026-06-11 19:12:56 | WARNING  | trading_bot.broker.ibkr | Order 909457 not found
+2026-06-11 19:12:56 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: HOFT → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-11 19:13:07 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $15.20 for SELL 200 HOFT
+2026-06-11 19:13:07 | INFO     | trading_bot.broker.ibkr | Order update: HOFT | Status: ValidationError | Filled: 0.0/200
+2026-06-11 19:13:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-11 19:13:07 | INFO     | trading_bot.broker.ibkr | Order update: HOFT | Status: PreSubmitted | Filled: 0.0/200.0
+2026-06-11 19:13:07 | INFO     | trading_bot.broker.ibkr | Order update: HOFT | Status: ValidationError | Filled: 0.0/200.0
+2026-06-11 19:13:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 200 HOFT NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-12 08:00:00 US/Eastern.
+2026-06-11 19:13:07 | INFO     | trading_bot.broker.ibkr | Order update: HOFT | Status: PreSubmitted | Filled: 0.0/200.0
+2026-06-11 19:13:07 | INFO     | trading_bot.broker.ibkr | Order update: HOFT | Status: Submitted | Filled: 0.0/200.0
+2026-06-11 19:13:08 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 200 HOFT @ MARKET MKT [OUTSIDE RTH] | Order ID: 914942
