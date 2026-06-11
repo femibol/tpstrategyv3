@@ -9,10 +9,19 @@
 allocation:
   smc_forever: 0.00
   mean_reversion: 0.15             # 15% — earns in sideways markets (regime detector scales up to 1.4x automatically)
-  momentum: 0.15                   # 15% — broadest trend-following strategy, catches what others miss
+  momentum: 0.15                   # 15% — kept enabled 2026-06-11. Historically -$500/30d
+                                   # (26% WR) BUT 6/11 was +$170 net day on this lane (DAIC,
+                                   # LABX, RDWU). Decided to ride the tail risk insurance
+                                   # (ETF class filter + slippage floor) rather than cull a
+                                   # working strategy on a bad week. Per-strategy $50 risk
+                                   # cap added below to bound single-trade damage.
   momentum_runner: 0.30            # 30% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
   rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
-  rvol_scalp: 0.05                # 5% - Quick scalps on high-RVOL movers (premarket + regular)
+  rvol_scalp: 0.05                # 5% — kept enabled 2026-06-11. -$412/30d but the entire
+                                   # bleed was HIBS -$375 in one 5-second blow-up; with the
+                                   # leveraged-ETF class filter + slippage_reject floor (this
+                                   # PR), the catastrophic pattern is structurally blocked.
+                                   # Tight $40 risk cap below as belt-and-suspenders.
   vwap_scalp: 0.00
   pairs_trading: 0.00
   prebreakout: 0.10               # 10% - enter BEFORE the breakout (accumulation detection, multi-bagger setups)
@@ -63,7 +72,7 @@ mean_reversion:
 # Broadest strategy: EMA crossover + ADX + volume surge. Works in any market
 # condition where individual stocks are trending, even if SPY is flat.
 momentum:
-  enabled: true
+  enabled: true  # kept on 2026-06-11 with $50 cap — see allocation comment
   timeframe: "5m"
   fast_ema: 8
   slow_ema: 21
@@ -183,7 +192,7 @@ rvol_momentum:
 
 # --- RVOL Scalp Strategy ---
 rvol_scalp:
-  enabled: true
+  enabled: true  # kept on 2026-06-11 — HIBS class filter + slippage floor neutralize the catastrophic tail. $40 cap.
   timeframe: "1m"
   min_rvol: 3.0                    # Raised from 1.5 (conservative dial 2026-05-18). Scalps need extreme RVOL to overcome friction; weaker setups bleed to cost.
   min_score: 70                    # Raised from 40 → high bar for short-hold trades.

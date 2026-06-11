@@ -41,7 +41,31 @@ risk:
   # bot/risk/position_sizer.py __init__ for the mean_reversion / NEAR-USD
   # rationale (PR #197). Empty dict = disabled for all strategies.
   max_dollar_risk_per_strategy:
-    mean_reversion: 50            # 9.5:1 loss/win asymmetry seen 2026-06-04 (NEAR -$128 vs +$15 avg win)
+    # Tier 1 restructure 2026-06-09 — cap aligned to 30d track record.
+    # Proven engines unthrottled, unproven ones held back, bleeders capped tight.
+    mean_reversion: 100           # was $50. Workhorse +$722/30d crypto, 52% WR. Unthrottle.
+    rvol_momentum: 50             # neutral cap — 7 trades, near breakeven, needs more data
+    momentum_runner: 50           # neutral — silent so far; cap small until track record exists
+    prebreakout: 50               # ditto
+    premarket_gap: 50             # ditto
+    low_float_catalyst: 40        # asymmetric bet pattern — already small by design, hold the line
+    crypto_runner: 30             # bracket -6% stop, tight cap matches the small position thesis
+    # 2026-06-11: momentum + rvol_scalp re-enabled with tight caps after
+    # 6/11 day showed momentum CAN earn (+$170 on DAIC/LABX/RDWU lane).
+    # Class filter + slippage floor neutralize the catastrophic single-trade
+    # tail. The cap bounds the day-to-day damage from regular stop-outs.
+    momentum: 50                  # historically -$500/30d but 6/11 was +$170 — cap, don't kill
+    rvol_scalp: 40                # HIBS killer in place; cap belt-and-suspenders for the 14% WR profile
+
+  # Time-of-day equity dead zones (2026-06-09 audit). Hours in ET (24h).
+  # Block new equity BUY signals during these windows — the bot consistently
+  # loses money in them per 30d data:
+  #   05:00-06:00 ET  →  premarket dead zone, slippage_reject pattern, -$203
+  #   14:00-15:00 ET  →  early afternoon lunch lull, -$133
+  # The 09:30-10:30 open hour stays OPEN — it's where most legit runners fire,
+  # even though WR is mixed.
+  # Crypto bypasses this filter entirely (24/7 universe).
+  equity_dead_hours_et: [5, 14]
   # 2026-06-05: switch to MARKET-parent server brackets on equity. IBKR
   # paper account lacks Top-of-Book subs for NASDAQ/NYSE/BATS/ARCA, so
   # LIMIT brackets sit in PendingSubmit until the bot's 15s timeout kills
@@ -227,7 +251,31 @@ cost_model:
     - "YANG"   # 3x inverse China
     - "DRIP"   # 2x inverse S&P Oil & Gas E&P
     - "WEBS"   # 3x inverse Dow
-    - "HIBS"   # 3x inverse high beta
+    - "HIBS"   # 3x inverse high beta — bled -$375 in 5s on 2026-06-05 (slippage_reject below stop_loss)
+    # Added 2026-06-05 — companions to the above + leveraged variants
+    # that whipsaw faster than the bot's exit logic can react.
+    - "HIBL"   # 3x leveraged high beta
+    - "EDZ"    # 3x inverse emerging markets — lost -$47.70 today (2026-06-05)
+    - "EDC"    # 3x leveraged emerging markets
+    - "GUSH"   # 2x leveraged S&P Oil & Gas E&P
+    - "YINN"   # 3x leveraged China
+    - "DRN"    # 3x leveraged real estate
+    - "DRV"    # 3x inverse real estate
+    - "NUGT"   # 2x leveraged junior gold miners
+    - "JNUG"   # 2x leveraged junior gold miners
+    - "ERX"    # 2x leveraged energy
+    - "TECS"   # 3x inverse technology
+    - "TECL"   # 3x leveraged technology
+    - "FNGD"   # 3x inverse FANG+
+    - "FNGU"   # 3x leveraged FANG+
+    - "BNKD"   # 3x inverse banks
+    - "BNKU"   # 3x leveraged banks
+    - "TSLL"   # 2x leveraged Tesla — 2026-06-09 open position flagged for blocking
+    - "TSLZ"   # 2x inverse Tesla (paired block)
+    - "TSLQ"   # 1.5x inverse Tesla
+    - "TSLS"   # 1x inverse Tesla
+    - "NVDL"   # 2x leveraged NVIDIA
+    - "NVD"    # 2x inverse NVIDIA
 
   # --- Portfolio-Level Risk Limits ---
   # Prevents concentrated bets, runaway exposure, and unmanaged positions
