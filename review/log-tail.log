@@ -1,62 +1,3 @@
-2026-06-10 11:53:28 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | WAIT[34]: AAVE-USD(weak 3d trend (-4.0%)), ADA-USD(weak 3d trend (+1.5%)), ALGO-USD(weak 3d trend (-4.4%)), APT-USD(weak 3d trend (-4.9%)), ARB-USD(weak 3d trend (-0.5%)), AVAX-USD(weak 3d trend (-2.0%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+0.4%)), DOGE-USD(weak 3d trend (-0.2%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-0.6%)), ETH-USD(weak 3d trend (+1.0%)), FET-USD(weak 3d trend (-9.1%)), FLOKI-USD(weak 3d trend (+0.1%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-2.4%)), ICP-USD(weak 3d trend (-4.9%)), LINK-USD(weak 3d trend (+0.3%)), LTC-USD(weak 3d trend (+1.7%)), NEAR-USD(weak 3d trend (+2.5%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (+1.9%)), SOL-USD(weak 3d trend (-0.0%)), SUI-USD(weak 3d trend (+1.1%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (+2.5%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (+0.0%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-6.8%)), XRP-USD(weak 3d trend (-1.1%)) | warming=1 | neutral=3 | no_data=2
-2026-06-10 11:53:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-10 11:53:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-10 11:53:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-10 11:53:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-10 11:53:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-10 11:53:39 | INFO     | trading_bot.engine   | IBKR scanner: 112 unique symbols discovered | 50 gainers, 11 gaps, 20 losers
-2026-06-10 11:53:39 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
-2026-06-10 11:53:39 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 24 stale symbols across strategies
-2026-06-10 11:53:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 110 low-priority equity names; max 90)
-2026-06-10 11:53:39 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-10 11:53:40 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-10 11:53:40 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-10 11:57:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion SELL: Z=2.94, RSI=84 | MATIC-USD @ $0.08
-2026-06-10 11:57:00 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-10 11:57:00 | INFO     | trading_bot.engine   |   -> mean_reversion: sell MATIC-USD @ $0.08 conf=0.98
-2026-06-10 11:57:00 | INFO     | trading_bot.risk.manager | APPROVED: sell MATIC-USD | Mean reversion SELL: Z=2.94, RSI=84
-2026-06-10 11:57:00 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1005 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ MATIC-USD: score 98/100 — Mean reversion SELL: Z=2.94, RSI=84
-Approved: 1 trades
-2026-06-10 11:57:01 | WARNING  | trading_bot.engine   | SLOW CYCLE (206.3s total): update_data=183.7s, update_scalp=16.9s, discover=5.0s
-2026-06-10 11:57:01 | INFO     | trading_bot.engine   | Webhook exit signal: routing SELL MATIC-USD through close path
-2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | EXIT signal for MATIC-USD - bypassing rate limits
-2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | Routing MATIC-USD to CRYPTO webhook
-2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "MATIC-USD", "action": "exit", "quantity": 5000, "price": 0.0807}
-2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"2b189d44-0081-4674-8304-b5edc05b1984","logId":"2b189d44-0081-4674-8304-b5edc05b1984","payload":{"ticker":"MATIC-USD","action":"exit","quantity":5000,"price":0.0807}}
-2026-06-10 11:57:01 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL MATIC-USD | Strategy: unknown | Qty: 5000 @ $0.08 = $403.50 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
-2026-06-10 11:57:01 | INFO     | trading_bot.engine   | CLOSED MATIC-USD via TradersPost | webhook_exit | P&L: $+0.00 | External sell signal from mean_reversion
-2026-06-10 11:57:01 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: MATIC-USD** (webhook_exit)
-```
-  Entry: $0.08 → Exit: $0.08
-  P&L: $+0.00 (+0.00%)
-  Shares: 5000 | Value: $403.50
-  Hold: 7m
-```
-Strategy: **crypto_runner** | External sell signal fro
-2026-06-10 11:57:01 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: MATIC-USD +0.00 (266 total in history)
-2026-06-10 11:57:04 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[35]: AAVE-USD(weak 3d trend (-4.0%)), ADA-USD(weak 3d trend (+1.5%)), ALGO-USD(weak 3d trend (-4.5%)), APT-USD(weak 3d trend (-4.9%)), ARB-USD(weak 3d trend (-0.5%)), AVAX-USD(weak 3d trend (-2.0%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+0.8%)), DOGE-USD(weak 3d trend (+0.0%)), DOT-USD(weak 3d trend (-1.1%)), ETC-USD(weak 3d trend (-0.6%)), ETH-USD(weak 3d trend (+1.1%)), FET-USD(weak 3d trend (-9.1%)), FLOKI-USD(weak 3d trend (+0.1%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-2.4%)), ICP-USD(weak 3d trend (-4.9%)), LINK-USD(weak 3d trend (+0.4%)), LTC-USD(weak 3d trend (+1.5%)), MATIC-USD(weak 3d trend (+1.5%)), NEAR-USD(weak 3d trend (+3.1%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (+1.9%)), SOL-USD(weak 3d trend (+0.0%)), SUI-USD(weak 3d trend (+0.8%)), TIA-USD(weak 3d trend (+3.1%)), TON-USD(weak 3d trend (+2.5%)), TRX-USD(weak 3d trend (-1.8%)), UNI-USD(weak 3d trend (+0.0%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-6.8%)), XRP-USD(weak 3d trend (-0.7%)) | warming=1 | neutral=3 | no_data=2
-2026-06-10 11:57:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-10 11:57:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-10 11:57:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-10 11:57:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-10 11:57:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-10 11:57:15 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
-2026-06-10 11:57:15 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
-2026-06-10 11:57:15 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 24 stale symbols across strategies
-2026-06-10 11:57:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 108 low-priority equity names; max 90)
-2026-06-10 11:57:15 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-10 11:57:15 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-10 11:57:15 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-10 12:00:12 | INFO     | trading_bot.strategy.low_float_catalyst | LOW-FLOAT SIGNAL: ENHA @ $4.69 | RVOL 7.9x | +19.6% | float 69.25M | conf 0.80
-2026-06-10 12:00:12 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-10 12:00:12 | INFO     | trading_bot.engine   |   -> low_float_catalyst: buy ENHA @ $4.69 conf=0.80
-2026-06-10 12:00:12 | INFO     | trading_bot.risk.manager | APPROVED: buy ENHA | RVOL 7.9x | change +19.6% | float 69.2M | spread 1.06%
-2026-06-10 12:00:12 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 993 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
   ✅ ENHA: score 80/100 — RVOL 7.9x | change +19.6% | float 69.2M | spread 1.06%
 Approved: 1 trades
 2026-06-10 12:00:12 | WARNING  | trading_bot.engine   | SLOW CYCLE (181.8s total): update_data=159.8s, update_scalp=16.5s
@@ -19998,3 +19939,62 @@ Approved: 1 trades
 2026-06-11 11:19:27 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-11 11:19:27 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-11 11:19:27 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-11 11:20:48 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-11 11:22:13 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
+2026-06-11 11:22:13 | INFO     | trading_bot.engine   | Cancelled broker stop order for DAIC
+2026-06-11 11:22:13 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
+2026-06-11 11:22:13 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-11 11:22:13 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Submitted | Filled: 0.0/527.0
+2026-06-11 11:22:13 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Filled | Filled: 527.0/527.0 | AvgPrice: $2.35
+2026-06-11 11:22:14 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ MARKET MKT | Order ID: 892703
+2026-06-11 11:22:14 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 527/527 DAIC @ $2.35 | Order ID: 892703
+2026-06-11 11:22:14 | INFO     | trading_bot.engine   | CLOSED DAIC via IBKR | trailing_stop | P&L: $+105.40 | Trailing stop at $2.35 (trail 2.0%)
+2026-06-11 11:22:14 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT DAIC qty=527 @ $2.35 → primary webhook (200)
+2026-06-11 11:22:14 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: DAIC** (trailing_stop)
+```
+  Entry: $2.15 → Exit: $2.35
+  P&L: $+105.40 (+9.30%)
+  Shares: 527 | Value: $1,238.45
+  Hold: 53m
+```
+Strategy: **momentum** | Trailing stop at $2.35 (trail
+2026-06-11 11:22:15 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: DAIC +105.40 (288 total in history)
+2026-06-11 11:22:18 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [DAIC]: **BOOST:momentum**
+
+62% win rate + 9.3% gain in 53min on DAIC = solid edge repeating. Trailing stop worked correctly here. Scale position size up 15-20% on momentum setups showing similar low-float pr
+2026-06-11 11:22:18 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'momentum' (total boosts: 2)
+2026-06-11 11:22:18 | WARNING  | trading_bot.engine   | STOP WATCHDOG: RDWU has NO broker-side stop! Placing emergency stop @ $18.43 for 66 shares
+2026-06-11 11:22:18 | WARNING  | trading_bot.broker.ibkr | Order 889707 not found
+2026-06-11 11:22:18 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: RDWU → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-11 11:22:18 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: Cancelled | Filled: 0.0/66
+2026-06-11 11:22:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-06-11 11:22:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-11 11:22:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-11 11:22:19 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 66 RDWU @ STOP 18.42841 [OUTSIDE RTH] | Order ID: 892705
+2026-06-11 11:22:20 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: RDWU | Order ID: 892705
+2026-06-11 11:22:20 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: RDWU — IBKR returned None
+2026-06-11 11:22:20 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=81, Vol=4.0x | DAIC @ $2.36
+2026-06-11 11:22:20 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-11 11:22:20 | INFO     | trading_bot.engine   |   -> momentum: buy DAIC @ $2.36 conf=0.70
+2026-06-11 11:22:20 | INFO     | trading_bot.risk.manager | APPROVED: buy DAIC | Momentum BUY: EMA trend, ADX=81, Vol=4.0x
+2026-06-11 11:22:20 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1047 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ DAIC: score 70/100 — Momentum BUY: EMA trend, ADX=81, Vol=4.0x
+Approved: 1 trades
+2026-06-11 11:22:20 | WARNING  | trading_bot.engine   | SLOW CYCLE (178.5s total): update_data=148.6s, update_scalp=17.2s, monitor_positions=5.4s, discover=5.2s
+2026-06-11 11:22:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-11 11:22:23 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: DAIC — wide spread 3.3% (>3% for $2.36)
+2026-06-11 11:22:26 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-0.8%)), ADA-USD(weak 3d trend (-2.6%)), ALGO-USD(weak 3d trend (-8.3%)), APT-USD(weak 3d trend (-6.6%)), ARB-USD(weak 3d trend (-4.9%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-4.8%)), BONK-USD(weak 3d trend (-4.0%)), BTC-USD(weak 3d trend (-2.4%)), DOGE-USD(weak 3d trend (-2.7%)), DOT-USD(weak 3d trend (-3.9%)), ETH-USD(weak 3d trend (-3.3%)), FET-USD(weak 3d trend (-13.2%)), FLOKI-USD(weak 3d trend (-1.8%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-6.4%)), ICP-USD(weak 3d trend (-6.2%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-4.3%)), LTC-USD(weak 3d trend (-2.3%)), MATIC-USD(weak 3d trend (-10.7%)), NEAR-USD(weak 3d trend (-7.9%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-2.8%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (+0.8%)), SNX-USD(weak 3d trend (-4.9%)), SOL-USD(weak 3d trend (-3.1%)), SUI-USD(weak 3d trend (-3.7%)), TIA-USD(weak 3d trend (-1.6%)), TON-USD(weak 3d trend (+3.0%)), TRX-USD(weak 3d trend (-2.0%)), UNI-USD(weak 3d trend (-1.6%)), WIF-USD(weak 3d trend (-2.5%)), XLM-USD(weak 3d trend (-8.1%)), XRP-USD(weak 3d trend (-5.9%)) | neutral=2 | no_data=3
+2026-06-11 11:22:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
+2026-06-11 11:22:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-11 11:22:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-11 11:22:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-11 11:22:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-11 11:22:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-11 11:22:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-11 11:22:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-11 11:22:37 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 48 gainers, 14 gaps, 20 losers
+2026-06-11 11:22:37 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-11 11:22:37 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-11 11:22:37 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 117 low-priority equity names; max 90)
