@@ -1,1 +1,1 @@
-cd /opt/trading-bot && git stash 2>&1 | tail -1 && git pull origin main 2>&1 | tail -3 && git checkout --theirs config/settings.yaml config/strategies.yaml 2>/dev/null ; git stash drop 2>&1 | tail -1 && echo '---NEW HEAD---' && git log --oneline -3 && docker compose restart trading-bot 2>&1 | tail -3
+cd /opt/trading-bot && git fetch origin main && git stash 2>&1 | tail -1 && git reset --hard origin/main 2>&1 | tail -2 && echo '---HEAD---' && git log --oneline -3 && echo '---RESTART---' && docker compose restart trading-bot 2>&1 | tail -3
