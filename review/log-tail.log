@@ -1,154 +1,3 @@
-2026-06-11 11:09:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; CHX; NYSENAT; PSX; T24X; MEMX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; EDGEA; 
-2026-06-11 11:09:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 11:09:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.22, RSI=0, BB=lower, Vol=18.9x | ATOM-USD @ $1.90
-2026-06-11 11:09:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x | RIOT @ $25.09
-2026-06-11 11:09:38 | INFO     | trading_bot.risk.manager | REJECTED: buy ATOM-USD | Cost gate: edge 77bps < 2× cost 50bps (need 100bps)
-2026-06-11 11:09:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 11:09:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-11 11:09:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-11 11:09:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-11 11:09:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
-2026-06-11 11:09:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-11 11:09:42 | INFO     | trading_bot.engine   | IBKR scanner: 120 unique symbols discovered | 48 gainers, 14 gaps, 20 losers
-2026-06-11 11:09:42 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-11 11:09:42 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 48 stale symbols across strategies
-2026-06-11 11:09:42 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 114 low-priority equity names; max 90)
-2026-06-11 11:09:42 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
-2026-06-11 11:09:43 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
-2026-06-11 11:09:43 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-11 11:12:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 11:12:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 11:12:43 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-11 11:13:00 | WARNING  | trading_bot.engine   | STOP WATCHDOG: DAIC has NO broker-side stop! Placing emergency stop @ $2.15 for 527 shares
-2026-06-11 11:13:00 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
-2026-06-11 11:13:00 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 11:13:00 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Cancelled | Filled: 0.0/527
-2026-06-11 11:13:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-11 11:13:01 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ STOP 2.15215 [OUTSIDE RTH] | Order ID: 892130
-2026-06-11 11:13:01 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DAIC | Order ID: 892130
-2026-06-11 11:13:01 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DAIC — IBKR returned None
-2026-06-11 11:13:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x | RIOT @ $25.15
-2026-06-11 11:13:01 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-11 11:13:01 | INFO     | trading_bot.engine   |   -> momentum: buy RIOT @ $25.15 conf=0.75
-2026-06-11 11:13:01 | INFO     | trading_bot.risk.manager | APPROVED: buy RIOT | Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x
-2026-06-11 11:13:01 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1029 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ RIOT: score 75/100 — Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x
-Approved: 1 trades
-2026-06-11 11:13:02 | WARNING  | trading_bot.engine   | SLOW CYCLE (204.1s total): update_data=180.8s, update_scalp=16.5s
-2026-06-11 11:13:02 | INFO     | trading_bot.engine   | CYCLE #199: regime=sideways | signals=1->approved=1 | positions=3/15 | bars_warm=173/173 | equity_open=True | pm=False pwr_hr=False
-2026-06-11 11:13:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-11 11:13:04 | INFO     | trading_bot.engine   | SLIPPAGE BLOCK: RIOT had a slippage_reject close 24873s ago — blocked for the rest of the session (structural liquidity problem, not timing)
-2026-06-11 11:13:07 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-0.8%)), ADA-USD(weak 3d trend (-3.9%)), ALGO-USD(weak 3d trend (-8.5%)), APT-USD(weak 3d trend (-6.6%)), ARB-USD(weak 3d trend (-4.9%)), ATOM-USD(needs vol>1.3x), AVAX-USD(weak 3d trend (-5.2%)), BONK-USD(weak 3d trend (-4.0%)), BTC-USD(weak 3d trend (-2.2%)), DOGE-USD(weak 3d trend (-3.0%)), DOT-USD(weak 3d trend (-3.9%)), ETH-USD(weak 3d trend (-3.5%)), FET-USD(weak 3d trend (-13.3%)), FLOKI-USD(weak 3d trend (-1.8%)), GRT-USD(weak 3d trend (-4.9%)), HBAR-USD(weak 3d trend (-6.4%)), ICP-USD(weak 3d trend (-6.8%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-4.6%)), LTC-USD(weak 3d trend (-2.7%)), MATIC-USD(weak 3d trend (-10.7%)), NEAR-USD(weak 3d trend (-8.3%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-2.1%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (+0.8%)), SNX-USD(weak 3d trend (-4.9%)), SOL-USD(weak 3d trend (-3.6%)), SUI-USD(weak 3d trend (-3.4%)), TIA-USD(weak 3d trend (-1.1%)), TON-USD(weak 3d trend (+3.0%)), TRX-USD(weak 3d trend (-2.0%)), UNI-USD(weak 3d trend (-1.6%)), WIF-USD(weak 3d trend (-2.5%)), XLM-USD(weak 3d trend (-8.2%)), XRP-USD(weak 3d trend (-6.2%)) | neutral=2 | no_data=3
-2026-06-11 11:13:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x | RIOT @ $25.16
-2026-06-11 11:13:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x | RIOT @ $25.12
-2026-06-11 11:13:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; NYSE; Unknown market data permissions - Depth: BEX; Top: IBEOS; OVERNIGHT; 
-2026-06-11 11:13:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BEX; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; NYSE; IEX; 
-2026-06-11 11:13:13 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
-2026-06-11 11:13:14 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 11:13:14 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Cancelled | Filled: 0.0/527
-2026-06-11 11:13:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-11 11:13:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BEX; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; NYSE; IEX; 
-2026-06-11 11:13:15 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ STOP 2.3132628 [OUTSIDE RTH] | Order ID: 892138
-2026-06-11 11:13:15 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DAIC | Order ID: 892138
-2026-06-11 11:13:15 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DAIC — IBKR returned None
-2026-06-11 11:13:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x | RIOT @ $25.16
-2026-06-11 11:13:15 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
-2026-06-11 11:13:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-11 11:13:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-11 11:13:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-11 11:13:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
-2026-06-11 11:13:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-11 11:13:20 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 48 gainers, 14 gaps, 20 losers
-2026-06-11 11:13:20 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-11 11:13:20 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-11 11:13:20 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 115 low-priority equity names; max 90)
-2026-06-11 11:13:20 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-11 11:13:20 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-11 11:13:20 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-11 11:16:00 | WARNING  | trading_bot.engine   | STOP WATCHDOG: DAIC has NO broker-side stop! Placing emergency stop @ $2.15 for 527 shares
-2026-06-11 11:16:00 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
-2026-06-11 11:16:00 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 11:16:00 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Cancelled | Filled: 0.0/527
-2026-06-11 11:16:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-11 11:16:01 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ STOP 2.15215 [OUTSIDE RTH] | Order ID: 892314
-2026-06-11 11:16:02 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DAIC | Order ID: 892314
-2026-06-11 11:16:02 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DAIC — IBKR returned None
-2026-06-11 11:16:02 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: TMDE | Score: 85 | RVOL: 5.7x | Change: +1.1% | R:R 1.6 | Target: $1.37 (+1.2%)
-2026-06-11 11:16:02 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-11 11:16:02 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy TMDE @ $1.35 conf=0.85
-2026-06-11 11:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy TMDE | Extreme RVOL 5.7x | Strong move +1.1% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-06-11 11:16:02 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1035 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ TMDE: score 85/100 — Extreme RVOL 5.7x | Strong move +1.1% | Breakout confirmed (
-Approved: 1 trades
-2026-06-11 11:16:02 | WARNING  | trading_bot.engine   | SLOW CYCLE (167.3s total): update_data=143.4s, update_scalp=16.9s
-2026-06-11 11:16:05 | WARNING  | trading_bot.engine   | FALLING KNIFE BLOCK (no quote): TMDE — cannot verify day change, blocking entry as precaution | Strategy: rvol_scalp
-2026-06-11 11:16:08 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
-2026-06-11 11:16:08 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 11:16:08 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Cancelled | Filled: 0.0/527
-2026-06-11 11:16:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-11 11:16:09 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ STOP 2.40084 [OUTSIDE RTH] | Order ID: 892322
-2026-06-11 11:16:09 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DAIC | Order ID: 892322
-2026-06-11 11:16:09 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DAIC — IBKR returned None
-2026-06-11 11:16:09 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-0.8%)), ADA-USD(weak 3d trend (-2.6%)), ALGO-USD(weak 3d trend (-8.3%)), APT-USD(weak 3d trend (-6.6%)), ARB-USD(weak 3d trend (-4.9%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-4.8%)), BONK-USD(weak 3d trend (-4.0%)), BTC-USD(weak 3d trend (-2.1%)), DOGE-USD(weak 3d trend (-2.6%)), DOT-USD(weak 3d trend (-3.9%)), ETH-USD(weak 3d trend (-3.2%)), FET-USD(weak 3d trend (-13.2%)), FLOKI-USD(weak 3d trend (-1.8%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-6.5%)), ICP-USD(weak 3d trend (-6.2%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-4.3%)), LTC-USD(weak 3d trend (-2.3%)), MATIC-USD(weak 3d trend (-10.7%)), NEAR-USD(weak 3d trend (-8.1%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-2.8%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (+0.8%)), SNX-USD(weak 3d trend (-4.9%)), SOL-USD(weak 3d trend (-2.9%)), SUI-USD(weak 3d trend (-3.4%)), TIA-USD(weak 3d trend (-1.1%)), TON-USD(weak 3d trend (+3.0%)), TRX-USD(weak 3d trend (-2.0%)), UNI-USD(weak 3d trend (-1.6%)), WIF-USD(weak 3d trend (-2.5%)), XLM-USD(weak 3d trend (-8.2%)), XRP-USD(weak 3d trend (-5.8%)) | neutral=2 | no_data=3
-2026-06-11 11:16:12 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
-2026-06-11 11:16:12 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 11:16:12 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Cancelled | Filled: 0.0/527
-2026-06-11 11:16:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-11 11:16:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; IBEOS; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: PEARL; CHX; NYSENAT; T24X; MEMX; OVERNIGHT; EDGEA; ISE; 
-2026-06-11 11:16:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-11 11:16:13 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ STOP 2.4055999999999997 [OUTSIDE RTH] | Order ID: 892324
-2026-06-11 11:16:14 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DAIC | Order ID: 892324
-2026-06-11 11:16:14 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DAIC — IBKR returned None
-2026-06-11 11:16:14 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.3x | RIOT @ $25.16
-2026-06-11 11:16:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-11 11:16:17 | WARNING  | trading_bot.broker.ibkr | Order 889502 not found
-2026-06-11 11:16:17 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: DAIC → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 11:16:17 | INFO     | trading_bot.broker.ibkr | Order update: DAIC | Status: Cancelled | Filled: 0.0/527
-2026-06-11 11:16:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-11 11:16:18 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 527 DAIC @ STOP 2.4153000000000002 [OUTSIDE RTH] | Order ID: 892326
-2026-06-11 11:16:19 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: DAIC | Order ID: 892326
-2026-06-11 11:16:19 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: DAIC — IBKR returned None
-2026-06-11 11:16:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
-2026-06-11 11:16:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-11 11:16:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-11 11:16:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
-2026-06-11 11:16:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-11 11:16:23 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 48 gainers, 14 gaps, 20 losers
-2026-06-11 11:16:24 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-11 11:16:24 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-11 11:16:24 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 117 low-priority equity names; max 90)
-2026-06-11 11:16:24 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-11 11:16:24 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-11 11:16:24 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-11 11:18:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 11:18:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: PendingCancel | Filled: 0.0/66.0
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order 889707 cancelled
-2026-06-11 11:18:22 | INFO     | trading_bot.engine   | Cancelled broker stop order for RDWU
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: PendingCancel | Filled: 0.0/66.0
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order 889707 cancelled
-2026-06-11 11:18:22 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for RDWU: This event loop is already running
-2026-06-11 11:18:22 | ERROR    | trading_bot.engine   | IBKR close order FAILED for RDWU
-2026-06-11 11:18:22 | ERROR    | trading_bot.engine   | CLOSE FAILED for RDWU — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: PendingCancel | Filled: 0.0/66.0
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order 889707 cancelled
-2026-06-11 11:18:22 | INFO     | trading_bot.engine   | Cancelled broker stop order for RDWU
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: PendingCancel | Filled: 0.0/66.0
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order 889707 cancelled
-2026-06-11 11:18:22 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for RDWU: This event loop is already running
-2026-06-11 11:18:22 | ERROR    | trading_bot.engine   | IBKR close order FAILED for RDWU
-2026-06-11 11:18:22 | ERROR    | trading_bot.engine   | CLOSE FAILED for RDWU — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: PendingCancel | Filled: 0.0/66.0
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: Cancelled | Filled: 0.0/66.0
-2026-06-11 11:18:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-11 11:18:22 | INFO     | trading_bot.broker.ibkr | Order update: RDWU | Status: Cancelled | Filled: 0.0/66.0
-2026-06-11 11:18:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-11 11:18:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 889707 that needs to be cancelled cannot be cancelled, state: Cancelled.
-2026-06-11 11:18:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 889707 that needs to be cancelled cannot be cancelled, state: Cancelled.
 2026-06-11 11:18:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 889707 that needs to be cancelled cannot be cancelled, state: Cancelled.
 2026-06-11 11:18:36 | WARNING  | trading_bot.broker.ibkr | Order 889707 not found
 2026-06-11 11:18:36 | INFO     | trading_bot.engine   | Cancelled broker stop order for RDWU
@@ -19998,3 +19847,154 @@ Signals found: 15
 2026-06-12 00:37:24 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 45/95
 2026-06-12 00:37:24 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-12 00:37:24 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=70, breakout>5.89, Vol=2.3x | CRWU @ $6.60
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.60
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=43, breakout>7.96, higher lows, Vol=13.5x | ARTV @ $9.00
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=36, breakout>21.37, Vol=2.8x | FLYT @ $23.40
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=43, breakout>121.59, Vol=1.7x | VCX @ $126.90
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>37.70, Vol=1.9x | ASTX @ $41.59
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.27
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CPOP | Score: 90 | RVOL: 146.1x | Change: +3.1% | R:R 4.0
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: MTEN | Score: 75 | RVOL: 757.2x | Change: +5.0% | R:R 4.0
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CWVX | Score: 70 | RVOL: 3.4x | Change: +0.7% | R:R 2.0 | Target: $25.61 (+1.2%)
+2026-06-12 00:40:17 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ARTV | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 40.0x | Change: +1.3% | R:R 3.0 | Size: 100%
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 14 signals from strategies
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy CRWU @ $6.60 conf=0.85
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy PLTR @ $131.60 conf=0.75
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy ARTV @ $9.00 conf=0.90
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy FLYT @ $23.40 conf=0.85
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy VCX @ $126.90 conf=0.80
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy ASTX @ $41.59 conf=0.75
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy GOOGL @ $361.27 conf=0.85
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy NVDA @ $205.59 conf=0.75
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $16.67 conf=0.85
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum: buy COIN @ $160.35 conf=0.70
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CPOP @ $1.05 conf=0.90
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy MTEN @ $2.28 conf=0.75
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CWVX @ $25.36 conf=0.70
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ARTV @ $7.97 conf=0.60
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | REJECTED: buy CRWU | Setup broke: signal $6.60 → market $5.81 (-12.0%, max -3%)
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy PLTR | Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | REJECTED: buy ARTV | Setup broke: signal $9.00 → market $7.97 (-11.4%, max -3%)
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | REJECTED: buy FLYT | Setup broke: signal $23.40 → market $21.30 (-9.0%, max -3%)
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | REJECTED: buy VCX | Setup broke: signal $126.90 → market $121.00 (-4.6%, max -3%)
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | REJECTED: buy ASTX | Setup broke: signal $41.59 → market $37.38 (-10.1%, max -3%)
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy GOOGL | Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy NVDA | Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy COIN | Momentum BUY: EMA trend, ADX=46, Vol=3.7x
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy CPOP | Extreme RVOL 146.1x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy MTEN | Extreme RVOL 757.2x | Strong move +5.0% | RSI healthy (52) | Strong breakout +5.0%
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy CWVX | Very high RVOL 3.4x | Moving up +0.7% | Volume accelerating bar-over-bar | Short-term trend bullish
+2026-06-12 00:40:17 | INFO     | trading_bot.risk.manager | APPROVED: buy ARTV | [BREAKOUT] Score:6/12 RVOL:40.0x | Confirmed | Chg:+1.3%
+2026-06-12 00:40:17 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 9 buy signal(s) — PLTR, GOOGL, NVDA, SOFI, COIN, CPOP, MTEN, CWVX, ARTV
+2026-06-12 00:40:17 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 960 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 14
+  ✅ CRWU: score 85/100 — Momentum BUY: EMA trend, ADX=70, breakout>5.89, Vol=2.3x
+  ✅ PLTR: score 75/100 — Momentum BUY: EMA 
+2026-06-12 00:40:18 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.5s total): update_data=156.5s, update_scalp=16.6s
+2026-06-12 00:40:21 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[32]: AAVE-USD(weak 3d trend (+2.0%)), ADA-USD(weak 3d trend (+3.2%)), ALGO-USD(weak 3d trend (-2.1%)), APT-USD(weak 3d trend (-4.4%)), ARB-USD(weak 3d trend (+3.0%)), AVAX-USD(weak 3d trend (-1.4%)), BTC-USD(weak 3d trend (+0.7%)), DOGE-USD(weak 3d trend (+0.6%)), DOT-USD(weak 3d trend (-1.4%)), ETH-USD(weak 3d trend (-0.4%)), FET-USD(weak 3d trend (-8.0%)), FLOKI-USD(weak 3d trend (+0.4%)), GRT-USD(weak 3d trend (-1.0%)), HBAR-USD(weak 3d trend (-1.1%)), ICP-USD(weak 3d trend (-1.3%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-0.7%)), LTC-USD(weak 3d trend (-0.6%)), MATIC-USD(weak 3d trend (-2.7%)), NEAR-USD(weak 3d trend (+0.6%)), OP-USD(weak 3d trend (+3.2%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(weak 3d trend (+2.0%)), SHIB-USD(weak 3d trend (+3.4%)), SNX-USD(weak 3d trend (+1.6%)), SOL-USD(weak 3d trend (+0.0%)), SUI-USD(weak 3d trend (-0.2%)), TIA-USD(weak 3d trend (+2.9%)), TRX-USD(weak 3d trend (-5.5%)), WIF-USD(weak 3d trend (+1.9%)), XLM-USD(weak 3d trend (-2.6%)), XRP-USD(weak 3d trend (-1.7%)) | warming=2 | neutral=2 | no_data=6
+2026-06-12 00:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.60
+2026-06-12 00:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.27
+2026-06-12 00:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:40:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.60
+2026-06-12 00:40:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.27
+2026-06-12 00:40:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:40:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:40:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.60
+2026-06-12 00:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.27
+2026-06-12 00:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:40:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-12 00:40:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-12 00:40:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-12 00:40:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-12 00:40:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-12 00:40:31 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
+2026-06-12 00:40:31 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-12 00:40:31 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-12 00:40:31 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 103 low-priority equity names; max 90)
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=70, breakout>5.89, Vol=2.3x | CRWU @ $6.60
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.84
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=43, breakout>7.96, higher lows, Vol=13.5x | ARTV @ $9.00
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=36, breakout>21.37, Vol=2.8x | FLYT @ $23.58
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=43, breakout>121.59, Vol=1.7x | VCX @ $126.90
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>37.70, Vol=1.9x | ASTX @ $41.51
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.60
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CPOP | Score: 90 | RVOL: 146.1x | Change: +3.1% | R:R 4.0
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: MTEN | Score: 75 | RVOL: 757.2x | Change: +5.0% | R:R 4.0
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CWVX | Score: 70 | RVOL: 3.4x | Change: +0.7% | R:R 2.0 | Target: $25.61 (+1.2%)
+2026-06-12 00:43:48 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ARTV | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 40.0x | Change: +1.3% | R:R 3.0 | Size: 100%
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 14 signals from strategies
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy CRWU @ $6.60 conf=0.85
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy PLTR @ $131.84 conf=0.75
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy ARTV @ $9.00 conf=0.90
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy FLYT @ $23.58 conf=0.85
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy VCX @ $126.90 conf=0.80
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy ASTX @ $41.51 conf=0.75
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy GOOGL @ $361.60 conf=0.85
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy NVDA @ $205.59 conf=0.75
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $16.67 conf=0.85
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum: buy COIN @ $160.35 conf=0.70
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CPOP @ $1.05 conf=0.90
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy MTEN @ $2.28 conf=0.75
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CWVX @ $25.36 conf=0.70
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ARTV @ $7.97 conf=0.60
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | REJECTED: buy CRWU | Setup broke: signal $6.60 → market $5.81 (-12.0%, max -3%)
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy PLTR | Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | REJECTED: buy ARTV | Setup broke: signal $9.00 → market $7.97 (-11.4%, max -3%)
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | REJECTED: buy FLYT | Setup broke: signal $23.58 → market $21.30 (-9.7%, max -3%)
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | REJECTED: buy VCX | Setup broke: signal $126.90 → market $121.00 (-4.6%, max -3%)
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | REJECTED: buy ASTX | Setup broke: signal $41.51 → market $37.38 (-9.9%, max -3%)
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy GOOGL | Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy NVDA | Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy COIN | Momentum BUY: EMA trend, ADX=46, Vol=3.7x
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy CPOP | Extreme RVOL 146.1x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy MTEN | Extreme RVOL 757.2x | Strong move +5.0% | RSI healthy (52) | Strong breakout +5.0%
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy CWVX | Very high RVOL 3.4x | Moving up +0.7% | Volume accelerating bar-over-bar | Short-term trend bullish
+2026-06-12 00:43:48 | INFO     | trading_bot.risk.manager | APPROVED: buy ARTV | [BREAKOUT] Score:6/12 RVOL:40.0x | Confirmed | Chg:+1.3%
+2026-06-12 00:43:48 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 9 buy signal(s) — PLTR, GOOGL, NVDA, SOFI, COIN, CPOP, MTEN, CWVX, ARTV
+2026-06-12 00:43:48 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 14
+  ✅ CRWU: score 85/100 — Momentum BUY: EMA trend, ADX=70, breakout>5.89, Vol=2.3x
+  ✅ PLTR: score 75/100 — Momentum BUY: EMA 
+2026-06-12 00:43:49 | WARNING  | trading_bot.engine   | SLOW CYCLE (201.7s total): update_data=179.5s, update_scalp=17.4s
+2026-06-12 00:43:49 | INFO     | trading_bot.engine   | CYCLE #13: regime=sideways | signals=14->approved=0 | positions=0/15 | bars_warm=83/83 | equity_open=False | pm=False pwr_hr=False
+2026-06-12 00:43:52 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[32]: AAVE-USD(weak 3d trend (+2.0%)), ADA-USD(weak 3d trend (+2.5%)), ALGO-USD(weak 3d trend (-2.1%)), APT-USD(weak 3d trend (-4.4%)), ARB-USD(weak 3d trend (+2.0%)), AVAX-USD(weak 3d trend (-1.4%)), BTC-USD(weak 3d trend (+0.5%)), DOGE-USD(weak 3d trend (+0.8%)), DOT-USD(weak 3d trend (-1.4%)), ETH-USD(weak 3d trend (-0.8%)), FET-USD(weak 3d trend (-8.3%)), FLOKI-USD(weak 3d trend (+0.4%)), GRT-USD(weak 3d trend (-1.0%)), HBAR-USD(weak 3d trend (-1.0%)), ICP-USD(weak 3d trend (-1.3%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-0.7%)), LTC-USD(weak 3d trend (-0.3%)), MATIC-USD(weak 3d trend (-2.1%)), NEAR-USD(weak 3d trend (+0.0%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(weak 3d trend (+1.7%)), SHIB-USD(weak 3d trend (+3.4%)), SNX-USD(weak 3d trend (+1.6%)), SOL-USD(weak 3d trend (-0.3%)), SUI-USD(weak 3d trend (-0.5%)), TIA-USD(weak 3d trend (+2.9%)), TRX-USD(weak 3d trend (-5.5%)), WIF-USD(weak 3d trend (+1.9%)), XLM-USD(weak 3d trend (-2.6%)), XRP-USD(weak 3d trend (-1.7%)) | warming=2 | neutral=2 | no_data=6
+2026-06-12 00:43:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.84
+2026-06-12 00:43:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.60
+2026-06-12 00:43:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:43:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:43:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:43:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.84
+2026-06-12 00:43:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.60
+2026-06-12 00:43:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:43:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:43:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:43:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>131.36, Vol=4.4x | PLTR @ $131.84
+2026-06-12 00:43:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.60
+2026-06-12 00:43:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.5x | NVDA @ $205.59
+2026-06-12 00:43:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-12 00:43:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.35
+2026-06-12 00:43:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-12 00:43:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-12 00:44:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-12 00:44:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-12 00:44:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-12 00:44:02 | INFO     | trading_bot.engine   | IBKR scanner: 117 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
+2026-06-12 00:44:02 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-12 00:44:02 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-12 00:44:02 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 104 low-priority equity names; max 90)
