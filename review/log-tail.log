@@ -1,106 +1,3 @@
-2026-06-11 09:38:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 09:39:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=64, higher lows, Vol=8.0x | GENVR @ $1.60
-2026-06-11 09:39:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=37, higher lows, Vol=2.8x | LABX @ $121.00
-2026-06-11 09:39:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=97, higher lows, Vol=5.4x | ELVN @ $42.95
-2026-06-11 09:39:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.21
-2026-06-11 09:39:51 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [SPIKE]: RDWU | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 13.4x | Change: +3.8% | R:R 3.0 | Size: 50%
-2026-06-11 09:39:51 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
-2026-06-11 09:39:51 | INFO     | trading_bot.engine   |   -> momentum: buy GENVR @ $1.60 conf=0.90
-2026-06-11 09:39:51 | INFO     | trading_bot.engine   |   -> momentum: buy LABX @ $121.00 conf=0.75
-2026-06-11 09:39:51 | INFO     | trading_bot.engine   |   -> momentum: buy ELVN @ $42.95 conf=0.75
-2026-06-11 09:39:51 | INFO     | trading_bot.engine   |   -> momentum: buy RIOT @ $24.21 conf=0.90
-2026-06-11 09:39:51 | INFO     | trading_bot.engine   |   -> momentum_runner: buy RDWU @ $17.97 conf=0.60
-2026-06-11 09:39:51 | INFO     | trading_bot.risk.manager | APPROVED: buy GENVR | Momentum BUY: EMA cross, ADX=64, higher lows, Vol=8.0x
-2026-06-11 09:39:51 | INFO     | trading_bot.risk.manager | APPROVED: buy LABX | Momentum BUY: EMA trend, ADX=37, higher lows, Vol=2.8x
-2026-06-11 09:39:51 | INFO     | trading_bot.risk.manager | APPROVED: buy ELVN | Momentum BUY: EMA trend, ADX=97, higher lows, Vol=5.4x
-2026-06-11 09:39:51 | INFO     | trading_bot.risk.manager | APPROVED: buy RIOT | Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x
-2026-06-11 09:39:51 | INFO     | trading_bot.risk.manager | APPROVED: buy RDWU | [SPIKE] Score:6/12 RVOL:13.4x | Confirmed | Chg:+3.8%
-2026-06-11 09:39:51 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1115 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 5
-  ✅ GENVR: score 90/100 — Momentum BUY: EMA cross, ADX=64, higher lows, Vol=8.0x
-  ✅ LABX: score 75/100 — Momentum BUY: EMA t
-2026-06-11 09:39:51 | WARNING  | trading_bot.engine   | SLOW CYCLE (208.3s total): update_data=184.7s, update_scalp=18.1s, discover=5.1s
-2026-06-11 09:39:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-11 09:39:53 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: GENVR — wide spread 54.2% (>5% for $1.60)
-2026-06-11 09:39:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-11 09:39:55 | INFO     | trading_bot.engine   | VOL REGIME: LABX short=0.0417 long=0.0209 ratio=2.00x → sizing mult 0.83x
-2026-06-11 09:39:55 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 0.83x = 0.25% risk
-2026-06-11 09:39:55 | INFO     | trading_bot.risk.position_sizer | Position size: 20 shares @ $120.98 = $2,419.60 | Risk: $56.00 (0.2% of account) [tier: 1-150 shares]
-2026-06-11 09:39:55 | INFO     | trading_bot.engine   | Executing LABX via IBKR...
-2026-06-11 09:39:55 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: LABX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-11 09:39:55 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: LABX (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-11 09:39:55 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: PreSubmitted | Filled: 0.0/20.0
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: PreSubmitted | Filled: 0.0/20.0
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: Submitted | Filled: 0.0/20.0
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: Filled | Filled: 20.0/20.0 | AvgPrice: $121.47
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: PreSubmitted | Filled: 0.0/20.0
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: PreSubmitted | Filled: 0.0/20.0
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | Order update: LABX | Status: Submitted | Filled: 0.0/20.0
-2026-06-11 09:39:56 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 20 LABX @ LIMIT $123.40 | TP: $132.75 | SL: $118.18 | Parent ID: 885838
-2026-06-11 09:39:57 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 20/20 LABX @ $121.4700 | signal $123.4000 | slippage -1.56% | parent=MARKET
-2026-06-11 09:39:57 | INFO     | trading_bot.engine   | BRACKET ORDER active: LABX | SL: $118.18 | TP: $132.75 (managed by IBKR server-side)
-2026-06-11 09:39:57 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: LABX expected $120.98 but filled @ $121.47
-2026-06-11 09:39:57 | WARNING  | trading_bot.engine   | SLIPPAGE WARNING: LABX slippage +0.4% (threshold 0.8%, RTH) | Signal $121.00 → Fill $121.47
-2026-06-11 09:39:57 | INFO     | trading_bot.engine   | ORDER BUY LABX via IBKR | Qty: 20 | Price: $121.47 | Cost: $2,429.40 | Stop: $118.18 (risk $65.80) | Target: $132.75 (reward $225.60) | R:R 3.4:1 | Strategy: momentum
-2026-06-11 09:39:57 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: LABX**
-```
-  Entry: $121.47 x 20 shares = $2,429.40
-  Stop:  $118.18 (-$65.80 | -2.7%)
-  Targets: $132.75
-  Risk/Reward: 3.4
-```
-Strategy: **momentum** | Confidence: **75%**
-2026-06-11 09:39:57 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY LABX qty=20 @ $121.47 → primary webhook (200)
-2026-06-11 09:39:57 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-11 09:39:57 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-11 09:39:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-11 09:39:59 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: ELVN — wide spread 2.6% (>2% for $42.95)
-2026-06-11 09:39:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-11 09:40:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-11 09:40:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:02 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RIOT — bearish EMA imbalance -0.55
-2026-06-11 09:40:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:05 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RDWU — score 6 below min 50
-2026-06-11 09:40:08 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-0.8%)), ADA-USD(weak 3d trend (-0.8%)), ALGO-USD(weak 3d trend (-7.3%)), APT-USD(weak 3d trend (-6.6%)), ARB-USD(weak 3d trend (-4.8%)), AVAX-USD(weak 3d trend (-3.0%)), BONK-USD(weak 3d trend (-3.1%)), BTC-USD(weak 3d trend (-0.9%)), DOGE-USD(weak 3d trend (-1.6%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (-1.8%)), FET-USD(weak 3d trend (-13.7%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-5.0%)), HBAR-USD(weak 3d trend (-4.5%)), ICP-USD(weak 3d trend (-2.7%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-2.5%)), LTC-USD(weak 3d trend (-1.9%)), MATIC-USD(weak 3d trend (-9.9%)), NEAR-USD(weak 3d trend (-6.4%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-2.5%)), RNDR-USD(weak 3d trend (-6.9%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (-1.3%)), SNX-USD(weak 3d trend (-4.9%)), SOL-USD(weak 3d trend (-1.9%)), SUI-USD(weak 3d trend (-2.2%)), TIA-USD(weak 3d trend (-0.5%)), TON-USD(weak 3d trend (+3.0%)), TRX-USD(weak 3d trend (-0.7%)), UNI-USD(weak 3d trend (-1.6%)), WIF-USD(weak 3d trend (-2.5%)), XLM-USD(weak 3d trend (-7.5%)), XRP-USD(weak 3d trend (-4.4%)) | warming=1 | neutral=2 | no_data=3
-2026-06-11 09:40:08 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, higher lows, Vol=4.5x | RIOT @ $24.17
-2026-06-11 09:40:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:09 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:10 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:11 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, higher lows, Vol=4.5x | RIOT @ $24.18
-2026-06-11 09:40:11 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; IBEOS; OVERNIGHT; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: AMEX; PEARL; NYSENAT; T24X; PSX; MEMX; EDGEA; LTSE; DRCTEDGE; 
-2026-06-11 09:40:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:14 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, higher lows, Vol=4.5x | RIOT @ $24.17
-2026-06-11 09:40:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-11 09:40:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
-2026-06-11 09:40:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-11 09:40:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-11 09:40:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
-2026-06-11 09:40:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-11 09:40:18 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
-2026-06-11 09:40:19 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
-2026-06-11 09:40:19 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 131 low-priority equity names; max 90)
-2026-06-11 09:40:19 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-11 09:40:19 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-11 09:40:19 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-11 09:42:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 09:42:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-11 09:42:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.21
-2026-06-11 09:42:56 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-11 09:42:56 | INFO     | trading_bot.engine   |   -> momentum: buy RIOT @ $24.21 conf=0.90
-2026-06-11 09:42:56 | INFO     | trading_bot.risk.manager | APPROVED: buy RIOT | Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x
-2026-06-11 09:42:56 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1127 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ RIOT: score 90/100 — Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows
-Approved: 1 trades
-2026-06-11 09:42:57 | WARNING  | trading_bot.engine   | SLOW CYCLE (163.5s total): update_data=139.3s, update_scalp=18.3s
-2026-06-11 09:42:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-11 09:43:00 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RIOT — bearish EMA imbalance -0.76
-2026-06-11 09:43:03 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-0.8%)), ADA-USD(weak 3d trend (-0.7%)), ALGO-USD(weak 3d trend (-7.3%)), APT-USD(weak 3d trend (-6.6%)), ARB-USD(weak 3d trend (-4.8%)), AVAX-USD(weak 3d trend (-2.4%)), BONK-USD(weak 3d trend (-3.1%)), BTC-USD(weak 3d trend (-1.2%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-2.8%)), ETH-USD(weak 3d trend (-2.0%)), FET-USD(weak 3d trend (-13.2%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-5.0%)), HBAR-USD(weak 3d trend (-4.5%)), ICP-USD(weak 3d trend (-2.7%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (-2.5%)), LTC-USD(weak 3d trend (-1.2%)), MATIC-USD(weak 3d trend (-9.9%)), NEAR-USD(weak 3d trend (-6.1%)), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(weak 3d trend (-2.5%)), RNDR-USD(weak 3d trend (-6.9%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (-1.3%)), SNX-USD(weak 3d trend (-4.9%)), SOL-USD(weak 3d trend (-1.9%)), SUI-USD(weak 3d trend (-2.3%)), TIA-USD(weak 3d trend (-0.5%)), TON-USD(weak 3d trend (+3.0%)), TRX-USD(weak 3d trend (-0.7%)), UNI-USD(weak 3d trend (-1.6%)), WIF-USD(weak 3d trend (-2.5%)), XLM-USD(weak 3d trend (-7.4%)), XRP-USD(weak 3d trend (-3.9%)) | warming=1 | neutral=2 | no_data=3
 2026-06-11 09:43:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.21
 2026-06-11 09:43:06 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>24.20, higher lows, Vol=4.5x | RIOT @ $24.26
 2026-06-11 09:43:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; CHX; NYSENAT; T24X; MEMX; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: NASDAQ; Top: AMEX; IBEOS; PSX; OVERNIGHT; EDGEA; LTSE; 
@@ -19998,3 +19895,106 @@ Signals found: 14
 2026-06-11 22:50:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=47, Vol=3.3x | TSLA @ $399.00
 2026-06-11 22:50:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, breakout>69.39, Vol=6.8x | UBER @ $69.55
 2026-06-11 22:50:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-11 22:50:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-11 22:50:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-11 22:50:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-11 22:50:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-11 22:50:04 | INFO     | trading_bot.engine   | IBKR scanner: 117 unique symbols discovered | 50 gainers, 19 gaps, 20 losers
+2026-06-11 22:50:04 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-11 22:50:04 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-11 22:50:04 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 98 low-priority equity names; max 90)
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=57, breakout>110.18, higher lows, Vol=7.3x | SHOP @ $111.00
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, Vol=5.6x | SNAP @ $5.34
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.77
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.6x | NVDA @ $204.67
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.44
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=88, breakout>32.05, Vol=2.7x | SMCI @ $32.15
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.2x | GOOGL @ $357.66
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=58, Vol=3.3x | AMD @ $488.21
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, higher lows, Vol=3.1x | RKLB @ $114.77
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=47, Vol=3.3x | TSLA @ $399.00
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, breakout>69.39, Vol=6.8x | UBER @ $69.55
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CRBU | Score: 70 | RVOL: 12.8x | Change: +0.3% | R:R 2.0 | Target: $1.68 (+1.2%)
+2026-06-11 22:53:26 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CWVX | Score: 70 | RVOL: 3.4x | Change: +0.6% | R:R 2.0 | Target: $25.60 (+1.2%)
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 14 signals from strategies
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy SHOP @ $111.00 conf=0.90
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.34 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy AMZN @ $241.77 conf=0.75
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy NVDA @ $204.67 conf=0.75
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy COIN @ $160.44 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy SMCI @ $32.15 conf=0.85
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy GOOGL @ $357.66 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy AMD @ $488.21 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy RKLB @ $114.77 conf=0.75
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $16.67 conf=0.85
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy TSLA @ $399.00 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $69.55 conf=0.85
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CRBU @ $1.67 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CWVX @ $25.35 conf=0.70
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy SHOP | Momentum BUY: EMA trend, ADX=57, breakout>110.18, higher lows, Vol=7.3x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA trend, ADX=44, Vol=5.6x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy AMZN | Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy NVDA | Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.6x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy COIN | Momentum BUY: EMA trend, ADX=46, Vol=3.7x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCI | Momentum BUY: EMA trend, ADX=88, breakout>32.05, Vol=2.7x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy GOOGL | Momentum BUY: EMA trend, ADX=53, Vol=6.2x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy AMD | Momentum BUY: EMA trend, ADX=58, Vol=3.3x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy RKLB | Momentum BUY: pullback entry, ADX=49, higher lows, Vol=3.1x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy TSLA | Momentum BUY: EMA trend, ADX=47, Vol=3.3x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: EMA trend, ADX=65, breakout>69.39, Vol=6.8x
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy CRBU | Extreme RVOL 12.8x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (67)
+2026-06-11 22:53:27 | INFO     | trading_bot.risk.manager | APPROVED: buy CWVX | Very high RVOL 3.4x | Moving up +0.6% | Volume accelerating bar-over-bar | Short-term trend bullish
+2026-06-11 22:53:27 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 14 buy signal(s) — SHOP, SNAP, AMZN, NVDA, COIN, SMCI, GOOGL, AMD, RKLB, SOFI...
+2026-06-11 22:53:27 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 924 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 14
+  ✅ SHOP: score 90/100 — Momentum BUY: EMA trend, ADX=57, breakout>110.18, higher low
+  ✅ SNAP: score 70/100 — Momentum BUY: 
+2026-06-11 22:53:27 | WARNING  | trading_bot.engine   | SLOW CYCLE (206.5s total): update_data=186.2s, update_scalp=15.8s
+2026-06-11 22:53:30 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[34]: AAVE-USD(weak 3d trend (+3.4%)), ADA-USD(weak 3d trend (+3.2%)), ALGO-USD(weak 3d trend (-2.5%)), APT-USD(weak 3d trend (-4.4%)), AVAX-USD(weak 3d trend (+0.5%)), BTC-USD(weak 3d trend (+1.3%)), COMP-USD(weak 3d trend (+4.8%)), DOGE-USD(weak 3d trend (+1.4%)), DOT-USD(weak 3d trend (-0.1%)), ETC-USD(weak 3d trend (+4.6%)), ETH-USD(weak 3d trend (+0.7%)), FET-USD(weak 3d trend (-5.8%)), FLOKI-USD(weak 3d trend (+3.0%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-0.5%)), ICP-USD(weak 3d trend (+0.7%)), IMX-USD(weak 3d trend (-3.0%)), LINK-USD(weak 3d trend (+1.4%)), LTC-USD(weak 3d trend (+0.6%)), MATIC-USD(weak 3d trend (-2.0%)), NEAR-USD(weak 3d trend (+2.8%)), OP-USD(weak 3d trend (+2.1%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(weak 3d trend (+0.8%)), SHIB-USD(weak 3d trend (+3.6%)), SNX-USD(weak 3d trend (+1.6%)), SOL-USD(weak 3d trend (+2.3%)), SUI-USD(weak 3d trend (+2.0%)), TIA-USD(weak 3d trend (+2.9%)), TON-USD(weak 3d trend (+2.8%)), TRX-USD(weak 3d trend (-5.4%)), WIF-USD(weak 3d trend (+1.9%)), XLM-USD(weak 3d trend (-1.5%)), XRP-USD(weak 3d trend (-0.2%)) | warming=1 | neutral=2 | no_data=5
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=88, breakout>32.05, Vol=2.7x | SMCI @ $32.15
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.2x | GOOGL @ $357.66
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=58, Vol=3.3x | AMD @ $488.21
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, higher lows, Vol=3.1x | RKLB @ $114.77
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=57, breakout>110.18, higher lows, Vol=7.3x | SHOP @ $111.00
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, Vol=5.6x | SNAP @ $5.34
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.77
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.6x | NVDA @ $204.67
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.44
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=47, Vol=3.3x | TSLA @ $399.00
+2026-06-11 22:53:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, breakout>69.39, Vol=6.8x | UBER @ $69.55
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=88, breakout>32.05, Vol=2.7x | SMCI @ $32.15
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.2x | GOOGL @ $357.66
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=58, Vol=3.3x | AMD @ $488.21
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, higher lows, Vol=3.1x | RKLB @ $114.77
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=57, breakout>110.18, higher lows, Vol=7.3x | SHOP @ $111.00
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, Vol=5.6x | SNAP @ $5.34
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.77
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.6x | NVDA @ $204.67
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.44
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=47, Vol=3.3x | TSLA @ $399.00
+2026-06-11 22:53:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, breakout>69.39, Vol=6.8x | UBER @ $69.55
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=88, breakout>32.05, Vol=2.7x | SMCI @ $32.15
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.2x | GOOGL @ $357.66
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=58, Vol=3.3x | AMD @ $488.21
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=49, higher lows, Vol=3.1x | RKLB @ $114.77
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=95, breakout>16.65, Vol=3.1x | SOFI @ $16.67
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=57, breakout>110.18, higher lows, Vol=7.3x | SHOP @ $111.00
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, Vol=5.6x | SNAP @ $5.34
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.77
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, higher lows, Vol=3.6x | NVDA @ $204.67
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=46, Vol=3.7x | COIN @ $160.44
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=47, Vol=3.3x | TSLA @ $399.00
+2026-06-11 22:53:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=65, breakout>69.39, Vol=6.8x | UBER @ $69.55
+2026-06-11 22:53:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-11 22:53:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-11 22:53:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-11 22:53:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-11 22:53:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-11 22:53:40 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 50 gainers, 19 gaps, 20 losers
+2026-06-11 22:53:40 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-11 22:53:40 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
