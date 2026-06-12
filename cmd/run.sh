@@ -1,1 +1,1 @@
-cd /opt/trading-bot && git fetch origin main && git reset --hard origin/main 2>&1 | tail -2 && echo '---HEAD---' && git log --oneline -2 && docker compose restart trading-bot 2>&1 | tail -3
+docker ps --filter name=trading-bot --format '{{.Names}}\t{{.Status}}' && echo '---HEAD---' && cd /opt/trading-bot && git log --oneline -1 && echo '---RECENT BOT LOG---' && docker logs trading-bot-trading-bot-1 --since 2m 2>&1 | grep -v 'GET /health' | tail -10
