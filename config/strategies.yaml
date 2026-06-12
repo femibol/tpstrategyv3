@@ -59,7 +59,7 @@ mean_reversion:
   # filter every losing symbol). See HANDOFF for the planned pagination follow-up.
   crypto_trend_filter_enabled: true
   crypto_trend_lookback_bars: 864    # 3d × 24h × 12 bars/h on 5m (within the 1000-bar Binance cap)
-  crypto_trend_min_pct: 0.05         # require ≥ +5% over the lookback window (was +10%, too strict in flat tape — live diag 2026-05-27 showed 33-36/42 names blocked at 10% with strongest at ICP +9.9% / GRT +8.7% / TIA +7.7%; per HANDOFF session 8 pre-approved fallback)
+  crypto_trend_min_pct: 0.01         # require ≥ +1% over the lookback window. Was +5% (was +10% before that). 2026-06-12 audit: 7-day silence (0 trades) because market went range-bound — best 3d trend in universe was +2%, nothing cleared +5%. The strategy's own z-score + RSI gates differentiate winners from losers within a flat universe; the trend filter at +5% was doing too much work. At +1%, the actively-crashing names (FET -10%, XLM -6%) stay blocked; the flat-positive ones (AAVE +2%, ETC +2%, ARB +1.6%) re-enter the candidate pool. Per-symbol edge filter is the real long-term answer (Tier 2).
   bollinger_period: 20
   bollinger_std: 2.0
   min_atr_multiplier: 1.5
