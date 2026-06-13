@@ -167,6 +167,17 @@ class IBKRBroker(BaseBroker):
         # News callback (set by subscribe_news)
         self._news_callback = None
 
+        # Wedge detection (Wave 5). Tracks consecutive `_run` timeouts so
+        # the engine can fire ib-gateway auto-recovery when the worker
+        # hangs (TCP up, ib_async calls timing out — the DELL incident
+        # pattern from session 10 where `is_connected()` returns True so
+        # the reconnect loop never sees the failure).
+        self._consecutive_timeouts = 0
+        self._wedge_callback = None
+        self._wedge_threshold = int(
+            risk_cfg.get("ibkr_wedge_threshold", 3)
+        )
+
         # --- Dedicated ib_async worker thread ---
         # ib_async is NOT thread-safe. The contextvars re-entry crash that
         # repeatedly wedged this bot came from ib_async sync wrappers being
@@ -216,13 +227,46 @@ class IBKRBroker(BaseBroker):
         fut = concurrent.futures.Future()
         self._ib_queue.put((fn, fut))
         try:
-            return fut.result(timeout=timeout)
+            result = fut.result(timeout=timeout)
+            # Successful call resets the consecutive-timeout counter so a
+            # transient slow call doesn't accumulate toward the wedge
+            # threshold once the worker recovers.
+            self._consecutive_timeouts = 0
+            return result
         except concurrent.futures.TimeoutError:
             log.error(f"IBKR worker call timed out after {timeout}s")
+            # Wave 5: DELL-incident category fix. When the worker wedges
+            # (TCP/IBKR gateway up, but ib_async calls hang on `worker
+            # call timed out`), the reconnect_loop never fires because
+            # `is_connected()` still returns True. Track consecutive
+            # timeouts and fire the wedge callback so the engine can
+            # trigger the same `_try_auto_recover_gateway` it uses for
+            # the lost-connection path. Counter is reset by either a
+            # successful call OR the callback firing (to prevent
+            # re-triggering on the next failed call before recovery
+            # finishes).
+            self._consecutive_timeouts += 1
+            if (
+                self._wedge_callback
+                and self._consecutive_timeouts >= self._wedge_threshold
+            ):
+                hits = self._consecutive_timeouts
+                self._consecutive_timeouts = 0  # arm for next streak
+                try:
+                    self._wedge_callback(hits)
+                except Exception as cb_err:
+                    log.error(f"IBKR wedge callback failed: {cb_err}")
             return None
         except Exception as e:
             log.error(f"IBKR worker call failed: {e}")
             return None
+
+    def on_wedge(self, callback):
+        """Register a callback to fire when consecutive worker timeouts
+        hit `_wedge_threshold`. Callback receives the timeout count.
+        The engine wires this to `_try_auto_recover_gateway` so the
+        DELL incident pattern (gateway up but worker hung) self-heals."""
+        self._wedge_callback = callback
 
     @_on_worker
     def connect(self):
