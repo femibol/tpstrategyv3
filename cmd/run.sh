@@ -1,1 +1,1 @@
-docker ps --filter name=trading-bot --format '{{.Names}}\t{{.Status}}' && echo '---HEAD---' && cd /opt/trading-bot && git log --oneline -1 && echo '---RECENT BOT LOG---' && docker logs trading-bot-trading-bot-1 --since 2m 2>&1 | grep -v 'GET /health' | tail -10
+cd /opt/trading-bot && grep -A 15 'max_dollar_risk_per_strategy' config/settings.yaml | head -20 && echo '---STRATEGIES STATE---' && grep -E 'momentum:|rvol_scalp:' config/strategies.yaml | head -5
