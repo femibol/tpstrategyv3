@@ -54,7 +54,36 @@ class TradeAnalyzer:
         self._load_state()
 
     def persist_trade(self, trade):
-        """Save a completed trade to persistent storage (survives restarts)."""
+        """Save a completed trade to persistent storage (survives restarts).
+
+        Dedup: HANDOFF session 9 documented FBYD (and others) appearing 2-3×
+        in trade_history with identical entry_time / exit_time / pnl —
+        inflating loss counts everywhere downstream. Root cause is a race
+        between `_close_position`'s `_recently_closed` cooldown (set
+        AFTER the append) and concurrent close calls from
+        monitor / EOD / broker-sync code paths. The double-close guard
+        (`_closing_in_progress`) is in-memory and reset by the `finally:`
+        block, leaving a window where two callers can both reach the
+        append. This dedups at the persist layer regardless of source.
+
+        Dedup key: (symbol, entry_time, exit_time). All three are stamped
+        at close-record time so collisions are exact matches.
+        """
+        sym = trade.get("symbol")
+        entry_t = trade.get("entry_time")
+        exit_t = trade.get("exit_time")
+        if sym and entry_t and exit_t:
+            for prior in reversed(self._persisted_trades[-10:]):
+                if (
+                    prior.get("symbol") == sym
+                    and prior.get("entry_time") == entry_t
+                    and prior.get("exit_time") == exit_t
+                ):
+                    log.warning(
+                        f"DUP TRADE SKIP: {sym} entry={entry_t} exit={exit_t} "
+                        f"already persisted — skipping duplicate write"
+                    )
+                    return
         self._persisted_trades.append(trade)
         # Keep last 500 trades
         self._persisted_trades = self._persisted_trades[-500:]
@@ -72,6 +101,46 @@ class TradeAnalyzer:
     def get_persisted_trades(self):
         """Get all persisted trades (for AI analysis across restarts)."""
         return list(self._persisted_trades)
+
+    def dedupe_persisted_trades(self):
+        """One-shot cleanup of any existing duplicates already on disk.
+
+        Used at boot to remove legacy duplicates (FBYD-class) before the
+        analyzer or downstream consumers read inflated counts. Returns
+        the number of duplicates removed.
+
+        Dedup key: (symbol, entry_time, exit_time). Preserves first
+        occurrence so the original record's timing is kept; later
+        duplicates fall away.
+        """
+        seen = set()
+        deduped = []
+        removed = 0
+        for t in self._persisted_trades:
+            key = (
+                t.get("symbol"),
+                t.get("entry_time"),
+                t.get("exit_time"),
+            )
+            if all(key) and key in seen:
+                removed += 1
+                continue
+            if all(key):
+                seen.add(key)
+            deduped.append(t)
+        if removed:
+            self._persisted_trades = deduped
+            try:
+                self.data_dir.mkdir(parents=True, exist_ok=True)
+                with open(self._trades_file, "w") as f:
+                    json.dump(self._persisted_trades, f, indent=2)
+                log.warning(
+                    f"DUP CLEANUP: removed {removed} duplicate trade(s) from history "
+                    f"({len(self._persisted_trades)} unique remain)"
+                )
+            except Exception as e:
+                log.error(f"DUP CLEANUP: write failed — {e}")
+        return removed
 
     def _load_trade_history(self):
         """Load trade history from disk."""
