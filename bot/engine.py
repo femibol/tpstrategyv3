@@ -10368,6 +10368,27 @@ class TradingEngine:
                         sector_momentum = self.polygon.get_sector_momentum()
                         runner_strat.feed_sector_momentum(sector_momentum)
 
+                        # Feed catalyst data so the 0-3 catalyst component of
+                        # the 10-pt score is no longer always 0. Without this
+                        # momentum_runner could only ever reach 6 by perfect
+                        # RVOL + Technical (3+0+0+3), which silenced the
+                        # strategy entirely for 30d at 30% allocation. Also
+                        # unblocks the >30% daily-change wall in
+                        # _analyze_symbol: stocks already up >30% require a
+                        # catalyst record to be considered at all.
+                        if self.news_feed and hasattr(self.news_feed, "get_catalyst_map"):
+                            try:
+                                catalyst_map = self.news_feed.get_catalyst_map(
+                                    lookback_minutes=240, min_score=2,
+                                )
+                                if catalyst_map:
+                                    runner_strat.feed_catalyst_data(catalyst_map)
+                                    log.info(
+                                        f"News: fed {len(catalyst_map)} catalysts into momentum_runner"
+                                    )
+                            except Exception as e:
+                                log.debug(f"Catalyst feed error: {e}")
+
                         log.info(
                             f"Polygon: fed {len(session_candidates) if session_candidates else 0} "
                             f"session candidates + {len(poly_mover_syms)} movers into momentum_runner"

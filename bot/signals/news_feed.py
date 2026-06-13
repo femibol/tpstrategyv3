@@ -547,6 +547,69 @@ class NewsFeed:
 
         return False, ""
 
+    def get_catalyst_map(self, lookback_minutes=240, min_score=2):
+        """Build a catalyst map for strategy consumption.
+
+        Returns {symbol: {type, score, reason, published}} keyed by ticker for
+        every BUY signal in `signals_generated` published within the lookback
+        window with `catalyst_score >= min_score`. Strategy code (e.g.
+        momentum_runner.feed_catalyst_data) consumes this each scanner cycle
+        to award catalyst points and unlock symbols past the >30%-day-change
+        wall that otherwise blocks fresh runners without a catalyst record.
+
+        Type classification mirrors the keyword buckets in BULLISH_CATALYSTS:
+          'fda'      — FDA approval / clearance
+          'earnings' — earnings beats / guidance raises
+          'upgrade'  — analyst upgrades / price-target raises
+          'news'     — generic catalyst (default)
+        """
+        from datetime import datetime, timedelta
+        from dateutil.parser import parse as parse_dt
+
+        cutoff = datetime.now() - timedelta(minutes=lookback_minutes)
+        catalyst_map = {}
+
+        for sig in self.signals_generated:
+            if sig.get("action") != "buy":
+                continue
+            score = int(sig.get("catalyst_score", 0) or 0)
+            if score < min_score:
+                continue
+
+            published = sig.get("published", "")
+            if published:
+                try:
+                    if parse_dt(published).replace(tzinfo=None) < cutoff:
+                        continue
+                except Exception:
+                    pass  # unparseable → keep (avoid dropping live IBKR ticks)
+
+            symbol = (sig.get("symbol") or "").upper()
+            if not symbol:
+                continue
+
+            reason = (sig.get("reason") or "").lower()
+            if "fda" in reason:
+                ctype = "fda"
+            elif any(k in reason for k in ("beat", "earnings", "guidance", "revenue")):
+                ctype = "earnings"
+            elif any(k in reason for k in ("upgrade", "outperform", "buy rating", "price target")):
+                ctype = "upgrade"
+            else:
+                ctype = "news"
+
+            existing = catalyst_map.get(symbol)
+            if existing and existing.get("score", 0) >= score:
+                continue
+            catalyst_map[symbol] = {
+                "type": ctype,
+                "score": score,
+                "reason": sig.get("reason", ""),
+                "published": published,
+            }
+
+        return catalyst_map
+
     def get_status(self):
         sources = []
         if self._client:
