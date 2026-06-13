@@ -21,9 +21,24 @@ class Config:
         else:
             load_dotenv(self.base_dir / ".env.example")
 
-        # Load YAML configs
-        self.settings = self._load_yaml("settings.yaml")
-        self.strategies = self._load_yaml("strategies.yaml")
+        # Overlay file paths (gitignored). Auto-tuner + dashboard edits land
+        # here instead of versioned config to break the merge-conflict cascade
+        # documented in HANDOFF session 10. Base config is read-only at
+        # runtime; overlays are deep-merged on top at load time and on every
+        # override-write.
+        self._overlay_dir = self.base_dir / "data"
+        self._settings_overlay_path = self._overlay_dir / "auto-tuner-overrides.yaml"
+        self._strategies_overlay_path = self._overlay_dir / "strategy-tuner-overrides.yaml"
+
+        # Load YAML configs, then overlay
+        self._settings_base = self._load_yaml("settings.yaml")
+        self._strategies_base = self._load_yaml("strategies.yaml")
+        self.settings = self._merge_with_overlay(
+            self._settings_base, self._settings_overlay_path,
+        )
+        self.strategies = self._merge_with_overlay(
+            self._strategies_base, self._strategies_overlay_path,
+        )
 
         # Trading mode
         self.mode = os.getenv("TRADING_MODE", "paper")
@@ -34,8 +49,81 @@ class Config:
         filepath = self.config_dir / filename
         if filepath.exists():
             with open(filepath, "r") as f:
-                return yaml.safe_load(f)
+                return yaml.safe_load(f) or {}
         return {}
+
+    @staticmethod
+    def _deep_merge(base, overlay):
+        """Recursively merge `overlay` into a copy of `base`. Dicts merge
+        key-by-key; everything else (lists, scalars) replaces. Used so an
+        overlay can override one nested key (e.g. `risk.stop_loss_pct`)
+        without having to mirror the entire base file."""
+        if not isinstance(overlay, dict):
+            return overlay
+        out = dict(base) if isinstance(base, dict) else {}
+        for k, v in overlay.items():
+            if isinstance(v, dict) and isinstance(out.get(k), dict):
+                out[k] = Config._deep_merge(out[k], v)
+            else:
+                out[k] = v
+        return out
+
+    def _merge_with_overlay(self, base, overlay_path):
+        """Read overlay file (if it exists) and deep-merge over base.
+        Missing overlay → return base unchanged (so a fresh install
+        without `data/auto-tuner-overrides.yaml` works the same way it
+        always did)."""
+        if not overlay_path.exists():
+            return dict(base) if isinstance(base, dict) else base
+        try:
+            with open(overlay_path, "r") as f:
+                overlay = yaml.safe_load(f) or {}
+        except Exception:
+            return dict(base) if isinstance(base, dict) else base
+        return self._deep_merge(base, overlay)
+
+    def _write_overlay(self, overlay_path, overlay_data):
+        """Persist an overlay dict to disk. Creates `data/` if missing.
+        Does NOT touch the versioned base file."""
+        self._overlay_dir.mkdir(parents=True, exist_ok=True)
+        with open(overlay_path, "w") as f:
+            yaml.dump(overlay_data, f, default_flow_style=False, sort_keys=False)
+
+    def _load_overlay(self, overlay_path):
+        if not overlay_path.exists():
+            return {}
+        try:
+            with open(overlay_path, "r") as f:
+                return yaml.safe_load(f) or {}
+        except Exception:
+            return {}
+
+    def save_setting_override(self, path, value):
+        """Persist a single dot-path override to the settings overlay file
+        (gitignored). Also updates in-memory `self.settings` so the change
+        is live without restart. Replaces the legacy `save_settings()` write-
+        to-versioned-file path that caused merge-conflict cascades whenever
+        the host did `git pull`."""
+        overlay = self._load_overlay(self._settings_overlay_path)
+        keys = path.split(".")
+        d_overlay = overlay
+        d_live = self.settings
+        for key in keys[:-1]:
+            d_overlay = d_overlay.setdefault(key, {})
+            d_live = d_live.setdefault(key, {})
+        d_overlay[keys[-1]] = value
+        d_live[keys[-1]] = value
+        self._write_overlay(self._settings_overlay_path, overlay)
+
+    def save_strategy_override(self, strategy_name, key, value):
+        """Persist a strategy-config override (e.g. mean_reversion's
+        entry_zscore) to the strategies overlay file. Mirrors
+        save_setting_override but routes to the strategies overlay so
+        the two stay cleanly separated on disk."""
+        overlay = self._load_overlay(self._strategies_overlay_path)
+        overlay.setdefault(strategy_name, {})[key] = value
+        self.strategies.setdefault(strategy_name, {})[key] = value
+        self._write_overlay(self._strategies_overlay_path, overlay)
 
     # --- Capital ---
     @property
