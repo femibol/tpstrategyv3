@@ -321,6 +321,39 @@ class NewsFeed:
             "publisher": publisher_name,
         }
 
+    # Keyword buckets used to classify a BUY catalyst into an explicit
+    # type for momentum_runner's `_catalyst_cache`. Previously
+    # `get_catalyst_map` derived the type by re-grepping the signal's
+    # reason text — that was a fragility (reason text changes elsewhere
+    # → classification regresses to "news"). Now classified once at
+    # source and carried on `signal["catalyst_type"]`.
+    _CATALYST_TYPE_KEYWORDS = {
+        "fda": ("fda approval", "fda cleared", "fda authorized"),
+        "earnings": (
+            "beat estimates", "beats expectations", "record revenue",
+            "record earnings", "raised guidance", "raises guidance",
+            "earnings", "estimates", "blowout quarter", "tops estimates",
+            "strong earnings", "solid quarter", "revenue growth",
+            "profit growth", "margin expansion",
+        ),
+        "upgrade": (
+            "upgraded to buy", "upgrade to buy", "upgraded to outperform",
+            "buy rating", "outperform", "overweight",
+            "price target raised", "analyst upgrade",
+        ),
+    }
+
+    @classmethod
+    def _classify_catalyst_type(cls, content):
+        """Map an article's combined title+description to a strategy
+        bucket. Order matters: FDA wins over the generic "approval"
+        token; earnings checks before generic positive sentiment."""
+        for type_label in ("fda", "earnings", "upgrade"):
+            for kw in cls._CATALYST_TYPE_KEYWORDS[type_label]:
+                if kw in content:
+                    return type_label
+        return "news"
+
     def _score_article(self, article, ticker):
         """
         Score a news article for a specific ticker.
@@ -385,6 +418,13 @@ class NewsFeed:
             "article_url": article.get("url", ""),
             "published": article.get("published", ""),
             "catalyst_score": bull_score if action == "buy" else bear_score,
+            # Explicit type (Wave 4) — classified at source instead of
+            # re-derived from the reason string downstream. BUY-only;
+            # SELL signals exit and don't carry a catalyst classification.
+            "catalyst_type": (
+                self._classify_catalyst_type(content)
+                if action == "buy" else None
+            ),
         }
 
         log.info(
@@ -588,15 +628,20 @@ class NewsFeed:
             if not symbol:
                 continue
 
-            reason = (sig.get("reason") or "").lower()
-            if "fda" in reason:
-                ctype = "fda"
-            elif any(k in reason for k in ("beat", "earnings", "guidance", "revenue")):
-                ctype = "earnings"
-            elif any(k in reason for k in ("upgrade", "outperform", "buy rating", "price target")):
-                ctype = "upgrade"
-            else:
-                ctype = "news"
+            # Prefer the explicit catalyst_type field stamped at signal
+            # creation (Wave 4 PR). Fall back to the keyword scan over
+            # the reason string for signals that predate that field.
+            ctype = sig.get("catalyst_type")
+            if not ctype:
+                reason = (sig.get("reason") or "").lower()
+                if "fda" in reason:
+                    ctype = "fda"
+                elif any(k in reason for k in ("beat", "earnings", "guidance", "revenue")):
+                    ctype = "earnings"
+                elif any(k in reason for k in ("upgrade", "outperform", "buy rating", "price target")):
+                    ctype = "upgrade"
+                else:
+                    ctype = "news"
 
             existing = catalyst_map.get(symbol)
             if existing and existing.get("score", 0) >= score:
