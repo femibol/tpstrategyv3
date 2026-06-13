@@ -5591,6 +5591,57 @@ class TradingEngine:
 
         return True, ""
 
+    def _record_slippage(self, strategy, slippage_pct):
+        """Record the realized signed slippage on a fill for the given
+        strategy. Maintains a rolling deque so `_compute_slippage_mult`
+        can dampen the next entry's size when recent fills show drag.
+
+        Negative slippage (we got a discount) is recorded as zero —
+        only adverse slippage counts as friction. The slippage_reject
+        hard threshold handles the catastrophic case; this catches the
+        steady drag that fills the strategy's edge with cost-per-trade.
+        """
+        if not strategy:
+            return
+        if not hasattr(self, "_strategy_slippage"):
+            from collections import deque, defaultdict
+            self._strategy_slippage = defaultdict(lambda: deque(maxlen=20))
+        adverse = max(0.0, float(slippage_pct or 0))
+        self._strategy_slippage[strategy].append(adverse)
+
+    def _compute_slippage_mult(self, strategy):
+        """Return a sizing multiplier in [0.5, 1.0] based on the strategy's
+        recent realized slippage. Mirrors `_compute_vol_regime_mult`
+        shape so the call site stays parallel.
+
+        Logic:
+          fewer than 5 fills tracked → 1.0 (insufficient sample)
+          avg ≤ 0.003 (0.3%)         → 1.0 (clean, no dampening)
+          avg 0.003–0.006            → linear 1.0 → 0.5
+          avg > 0.006 (0.6%)         → 0.5 floor
+
+        Returns 1.0 on any error so a bad lookup doesn't block trading.
+        """
+        try:
+            buf = getattr(self, "_strategy_slippage", {}).get(strategy)
+            if not buf or len(buf) < 5:
+                return 1.0
+            avg = sum(buf) / len(buf)
+            if avg <= 0.003:
+                return 1.0
+            if avg >= 0.006:
+                mult = 0.5
+            else:
+                mult = 1.0 - ((avg - 0.003) / 0.003) * 0.5
+            log.info(
+                f"SLIPPAGE DAMPENER: {strategy} avg={avg:.3%} over {len(buf)} fills "
+                f"→ sizing mult {mult:.2f}x"
+            )
+            return mult
+        except Exception as e:
+            log.debug(f"slippage mult failed for {strategy}: {e}")
+            return 1.0
+
     def _compute_vol_regime_mult(self, symbol):
         """Compare short-window realized vol to a longer baseline. Returns
         a multiplier in [0.4, 1.0] — never sizes UP, only down when vol
@@ -6180,6 +6231,7 @@ class TradingEngine:
                 log.debug(f"Regime multiplier lookup failed for {strategy}: {e}")
 
         vol_regime_mult = self._compute_vol_regime_mult(symbol)
+        slippage_mult = self._compute_slippage_mult(strategy)
         qty = signal.get("quantity") or self.position_sizer.calculate(
             balance=self.current_balance,
             price=current_price,
@@ -6200,6 +6252,9 @@ class TradingEngine:
             # Vol-regime dampener: cuts size when realized vol spikes
             # vs symbol's own baseline. Protective only (max 1.0x).
             vol_regime_mult=vol_regime_mult,
+            # Slippage dampener: cuts size when this strategy's recent
+            # fills show steady-drag slippage > 0.3% avg.
+            slippage_mult=slippage_mult,
         )
 
         if qty <= 0:
@@ -6630,6 +6685,11 @@ class TradingEngine:
             live_drift = ((actual_price - current_price) / current_price) if current_price > 0 else 0
             signal_drift = ((actual_price - signal_price) / signal_price) if signal_price > 0 else 0
             worst_slippage = max(live_drift, signal_drift)
+            # Record adverse slippage on every BUY fill (not just rejects)
+            # so `_compute_slippage_mult` can dampen the next entry's size
+            # when steady-drag builds up. The reject + warn paths below
+            # are unchanged.
+            self._record_slippage(strategy, worst_slippage)
 
             if worst_slippage > max_slippage:
                 slippage_source = "signal" if signal_drift > live_drift else "market"
