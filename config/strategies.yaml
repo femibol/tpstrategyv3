@@ -42,7 +42,14 @@ mean_reversion:
   timeframe: "5m"
   lookback_period: 20
   entry_zscore: -1.5             # Was -2.0. Z-score -2.0 was too strict for normal sideways noise — rarely fired.
+  # Distance-to-mean exit (Wave 2, 2026-06-13). The strategy is "buy below
+  # mean, sell AT mean" — the prior code only had the overshoot exit (z ≥
+  # +1.5 AND RSI > overbought) which made winners decay into time_exit.
+  # 0.0 = exit when the position returns to its 20-bar mean. Set higher
+  # (e.g. 0.5) to wait for a small rebound, or to -100 to disable and rely
+  # only on the overshoot path.
   exit_zscore: 0.0
+  exit_zscore_crypto: 0.3        # crypto's 5m mean drifts → small offset avoids break-even churn
   rsi_oversold: 32               # Was 28. Loosened in tandem with zscore so oversold conditions trigger more often.
   rsi_overbought: 68             # Symmetric loosen from 72
   entry_zscore_crypto: -1.0      # Was -1.2 (code default). 14h of 24/7 BTC/ETH/SOL chop produced zero fires.
