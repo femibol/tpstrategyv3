@@ -245,18 +245,41 @@ class MomentumStrategy(BaseStrategy):
         # Higher lows pattern (last 3 bars)
         higher_lows = len(lows) >= 4 and lows[-1] > lows[-2] and lows[-2] > lows[-3]
 
-        # --- BUY Signal ---
-        # Primary: EMA bullish + (strong trend OR breakout) + volume
-        # Secondary: EMA bullish + pullback to EMA + higher lows
-        primary_signal = ema_bullish and (strong_trend or breakout) and vol_confirmed
-        pullback_signal = ema_bullish and pullback_to_ema and higher_lows and adx is not None and adx > 20
+        # --- BUY Signal (Turtle/Donchian model — audit 2026-06-13) ---
+        # Until the 2026-06-13 deep-dive audit this strategy fired on EMA
+        # crossover (20-28% WR per published Turtle/Donchian comparisons);
+        # the Donchian breakout was an optional bonus. Result: 30d realized
+        # WR of 26%, -$500. The strategy was documented as Turtle but
+        # implemented as EMA-cross.
+        #
+        # Fix: Donchian breakout (close above N-bar high with volume ≥1.5×
+        # average) is the PRIMARY gate. EMA bullish + ADX become
+        # confirmations. Pullback entry stays as a secondary path but with
+        # tightened gates. Expected WR per Turtle reference ~40-50%.
+        primary_signal = (
+            breakout
+            and vol_ratio >= 1.5
+            and ema_bullish
+            and strong_trend  # ADX > threshold from config (35 default)
+        )
+        # Secondary: pullback to recent support inside a confirmed trend.
+        # Audit found the original 0.5%-above-EMA gate too tight — real
+        # pullbacks dip below the fast EMA. Use prior-bar low as the
+        # support reference.
+        pullback_to_support = (
+            ema_bullish
+            and len(lows) >= 2
+            and current_price >= lows[-2] - 0.005 * current_price  # within 0.5% of prior-bar low
+            and adx is not None and adx > 25
+            and vol_ratio >= 1.2
+        )
 
-        if primary_signal or pullback_signal:
+        if primary_signal or pullback_to_support:
             confidence = 0.5
 
-            # Bonus for fresh crossover
+            # Bonus for fresh crossover (now a confirmation, not the trigger)
             if ema_just_crossed:
-                confidence += 0.15
+                confidence += 0.10  # was 0.15 — demoted
 
             # Bonus for strong ADX
             if adx and adx > 30:
@@ -264,8 +287,8 @@ class MomentumStrategy(BaseStrategy):
             elif adx and adx > 25:
                 confidence += 0.05
 
-            # Bonus for breakout
-            if breakout:
+            # Bonus for primary signal (Donchian breakout) — meaningful
+            if primary_signal:
                 confidence += 0.15
 
             # Volume strength bonus
@@ -275,7 +298,7 @@ class MomentumStrategy(BaseStrategy):
                 confidence += 0.05
 
             # Pullback entry is higher quality (buying at support)
-            if pullback_signal and not primary_signal:
+            if pullback_to_support and not primary_signal:
                 confidence += 0.1
 
             # Higher lows = accumulation
@@ -298,7 +321,7 @@ class MomentumStrategy(BaseStrategy):
             reasons = []
             if ema_just_crossed:
                 reasons.append("EMA cross")
-            elif pullback_signal:
+            elif pullback_to_support:
                 reasons.append("pullback entry")
             elif ema_bullish:
                 reasons.append("EMA trend")
