@@ -589,17 +589,72 @@ class Dashboard:
 
         @self.app.route("/api/control/close/<symbol>", methods=["POST"])
         def close_position(symbol):
+            """Close a single position and report the TRUTHFUL outcome.
+
+            Old behavior returned {"status": "closed"} regardless — the
+            session-10 DELL incident: user called this, response said
+            "closed", but the IBKR worker was wedged and the close sat
+            in queue → position slept overnight uncovered (lost $821).
+
+            New behavior reports actual state observed after the call:
+              - "closed"  → position no longer in self.engine.positions
+              - "queued"  → still tracked but pending in
+                            _slippage_close_queue / next monitor cycle
+              - "failed"  → still tracked, no pending queue entry. Most
+                            likely IBKR worker wedge or broker rejection.
+                            HTTP 502 so operator sees the real state.
+            """
             symbol = symbol.upper()
-            if symbol in self.engine.positions:
-                self.engine._close_position(symbol, "manual", "Closed via mobile dashboard")
+            if symbol not in self.engine.positions:
+                return jsonify({"error": f"No position in {symbol}"}), 404
+
+            self.engine._close_position(symbol, "manual", "Closed via mobile dashboard")
+
+            # Post-call observation
+            if symbol not in self.engine.positions:
                 return jsonify({"status": "closed", "symbol": symbol})
-            return jsonify({"error": f"No position in {symbol}"}), 404
+
+            close_queue = getattr(self.engine, "_slippage_close_queue", []) or []
+            recently_closed = getattr(self.engine, "_recently_closed", {}) or {}
+            if symbol in close_queue or symbol in recently_closed:
+                return jsonify({
+                    "status": "queued",
+                    "symbol": symbol,
+                    "detail": "Close issued but position still tracked; will retry next monitor cycle.",
+                }), 202
+
+            return jsonify({
+                "status": "failed",
+                "symbol": symbol,
+                "detail": "Close call returned but position still tracked. "
+                          "Likely IBKR worker wedge or broker rejection — "
+                          "inspect logs.",
+            }), 502
 
         @self.app.route("/api/control/close-all", methods=["POST"])
         def close_all():
-            count = len(self.engine.positions)
+            """Same truthful-status treatment as the single-close endpoint:
+            count what actually closed, not what we asked to close."""
+            before = set(self.engine.positions)
             self.engine._close_all_positions("Manual close-all via mobile dashboard")
-            return jsonify({"status": "closed_all", "count": count})
+            after = set(self.engine.positions)
+            closed = before - after
+            still_open = before & after
+
+            if not still_open:
+                return jsonify({
+                    "status": "closed_all",
+                    "count": len(closed),
+                    "closed": sorted(closed),
+                })
+            return jsonify({
+                "status": "partial",
+                "closed_count": len(closed),
+                "closed": sorted(closed),
+                "still_open": sorted(still_open),
+                "detail": f"{len(still_open)} position(s) still tracked after "
+                          f"close — inspect logs for broker/worker errors.",
+            }), 502
 
         @self.app.route("/api/control/emergency-stop", methods=["POST"])
         def emergency_stop():
