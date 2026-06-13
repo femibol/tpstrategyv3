@@ -1,46 +1,3 @@
-  stop_loss_pct: 0.03 -> 0.035
-  trailing_stop_pct: 0.015 -> 0.019
-  take_profit_pct: 999.0 -> 0.15
-  alloc_mean_reversion: 0.15 -> 0.2
-  alloc_momen
-2026-06-12 12:30:07 | INFO     | trading_bot.engine   | Auto-Tune applied 19 changes - strategies reloaded
-2026-06-12 12:30:07 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: AUTO-TUNE allocation shift:
-  • mean_reversion: $5,116 → $3,353 (-34%)
-  • rvol_momentum: $1,840 → $838 (-54%)
-  • rvol_scalp: $1,055 → $838 (-21%)
-  • low_float_catalyst: $1,212 → $838
-2026-06-12 12:30:35 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-12 12:32:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-12 12:32:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-12 12:32:22 | INFO     | trading_bot.engine   | DATA COVERAGE: 84/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-12 12:32:40 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.11
-2026-06-12 12:32:40 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-12 12:32:40 | INFO     | trading_bot.engine   |   -> momentum: buy GOOGL @ $361.11 conf=0.85
-2026-06-12 12:32:40 | INFO     | trading_bot.risk.manager | APPROVED: buy GOOGL | Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x
-2026-06-12 12:32:40 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1080 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ GOOGL: score 85/100 — Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x
-Approved: 1 trades
-2026-06-12 12:32:41 | WARNING  | trading_bot.engine   | SLOW CYCLE (184.2s total): update_data=161.0s, update_scalp=18.2s
-2026-06-12 12:32:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-12 12:32:43 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: GOOGL via momentum — daily drawdown circuit breaker active (5m left, DD -2.0%)
-2026-06-12 12:32:46 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[15]: ALGO-USD(weak 3d trend (-1.5%)), BONK-USD(needs vol>=1.1x), DOT-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-5.2%)), FLOKI-USD(needs vol>=1.1x), HBAR-USD(weak 3d trend (-1.7%)), IMX-USD(weak 3d trend (-1.6%)), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-1.7%)), NEAR-USD(weak 3d trend (-2.8%)), RNDR-USD(needs vol>=1.1x), SUI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-2.3%)), XLM-USD(weak 3d trend (-1.2%)), XRP-USD(weak 3d trend (+0.4%)) | warming=12 | neutral=13 | no_data=2
-2026-06-12 12:32:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $360.98
-2026-06-12 12:32:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.07
-2026-06-12 12:32:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-12 12:32:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
-2026-06-12 12:32:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.09
-2026-06-12 12:32:52 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
-2026-06-12 12:32:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
-2026-06-12 12:32:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-12 12:32:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-12 12:32:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-12 12:32:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
-2026-06-12 12:32:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-12 12:32:57 | INFO     | trading_bot.engine   | IBKR scanner: 128 unique symbols discovered | 50 gainers, 15 gaps, 20 losers
-2026-06-12 12:32:57 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
-2026-06-12 12:32:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 119 low-priority equity names; max 90)
 2026-06-12 12:32:57 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
 2026-06-12 12:32:57 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-12 12:32:57 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
@@ -19998,3 +19955,46 @@ Signals found: 2
 2026-06-13 14:31:15 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-13 14:31:15 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-13 14:31:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 14:50:51 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-13 14:51:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | PEPE-USD @ $0.00
+2026-06-13 14:51:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 14:51:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 14:51:34 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-13 14:51:34 | INFO     | trading_bot.engine   |   -> mean_reversion: buy PEPE-USD @ $0.00 conf=1.00
+2026-06-13 14:51:34 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 14:51:34 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 14:51:34 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:34 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 14:51:34 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 14:51:34 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — ADVB, UBER
+2026-06-13 14:51:34 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ PEPE-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+  ✅ ADVB: score 70/100 — Momentum BUY: E
+2026-06-13 14:51:35 | WARNING  | trading_bot.engine   | SLOW CYCLE (1223.5s total): update_data=1203.4s, update_scalp=15.9s
+2026-06-13 14:51:35 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: PEPE-USD via mean_reversion — daily drawdown circuit breaker active (4m left, DD -2.1%)
+2026-06-13 14:51:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: PEPE-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[6]: ALGO-USD(weak 3d trend (-2.5%)), COMP-USD(weak 3d trend (-3.8%)), HBAR-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-1.2%)), UNI-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (+0.7%)) | warming=8 | neutral=25 | no_data=2
+2026-06-13 14:51:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | PEPE-USD @ $0.00
+2026-06-13 14:51:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 14:51:38 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy PEPE-USD from mean_reversion conf=1.00 price=2.85e-06 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:38 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: PEPE-USD via mean_reversion — daily drawdown circuit breaker active (4m left, DD -2.1%)
+2026-06-13 14:51:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | PEPE-USD @ $0.00
+2026-06-13 14:51:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 14:51:41 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy PEPE-USD from mean_reversion conf=1.00 price=2.85e-06 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:41 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: PEPE-USD via mean_reversion — daily drawdown circuit breaker active (4m left, DD -2.1%)
+2026-06-13 14:51:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | PEPE-USD @ $0.00
+2026-06-13 14:51:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 14:51:44 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:44 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy PEPE-USD from mean_reversion conf=1.00 price=2.85e-06 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-13 14:51:44 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: PEPE-USD via mean_reversion — daily drawdown circuit breaker active (4m left, DD -2.1%)
+2026-06-13 14:51:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 14:51:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 14:51:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 14:51:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 14:51:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 14:51:48 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-13 14:51:49 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 14:51:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
