@@ -1,66 +1,3 @@
-2026-06-12 10:58:24 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"f6c38cb9-3d98-4705-87c9-8fe8f97fc68f","logId":"f6c38cb9-3d98-4705-87c9-8fe8f97fc68f","payload":{"ticker":"ARB-USD","action":"exit","quantity":5000,"price":0.0849}}
-2026-06-12 10:58:24 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL ARB-USD | Strategy: unknown | Qty: 5000 @ $0.08 = $424.50 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
-2026-06-12 10:58:24 | INFO     | trading_bot.engine   | CLOSED ARB-USD via TradersPost | webhook_exit | P&L: $+9.50 | External sell signal from mean_reversion
-2026-06-12 10:58:24 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: ARB-USD** (webhook_exit)
-```
-  Entry: $0.08 → Exit: $0.08
-  P&L: $+9.50 (+2.29%)
-  Shares: 5000 | Value: $424.50
-  Hold: 1.2h
-```
-Strategy: **mean_reversion** | External sell signal fr
-2026-06-12 10:58:24 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: ARB-USD +9.50 (219 total in history)
-2026-06-12 10:58:27 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [ARB-USD]: **BOOST:mean_reversion**
-
-58% win rate + clean +2.3% gain on ARB-USD mean_reversion in 74min via webhook_exit = working as intended. Pattern repeating positively across 19 trades. No adjustment needed
-2026-06-12 10:58:27 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'mean_reversion' (total boosts: 2)
-2026-06-12 10:58:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-12 10:58:29 | WARNING  | trading_bot.engine   | LEARNING BLOCK: GOOGL avoided — consistent loser (score: -17.5)
-2026-06-12 10:58:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-12 10:58:32 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: AMZN — symbol history bad: 0/3 wins (0%), avg P&L $-0.69
-2026-06-12 10:58:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-12 10:58:35 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RKLZ — bearish EMA imbalance -0.38
-2026-06-12 10:58:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-12 10:58:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[11]: ALGO-USD(weak 3d trend (-2.4%)), FET-USD(weak 3d trend (-4.8%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-0.7%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-1.6%)), MATIC-USD(weak 3d trend (-0.7%)), NEAR-USD(weak 3d trend (-1.2%)), TRX-USD(weak 3d trend (-2.7%)), XLM-USD(weak 3d trend (-2.7%)), XRP-USD(weak 3d trend (+0.8%)) | warming=1 | neutral=27 | no_data=2
-2026-06-12 10:58:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.1x | GOOGL @ $357.66
-2026-06-12 10:58:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.29
-2026-06-12 10:58:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 10:58:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 10:58:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 10:58:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.1x | GOOGL @ $357.66
-2026-06-12 10:58:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.29
-2026-06-12 10:58:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 10:58:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 10:58:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.1x | GOOGL @ $357.66
-2026-06-12 10:58:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.29
-2026-06-12 10:58:44 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
-2026-06-12 10:58:44 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 10:58:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-12 10:58:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-12 10:58:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-12 10:58:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
-2026-06-12 10:58:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-12 10:58:48 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 50 gainers, 13 gaps, 20 losers
-2026-06-12 10:58:49 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 13 stale symbols across strategies
-2026-06-12 10:58:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 133 low-priority equity names; max 90)
-2026-06-12 10:58:49 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-12 10:58:49 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-12 10:58:49 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-12 11:00:34 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-12 11:01:36 | INFO     | trading_bot.broker.traderspost | EXIT signal for SEI-USD - bypassing rate limits
-2026-06-12 11:01:36 | INFO     | trading_bot.broker.traderspost | Routing SEI-USD to CRYPTO webhook
-2026-06-12 11:01:36 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SEI-USD", "action": "exit", "quantity": 5000, "price": 0.05122}
-2026-06-12 11:01:36 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"931af4f0-8fef-44c8-8f1a-fe30a5f9a1dd","logId":"931af4f0-8fef-44c8-8f1a-fe30a5f9a1dd","payload":{"ticker":"SEI-USD","action":"exit","quantity":5000,"price":0.05122}}
-2026-06-12 11:01:36 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL SEI-USD | Strategy: unknown | Qty: 5000 @ $0.05 = $256.10 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
-2026-06-12 11:01:36 | INFO     | trading_bot.engine   | CLOSED SEI-USD via TradersPost | time_exit | P&L: $+0.00 | Max holding period exceeded
-2026-06-12 11:01:36 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: SEI-USD** (time_exit)
-```
-  Entry: $0.05 → Exit: $0.05
-  P&L: $+0.00 (+0.00%)
-  Shares: 5000 | Value: $256.10
-  Hold: 1.3h
-```
-Strategy: **mean_reversion** | Max holding period exceede
 2026-06-12 11:01:36 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SEI-USD +0.00 (220 total in history)
 2026-06-12 11:01:38 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [SEI-USD]: **NO_CHANGE**
 
@@ -19998,3 +19935,66 @@ Signals found: 2
 2026-06-13 12:13:39 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-13 12:13:39 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-13 12:13:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 12:16:08 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 89/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 9
+2026-06-13 12:16:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 12:16:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:16:25 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-13 12:16:25 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 12:16:25 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 12:16:25 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 12:16:25 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 12:16:25 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — ADVB, UBER
+2026-06-13 12:16:25 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+  ✅ UBER: score 90/100 — Momentum BUY: pullback entry, ADX
+2026-06-13 12:16:25 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.5s total): update_data=149.5s, update_scalp=16.6s
+2026-06-13 12:16:25 | INFO     | trading_bot.engine   | CYCLE #259: regime=sideways | signals=2->approved=0 | positions=0/15 | bars_warm=83/84 | equity_open=False | pm=False pwr_hr=False
+2026-06-13 12:16:28 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[10]: ALGO-USD(weak 3d trend (-1.4%)), ATOM-USD(needs vol>1.3x), COMP-USD(weak 3d trend (-3.8%)), CRV-USD(needs vol>=1.1x), GRT-USD(needs vol>=1.1x), HBAR-USD(weak 3d trend (-0.7%)), LINK-USD(needs vol>=1.1x), OP-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (-1.7%)) | warming=8 | neutral=22 | no_data=2
+2026-06-13 12:16:29 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:16:32 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:16:35 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:16:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 12:16:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 12:16:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 12:16:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 12:16:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 12:16:38 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-13 12:16:38 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 12:16:38 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 12:19:25 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.69, RSI=26, BB=near, Vol=8.1x | DOGE-USD @ $0.09
+2026-06-13 12:19:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 12:19:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:19:25 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-13 12:19:25 | INFO     | trading_bot.engine   |   -> mean_reversion: buy DOGE-USD @ $0.09 conf=0.75
+2026-06-13 12:19:25 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 12:19:25 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 12:19:25 | INFO     | trading_bot.risk.manager | REJECTED: buy DOGE-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-13 12:19:25 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 12:19:25 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 12:19:25 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — ADVB, UBER
+2026-06-13 12:19:25 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ DOGE-USD: score 75/100 — Mean reversion BUY: Z=-1.69, RSI=26, BB=near, Vol=8.1x
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA
+2026-06-13 12:19:25 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.9s total): update_data=150.5s, update_scalp=16.6s
+2026-06-13 12:19:29 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: DOGE-USD(z=-1.69 rsi=26.0 bb=MIDDLE) | WAIT[11]: ALGO-USD(weak 3d trend (-1.4%)), ATOM-USD(needs vol>=1.1x), BTC-USD(needs vol>=1.1x), COMP-USD(weak 3d trend (-3.8%)), CRV-USD(needs vol>=1.1x), ETH-USD(needs green bar), HBAR-USD(weak 3d trend (-0.6%)), LINK-USD(needs vol>=1.1x), OP-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (-0.4%)) | warming=7 | neutral=21 | no_data=2
+2026-06-13 12:19:29 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.69, RSI=26, BB=near, Vol=8.1x | DOGE-USD @ $0.09
+2026-06-13 12:19:29 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:19:29 | INFO     | trading_bot.risk.manager | REJECTED: buy DOGE-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-13 12:19:32 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.69, RSI=26, BB=near, Vol=8.1x | DOGE-USD @ $0.09
+2026-06-13 12:19:32 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:19:32 | INFO     | trading_bot.risk.manager | REJECTED: buy DOGE-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-13 12:19:35 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.69, RSI=26, BB=near, Vol=8.1x | DOGE-USD @ $0.09
+2026-06-13 12:19:35 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 12:19:35 | INFO     | trading_bot.risk.manager | REJECTED: buy DOGE-USD | Cost gate: edge 52bps < 2× cost 50bps (need 100bps)
+2026-06-13 12:19:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 12:19:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 12:19:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 12:19:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 12:19:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 12:19:38 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-13 12:19:38 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 12:19:38 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
