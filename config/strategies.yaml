@@ -84,26 +84,12 @@ momentum:
   atr_target_multiplier: 5.0
   max_holding_bars: 40
   max_hold_days: 5
-  breakout_lookback: 15
-  symbols:
-    - AAPL
-    - MSFT
-    - NVDA
-    - AMD
-    - META
-    - TSLA
-    - AMZN
-    - GOOGL
-    - NFLX
-    - PLTR
-    - COIN
-    - SOFI
-    - RIOT
-    - MARA
-    - SQ
-    - SHOP
-    - SNAP
-    - UBER
+  breakout_lookback: 20  # Donchian standard 20-bar (was 15) — matches Turtle reference
+  # symbols: hardcoded 20-mega-cap watchlist removed 2026-06-13 (audit).
+  # It overlapped momentum_runner's universe and produced -$500/30d on names
+  # the dynamic scanner already injects. Now empty → strategy operates
+  # purely on scanner-injected dynamic symbols (the high-RVOL movers).
+  symbols: []
     - RKLB
     - SMCI
 
