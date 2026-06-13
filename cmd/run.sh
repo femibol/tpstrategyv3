@@ -1,1 +1,1 @@
-docker logs trading-bot-trading-bot-1 --since 24h 2>&1 | grep -E 'STRATEGY RISK CAP|STXX' | head -20
+docker logs trading-bot-trading-bot-1 --since 24h 2>&1 | grep -E 'STXX|10:20:|10:21:' | head -25
