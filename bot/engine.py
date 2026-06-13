@@ -6266,7 +6266,21 @@ class TradingEngine:
         )
 
         if qty <= 0:
-            log.debug(f"Position size 0 for {symbol} - skipping")
+            # Was log.debug — invisible at production INFO level. The HANDOFF
+            # session 9 ICP fast-lane → no-fill gap (5 approvals 06:26-06:29,
+            # 0 orders) ended right here: the sizer returned 0, this return
+            # fired, no log appeared. Now logged at INFO with enough context
+            # to diagnose live: which strategy, what price, what balance,
+            # what stop. If qty=0 is the per-strategy cap or dampener
+            # squeezing to zero, the operator can SEE it instead of guessing.
+            stop_loss = signal.get("stop_loss") or signal.get("stop") or 0
+            log.warning(
+                f"QTY=0 NO-FILL: {symbol} via {strategy} — sizer returned 0. "
+                f"price=${current_price:.2f} stop=${stop_loss:.2f} "
+                f"balance=${self.current_balance:.0f} "
+                f"alloc={self.config.strategy_allocation.get(strategy, 0):.0%} "
+                f"score={signal.get('score', 0)} conf={signal.get('confidence', 0):.2f}"
+            )
             return
 
         # Enforce tier caps even when quantity comes from external signal
