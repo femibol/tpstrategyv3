@@ -5599,6 +5599,58 @@ class TradingEngine:
 
         return True, ""
 
+    # Slippage tracker persistence (Wave 4). PR #214 shipped the dampener
+    # in-memory only — a daily-restart cadence on the VPS meant the
+    # buffer never accumulated the >5-sample minimum so the dampener
+    # rarely fired. Persisted state survives restart and the dampener
+    # can act on the first signal of a new session.
+    _SLIPPAGE_FILE_NAME = "slippage_tracker.json"
+    _SLIPPAGE_BUFFER_MAX = 20
+
+    def _slippage_file_path(self):
+        from pathlib import Path
+        return Path(self.config.base_dir) / "data" / self._SLIPPAGE_FILE_NAME
+
+    def _load_slippage_state(self):
+        """Load persisted slippage buffers from disk. Falls open
+        (returns empty defaultdict) on any error — never blocks
+        startup on missing/corrupt cache or unset config."""
+        from collections import deque, defaultdict
+        import json
+        store = defaultdict(lambda: deque(maxlen=self._SLIPPAGE_BUFFER_MAX))
+        try:
+            path = self._slippage_file_path()
+            if not path.exists():
+                return store
+            with open(path, "r") as f:
+                raw = json.load(f)
+            for strategy, samples in raw.items():
+                store[strategy] = deque(
+                    (float(s) for s in samples), maxlen=self._SLIPPAGE_BUFFER_MAX,
+                )
+            log.info(f"Slippage tracker loaded ({sum(len(v) for v in store.values())} samples across {len(store)} strategies)")
+        except Exception as e:
+            log.warning(f"Slippage tracker load failed ({e}) — starting fresh")
+        return store
+
+    def _persist_slippage_state(self):
+        """Write the slippage buffers to disk. Called after each record
+        so a crash mid-session doesn't lose accumulated drag history.
+
+        Falls open on any error (missing config, read-only fs, disk full)
+        — in-memory tracking keeps working even if persistence breaks."""
+        import json
+        buf = getattr(self, "_strategy_slippage", None)
+        if buf is None:
+            return
+        try:
+            path = self._slippage_file_path()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                json.dump({k: list(v) for k, v in buf.items()}, f)
+        except Exception as e:
+            log.debug(f"slippage tracker persist failed: {e}")
+
     def _record_slippage(self, strategy, slippage_pct):
         """Record the realized signed slippage on a fill for the given
         strategy. Maintains a rolling deque so `_compute_slippage_mult`
@@ -5608,14 +5660,23 @@ class TradingEngine:
         only adverse slippage counts as friction. The slippage_reject
         hard threshold handles the catastrophic case; this catches the
         steady drag that fills the strategy's edge with cost-per-trade.
+
+        Persisted to disk after each record (Wave 4) so the dampener
+        accumulates across restarts.
         """
         if not strategy:
             return
         if not hasattr(self, "_strategy_slippage"):
-            from collections import deque, defaultdict
-            self._strategy_slippage = defaultdict(lambda: deque(maxlen=20))
+            self._strategy_slippage = self._load_slippage_state()
         adverse = max(0.0, float(slippage_pct or 0))
         self._strategy_slippage[strategy].append(adverse)
+        try:
+            self._persist_slippage_state()
+        except Exception as e:
+            # Disk-full / read-only fs / other write failure — keep the
+            # in-memory tracker working. Persistence is a nice-to-have;
+            # the dampener still functions on the current session.
+            log.debug(f"slippage persist swallowed: {e}")
 
     def _compute_slippage_mult(self, strategy):
         """Return a sizing multiplier in [0.5, 1.0] based on the strategy's
@@ -5631,7 +5692,12 @@ class TradingEngine:
         Returns 1.0 on any error so a bad lookup doesn't block trading.
         """
         try:
-            buf = getattr(self, "_strategy_slippage", {}).get(strategy)
+            # Lazy-load persisted state on first access. Without this, a
+            # fresh engine boot (Wave 4 persistence) would still see an
+            # empty buffer until the first new fill of the session.
+            if not hasattr(self, "_strategy_slippage"):
+                self._strategy_slippage = self._load_slippage_state()
+            buf = self._strategy_slippage.get(strategy)
             if not buf or len(buf) < 5:
                 return 1.0
             avg = sum(buf) / len(buf)
