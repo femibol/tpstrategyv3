@@ -412,6 +412,14 @@ class TradingEngine:
 
         # Load persisted trade history from previous sessions
         if self.trade_analyzer:
+            # One-shot legacy-dup cleanup. FBYD (session 9) and similar
+            # duplicated 2-3× in trade_history due to a close-path race;
+            # any leftover dups on disk inflate every downstream stat.
+            if hasattr(self.trade_analyzer, "dedupe_persisted_trades"):
+                try:
+                    self.trade_analyzer.dedupe_persisted_trades()
+                except Exception as e:
+                    log.debug(f"Boot dup cleanup error: {e}")
             persisted = self.trade_analyzer.get_persisted_trades()
             if persisted:
                 self.trade_history = list(persisted)
