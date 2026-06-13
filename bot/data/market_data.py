@@ -383,8 +383,17 @@ class MarketDataFeed:
         "RNDR": "RENDER",
     }
 
+    # Binance.US klines returns at most 1000 bars per call. The
+    # mean_reversion crypto trend filter (audit 2026-05-25 / 06-12)
+    # wants a 14d window = 4032 5m bars; a single call only delivers
+    # ~3.5d. Pagination walks backward in time via `endTime` until
+    # enough bars are collected or the cap is hit.
+    _BINANCE_KLINES_MAX_PER_CALL = 1000
+    _BINANCE_KLINES_MAX_WINDOWS = 5  # 5 × 1000 = 5000 bars ≈ 17.36d on 5m
+
     def _fetch_binance_us_klines(self, symbol):
-        """Fetch 5-min crypto bars from the Binance.US public klines API.
+        """Fetch crypto bars from the Binance.US public klines API with
+        pagination support so >3.5 days of 5m history can be returned.
 
         Symbol mapping: BTC-USD → BTCUSDT (Binance.US lists most pairs vs
         USDT; some only vs USD; tries both). Returns the same OHLCV DataFrame
@@ -392,48 +401,105 @@ class MarketDataFeed:
         UTC timestamp). Returns None if the pair isn't listed — caller falls
         back to Yahoo.
 
+        Pagination: walks backward via `endTime` (millis). Each call returns
+        up to 1000 bars; we cap at `_BINANCE_KLINES_MAX_WINDOWS` (default 5)
+        to bound rate-budget impact. 46 symbols × 5 windows = 230 req per
+        full refresh, well under the 1200/min unauth limit.
+
         Binance.com is geo-blocked (HTTP 451) from many IPs including the
         Linode block this VPS runs on, so we use api.binance.us only.
-        Unauthenticated rate limit is 1200 req/min — 46 symbols every 30s
-        is ~92 req/min, well inside that. No API key required.
+        No API key required.
         """
         if not self._is_crypto(symbol):
             return None
         base = symbol.upper().split("-")[0]
         base = self._BINANCE_ALIASES.get(base, base)
-        # Try USDT first (covers the long tail), then USD, then BUSD
         interval_map = {
             "1 min": "1m", "5 mins": "5m", "15 mins": "15m",
             "30 mins": "30m", "1 hour": "1h", "1 day": "1d",
         }
         interval = interval_map.get(self.bar_size, "5m")
-        # Fetch ~5 days of 5-min bars to match Yahoo's lookback
-        limit = min(1000, 24 * 12 * self.lookback_days)
+
+        needed_bars = 24 * 12 * self.lookback_days  # 5m bars per day
         for quote in ("USDT", "USD", "BUSD"):
+            df = self._fetch_binance_paginated(base, quote, interval, needed_bars)
+            if df is not None and len(df) > 0:
+                return df
+        return None
+
+    def _fetch_binance_paginated(self, base, quote, interval, needed_bars):
+        """Paginate backward through Binance.US klines until `needed_bars`
+        is reached or the window cap is hit. Returns a single concatenated,
+        sorted, deduplicated DataFrame, or None on any error before the
+        first successful response (so the caller can fall through to the
+        next quote currency)."""
+        all_chunks = []
+        end_time = None  # first call: most-recent batch
+        windows_used = 0
+
+        while windows_used < self._BINANCE_KLINES_MAX_WINDOWS:
+            chunk_limit = min(
+                self._BINANCE_KLINES_MAX_PER_CALL,
+                max(1, needed_bars - sum(len(c) for c in all_chunks)),
+            )
+            if chunk_limit <= 0:
+                break
+            params = {
+                "symbol": f"{base}{quote}",
+                "interval": interval,
+                "limit": chunk_limit,
+            }
+            if end_time is not None:
+                params["endTime"] = int(end_time)
             try:
                 resp = _requests.get(
                     "https://api.binance.us/api/v3/klines",
-                    params={"symbol": f"{base}{quote}", "interval": interval, "limit": limit},
+                    params=params,
                     timeout=8,
                 )
                 if resp.status_code != 200:
-                    continue
+                    # First call failure → bail to next quote. Subsequent
+                    # failure → return what we have (don't lose the chunk
+                    # we already paid for).
+                    if not all_chunks:
+                        return None
+                    break
                 data = resp.json()
                 if not data:
-                    continue
-                df = pd.DataFrame(
-                    data,
-                    columns=["open_time", "open", "high", "low", "close", "volume",
-                             "close_time", "qav", "trades", "tbv", "tqv", "ignore"]
-                )
-                for col in ("open", "high", "low", "close", "volume"):
-                    df[col] = df[col].astype(float)
-                df.index = pd.to_datetime(df["open_time"], unit="ms")
-                return df[["open", "high", "low", "close", "volume"]]
+                    break
             except Exception as e:
                 log.debug(f"Binance.US {base}{quote} fetch failed: {e}")
-                continue
-        return None
+                if not all_chunks:
+                    return None
+                break
+
+            chunk = pd.DataFrame(
+                data,
+                columns=["open_time", "open", "high", "low", "close", "volume",
+                         "close_time", "qav", "trades", "tbv", "tqv", "ignore"]
+            )
+            for col in ("open", "high", "low", "close", "volume"):
+                chunk[col] = chunk[col].astype(float)
+            chunk.index = pd.to_datetime(chunk["open_time"], unit="ms")
+            all_chunks.append(chunk)
+            windows_used += 1
+
+            if len(chunk) < chunk_limit:
+                # Exchange has no older data for this pair
+                break
+            if sum(len(c) for c in all_chunks) >= needed_bars:
+                break
+
+            # Walk backward: next call ends BEFORE the oldest open_time in
+            # this batch (minus 1ms to avoid a duplicate boundary bar)
+            oldest_open_ms = int(chunk["open_time"].iloc[0])
+            end_time = oldest_open_ms - 1
+
+        if not all_chunks:
+            return None
+        df = pd.concat(all_chunks)
+        df = df[~df.index.duplicated(keep="last")].sort_index()
+        return df[["open", "high", "low", "close", "volume"]]
 
     # =========================================================================
     # Yahoo Finance Direct API (fallback - ~15 minute delay)
