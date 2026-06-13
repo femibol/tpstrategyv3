@@ -459,6 +459,14 @@ class TradingEngine:
         """
         self.broker = IBKRBroker(self.config)
 
+        # Wave 5: register the wedge callback so a hung ib_async worker
+        # (DELL incident pattern) triggers the same auto-recovery the
+        # reconnect loop uses. is_connected() returns True while the
+        # worker is wedged, so the reconnect path never sees the failure;
+        # this is the only place that catches it.
+        if hasattr(self.broker, "on_wedge"):
+            self.broker.on_wedge(self._handle_ibkr_wedge)
+
         # Attempt IBKR connection with retry (works locally or with remote Gateway)
         connected = False
         max_retries = 5  # Was 3 — give gateway more time on first boot
@@ -1346,6 +1354,36 @@ class TradingEngine:
             tmp.replace(self._auto_recovery_state_file)
         except Exception as e:
             log.warning(f"AUTO-RECOVERY state persist failed: {e}")
+
+    def _handle_ibkr_wedge(self, consecutive_timeouts):
+        """Called by the IBKR broker when N consecutive worker calls have
+        timed out. Treats the worker as wedged and triggers the same
+        auto-recovery path the reconnect loop uses for lost connection.
+
+        Closes the gap from the DELL incident (session 10): `is_connected()`
+        returns True throughout the wedge because TCP is up; the only
+        symptom is repeated `IBKR worker call timed out` messages. Without
+        this hook, the bot logged the failures but the reconnect loop
+        never triggered restart.
+        """
+        log.critical(
+            f"IBKR WORKER WEDGED: {consecutive_timeouts} consecutive worker "
+            f"timeouts — attempting ib-gateway auto-recovery (DELL pattern)"
+        )
+        if self.notifier:
+            try:
+                self.notifier.system_alert(
+                    f"IBKR worker wedged ({consecutive_timeouts} consecutive "
+                    f"timeouts on `worker call timed out`). Attempting "
+                    f"ib-gateway container restart.",
+                    level="error",
+                )
+            except Exception:
+                pass
+        try:
+            self._try_auto_recover_gateway()
+        except Exception as e:
+            log.error(f"Wedge auto-recovery raised: {e}", exc_info=True)
 
     def _try_auto_recover_gateway(self):
         """Restart the ib-gateway container when the API is wedged.
