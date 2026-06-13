@@ -1,5 +1,5 @@
-=== executed: 214024ef71a2acd253c7c663c0c3d64378dca065
-=== started:  2026-06-13T00:13:01Z
+=== executed: d22fac75f226a98f3eac47dd077c5ae21d314854
+=== started:  2026-06-13T00:14:02Z
 === exit:     
 === timeout:  90s
 ===
@@ -18,13 +18,13 @@
 2026-06-12 09:56:07 | INFO     | trading_bot.risk.manager | APPROVED: buy STXX | Momentum BUY: EMA trend, ADX=54, Vol=1.3x
 2026-06-12 09:56:17 | INFO     | trading_bot.engine   | VOL REGIME: STXX short=0.0186 long=0.0102 ratio=1.82x → sizing mult 0.89x
 2026-06-12 09:56:17 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: STXX live ask $56.96 has drifted 2.1% above signal $55.79 (max 0.8%) — entry R:R already invalid, skipping order.
-172.18.0.1 - - [12/Jun/2026 10:20:02] "GET /health HTTP/1.1" 200 -
-127.0.0.1 - - [12/Jun/2026 10:20:03] "GET /health HTTP/1.1" 200 -
-2026-06-12 10:20:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-12 10:20:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-127.0.0.1 - - [12/Jun/2026 10:20:33] "GET /health HTTP/1.1" 200 -
-2026-06-12 10:20:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=69, higher lows, Vol=0.3x | HKIT @ $0.58
 2026-06-12 10:20:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=73, higher lows, Vol=1.6x | STXX @ $58.75
-2026-06-12 10:20:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, Vol=6.1x | GOOGL @ $357.66
-2026-06-12 10:20:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.29
-2026-06-12 10:20:41 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SQQQ | Score: 60 | RVOL: 3.5x | Change: +0.4% | R:R 2.7
+2026-06-12 10:20:42 | INFO     | trading_bot.engine   |   -> momentum: buy STXX @ $58.75 conf=0.70
+2026-06-12 10:20:42 | INFO     | trading_bot.risk.manager | APPROVED: buy STXX | Momentum BUY: EMA trend, ADX=73, higher lows, Vol=1.6x
+  ✅ STXX: score 70/100 — Momentum BUY: E
+2026-06-12 10:20:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-12 10:20:47 | INFO     | trading_bot.engine   | VOL REGIME: STXX short=0.0203 long=0.0117 ratio=1.74x → sizing mult 0.92x
+2026-06-12 10:20:47 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 0.92x = 0.28% risk
+2026-06-12 10:20:47 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $61.11 → $50.00 (per-strategy ceiling)
+2026-06-12 10:20:47 | INFO     | trading_bot.risk.position_sizer | Position size: 34 shares @ $58.74 = $1,997.16 | Risk: $49.20 (0.2% of account) [tier: 1-150 shares]
+2026-06-12 10:20:47 | INFO     | trading_bot.engine   | Executing STXX via IBKR...
