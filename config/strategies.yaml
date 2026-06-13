@@ -66,6 +66,16 @@ mean_reversion:
   max_holding_periods: 15
   max_hold_days: 2
   max_trades_per_day: 10
+  # Per-symbol edge filter (audit 2026-06-13). The crypto_trend_filter
+  # above blocks NOW-bleeding symbols by market state; this blocks
+  # SYMBOLS-THAT-ALWAYS-BLEED by their own track record on this strategy.
+  # 163-close audit (2026-05-15→24): NEAR +$522, ICP/DOT/BCH/LINK/SUI/AVAX/LTC
+  # –$200. Engine-wide should_avoid_symbol pools strategies so per-strategy
+  # bleeders escape its -8 floor. Enabled — falls open on empty history,
+  # only activates once a symbol has ≥3 trades from this strategy.
+  symbol_edge_filter_enabled: true
+  symbol_edge_min_trades: 3
+  symbol_edge_block_wr_pct: 30.0
   symbols: []
 
 # --- Momentum / Trend Following ---

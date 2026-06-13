@@ -68,6 +68,27 @@ class MeanReversionStrategy(BaseStrategy):
         self._dynamic_symbol_timestamps = {}
         self._max_dynamic_symbols = 50
 
+        # Per-symbol edge filter. Audit 2026-06-13 of 163 crypto closes
+        # found NEAR carried +$522 while ICP/DOT/BCH/LINK/SUI/AVAX/LTC bled
+        # –$200. The crypto trend filter helps but doesn't separate by
+        # symbol — symbols with persistent negative edge bleed even on
+        # green tape. The engine-wide `should_avoid_symbol` uses a pooled
+        # score across all strategies so per-strategy bleeders escape it.
+        # Active gate: skip BUY entries on symbols whose own history
+        # (trades from this strategy only) shows N+ trades + sub-30% WR
+        # + negative avg P&L. Disabled by default until a real history
+        # accumulates; tests pin behavior when enabled.
+        self.symbol_edge_filter_enabled = config.get("symbol_edge_filter_enabled", False)
+        self.symbol_edge_min_trades = int(config.get("symbol_edge_min_trades", 3))
+        self.symbol_edge_block_wr_pct = float(config.get("symbol_edge_block_wr_pct", 30.0))
+        self._symbol_edge_map = {}
+
+    def feed_symbol_edge(self, edge_map):
+        """Feed {symbol: {trades, win_rate, avg_pnl, ...}} from the trade
+        analyzer scoped to this strategy. Called each scanner cycle by the
+        engine; falls open if not called (gate evaluates an empty map)."""
+        self._symbol_edge_map = edge_map or {}
+
     def add_dynamic_symbols(self, symbols):
         now = time.time()
         for sym in symbols:
@@ -262,6 +283,30 @@ class MeanReversionStrategy(BaseStrategy):
         at_lower_bb = checks["at_lower_bb"]
         near_lower_bb = current_price <= bb_lower * 1.005  # Within 0.5% of lower BB
         buy_signal = entry_ready
+
+        if buy_signal and self.symbol_edge_filter_enabled:
+            edge = self._symbol_edge_map.get(symbol.upper())
+            if edge:
+                trades_n = int(edge.get("trades", 0))
+                wr = float(edge.get("win_rate", 0) or 0)
+                avg_pnl = float(edge.get("avg_pnl", 0) or 0)
+                if (
+                    trades_n >= self.symbol_edge_min_trades
+                    and wr < self.symbol_edge_block_wr_pct
+                    and avg_pnl < 0
+                ):
+                    self.scan_results[symbol] = {
+                        "status": "edge_blocked",
+                        "edge_trades": trades_n,
+                        "edge_wr": round(wr, 1),
+                        "edge_avg_pnl": round(avg_pnl, 2),
+                        "verdict": f"BLOCKED: edge {wr:.0f}% WR over {trades_n} trades",
+                    }
+                    log.info(
+                        f"EDGE BLOCK: {symbol} skipped — "
+                        f"{trades_n} trades, {wr:.0f}% WR, ${avg_pnl:+.2f}/trade"
+                    )
+                    return None
 
         if buy_signal:
             confidence = min(1.0, abs(zscore) / 3.0 * 0.5 + (1 - rsi / 100) * 0.5)
