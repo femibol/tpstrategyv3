@@ -6973,11 +6973,19 @@ class TradingEngine:
                     self.positions.pop(symbol, None)
                 return
 
-        # Double-close guard: prevent concurrent close attempts
-        if symbol in self._closing_in_progress:
-            log.debug(f"Close already in progress for {symbol} — skipping duplicate")
-            return
-        self._closing_in_progress.add(symbol)
+        # Double-close guard: prevent concurrent close attempts.
+        # The check-then-act below MUST be inside the lock — otherwise two
+        # threads can both pass `symbol in self._closing_in_progress` (False),
+        # then both `self._closing_in_progress.add(symbol)`, then both
+        # proceed to `_close_position_inner` and both append to
+        # trade_history. That race is the source of the FBYD triple-record
+        # pattern (HANDOFF session 9; PR #216 patched at the persist layer,
+        # this fixes it at the source).
+        with self._positions_lock:
+            if symbol in self._closing_in_progress:
+                log.debug(f"Close already in progress for {symbol} — skipping duplicate")
+                return
+            self._closing_in_progress.add(symbol)
 
         try:
             self._close_position_inner(symbol, reason_type, reason_msg)
@@ -7340,11 +7348,14 @@ class TradingEngine:
         if not pos or qty_to_close <= 0:
             return
 
-        # Double-close guard: prevent concurrent close attempts (same guard as _close_position)
-        if symbol in self._closing_in_progress:
-            log.debug(f"Close already in progress for {symbol} — skipping partial close")
-            return
-        self._closing_in_progress.add(symbol)
+        # Double-close guard: prevent concurrent close attempts. Same
+        # check-then-act atomicity issue as _close_position — must be
+        # inside the lock or two threads race the partial through twice.
+        with self._positions_lock:
+            if symbol in self._closing_in_progress:
+                log.debug(f"Close already in progress for {symbol} — skipping partial close")
+                return
+            self._closing_in_progress.add(symbol)
 
         try:
             self._partial_close_inner(symbol, qty_to_close, target_idx, target, pos)
