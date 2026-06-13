@@ -1,67 +1,3 @@
-2026-06-12 09:36:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: AMEX; PSX; ISE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; PEARL; CHX; IBEOS; NYSENAT; T24X; MEMX; OVERNIGHT; EDGEA; LTSE; DRCTEDGE; 
-2026-06-12 09:36:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 09:36:36 | INFO     | trading_bot.engine   | VOL REGIME: NEBX short=0.0269 long=0.0145 ratio=1.86x → sizing mult 0.88x
-2026-06-12 09:36:36 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.00x × Regime 1.00x × Vol 0.88x = 0.88% risk
-2026-06-12 09:36:36 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $195.36 → $50.00 (per-strategy ceiling)
-2026-06-12 09:36:36 | INFO     | trading_bot.risk.position_sizer | Position size: 48 shares @ $42.50 = $2,040.00 | Risk: $49.44 (0.2% of account) [tier: 2-300 shares]
-2026-06-12 09:36:36 | INFO     | trading_bot.engine   | Executing NEBX via IBKR...
-2026-06-12 09:36:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 09:36:36 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: NEBX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-12 09:36:36 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: NEBX (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-12 09:36:36 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: PreSubmitted | Filled: 0.0/48.0
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: PreSubmitted | Filled: 0.0/48.0
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: PreSubmitted | Filled: 0.0/48.0
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: Filled | Filled: 48.0/48.0 | AvgPrice: $42.12
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: PreSubmitted | Filled: 0.0/48.0
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: PreSubmitted | Filled: 0.0/48.0
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | Order update: NEBX | Status: Submitted | Filled: 0.0/48.0
-2026-06-12 09:36:37 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 48 NEBX @ LIMIT $43.35 | TP: $46.95 | SL: $41.47 | Parent ID: 936986
-2026-06-12 09:36:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: PSX; OVERNIGHT; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; Top: BYX; AMEX; PEARL; CHX; NYSENAT; IBEOS; T24X; MEMX; EDGEA; LTSE; ISE; DRCTEDGE; 
-2026-06-12 09:36:38 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 48/48 NEBX @ $42.1200 | signal $43.3500 | slippage -2.84% | parent=MARKET
-2026-06-12 09:36:38 | INFO     | trading_bot.engine   | BRACKET ORDER active: NEBX | SL: $41.47 | TP: $46.95 (managed by IBKR server-side)
-2026-06-12 09:36:38 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: NEBX expected $42.50 but filled @ $42.12
-2026-06-12 09:36:38 | INFO     | trading_bot.engine   | ORDER BUY NEBX via IBKR | Qty: 48 | Price: $42.12 | Cost: $2,021.76 | Stop: $41.47 (risk $31.20) | Target: $46.95 (reward $231.84) | R:R 7.4:1 | Strategy: rvol_momentum
-2026-06-12 09:36:38 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: NEBX**
-```
-  Entry: $42.12 x 48 shares = $2,021.76
-  Stop:  $41.47 (-$31.20 | -1.5%)
-  Targets: $44.45, $45.95, $48.94
-  Risk/Reward: 2.7
-```
-Strategy: **rvol_momentum** | C
-2026-06-12 09:36:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 09:36:38 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY NEBX qty=48 @ $42.12 → primary webhook (200)
-2026-06-12 09:36:38 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-12 09:36:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10190: Max number of tick-by-tick requests has been reached.
-2026-06-12 09:36:38 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-12 09:36:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 09:36:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 09:36:41 | INFO     | trading_bot.engine   | VOL REGIME: FWRD short=0.0235 long=0.0113 ratio=2.07x → sizing mult 0.81x
-2026-06-12 09:36:41 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.00x × Regime 1.00x × Vol 0.81x = 0.81% risk
-2026-06-12 09:36:41 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $180.01 → $50.00 (per-strategy ceiling)
-2026-06-12 09:36:41 | INFO     | trading_bot.risk.position_sizer | Position size: 81 shares @ $13.59 = $1,100.79 | Risk: $28.35 (0.1% of account) [tier: 3-500 shares]
-2026-06-12 09:36:41 | INFO     | trading_bot.engine   | Executing FWRD via IBKR...
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: FWRD → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: FWRD (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: PreSubmitted | Filled: 0.0/81.0
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: PreSubmitted | Filled: 0.0/81.0
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: Submitted | Filled: 0.0/81.0
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: Filled | Filled: 81.0/81.0 | AvgPrice: $13.75
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: PreSubmitted | Filled: 0.0/81.0
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: PreSubmitted | Filled: 0.0/81.0
-2026-06-12 09:36:41 | INFO     | trading_bot.broker.ibkr | Order update: FWRD | Status: Submitted | Filled: 0.0/81.0
-2026-06-12 09:36:42 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 81 FWRD @ LIMIT $13.86 | TP: $14.74 | SL: $13.24 | Parent ID: 937000
-2026-06-12 09:36:42 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 81/81 FWRD @ $13.7500 | signal $13.8600 | slippage -0.79% | parent=MARKET
-2026-06-12 09:36:42 | INFO     | trading_bot.engine   | BRACKET ORDER active: FWRD | SL: $13.24 | TP: $14.74 (managed by IBKR server-side)
-2026-06-12 09:36:42 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: FWRD expected $13.59 but filled @ $13.75
-2026-06-12 09:36:42 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: FWRD chased +1.2% above market (max 0.8%, RTH) — closing position immediately | Signal $13.65 → Live $13.59 → Fill $13.75
-2026-06-12 09:36:42 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: FWRD filled $13.75 (signal $13.65, slippage +1.2%). Closing immediately.
-```
-2026-06-12 09:36:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 09:36:42 | INFO     | trading_bot.engine   | ORDER BUY FWRD via IBKR | Qty: 81 | Price: $13.75 | Cost: $1,113.75 | Stop: $13.24 (risk $41.31) | Target: $14.74 (reward $80.19) | R:R 1.9:1 | Strategy: rvol_momentum
-2026-06-12 09:36:42 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: FWRD**
 ```
   Entry: $13.75 x 81 shares = $1,113.75
   Stop:  $13.24 (-$41.31 | -3.7%)
@@ -19998,3 +19934,67 @@ Signals found: 4
 2026-06-13 09:03:55 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-13 09:03:55 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-13 09:03:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 09:06:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 09:06:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:06:41 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: DSY | Score: 85 | RVOL: 13.2x | Change: +6.8% | R:R 4.0
+2026-06-13 09:06:41 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: OTLK | Score: 85 | RVOL: 12.7x | Change: +1.3% | R:R 2.7
+2026-06-13 09:06:41 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-13 09:06:41 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 09:06:41 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 09:06:41 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy DSY @ $4.74 conf=0.85
+2026-06-13 09:06:41 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy OTLK @ $1.21 conf=0.85
+2026-06-13 09:06:41 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 09:06:41 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 09:06:41 | INFO     | trading_bot.risk.manager | APPROVED: buy DSY | Extreme RVOL 13.2x | Strong move +6.8% | RSI healthy (39) | Range expansion
+2026-06-13 09:06:41 | INFO     | trading_bot.risk.manager | APPROVED: buy OTLK | Extreme RVOL 12.7x | Moving up +1.3% | EMA trend bullish | MACD histogram positive
+2026-06-13 09:06:41 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — ADVB, UBER, DSY, OTLK
+2026-06-13 09:06:41 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+  ✅ UBER: score 90/100 — Momentum BUY: pullback entry, ADX
+2026-06-13 09:06:42 | WARNING  | trading_bot.engine   | SLOW CYCLE (171.1s total): update_data=151.3s, update_scalp=15.2s
+2026-06-13 09:06:45 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[10]: ALGO-USD(weak 3d trend (-2.1%)), COMP-USD(weak 3d trend (-3.8%)), CRV-USD(needs vol>1.3x), HBAR-USD(weak 3d trend (+0.1%)), MATIC-USD(weak 3d trend (+0.0%)), NEAR-USD(weak 3d trend (-2.6%)), TIA-USD(weak 3d trend (-0.2%)), TRX-USD(weak 3d trend (-3.9%)), UNI-USD(weak 3d trend (+0.5%)), XLM-USD(weak 3d trend (+0.5%)) | warming=3 | neutral=27 | no_data=2
+2026-06-13 09:06:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:06:48 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:06:51 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:06:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 09:06:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 09:06:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 09:06:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 09:06:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 09:06:55 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-13 09:06:55 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 09:06:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 09:09:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 09:09:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:09:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: DSY | Score: 85 | RVOL: 13.2x | Change: +6.8% | R:R 4.0
+2026-06-13 09:09:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: OTLK | Score: 85 | RVOL: 12.7x | Change: +1.3% | R:R 2.7
+2026-06-13 09:09:42 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-13 09:09:42 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 09:09:42 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 09:09:42 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy DSY @ $4.74 conf=0.85
+2026-06-13 09:09:42 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy OTLK @ $1.21 conf=0.85
+2026-06-13 09:09:42 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 09:09:42 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 09:09:42 | INFO     | trading_bot.risk.manager | APPROVED: buy DSY | Extreme RVOL 13.2x | Strong move +6.8% | RSI healthy (39) | Range expansion
+2026-06-13 09:09:42 | INFO     | trading_bot.risk.manager | APPROVED: buy OTLK | Extreme RVOL 12.7x | Moving up +1.3% | EMA trend bullish | MACD histogram positive
+2026-06-13 09:09:42 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — ADVB, UBER, DSY, OTLK
+2026-06-13 09:09:42 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+  ✅ UBER: score 90/100 — Momentum BUY: pullback entry, ADX
+2026-06-13 09:09:43 | WARNING  | trading_bot.engine   | SLOW CYCLE (171.4s total): update_data=151.0s, update_scalp=16.0s
+2026-06-13 09:09:46 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[10]: ALGO-USD(weak 3d trend (-2.1%)), COMP-USD(weak 3d trend (-3.8%)), CRV-USD(needs vol>=1.1x), HBAR-USD(weak 3d trend (+0.4%)), MATIC-USD(weak 3d trend (+0.0%)), NEAR-USD(weak 3d trend (-2.0%)), TIA-USD(weak 3d trend (-0.2%)), TRX-USD(weak 3d trend (-3.9%)), UNI-USD(weak 3d trend (+0.5%)), XLM-USD(weak 3d trend (+0.5%)) | warming=5 | neutral=25 | no_data=2
+2026-06-13 09:09:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:09:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:09:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 09:09:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 09:09:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 09:09:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 09:09:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 09:09:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 09:09:55 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-13 09:09:55 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 09:09:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
