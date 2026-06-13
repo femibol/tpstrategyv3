@@ -69,7 +69,11 @@ class MomentumRunnerStrategy(BaseStrategy):
         self._dynamic_symbols = set()
         self._snapshot_data = {}
         self._sector_runners = {}  # sector -> count of running stocks (for sympathy)
-        self._catalyst_cache = {}  # symbol -> catalyst info
+        self._catalyst_cache = {}  # symbol -> catalyst info {type, score, _fed_at}
+        # TTL on catalyst cache entries (Wave 5). Default 4h matches the
+        # news feed's `get_catalyst_map(lookback_minutes=240)` so a feed
+        # outage doesn't leave the strategy scoring off stale catalysts.
+        self._catalyst_ttl_secs = int(config.get("catalyst_ttl_secs", 4 * 60 * 60))
 
         # Track which symbols scored 6+ for the dashboard
         self._qualified_candidates = {}
@@ -96,9 +100,44 @@ class MomentumRunnerStrategy(BaseStrategy):
         self._sector_runners = sector_counts or {}
 
     def feed_catalyst_data(self, catalyst_map):
-        """Feed catalyst data: {symbol: {type: 'earnings'|'news'|'upgrade', ...}}."""
-        if catalyst_map:
-            self._catalyst_cache.update(catalyst_map)
+        """Feed catalyst data: {symbol: {type: 'earnings'|'news'|'upgrade', ...}}.
+
+        Wave 5: stamps each entry with `_fed_at` so the read-side TTL
+        gate (`_catalyst_for(symbol)`) can drop stale entries. Without
+        this, a catalyst recorded once would stay in the cache forever
+        because the engine wires `update()` semantics (not replace) —
+        stale FDA news from yesterday would keep scoring at 9am today.
+
+        The news feed's `get_catalyst_map(lookback_minutes=240)` already
+        filters at SEND-time; this TTL is the fallback for when the feed
+        is empty / paused / hiccupping and the stale cache would otherwise
+        score off ghost catalysts.
+        """
+        if not catalyst_map:
+            return
+        now = time.time()
+        for sym, entry in catalyst_map.items():
+            if not isinstance(entry, dict):
+                continue
+            stamped = dict(entry)
+            stamped.setdefault("_fed_at", now)
+            self._catalyst_cache[sym] = stamped
+
+    def _catalyst_for(self, symbol):
+        """Read-side TTL gate. Returns the cached catalyst entry only if
+        it's within `catalyst_ttl_secs`. Returns None for stale entries
+        AND drops them from the cache so the dict doesn't grow forever.
+        Default TTL 4h matches NewsFeed.get_catalyst_map's lookback."""
+        entry = self._catalyst_cache.get(symbol)
+        if not isinstance(entry, dict):
+            return entry  # legacy entries without dict shape — pass through
+        fed_at = entry.get("_fed_at")
+        if fed_at is None:
+            return entry  # legacy entry without stamp — keep until next feed
+        if time.time() - float(fed_at) > self._catalyst_ttl_secs:
+            self._catalyst_cache.pop(symbol, None)
+            return None
+        return entry
 
     def get_symbols(self):
         """Return combined static + dynamic symbol list."""
@@ -225,7 +264,7 @@ class MomentumRunnerStrategy(BaseStrategy):
         breakdown["float"] = float_pts
 
         # --- Catalyst Score (0-3) ---
-        catalyst = self._catalyst_cache.get(symbol)
+        catalyst = self._catalyst_for(symbol)
         sector = self._snapshot_data.get(symbol, {}).get("sector", "Unknown")
         sector_count = self._sector_runners.get(sector, 0) if sector != "Unknown" else 0
 
@@ -302,7 +341,7 @@ class MomentumRunnerStrategy(BaseStrategy):
 
         # Skip stocks already up >30% unless fresh catalyst
         if abs(change_pct) > self.max_daily_change_pct:
-            catalyst = self._catalyst_cache.get(symbol)
+            catalyst = self._catalyst_for(symbol)
             if not catalyst:
                 return None
 
@@ -516,7 +555,7 @@ class MomentumRunnerStrategy(BaseStrategy):
 
         # Skip >30% without catalyst
         if abs(change_pct) > self.max_daily_change_pct:
-            catalyst = self._catalyst_cache.get(symbol)
+            catalyst = self._catalyst_for(symbol)
             if not catalyst:
                 return None
 
