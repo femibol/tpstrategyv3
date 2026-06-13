@@ -1,1 +1,1 @@
-cd /opt/trading-bot && grep -A 15 'max_dollar_risk_per_strategy' config/settings.yaml | head -20 && echo '---STRATEGIES STATE---' && grep -E 'momentum:|rvol_scalp:' config/strategies.yaml | head -5
+docker logs trading-bot-trading-bot-1 --since 24h 2>&1 | grep -E 'STRATEGY RISK CAP|STXX' | head -20
