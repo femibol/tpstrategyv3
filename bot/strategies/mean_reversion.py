@@ -29,7 +29,13 @@ class MeanReversionStrategy(BaseStrategy):
         super().__init__(config, indicators, capital)
         self.lookback = config.get("lookback_period", 20)
         self.entry_zscore = config.get("entry_zscore", -2.0)
+        # Exit at mean (z=0). Was dead code until 2026-06-13 Wave 2 wired
+        # it. Crypto gets a small positive offset (+0.3) because 5-min
+        # mean drifts inside the position lifetime and exit-at-zero
+        # produces a lot of break-even churn; +0.3 collects a small
+        # rebound past the mean before exiting.
         self.exit_zscore = config.get("exit_zscore", 0.0)
+        self.exit_zscore_crypto = config.get("exit_zscore_crypto", 0.3)
         self.rsi_oversold = config.get("rsi_oversold", 30)
         self.rsi_overbought = config.get("rsi_overbought", 70)
         # Crypto-specific (looser) thresholds. Crypto's volatility profile and
@@ -369,7 +375,60 @@ class MeanReversionStrategy(BaseStrategy):
             self.signals_generated += 1
             return signal
 
-        # --- SELL Signal (Overbought - for existing positions) ---
+        # --- SELL Signal (Mean-reverted — distance-to-mean exit) ---
+        # Wave 2 audit 2026-06-13: 30d half-life data showed 22 trades closed
+        # in PROFIT mid-run because the engine's max_hold time_exit fired before
+        # the strategy's own SELL trigger. Root cause: the SELL trigger required
+        # z ≥ +1.5 AND RSI > overbought — i.e. waited for the symbol to
+        # OVERSHOOT to the other side of the mean. Real mean-reversion strategy
+        # is "buy below mean, sell AT the mean" — overshoot exits are a bonus,
+        # not the primary path. The strategy already computes `take_profit =
+        # max(sma, min_target)` at entry-time and bracket orders honor it; this
+        # adds the symmetric SIGNAL-level exit for cases where the live price
+        # crosses the mean while the bracket is still pending or trailing.
+        # `exit_zscore` config knob was already on the class (default 0.0) but
+        # dead code; this wires it.
+        held = (
+            self._held_symbols is not None
+            and symbol in self._held_symbols
+        )
+        # Crypto: don't fire the mean-cross exit inside the 5-min min-hold
+        # window — same anti-ping-pong protection as the overbought path below.
+        crypto_min_hold_ok = True
+        if _is_crypto and held:
+            from datetime import datetime as _dt
+            entry_time = self._held_entry_times.get(symbol)
+            if entry_time is not None:
+                try:
+                    elapsed = (_dt.now(entry_time.tzinfo) - entry_time).total_seconds()
+                    if elapsed < 300:
+                        crypto_min_hold_ok = False
+                except Exception:
+                    pass
+        exit_z = self.exit_zscore_crypto if _is_crypto else self.exit_zscore
+        if (
+            held
+            and crypto_min_hold_ok
+            and zscore >= exit_z
+            and not buy_signal  # don't fire SELL on same bar as BUY
+        ):
+            signal = {
+                "symbol": symbol,
+                "action": "sell",
+                "price": current_price,
+                "confidence": min(1.0, max(0.5, 0.5 + zscore / 4.0)),
+                "reason": f"Mean reversion SELL (mean reached): Z={zscore:.2f}",
+                "max_hold_bars": self.max_hold,
+                "bar_seconds": self._timeframe_to_seconds(),
+            }
+            log.info(f"SIGNAL: {signal['reason']} | {symbol} @ ${current_price:.2f}")
+            return signal
+
+        # --- SELL Signal (Overbought - higher-confidence path) ---
+        # Original overshoot exit kept for higher-conviction reversals; fires
+        # ABOVE the distance-to-mean threshold so a strong z+RSI signal still
+        # produces the SELL even after the mean-cross path is bypassed by
+        # config (e.g. exit_zscore set too high to disable).
         # Crypto sell threshold is tighter than the entry threshold: requires
         # z >= 1.5 (not just z >= abs(entry_zscore)=1.0) AND respects a 5-min
         # minimum hold from entry. Trade review 2026-05-18: 9/18 mean_reversion
