@@ -1,35 +1,3 @@
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: ValidationError | Filled: 0.0/52
-2026-06-12 06:28:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: ValidationError | Filled: 0.0/52
-2026-06-12 06:28:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: ValidationError | Filled: 0.0/52
-2026-06-12 06:28:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 52 CWVX BATS Warning: Your order will not be placed at the exchange until 2026-06-12 09:30:00 US/Eastern.
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: PreSubmitted | Filled: 0.0/52.0
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: PreSubmitted | Filled: 0.0/52.0
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: PreSubmitted | Filled: 0.0/52.0
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: Filled | Filled: 52.0/52.0 | AvgPrice: $27.60
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: PreSubmitted | Filled: 0.0/52.0
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: PreSubmitted | Filled: 0.0/52.0
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: Cancelled | Filled: 0.0/52.0
-2026-06-12 06:28:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-12 06:28:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-12 06:28:14 | INFO     | trading_bot.broker.ibkr | Order update: CWVX | Status: Filled | Filled: 52.0/52.0 | AvgPrice: $27.21
-2026-06-12 06:28:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-12 06:28:15 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 52 CWVX @ LIMIT $25.87 | TP: $26.88 | SL: $24.60 | Parent ID: 925549
-2026-06-12 06:28:15 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 52/52 CWVX @ $27.6000 | signal $25.8700 | slippage +6.69% | parent=MARKET
-2026-06-12 06:28:15 | INFO     | trading_bot.engine   | BRACKET ORDER active: CWVX | SL: $24.60 | TP: $26.88 (managed by IBKR server-side)
-2026-06-12 06:28:15 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: CWVX expected $25.36 but filled @ $27.60
-2026-06-12 06:28:15 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: CWVX chased +8.8% above market (max 1.5%, EXT) — closing position immediately | Signal $25.36 → Live $25.36 → Fill $27.60
-2026-06-12 06:28:15 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: CWVX filled $27.60 (signal $25.36, slippage +8.8%). Closing immediately.
-```
-2026-06-12 06:28:16 | WARNING  | trading_bot.engine   | RECALCULATED TARGETS: CWVX fill $27.60 made targets invalid — new stop=$26.77 target=$29.26
-2026-06-12 06:28:16 | INFO     | trading_bot.engine   | ORDER BUY CWVX via IBKR | Qty: 52 | Price: $27.60 | Cost: $1,435.20 | Stop: $26.77 (risk $43.16) | Target: $29.26 (reward $86.32) | R:R 2.0:1 | Strategy: rvol_scalp
-2026-06-12 06:28:16 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: CWVX**
-```
-  Entry: $27.60 x 52 shares = $1,435.20
-  Stop:  $26.77 (-$43.16 | -3.0%)
   Targets: $25.61, $25.99
   Risk/Reward: 2.0
 ```
@@ -19998,3 +19966,35 @@ Signals found: 4
 2026-06-13 00:14:46 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 17 gaps, 20 losers
 2026-06-13 00:14:47 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-13 00:14:47 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 100 low-priority equity names; max 90)
+2026-06-13 00:17:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 00:17:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: DSY | Score: 85 | RVOL: 350.9x | Change: +6.8% | R:R 4.0
+2026-06-13 00:17:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: FLNT | Score: 85 | RVOL: 95.7x | Change: +4.2% | R:R 4.0
+2026-06-13 00:17:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: OTLK | Score: 85 | RVOL: 338.9x | Change: +1.3% | R:R 2.7
+2026-06-13 00:17:15 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-13 00:17:15 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 00:17:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy DSY @ $4.74 conf=0.85
+2026-06-13 00:17:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy FLNT @ $2.71 conf=0.85
+2026-06-13 00:17:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy OTLK @ $1.21 conf=0.85
+2026-06-13 00:17:15 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 00:17:15 | INFO     | trading_bot.risk.manager | APPROVED: buy DSY | Extreme RVOL 350.9x | Strong move +6.8% | RSI healthy (39) | Range expansion
+2026-06-13 00:17:15 | INFO     | trading_bot.risk.manager | APPROVED: buy FLNT | Extreme RVOL 95.7x | Strong move +4.2% | MACD histogram positive | RSI healthy (62)
+2026-06-13 00:17:15 | INFO     | trading_bot.risk.manager | APPROVED: buy OTLK | Extreme RVOL 338.9x | Moving up +1.3% | EMA trend bullish | MACD histogram positive
+2026-06-13 00:17:15 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — ADVB, DSY, FLNT, OTLK
+2026-06-13 00:17:15 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 960 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+  ✅ DSY: score 85/100 — Extreme RVOL 350.9x | Strong move 
+2026-06-13 00:17:16 | WARNING  | trading_bot.engine   | SLOW CYCLE (152.7s total): update_data=133.2s, update_scalp=15.4s
+2026-06-13 00:17:16 | INFO     | trading_bot.engine   | CYCLE #7: regime=sideways | signals=4->approved=0 | positions=0/15 | bars_warm=80/81 | equity_open=False | pm=False pwr_hr=False
+2026-06-13 00:17:19 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[18]: ALGO-USD(weak 3d trend (-5.2%)), APT-USD(weak 3d trend (-1.5%)), ATOM-USD(needs vol>=1.1x), AVAX-USD(weak 3d trend (-0.1%)), COMP-USD(weak 3d trend (-6.8%)), DOGE-USD(needs vol>=1.1x), ETH-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-6.7%)), FLOKI-USD(needs vol>=1.1x), GRT-USD(needs vol>=1.1x), HBAR-USD(weak 3d trend (-1.5%)), IMX-USD(weak 3d trend (-1.6%)), NEAR-USD(weak 3d trend (-6.6%)), PEPE-USD(needs vol>1.3x), SOL-USD(needs green bar), SUI-USD(weak 3d trend (+0.8%)), TRX-USD(weak 3d trend (-2.0%)), XLM-USD(weak 3d trend (-1.0%)) | warming=10 | neutral=8 | no_data=6
+2026-06-13 00:17:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 00:17:26 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 00:17:27 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 00:17:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 00:17:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 00:17:29 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 17 gaps, 20 losers
+2026-06-13 00:17:29 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 00:17:29 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 100 low-priority equity names; max 90)
+2026-06-13 00:18:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2103: Market data farm connection is broken:usfarm
+2026-06-13 00:18:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2117: Requested top market data is not subscribed. Subscription-independent ticks are still active.233; Error&BEST/STK/Top
