@@ -1,21 +1,27 @@
-=== executed: 080658603ef550cc00e7cdf37128c66a8424f1ed
-=== started:  2026-06-12T14:25:02Z
+=== executed: 338230de930f948f1e9c3b039440b720e39d28fa
+=== started:  2026-06-13T00:10:02Z
 === exit:     
 === timeout:  90s
 ===
-trading-bot-trading-bot-1	Up 7 hours (healthy)
-trading-bot-autoheal-1	Up 11 hours (healthy)
-trading-bot-ib-gateway-1	Up 11 hours (healthy)
----HEAD---
-9e5a09a6 Merge pull request #208 from femibol/claude/relax-crypto-trend-filter
----RECENT BOT LOG---
-2026-06-12 10:24:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-12 10:24:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
-2026-06-12 10:24:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-12 10:24:56 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 50 gainers, 13 gaps, 20 losers
-2026-06-12 10:24:57 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-12 10:24:57 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-12 10:24:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 138 low-priority equity names; max 90)
-2026-06-12 10:24:57 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-12 10:24:57 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-12 10:24:57 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+  max_dollar_risk_per_strategy:
+    mean_reversion: 100
+    rvol_momentum: 50
+    momentum_runner: 50
+    prebreakout: 50
+    premarket_gap: 50
+    low_float_catalyst: 40
+    crypto_runner: 30
+    momentum: 50
+    rvol_scalp: 40
+  equity_dead_hours_et:
+  - 5
+  - 14
+  use_market_orders_on_bracket: true
+  ibkr_routing_exchange: IEX
+  max_universe_symbols: 90
+---STRATEGIES STATE---
+  momentum: 0.041
+  rvol_momentum: 0.041
+  rvol_scalp: 0.041
+  options_momentum: 0.0
+momentum:
