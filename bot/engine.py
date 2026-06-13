@@ -4691,6 +4691,25 @@ class TradingEngine:
             if hasattr(strategy, "set_held_symbols"):
                 strategy.set_held_symbols(held_symbols, entry_times=held_entry_times)
 
+        # Per-symbol edge filter: mean_reversion (audit 2026-06-13) gates
+        # entries against its own per-symbol P&L history rather than the
+        # engine-wide should_avoid_symbol score (which pools across all
+        # strategies and so misses strategy-specific bleeders like the
+        # ICP/DOT/BCH crypto pattern). Cheap dict build; feed only if
+        # both sides exist + the analyzer has > 0 trades to score.
+        if self.trade_analyzer and hasattr(self.trade_analyzer, "get_symbol_edge_map"):
+            mr_strat = self.strategies.get("mean_reversion")
+            if mr_strat and hasattr(mr_strat, "feed_symbol_edge"):
+                try:
+                    mr_strat.feed_symbol_edge(
+                        self.trade_analyzer.get_symbol_edge_map(
+                            strategy="mean_reversion",
+                            min_trades=1,
+                        )
+                    )
+                except Exception as e:
+                    log.debug(f"Symbol edge feed error (mean_reversion): {e}")
+
         for name, strategy in self.strategies.items():
             try:
                 signals = strategy.generate_signals(self.market_data)

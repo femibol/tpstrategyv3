@@ -378,6 +378,41 @@ class TradeAnalyzer:
         """Check if a symbol should be avoided based on learning."""
         return self.symbol_scores.get(symbol, 0) < -8  # More sensitive: avoid losers faster
 
+    def get_symbol_edge_map(self, strategy=None, min_trades=1):
+        """Per-symbol edge stats, optionally scoped to one strategy.
+
+        Returns {symbol: {trades, wins, win_rate, total_pnl, avg_pnl}}.
+
+        The engine-wide `should_avoid_symbol` is too coarse for the audit
+        finding on mean_reversion crypto (ICP/DOT/BCH-class repeat
+        bleeders): it pools trades across all strategies so a strategy
+        with clear per-symbol losses can still slip past the -8 score
+        floor when other strategies occasionally win on the same ticker.
+        Scoping by strategy lets each one gate its own pipeline using its
+        own history.
+        """
+        stats = defaultdict(lambda: {"trades": 0, "wins": 0, "total_pnl": 0.0})
+        for trade in self._persisted_trades:
+            if strategy and trade.get("strategy") != strategy:
+                continue
+            symbol = (trade.get("symbol") or "").upper()
+            if not symbol:
+                continue
+            pnl = float(trade.get("pnl", 0) or 0)
+            stats[symbol]["trades"] += 1
+            stats[symbol]["total_pnl"] += pnl
+            if pnl > 0:
+                stats[symbol]["wins"] += 1
+
+        out = {}
+        for symbol, s in stats.items():
+            if s["trades"] < min_trades:
+                continue
+            s["win_rate"] = s["wins"] / s["trades"] * 100
+            s["avg_pnl"] = s["total_pnl"] / s["trades"]
+            out[symbol] = dict(s)
+        return out
+
     def get_status(self):
         """Get learning system status for dashboard."""
         return {
