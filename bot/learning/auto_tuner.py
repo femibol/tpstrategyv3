@@ -243,10 +243,9 @@ class AutoTuner:
         if changes_made:
             self._save_changelog(changes_made, recommendations)
             self._last_tune_time = now
-
-            # Save updated configs to disk
-            self.config.save_settings()
-            self._save_strategies_yaml()
+            # Persistence happens inside `_apply_param` per-change via the
+            # overlay path — no need for a bulk write to the versioned files
+            # (which was the source of the merge-conflict cascade).
 
             # Notify
             change_summary = "\n".join(
@@ -496,7 +495,10 @@ Example: {{"stop_loss_pct": 0.035, "alloc_momentum": 0.20, "mom_adx_threshold": 
         return suggested_value
 
     def _apply_param(self, param_key, value):
-        """Apply a parameter change to the live config."""
+        """Apply a parameter change via the overlay path so it survives
+        a host `git pull` cleanly. The legacy direct-write to
+        config/{settings,strategies}.yaml caused the merge-conflict
+        cascade documented in HANDOFF session 10."""
         mapping = PARAM_TO_CONFIG.get(param_key)
         if not mapping:
             return
@@ -504,20 +506,21 @@ Example: {{"stop_loss_pct": 0.035, "alloc_momentum": 0.20, "mom_adx_threshold": 
         config_type, section, key = mapping
 
         if config_type == "settings":
-            d = self.config.settings
-            d.setdefault(section, {})[key] = value
+            self.config.save_setting_override(f"{section}.{key}", value)
         elif config_type == "strategies":
-            d = self.config.strategies
-            d.setdefault(section, {})[key] = value
+            self.config.save_strategy_override(section, key, value)
 
     def _normalize_allocations(self):
-        """Ensure strategy allocations sum to 1.0."""
+        """Ensure strategy allocations sum to 1.0. Persists each
+        normalized value through the overlay path so the renormalization
+        survives restart without rewriting versioned config."""
         alloc = self.config.strategies.get("allocation", {})
         total = sum(alloc.values())
         if total > 0 and abs(total - 1.0) > 0.01:
             for key in alloc:
-                alloc[key] = round(alloc[key] / total, 3)
-            log.info(f"Allocations normalized: {alloc}")
+                norm_val = round(alloc[key] / total, 3)
+                self.config.save_strategy_override("allocation", key, norm_val)
+            log.info(f"Allocations normalized: {self.config.strategies.get('allocation', {})}")
 
     def _save_strategies_yaml(self):
         """Save strategies config to disk."""

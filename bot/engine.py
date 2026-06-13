@@ -10123,17 +10123,25 @@ class TradingEngine:
         }
 
     def apply_trading_profile(self, profile_name):
-        """Apply a trading profile and save."""
+        """Apply a trading profile and persist via the overlay.
+
+        Writes to `data/auto-tuner-overrides.yaml` (gitignored) instead of
+        `config/settings.yaml` so a host `git pull` doesn't fight the
+        runtime profile choice. Falls back to the in-memory profile only
+        if persistence fails.
+        """
         if self.config.apply_profile(profile_name):
-            self.config.save_settings()
+            try:
+                self.config.save_setting_override("trading_profile", profile_name)
+            except Exception as e:
+                log.warning(f"Profile overlay write failed: {e}")
             log.info(f"Trading profile changed to: {profile_name}")
             return True
         return False
 
     def update_config_setting(self, path, value):
-        """Update a single config setting and save."""
-        self.config.update_setting(path, value)
-        self.config.save_settings()
+        """Update a single config setting via the overlay path."""
+        self.config.save_setting_override(path, value)
         log.info(f"Config updated: {path} = {value}")
 
     # =========================================================================
