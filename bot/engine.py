@@ -10612,6 +10612,37 @@ class TradingEngine:
                                     )
                             except Exception as e:
                                 log.debug(f"Catalyst feed error: {e}")
+                            # Wave 5: surface feed health so a silent Polygon
+                            # outage doesn't regress momentum_runner to its
+                            # pre-#210 catalyst-blind state without notice.
+                            # Throttled to once per hour so a multi-hour
+                            # outage doesn't fill the log.
+                            try:
+                                if hasattr(self.news_feed, "is_healthy"):
+                                    healthy, age, reason = self.news_feed.is_healthy()
+                                    if not healthy:
+                                        last_warn = getattr(self, "_news_unhealthy_last_warn_ts", 0)
+                                        now_ts = time.time()
+                                        if now_ts - last_warn > 3600:
+                                            self._news_unhealthy_last_warn_ts = now_ts
+                                            log.warning(
+                                                f"NEWS FEED UNHEALTHY: {reason} "
+                                                f"(age={age}s) — momentum_runner catalyst "
+                                                f"scoring will silently regress to 0-pt until "
+                                                f"feed recovers"
+                                            )
+                                            if self.notifier:
+                                                try:
+                                                    self.notifier.system_alert(
+                                                        f"News feed unhealthy: {reason}. "
+                                                        f"momentum_runner catalyst component "
+                                                        f"is silently at 0 until feed recovers.",
+                                                        level="warning",
+                                                    )
+                                                except Exception:
+                                                    pass
+                            except Exception:
+                                pass
 
                         log.info(
                             f"Polygon: fed {len(session_candidates) if session_candidates else 0} "
