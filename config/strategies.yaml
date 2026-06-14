@@ -102,6 +102,14 @@ momentum:
   max_holding_bars: 40
   max_hold_days: 5
   breakout_lookback: 20  # Donchian standard 20-bar (was 15) — matches Turtle reference
+  # Per-symbol edge filter (Wave 5 extension from mean_reversion PR #211).
+  # Momentum is historically -$500/30d (26% WR). Engine-wide should_avoid_symbol
+  # pools all strategies so per-strategy bleeders escape its -8 floor.
+  # Enabled — falls open on empty history, only activates once a symbol has
+  # ≥3 trades from this strategy.
+  symbol_edge_filter_enabled: true
+  symbol_edge_min_trades: 3
+  symbol_edge_block_wr_pct: 30.0
   # symbols: hardcoded 20-mega-cap watchlist removed 2026-06-13 (audit).
   # It overlapped momentum_runner's universe and produced -$500/30d on names
   # the dynamic scanner already injects. Now empty → strategy operates

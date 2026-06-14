@@ -4744,17 +4744,22 @@ class TradingEngine:
         # ICP/DOT/BCH crypto pattern). Cheap dict build; feed only if
         # both sides exist + the analyzer has > 0 trades to score.
         if self.trade_analyzer and hasattr(self.trade_analyzer, "get_symbol_edge_map"):
-            mr_strat = self.strategies.get("mean_reversion")
-            if mr_strat and hasattr(mr_strat, "feed_symbol_edge"):
-                try:
-                    mr_strat.feed_symbol_edge(
-                        self.trade_analyzer.get_symbol_edge_map(
-                            strategy="mean_reversion",
-                            min_trades=1,
+            # Wave 5 extends the gate to momentum (historically -$500/30d,
+            # 26% WR — same per-strategy bleeder pattern). Each strategy
+            # gets its OWN edge map so momentum's losers don't poison
+            # mean_reversion's filter and vice versa.
+            for strat_name in ("mean_reversion", "momentum"):
+                strat = self.strategies.get(strat_name)
+                if strat and hasattr(strat, "feed_symbol_edge"):
+                    try:
+                        strat.feed_symbol_edge(
+                            self.trade_analyzer.get_symbol_edge_map(
+                                strategy=strat_name,
+                                min_trades=1,
+                            )
                         )
-                    )
-                except Exception as e:
-                    log.debug(f"Symbol edge feed error (mean_reversion): {e}")
+                    except Exception as e:
+                        log.debug(f"Symbol edge feed error ({strat_name}): {e}")
 
         for name, strategy in self.strategies.items():
             try:

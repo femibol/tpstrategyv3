@@ -54,6 +54,50 @@ class MomentumStrategy(BaseStrategy):
         self._dynamic_symbol_timestamps = {}
         self._max_dynamic_symbols = 50  # cap so scan time stays bounded
 
+        # Per-symbol edge filter (Wave 5 — extension of PR #211 from
+        # mean_reversion). The momentum strategy historically -$500/30d
+        # / 26% WR: bleeders re-trade the same names over and over. The
+        # engine-wide `should_avoid_symbol` pools all strategies so a
+        # name where momentum bleeds but, say, prebreakout occasionally
+        # wins escapes the global -8 score floor. Strategy-scoped edge
+        # blocks new entries when this strategy's OWN history shows N+
+        # trades + sub-30% WR + negative avg P&L. Fail-open on empty
+        # history — fresh installs aren't blocked.
+        self.symbol_edge_filter_enabled = config.get("symbol_edge_filter_enabled", False)
+        self.symbol_edge_min_trades = int(config.get("symbol_edge_min_trades", 3))
+        self.symbol_edge_block_wr_pct = float(config.get("symbol_edge_block_wr_pct", 30.0))
+        self._symbol_edge_map = {}
+
+    def feed_symbol_edge(self, edge_map):
+        """Feed {symbol: {trades, win_rate, avg_pnl, ...}} from the trade
+        analyzer scoped to this strategy. Called each scanner cycle by
+        the engine; falls open if not called."""
+        self._symbol_edge_map = edge_map or {}
+
+    def _edge_blocks(self, symbol):
+        """Check the symbol-edge gate. Returns reason string if blocked,
+        empty string otherwise. Inlined into the entry path so the
+        scan_results dashboard sees the block reason."""
+        if not self.symbol_edge_filter_enabled:
+            return ""
+        edge = self._symbol_edge_map.get((symbol or "").upper())
+        if not edge:
+            return ""
+        try:
+            trades_n = int(edge.get("trades", 0))
+            wr = float(edge.get("win_rate", 0) or 0)
+            avg_pnl = float(edge.get("avg_pnl", 0) or 0)
+        except (TypeError, ValueError):
+            return ""
+        if (trades_n >= self.symbol_edge_min_trades
+                and wr < self.symbol_edge_block_wr_pct
+                and avg_pnl < 0):
+            return (
+                f"BLOCKED: edge {wr:.0f}% WR over {trades_n} trades, "
+                f"${avg_pnl:+.2f}/trade"
+            )
+        return ""
+
     def add_dynamic_symbols(self, symbols):
         """Add dynamically discovered symbols (from IBKR TOP_PERC_GAIN etc)."""
         now = time.time()
@@ -275,6 +319,19 @@ class MomentumStrategy(BaseStrategy):
         )
 
         if primary_signal or pullback_to_support:
+            # Per-symbol edge gate (Wave 5). Block known bleeders BEFORE
+            # the signal payload is built — same shape as the
+            # mean_reversion gate from PR #211.
+            edge_block_reason = self._edge_blocks(symbol)
+            if edge_block_reason:
+                self.scan_results[symbol] = {
+                    "status": "edge_blocked",
+                    "verdict": edge_block_reason,
+                    "price": round(current_price, 2),
+                }
+                log.info(f"EDGE BLOCK: momentum {symbol} — {edge_block_reason}")
+                return None
+
             confidence = 0.5
 
             # Bonus for fresh crossover (now a confirmation, not the trigger)
