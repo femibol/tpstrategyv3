@@ -153,6 +153,18 @@ class NewsFeed:
         # Dynamic watchlist — updated from engine's active symbols
         self.watched_symbols = set()
 
+        # Health tracking (Wave 5). Without these, momentum_runner can
+        # silently regress to its pre-#210 state — empty catalyst feed
+        # for hours — and the operator has no way to know. is_healthy()
+        # surfaces the gap so the engine can log a warning, and the
+        # dashboard can show feed status as RED.
+        self._last_successful_fetch = None  # epoch seconds of last >0-article fetch
+        self._last_fetch_attempt = None     # epoch seconds of last fetch try
+        self._last_fetch_error = None       # most recent error string
+        self._consecutive_fetch_errors = 0  # resets on success
+        self._total_fetches = 0
+        self._total_fetch_errors = 0
+
         if self.api_key and HAS_POLYGON:
             self._client = RESTClient(
                 api_key=self.api_key,
@@ -201,8 +213,17 @@ class NewsFeed:
         if not self._client:
             return
 
+        self._last_fetch_attempt = time.time()
+        self._total_fetches += 1
         try:
             articles = self._fetch_news()
+            # Successful fetch (even if 0 articles is a valid response —
+            # it just means nothing new since last poll). Reset error
+            # state so a transient hiccup doesn't keep the feed marked
+            # unhealthy once it recovers.
+            self._last_successful_fetch = time.time()
+            self._consecutive_fetch_errors = 0
+            self._last_fetch_error = None
             if not articles:
                 return
 
@@ -251,6 +272,9 @@ class NewsFeed:
                 self.seen_articles = set(list(self.seen_articles)[-1000:])
 
         except Exception as e:
+            self._consecutive_fetch_errors += 1
+            self._total_fetch_errors += 1
+            self._last_fetch_error = f"{type(e).__name__}: {e}"
             log.warning(f"News check error: {e}")
 
     def _fetch_news(self):
@@ -655,12 +679,43 @@ class NewsFeed:
 
         return catalyst_map
 
+    def is_healthy(self, stale_after_secs=1800):
+        """Health check for the polling feed (Wave 5).
+
+        Returns (is_healthy: bool, age_secs: float | None, reason: str).
+
+        Healthy criteria (any one disqualifies):
+          - polling not started → False (`reason: "not_started"`)
+          - last successful fetch > stale_after_secs ago → False
+              (`reason: "stale_<N>s"`)
+          - 3+ consecutive errors since last success → False
+              (`reason: "errors_<N>"`)
+
+        IBKR-only mode (no polygon client) returns (True, None, "ibkr_only")
+        since polling health isn't relevant to that path.
+        """
+        if not self._client:
+            return True, None, "ibkr_only"
+        if not self._running:
+            return False, None, "not_started"
+        if self._last_successful_fetch is None:
+            # Could still be in the first poll interval after start
+            attempted = self._last_fetch_attempt is not None
+            return False, None, "no_success_yet" if attempted else "not_polled_yet"
+        age = time.time() - self._last_successful_fetch
+        if age > stale_after_secs:
+            return False, age, f"stale_{int(age)}s"
+        if self._consecutive_fetch_errors >= 3:
+            return False, age, f"errors_{self._consecutive_fetch_errors}"
+        return True, age, "ok"
+
     def get_status(self):
         sources = []
         if self._client:
             sources.append("polygon")
         if self.broker and hasattr(self.broker, 'subscribe_news') and self.broker.is_connected():
             sources.append("ibkr")
+        healthy, age, reason = self.is_healthy()
         return {
             "running": self._running,
             "api_configured": bool(self._client),
@@ -669,4 +724,12 @@ class NewsFeed:
             "total_signals": len(self.signals_generated),
             "watched_symbols": list(self.watched_symbols)[:20],
             "sources": sources,
+            # Health (Wave 5)
+            "healthy": healthy,
+            "last_fetch_age_secs": int(age) if age is not None else None,
+            "health_reason": reason,
+            "consecutive_errors": self._consecutive_fetch_errors,
+            "total_fetches": self._total_fetches,
+            "total_fetch_errors": self._total_fetch_errors,
+            "last_error": self._last_fetch_error,
         }
