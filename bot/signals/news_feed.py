@@ -149,6 +149,13 @@ class NewsFeed:
         self.seen_articles = set()
         self.recent_news = []
         self.signals_generated = []
+        # Bound the signal list. Without this, it grows forever across a
+        # bot session: 50-100 articles polled every 2 min × multi-ticker
+        # articles produces ~thousands of signals/day. recent_news already
+        # has a 500-cap (see _check_news); apply the same to signals.
+        # get_catalyst_map and has_bearish_news both linear-scan this list,
+        # so memory + lookup cost matter.
+        self._signals_max = 500
 
         # Dynamic watchlist — updated from engine's active symbols
         self.watched_symbols = set()
@@ -171,6 +178,15 @@ class NewsFeed:
                 retries=2,
                 trace=False,
             )
+
+    def _record_signal(self, signal):
+        """Append a generated signal with a rolling cap so memory + scan
+        cost stay bounded across a long-running bot session."""
+        self.signals_generated.append(signal)
+        if len(self.signals_generated) > self._signals_max:
+            # Keep the most recent half — same shape as the
+            # seen_articles prune below in _check_news.
+            self.signals_generated = self.signals_generated[-(self._signals_max // 2):]
 
     def update_watchlist(self, symbols):
         """Update the symbols to monitor for news (called by engine each cycle)."""
@@ -255,7 +271,7 @@ class NewsFeed:
                     if ticker and len(ticker) <= 5 and "." not in ticker:
                         signal = self._score_article(article, ticker)
                         if signal:
-                            self.signals_generated.append(signal)
+                            self._record_signal(signal)
                             signal_count += 1
                             if self.callback:
                                 self.callback(signal)
@@ -498,7 +514,7 @@ class NewsFeed:
                 signal = self._score_article(article, symbol)
                 if signal:
                     signal["source_detail"] = f"ibkr_{provider}"
-                    self.signals_generated.append(signal)
+                    self._record_signal(signal)
                     if self.callback:
                         self.callback(signal)
 
