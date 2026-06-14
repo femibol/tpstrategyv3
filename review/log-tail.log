@@ -1,49 +1,3 @@
-2026-06-12 15:04:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
-2026-06-12 15:04:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-12 15:04:17 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
-2026-06-12 15:04:17 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-12 15:04:17 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-12 15:04:17 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 120 low-priority equity names; max 90)
-2026-06-12 15:04:17 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-12 15:04:18 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-12 15:04:18 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-12 15:06:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-12 15:06:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-12 15:06:44 | INFO     | trading_bot.engine   | DATA COVERAGE: 86/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-12 15:07:03 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.14, RSI=37, BB=near, Vol=5.8x | SOL-USD @ $67.15
-2026-06-12 15:07:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>34.44, Vol=3.0x | FRD @ $34.53
-2026-06-12 15:07:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $361.02
-2026-06-12 15:07:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.29
-2026-06-12 15:07:03 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: STAK | Score: 70 | RVOL: 4.0x | Change: +0.2% | R:R 1.9 | Target: $8.39 (+1.2%)
-2026-06-12 15:09:38 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
-2026-06-12 15:09:38 | INFO     | trading_bot.engine   |   -> mean_reversion: buy SOL-USD @ $67.15 conf=0.66
-2026-06-12 15:09:38 | INFO     | trading_bot.engine   |   -> momentum: buy FRD @ $34.53 conf=0.75
-2026-06-12 15:09:38 | INFO     | trading_bot.engine   |   -> momentum: buy GOOGL @ $361.02 conf=0.85
-2026-06-12 15:09:38 | INFO     | trading_bot.engine   |   -> momentum: buy AMZN @ $241.29 conf=0.75
-2026-06-12 15:09:38 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy STAK @ $8.29 conf=0.70
-2026-06-12 15:09:38 | INFO     | trading_bot.risk.manager | REJECTED: buy SOL-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-2026-06-12 15:09:38 | INFO     | trading_bot.risk.manager | APPROVED: buy FRD | Momentum BUY: EMA trend, breakout>34.44, Vol=3.0x
-2026-06-12 15:09:38 | INFO     | trading_bot.risk.manager | APPROVED: buy GOOGL | Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x
-2026-06-12 15:09:38 | INFO     | trading_bot.risk.manager | APPROVED: buy AMZN | Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x
-2026-06-12 15:09:38 | INFO     | trading_bot.risk.manager | APPROVED: buy STAK | Extreme RVOL 4.0x | Volume accelerating bar-over-bar | Short-term trend bullish | RSI in sweet spot (49)
-2026-06-12 15:09:38 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1075 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 5
-  ✅ SOL-USD: score 66/100 — Mean reversion BUY: Z=-1.14, RSI=37, BB=near, Vol=5.8x
-  ✅ FRD: score 75/100 — Momentum BUY: EMA 
-2026-06-12 15:09:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (325.0s total): run_strategies=155.2s, update_data=146.2s, update_scalp=19.0s
-2026-06-12 15:09:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-12 15:09:41 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: FRD via momentum — daily drawdown circuit breaker active (51m left, DD -2.0%)
-2026-06-12 15:09:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-12 15:09:44 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: GOOGL via momentum — daily drawdown circuit breaker active (51m left, DD -2.0%)
-2026-06-12 15:09:45 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: AMZN — symbol history bad: 0/3 wins (0%), avg P&L $-0.69
-2026-06-12 15:09:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-12 15:09:48 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: STAK — wide spread 5.2% (>2% for $8.29)
-2026-06-12 15:09:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-12 15:09:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 15:09:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-12 15:09:51 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: SOL-USD(z=-1.14 rsi=36.7 bb=MIDDLE) | WAIT[18]: ALGO-USD(weak 3d trend (-3.8%)), AVAX-USD(weak 3d trend (-1.0%)), BONK-USD(weak 3d trend (+0.9%)), COMP-USD(weak 3d trend (-2.6%)), DOT-USD(weak 3d trend (-0.6%)), FET-USD(weak 3d trend (-7.0%)), HBAR-USD(weak 3d trend (-2.1%)), ICP-USD(weak 3d trend (-1.1%)), IMX-USD(weak 3d trend (-1.6%)), LINK-USD(weak 3d trend (+0.4%)), LTC-USD(weak 3d trend (-0.0%)), MATIC-USD(weak 3d trend (-1.9%)), NEAR-USD(weak 3d trend (-6.5%)), RNDR-USD(needs vol>=1.1x), SUI-USD(weak 3d trend (-0.1%)), TRX-USD(weak 3d trend (-2.5%)), XLM-USD(weak 3d trend (-3.5%)), XRP-USD(weak 3d trend (-0.6%)) | warming=6 | neutral=15 | no_data=2
-2026-06-12 15:09:51 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.14, RSI=37, BB=near, Vol=5.8x | SOL-USD @ $67.15
 2026-06-12 15:09:51 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=53, breakout>358.37, Vol=6.1x | GOOGL @ $360.94
 2026-06-12 15:09:51 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=5.3x | AMZN @ $241.29
 2026-06-12 15:09:51 | INFO     | trading_bot.risk.manager | REJECTED: buy SOL-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
@@ -19998,3 +19952,49 @@ Signals found: 2
 2026-06-13 20:38:31 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-13 20:38:31 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-13 20:38:31 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 20:41:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 20:41:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:41:49 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-13 20:41:49 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 20:41:49 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 20:41:49 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 20:41:49 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 20:41:49 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — ADVB, UBER
+2026-06-13 20:41:49 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+  ✅ UBER: score 90/100 — Momentum BUY: pullback entry, ADX
+2026-06-13 20:41:50 | WARNING  | trading_bot.engine   | SLOW CYCLE (202.0s total): update_data=183.2s, update_scalp=14.9s
+2026-06-13 20:41:53 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[8]: ATOM-USD(needs green bar), COMP-USD(weak 3d trend (-5.4%)), ETC-USD(needs vol>1.3x), HBAR-USD(weak 3d trend (+0.5%)), ICP-USD(needs vol>=1.1x), LINK-USD(needs vol>=1.1x), SOL-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-0.1%)) | warming=9 | neutral=23 | no_data=2
+2026-06-13 20:41:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:41:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:41:59 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:41:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 20:42:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-13 20:42:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-13 20:42:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 28 results
+2026-06-13 20:42:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-13 20:42:02 | INFO     | trading_bot.engine   | IBKR scanner: 132 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-13 20:42:02 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-13 20:42:02 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-13 20:44:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, Vol=9.0x | ADVB @ $4.41
+2026-06-13 20:44:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:44:50 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-13 20:44:50 | INFO     | trading_bot.engine   |   -> momentum: buy ADVB @ $4.41 conf=0.70
+2026-06-13 20:44:50 | INFO     | trading_bot.engine   |   -> momentum: buy UBER @ $68.80 conf=0.90
+2026-06-13 20:44:50 | INFO     | trading_bot.risk.manager | APPROVED: buy ADVB | Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+2026-06-13 20:44:50 | INFO     | trading_bot.risk.manager | APPROVED: buy UBER | Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x
+2026-06-13 20:44:50 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — ADVB, UBER
+2026-06-13 20:44:50 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 954 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ADVB: score 70/100 — Momentum BUY: EMA trend, ADX=100, Vol=9.0x
+  ✅ UBER: score 90/100 — Momentum BUY: pullback entry, ADX
+2026-06-13 20:44:50 | WARNING  | trading_bot.engine   | SLOW CYCLE (171.8s total): update_data=151.8s, update_scalp=15.5s
+2026-06-13 20:44:53 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[7]: ATOM-USD(needs vol>=1.1x), COMP-USD(weak 3d trend (-4.9%)), ETC-USD(needs vol>=1.1x), HBAR-USD(weak 3d trend (+0.5%)), ICP-USD(needs vol>=1.1x), MATIC-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-1.2%)) | warming=9 | neutral=24 | no_data=2
+2026-06-13 20:44:54 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:44:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:45:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, breakout>68.76, higher lows, Vol=5.3x | UBER @ $68.80
+2026-06-13 20:45:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-13 20:45:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
