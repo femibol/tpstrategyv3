@@ -1,185 +1,3 @@
-2026-06-14 22:09:47 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 24 stale symbols across strategies
-2026-06-14 22:09:47 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 105 low-priority equity names; max 90)
-2026-06-14 22:09:47 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-14 22:09:48 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-14 22:09:48 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=2.4x | RNDR-USD @ $1.80
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.00
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>36.53, higher lows, Vol=3.3x | IDR @ $41.95
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.30
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=70, breakout>2.52, Vol=3.2x | ITRG @ $2.97
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:12:39 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: IDR | Score: 71 | Squeeze: True | Vol: 2.0x | R:R 2.3 | Target: $37.71
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> mean_reversion: buy RNDR-USD @ $1.80 conf=1.00
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> momentum: buy AMZN @ $243.00 conf=0.90
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> momentum: buy IDR @ $41.95 conf=0.80
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> momentum: buy AAPL @ $292.30 conf=0.90
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> momentum: buy ITRG @ $2.97 conf=0.85
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.34 conf=0.95
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   |   -> prebreakout: buy IDR @ $36.50 conf=0.71
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | REJECTED: buy RNDR-USD | Cost gate: edge 84bps < 2× cost 50bps (need 100bps)
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | APPROVED: buy AMZN | Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | REJECTED: buy IDR | Setup broke: signal $41.95 → market $36.50 (-13.0%, max -3%)
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | REJECTED: buy ITRG | Setup broke: signal $2.97 → market $2.52 (-15.2%, max -3%)
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x
-2026-06-14 22:12:39 | INFO     | trading_bot.risk.manager | APPROVED: buy IDR | BB squeeze (12% tight) | Volume accumulating 2.0x | MACD turning up | EMA trend bullish | Breakout candle!
-2026-06-14 22:12:39 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — AMZN, AAPL, SNAP, IDR
-2026-06-14 22:12:39 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 965 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 7
-  ✅ RNDR-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=2.4x
-  ✅ AMZN: score 90/100 — Momentum BUY: EM
-2026-06-14 22:12:40 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.2s total): update_data=155.5s, update_scalp=16.4s
-2026-06-14 22:12:43 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: RNDR-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[6]: ATOM-USD(weak 3d trend (-0.7%)), COMP-USD(weak 3d trend (-2.9%)), CRV-USD(weak 3d trend (-9.7%)), ETC-USD(weak 3d trend (-1.1%)), SNX-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-1.8%)) | warming=10 | neutral=23 | no_data=2
-2026-06-14 22:12:43 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=2.4x | RNDR-USD @ $1.80
-2026-06-14 22:12:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.00
-2026-06-14 22:12:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.30
-2026-06-14 22:12:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:12:43 | INFO     | trading_bot.risk.manager | REJECTED: buy RNDR-USD | Cost gate: edge 84bps < 2× cost 50bps (need 100bps)
-2026-06-14 22:12:46 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=2.4x | RNDR-USD @ $1.80
-2026-06-14 22:12:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.00
-2026-06-14 22:12:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.30
-2026-06-14 22:12:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:12:46 | INFO     | trading_bot.risk.manager | REJECTED: buy RNDR-USD | Cost gate: edge 84bps < 2× cost 50bps (need 100bps)
-2026-06-14 22:12:49 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=2.4x | RNDR-USD @ $1.80
-2026-06-14 22:12:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.00
-2026-06-14 22:12:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.30
-2026-06-14 22:12:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:12:49 | INFO     | trading_bot.risk.manager | REJECTED: buy RNDR-USD | Cost gate: edge 84bps < 2× cost 50bps (need 100bps)
-2026-06-14 22:12:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-14 22:12:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-14 22:12:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-14 22:12:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-14 22:12:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-14 22:12:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-14 22:12:53 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-14 22:12:53 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-14 22:12:53 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-14 22:12:53 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 105 low-priority equity names; max 90)
-2026-06-14 22:12:53 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-14 22:12:53 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-14 22:12:53 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-14 22:15:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.25
-2026-06-14 22:15:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>36.53, higher lows, Vol=3.3x | IDR @ $41.95
-2026-06-14 22:15:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.37
-2026-06-14 22:15:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=70, breakout>2.52, Vol=3.2x | ITRG @ $2.95
-2026-06-14 22:15:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:15:45 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: IDR | Score: 71 | Squeeze: True | Vol: 2.0x | R:R 2.3 | Target: $37.71
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   |   -> momentum: buy AMZN @ $243.25 conf=0.90
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   |   -> momentum: buy IDR @ $41.95 conf=0.80
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   |   -> momentum: buy AAPL @ $292.37 conf=0.90
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   |   -> momentum: buy ITRG @ $2.95 conf=0.85
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.34 conf=0.95
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   |   -> prebreakout: buy IDR @ $36.50 conf=0.71
-2026-06-14 22:15:45 | INFO     | trading_bot.risk.manager | APPROVED: buy AMZN | Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x
-2026-06-14 22:15:45 | INFO     | trading_bot.risk.manager | REJECTED: buy IDR | Setup broke: signal $41.95 → market $36.50 (-13.0%, max -3%)
-2026-06-14 22:15:45 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x
-2026-06-14 22:15:45 | INFO     | trading_bot.risk.manager | REJECTED: buy ITRG | Setup broke: signal $2.95 → market $2.52 (-14.6%, max -3%)
-2026-06-14 22:15:45 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x
-2026-06-14 22:15:45 | INFO     | trading_bot.risk.manager | APPROVED: buy IDR | BB squeeze (12% tight) | Volume accumulating 2.0x | MACD turning up | EMA trend bullish | Breakout candle!
-2026-06-14 22:15:45 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — AMZN, AAPL, SNAP, IDR
-2026-06-14 22:15:45 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 965 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ AMZN: score 90/100 — Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher low
-  ✅ IDR: score 80/100 — Momentum BUY: EM
-2026-06-14 22:15:46 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.5s total): update_data=155.9s, update_scalp=16.2s
-2026-06-14 22:15:49 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[7]: ATOM-USD(weak 3d trend (-0.7%)), COMP-USD(weak 3d trend (-2.9%)), CRV-USD(weak 3d trend (-8.5%)), ETC-USD(weak 3d trend (-1.1%)), RNDR-USD(needs green bar), SNX-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-1.3%)) | warming=6 | neutral=27 | no_data=2
-2026-06-14 22:15:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.25
-2026-06-14 22:15:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.37
-2026-06-14 22:15:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:15:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.25
-2026-06-14 22:15:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.37
-2026-06-14 22:15:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:15:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.25
-2026-06-14 22:15:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.37
-2026-06-14 22:15:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:15:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-14 22:15:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-14 22:15:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-14 22:15:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-14 22:15:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-14 22:15:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-14 22:15:58 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-14 22:15:58 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-14 22:15:58 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-14 22:15:58 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 105 low-priority equity names; max 90)
-2026-06-14 22:15:58 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-14 22:15:59 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-14 22:15:59 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-14 22:18:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.18
-2026-06-14 22:18:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>36.53, higher lows, Vol=3.3x | IDR @ $41.95
-2026-06-14 22:18:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.31
-2026-06-14 22:18:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=70, breakout>2.52, Vol=3.2x | ITRG @ $2.95
-2026-06-14 22:18:57 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:18:57 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: IDR | Score: 71 | Squeeze: True | Vol: 2.0x | R:R 2.3 | Target: $37.71
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   |   -> momentum: buy AMZN @ $243.18 conf=0.90
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   |   -> momentum: buy IDR @ $41.95 conf=0.80
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   |   -> momentum: buy AAPL @ $292.31 conf=0.90
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   |   -> momentum: buy ITRG @ $2.95 conf=0.85
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.34 conf=0.95
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   |   -> prebreakout: buy IDR @ $36.50 conf=0.71
-2026-06-14 22:18:57 | INFO     | trading_bot.risk.manager | APPROVED: buy AMZN | Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x
-2026-06-14 22:18:57 | INFO     | trading_bot.risk.manager | REJECTED: buy IDR | Setup broke: signal $41.95 → market $36.50 (-13.0%, max -3%)
-2026-06-14 22:18:57 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x
-2026-06-14 22:18:57 | INFO     | trading_bot.risk.manager | REJECTED: buy ITRG | Setup broke: signal $2.95 → market $2.52 (-14.6%, max -3%)
-2026-06-14 22:18:57 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x
-2026-06-14 22:18:57 | INFO     | trading_bot.risk.manager | APPROVED: buy IDR | BB squeeze (12% tight) | Volume accumulating 2.0x | MACD turning up | EMA trend bullish | Breakout candle!
-2026-06-14 22:18:57 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — AMZN, AAPL, SNAP, IDR
-2026-06-14 22:18:57 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 965 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ AMZN: score 90/100 — Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher low
-  ✅ IDR: score 80/100 — Momentum BUY: EM
-2026-06-14 22:18:58 | WARNING  | trading_bot.engine   | SLOW CYCLE (183.3s total): update_data=162.3s, update_scalp=16.5s
-2026-06-14 22:19:01 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[7]: ATOM-USD(weak 3d trend (-0.7%)), COMP-USD(weak 3d trend (-2.9%)), CRV-USD(weak 3d trend (-8.5%)), ETC-USD(weak 3d trend (-1.1%)), RNDR-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-1.8%)) | warming=6 | neutral=27 | no_data=2
-2026-06-14 22:19:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.18
-2026-06-14 22:19:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.31
-2026-06-14 22:19:01 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:19:04 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.18
-2026-06-14 22:19:04 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.31
-2026-06-14 22:19:04 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:19:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.18
-2026-06-14 22:19:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.31
-2026-06-14 22:19:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:19:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-14 22:19:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-14 22:19:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-14 22:19:10 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-14 22:19:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-14 22:19:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-14 22:19:11 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-14 22:19:11 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-14 22:19:11 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-14 22:19:11 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 104 low-priority equity names; max 90)
-2026-06-14 22:19:11 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-14 22:19:11 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-14 22:19:11 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-14 22:20:56 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-14 22:22:05 | INFO     | trading_bot.engine   | DATA COVERAGE: 76/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.40, RSI=0, BB=near, Vol=7.6x | ALGO-USD @ $0.09
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x | AMZN @ $243.18
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>36.53, higher lows, Vol=3.3x | IDR @ $41.95
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x | AAPL @ $292.35
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=70, breakout>2.52, Vol=3.2x | ITRG @ $2.95
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x | SNAP @ $5.34
-2026-06-14 22:22:21 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: IDR | Score: 71 | Squeeze: True | Vol: 2.0x | R:R 2.3 | Target: $37.71
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ALGO-USD @ $0.09 conf=0.88
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> momentum: buy AMZN @ $243.18 conf=0.90
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> momentum: buy IDR @ $41.95 conf=0.80
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> momentum: buy AAPL @ $292.35 conf=0.90
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> momentum: buy ITRG @ $2.95 conf=0.85
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.34 conf=0.95
-2026-06-14 22:22:21 | INFO     | trading_bot.engine   |   -> prebreakout: buy IDR @ $36.50 conf=0.71
-2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 26bps < 2× cost 50bps (need 100bps)
-2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | APPROVED: buy AMZN | Momentum BUY: EMA trend, ADX=44, breakout>239.00, higher lows, Vol=4.6x
-2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | REJECTED: buy IDR | Setup broke: signal $41.95 → market $36.50 (-13.0%, max -3%)
-2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | APPROVED: buy AAPL | Momentum BUY: EMA trend, ADX=42, breakout>291.37, higher lows, Vol=4.8x
 2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | REJECTED: buy ITRG | Setup broke: signal $2.95 → market $2.52 (-14.6%, max -3%)
 2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA cross, breakout>5.25, higher lows, Vol=7.8x
 2026-06-14 22:22:21 | INFO     | trading_bot.risk.manager | APPROVED: buy IDR | BB squeeze (12% tight) | Volume accumulating 2.0x | MACD turning up | EMA trend bullish | Breakout candle!
@@ -19998,3 +19816,185 @@ Signals found: 5
 2026-06-15 11:53:00 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
 2026-06-15 11:53:00 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-15 11:53:00 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-15 11:55:36 | WARNING  | trading_bot.engine   | STOP WATCHDOG: MSTU has NO broker-side stop! Placing emergency stop @ $4.05 for 203 shares
+2026-06-15 11:55:36 | WARNING  | trading_bot.broker.ibkr | Order 974871 not found
+2026-06-15 11:55:36 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: MSTU → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-15 11:55:36 | INFO     | trading_bot.broker.ibkr | Order update: MSTU | Status: Cancelled | Filled: 0.0/203
+2026-06-15 11:55:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-06-15 11:55:37 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 203 MSTU @ STOP 4.054049999999999 [OUTSIDE RTH] | Order ID: 982958
+2026-06-15 11:55:37 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: MSTU | Order ID: 982958
+2026-06-15 11:55:37 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: MSTU — IBKR returned None
+2026-06-15 11:55:37 | WARNING  | trading_bot.engine   | STOP WATCHDOG: SPCX has NO broker-side stop! Placing emergency stop @ $173.13 for 9 shares
+2026-06-15 11:55:37 | WARNING  | trading_bot.broker.ibkr | Order 977609 not found
+2026-06-15 11:55:37 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SPCX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-15 11:55:37 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: Cancelled | Filled: 0.0/9
+2026-06-15 11:55:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-06-15 11:55:38 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 9 SPCX @ STOP 173.13296 [OUTSIDE RTH] | Order ID: 982960
+2026-06-15 11:55:39 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: SPCX | Order ID: 982960
+2026-06-15 11:55:39 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: SPCX — IBKR returned None
+2026-06-15 11:55:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=0.6x | MSFT @ $400.30
+2026-06-15 11:55:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=57, breakout>134.41, higher lows, Vol=0.1x | PLTR @ $134.60
+2026-06-15 11:55:39 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.34
+2026-06-15 11:55:39 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-15 11:55:39 | INFO     | trading_bot.engine   |   -> momentum: buy MSFT @ $400.30 conf=0.75
+2026-06-15 11:55:39 | INFO     | trading_bot.engine   |   -> momentum: buy PLTR @ $134.60 conf=0.90
+2026-06-15 11:55:39 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $17.34 conf=0.75
+2026-06-15 11:55:39 | INFO     | trading_bot.risk.manager | APPROVED: buy MSFT | Momentum BUY: pullback entry, ADX=52, higher lows, Vol=0.6x
+2026-06-15 11:55:39 | INFO     | trading_bot.risk.manager | APPROVED: buy PLTR | Momentum BUY: pullback entry, ADX=57, breakout>134.41, higher lows, Vol=0.1x
+2026-06-15 11:55:39 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x
+2026-06-15 11:55:39 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 948 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ MSFT: score 75/100 — Momentum BUY: pullback entry, ADX=52, higher lows, Vol=0.6x
+  ✅ PLTR: score 90/100 — Momentum BUY: pu
+2026-06-15 11:55:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (163.6s total): update_data=140.1s, update_scalp=15.3s
+2026-06-15 11:55:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-15 11:55:42 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: MSFT — bearish EMA imbalance -0.30
+2026-06-15 11:55:45 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: PLTR via momentum — momentum hit daily DD limit (-3.79%)
+2026-06-15 11:55:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-15 11:55:47 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SOFI via momentum — momentum hit daily DD limit (-3.79%)
+2026-06-15 11:55:50 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:55:50 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[4]: APT-USD(weak 3d trend (-0.6%)), COMP-USD(weak 3d trend (-0.4%)), CRV-USD(weak 3d trend (-1.2%)), SNX-USD(weak 3d trend (+0.0%)) | warming=5 | neutral=32 | no_data=1
+2026-06-15 11:55:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=0.6x | MSFT @ $400.30
+2026-06-15 11:55:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=57, breakout>134.41, higher lows, Vol=0.1x | PLTR @ $134.65
+2026-06-15 11:55:50 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.37
+2026-06-15 11:55:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:55:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: PEARL; IBEOS; OVERNIGHT; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; CHX; NYSENAT; PSX; T24X; MEMX; EDGEA; LTSE; ISE; DRCTEDGE; 
+2026-06-15 11:55:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:55:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=0.6x | MSFT @ $400.30
+2026-06-15 11:55:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=57, breakout>134.41, higher lows, Vol=0.1x | PLTR @ $134.63
+2026-06-15 11:55:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.35
+2026-06-15 11:55:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:55:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:55:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=52, higher lows, Vol=0.6x | MSFT @ $400.32
+2026-06-15 11:55:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=57, breakout>134.41, higher lows, Vol=0.1x | PLTR @ $134.64
+2026-06-15 11:55:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.34
+2026-06-15 11:55:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:55:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-15 11:55:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-15 11:55:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-15 11:56:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-15 11:56:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 18 results
+2026-06-15 11:56:01 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 50 gainers, 6 gaps, 18 losers
+2026-06-15 11:56:01 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-06-15 11:56:01 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 99 low-priority equity names; max 90)
+2026-06-15 11:56:01 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-15 11:56:01 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-15 11:56:01 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-15 11:58:20 | INFO     | trading_bot.engine   | DATA COVERAGE: 80/90 symbols have bars, 89/90 have prices | IBKR blacklisted: 43 | bar-fetch backoff: 1
+2026-06-15 11:58:35 | INFO     | trading_bot.engine   | BREAK-EVEN: XNDX stop moved to $15.99 (was $15.29, P&L: 1.5%)
+2026-06-15 11:58:35 | INFO     | trading_bot.notifications | [ALERT] Position Update: 🛡️ **BREAKEVEN: XNDX**
+Stop moved to $15.99 (was $15.29) | P&L: 1.5%
+2026-06-15 11:58:35 | WARNING  | trading_bot.broker.ibkr | Order 977609 not found
+2026-06-15 11:58:35 | INFO     | trading_bot.engine   | Cancelled broker stop order for SPCX
+2026-06-15 11:58:35 | WARNING  | trading_bot.broker.ibkr | Order 977609 not found
+2026-06-15 11:58:35 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SPCX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-15 11:58:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: PreSubmitted | Filled: 0.0/9.0
+2026-06-15 11:58:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: Filled | Filled: 9.0/9.0 | AvgPrice: $175.99
+2026-06-15 11:58:36 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 9 SPCX @ MARKET MKT | Order ID: 983139
+2026-06-15 11:58:36 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 9/9 SPCX @ $175.99 | Order ID: 983139
+2026-06-15 11:58:36 | INFO     | trading_bot.engine   | CLOSED SPCX via IBKR | trailing_stop | P&L: $+27.27 | Trailing stop at $175.42 (trail 2.3%)
+2026-06-15 11:58:36 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT SPCX qty=9 @ $175.99 → primary webhook (200)
+2026-06-15 11:58:36 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: SPCX** (trailing_stop)
+```
+  Entry: $172.96 → Exit: $175.99
+  P&L: $+27.27 (+1.75%)
+  Shares: 9 | Value: $1,583.91
+  Hold: 1.6h
+```
+Strategy: **momentum** | Trailing stop at $175.42 (t
+2026-06-15 11:58:37 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SPCX +27.27 (238 total in history)
+2026-06-15 11:58:40 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [SPCX]: **BOOST:momentum**
+
+Win on momentum with clean trailing stop exit (+1.8%, 99min hold). But 46% win rate is marginal — profits depend on winners being larger than losers. Confirm R:R >1.5x before boost
+2026-06-15 11:58:40 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'momentum' (total boosts: 1)
+2026-06-15 11:58:40 | WARNING  | trading_bot.engine   | STOP WATCHDOG: MSTU has NO broker-side stop! Placing emergency stop @ $4.05 for 203 shares
+2026-06-15 11:58:40 | WARNING  | trading_bot.broker.ibkr | Order 974871 not found
+2026-06-15 11:58:40 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: MSTU → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-15 11:58:40 | INFO     | trading_bot.broker.ibkr | Order update: MSTU | Status: Cancelled | Filled: 0.0/203
+2026-06-15 11:58:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-06-15 11:58:41 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 203 MSTU @ STOP 4.054049999999999 [OUTSIDE RTH] | Order ID: 983141
+2026-06-15 11:58:41 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: MSTU | Order ID: 983141
+2026-06-15 11:58:41 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: MSTU — IBKR returned None
+2026-06-15 11:58:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=71, higher lows, Vol=0.4x | SPCX @ $175.94
+2026-06-15 11:58:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=53, breakout>400.50, higher lows, Vol=0.3x | MSFT @ $400.74
+2026-06-15 11:58:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, higher lows, Vol=0.5x | AXTU @ $21.05
+2026-06-15 11:58:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.36
+2026-06-15 11:58:41 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: XNDX | Score: 80 | RVOL: 21.8x | Change: +0.4% | R:R 2.0 | Target: $16.28 (+1.2%)
+2026-06-15 11:58:41 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-15 11:58:41 | INFO     | trading_bot.engine   |   -> momentum: buy SPCX @ $175.94 conf=0.75
+2026-06-15 11:58:41 | INFO     | trading_bot.engine   |   -> momentum: buy MSFT @ $400.74 conf=0.90
+2026-06-15 11:58:41 | INFO     | trading_bot.engine   |   -> momentum: buy AXTU @ $21.05 conf=0.65
+2026-06-15 11:58:41 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $17.36 conf=0.75
+2026-06-15 11:58:41 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy XNDX @ $16.20 conf=0.80
+2026-06-15 11:58:41 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCX | Momentum BUY: pullback entry, ADX=71, higher lows, Vol=0.4x
+2026-06-15 11:58:41 | INFO     | trading_bot.risk.manager | APPROVED: buy MSFT | Momentum BUY: pullback entry, ADX=53, breakout>400.50, higher lows, Vol=0.3x
+2026-06-15 11:58:41 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTU | Momentum BUY: pullback entry, higher lows, Vol=0.5x
+2026-06-15 11:58:41 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x
+2026-06-15 11:58:41 | INFO     | trading_bot.risk.manager | REJECTED: buy XNDX | Already in position: XNDX
+2026-06-15 11:58:41 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 942 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ SPCX: score 75/100 — Momentum BUY: pullback entry, ADX=71, higher lows, Vol=0.4x
+  ✅ MSFT: score 90/100 — Momentum BUY: pu
+2026-06-15 11:58:42 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.5s total): update_data=139.0s, update_scalp=14.3s, discover=5.0s
+2026-06-15 11:58:44 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: SPCX entry=$175.4200 stop=$173.9330 (0.85% gap). Setting 2% minimum stop.
+2026-06-15 11:58:44 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 0.30% risk
+2026-06-15 11:58:44 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $66.09 → $50.00 (per-strategy ceiling)
+2026-06-15 11:58:44 | INFO     | trading_bot.risk.position_sizer | Position size: 14 shares @ $175.42 = $2,455.88 | Risk: $49.12 (0.2% of account) [tier: 1-50 shares]
+2026-06-15 11:58:44 | WARNING  | trading_bot.engine   | R/R STRETCH: SPCX entry=$175.4200 stop=$171.9116 (risk=$3.5084) target=$181.5150 (reward=$6.0950, R/R=1.74) — stretching target to $182.4368 for 2:1 minimum.
+2026-06-15 11:58:44 | INFO     | trading_bot.engine   | Executing SPCX via IBKR...
+2026-06-15 11:58:44 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SPCX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-15 11:58:44 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: SPCX (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: PreSubmitted | Filled: 0.0/14.0
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: PreSubmitted | Filled: 0.0/14.0
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: PreSubmitted | Filled: 0.0/14.0
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: Filled | Filled: 14.0/14.0 | AvgPrice: $175.81
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: PreSubmitted | Filled: 0.0/14.0
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: PreSubmitted | Filled: 0.0/14.0
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | Order update: SPCX | Status: Submitted | Filled: 0.0/14.0
+2026-06-15 11:58:45 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 14 SPCX @ LIMIT $178.93 | TP: $182.44 | SL: $171.91 | Parent ID: 983149
+2026-06-15 11:58:46 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 14/14 SPCX @ $175.8100 | signal $178.9300 | slippage -1.74% | parent=MARKET
+2026-06-15 11:58:46 | INFO     | trading_bot.engine   | BRACKET ORDER active: SPCX | SL: $171.91 | TP: $182.44 (managed by IBKR server-side)
+2026-06-15 11:58:46 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: SPCX expected $175.42 but filled @ $175.81
+2026-06-15 11:58:46 | INFO     | trading_bot.engine   | ORDER BUY SPCX via IBKR | Qty: 14 | Price: $175.81 | Cost: $2,461.34 | Stop: $171.91 (risk $54.58) | Target: $182.44 (reward $92.78) | R:R 1.7:1 | Strategy: momentum
+2026-06-15 11:58:46 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: SPCX**
+```
+  Entry: $175.81 x 14 shares = $2,461.34
+  Stop:  $171.91 (-$54.58 | -2.2%)
+  Targets: $182.44
+  Risk/Reward: 1.7
+```
+Strategy: **momentum** | Confidence: **75%**
+2026-06-15 11:58:46 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY SPCX qty=14 @ $175.81 → primary webhook (200)
+2026-06-15 11:58:47 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
+2026-06-15 11:58:47 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10190: Max number of tick-by-tick requests has been reached.
+2026-06-15 11:58:49 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: MSFT — bearish EMA imbalance -0.45
+2026-06-15 11:58:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; NYSENAT; IBEOS; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-15 11:58:52 | INFO     | trading_bot.engine   | SLIPPAGE BLOCK: AXTU had a slippage_reject close 8559s ago — blocked for the rest of the session (structural liquidity problem, not timing)
+2026-06-15 11:58:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: NYSENAT; MEMX; OVERNIGHT; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BEX; NYSE; Unknown market data permissions - Depth: BATS; ARCA; Top: BYX; PEARL; AMEX; CHX; IBEOS; T24X; PSX; EDGEA; LTSE; 
+2026-06-15 11:58:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; ARCA; Unknown market data permissions - Depth: NASDAQ; BEX; NYSE; IEX; 
+2026-06-15 11:58:53 | INFO     | trading_bot.engine   | SLIPPAGE BLOCK: SOFI had a slippage_reject close 28442s ago — blocked for the rest of the session (structural liquidity problem, not timing)
+2026-06-15 11:58:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; ARCA; Unknown market data permissions - Depth: NASDAQ; BEX; NYSE; IEX; 
+2026-06-15 11:58:56 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[4]: APT-USD(weak 3d trend (-0.6%)), COMP-USD(weak 3d trend (-0.4%)), CRV-USD(weak 3d trend (-1.2%)), SNX-USD(weak 3d trend (+0.0%)) | warming=5 | neutral=32 | no_data=1
+2026-06-15 11:58:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=53, breakout>400.50, higher lows, Vol=0.3x | MSFT @ $400.76
+2026-06-15 11:58:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.35
+2026-06-15 11:58:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; NYSE; Unknown market data permissions - Depth: BEX; 
+2026-06-15 11:58:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BEX; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; NYSE; IEX; 
+2026-06-15 11:58:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BEX; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; NYSE; IEX; 
+2026-06-15 11:58:59 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=53, breakout>400.50, higher lows, Vol=0.3x | MSFT @ $400.78
+2026-06-15 11:58:59 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.36
+2026-06-15 11:59:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:59:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:59:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: IBEOS; NYSENAT; OVERNIGHT; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; CHX; PSX; T24X; MEMX; EDGEA; LTSE; ISE; DRCTEDGE; 
+2026-06-15 11:59:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=53, breakout>400.50, higher lows, Vol=0.3x | MSFT @ $400.83
+2026-06-15 11:59:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=59, higher lows, Vol=0.1x | SOFI @ $17.35
+2026-06-15 11:59:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:59:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-15 11:59:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-15 11:59:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-15 11:59:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-15 11:59:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-15 11:59:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 18 results
+2026-06-15 11:59:06 | INFO     | trading_bot.engine   | IBKR scanner: 110 unique symbols discovered | 50 gainers, 5 gaps, 18 losers
+2026-06-15 11:59:07 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 100 low-priority equity names; max 90)
