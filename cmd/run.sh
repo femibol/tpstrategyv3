@@ -1,19 +1,20 @@
 #!/bin/bash
 set +e
-echo "=== installing tailscale ==="
-curl -fsSL https://tailscale.com/install.sh | sh 2>&1 | tail -6
-echo "=== version ==="; tailscale version 2>&1 | head -2
-systemctl enable --now tailscaled 2>&1 | tail -2; sleep 2
-echo "=== tailscaled active? ==="; systemctl is-active tailscaled 2>&1
-echo "=== initiating auth (background, capturing login URL) ==="
-rm -f /tmp/tsup.log
-( timeout 40 tailscale up --hostname=trading-bot-vps > /tmp/tsup.log 2>&1 ) &
-url=""
-for i in $(seq 1 15); do
-  url=$(grep -oE 'https://login\.tailscale\.com/[a-z]/[A-Za-z0-9]+' /tmp/tsup.log 2>/dev/null | head -1)
-  [ -n "$url" ] && break
-  sleep 2
-done
-echo "=== AUTH URL ==="; echo "${url:-NOT_FOUND_YET}"
-echo "=== raw tsup.log tail ==="; tail -4 /tmp/tsup.log 2>&1
-echo "=== status ==="; tailscale status 2>&1 | head -4
+echo "=== tailscale status ==="
+tailscale status 2>&1 | head -10
+echo "=== this node MagicDNS name ==="
+NAME=$(tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('Self',{}).get('DNSName','').rstrip('.'))" 2>&1)
+echo "name=$NAME"
+echo "=== HTTPS available in tailnet? (cert probe) ==="
+tailscale cert 2>&1 | head -8
+echo "=== configure serve: dashboard on https://NAME/ ==="
+tailscale serve reset 2>&1 | tail -2
+tailscale serve --bg --https=443 http://localhost:5000 2>&1 | tail -8
+echo "=== serve status ==="
+tailscale serve status 2>&1 | head -15
+echo "=== final dashboard URL ==="
+if [ -n "$NAME" ]; then echo "https://$NAME/"; else echo "(no MagicDNS name yet — check tailscale up)"; fi
+echo "=== smoke test (from VPS to itself via tailnet) ==="
+if [ -n "$NAME" ]; then
+  curl -sk -m 8 -o /dev/null -w "HTTP %{http_code}\n" "https://$NAME/health" 2>&1
+fi
