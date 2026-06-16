@@ -63,11 +63,15 @@ If `claude-vps meta` errors with "bridge isn't installed," fall back to asking t
 mcp__github__create_or_update_file(
   owner="femibol", repo="tpstrategyv3", branch="claude/cmd",
   path="cmd/run.sh", message="request: <short label>",
-  content=<base64 of "#!/bin/bash\n<CMD>\n">
+  content="#!/bin/bash\n<CMD>\n"   # PLAINTEXT — NOT base64
 )
 ```
 
-Cron runs the command within ~60s (timeout 90s, 1MB output cap). Read the result back with `git fetch origin claude/cmd && git show origin/claude/cmd:cmd/result.txt`. The branch always carries the LATEST cmd + the LATEST result — there's no queue. If the SHA at `cmd/last_executed.txt` matches your request SHA, the cron has processed it.
+**IMPORTANT (corrected 2026-06-16):** `content` must be the **plaintext** script, NOT base64. The cmd-runner executes `cmd/run.sh` directly with no decode step; passing base64 makes it try to run the base64 string as a command (`exit 127, command not found`). The `mcp__github__create_or_update_file` tool stores `content` verbatim as the file body. Verified live this session.
+
+To get the SHA for the update arg: `git fetch origin claude/cmd && git rev-parse origin/claude/cmd:cmd/run.sh`.
+
+Cron runs the command within ~60s (timeout 90s, 1MB output cap). Read the result back with `git fetch origin claude/cmd && git show origin/claude/cmd:cmd/result.txt`. The branch always carries the LATEST cmd + the LATEST result — there's no queue. If the SHA at `cmd/last_executed.txt` matches your request commit SHA, the cron has processed it. **Never print secrets** (e.g. `DASHBOARD_SECRET_KEY`) in a command — `result.txt` is committed to a public-ish branch; read env vars into a shell var and use them without echoing.
 
 1. `scripts/claude-vps trades --last 200` — check win rate, avg P&L, strategy breakdown
 2. `scripts/claude-vps logs --grep "REJECTED|RATE LIMIT|ERROR"` — find execution issues
