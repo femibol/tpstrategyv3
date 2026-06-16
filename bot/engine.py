@@ -432,6 +432,17 @@ class TradingEngine:
                     f"Net P&L: ${total_pnl:+,.2f} | "
                     f"Strategies: {', '.join(strategies_seen)}"
                 )
+                # Rebuild in-memory performance_stats from the restored
+                # history. Without this, the dashboard's Win Rate / PF
+                # cards render "--" until the first post-restart close,
+                # because `performance_stats` is only updated by the
+                # close path and isn't itself persisted. Reading from
+                # trade_history matches the same source the analytics
+                # endpoints already use.
+                try:
+                    self._rebuild_performance_stats_from_history()
+                except Exception as e:
+                    log.debug(f"perf_stats rebuild failed: {e}")
             else:
                 log.info("TRADE HISTORY: No previous trades found — starting fresh")
 
@@ -7723,6 +7734,31 @@ class TradingEngine:
                     f"Daily soft-stop triggered: Down {daily_pnl_pct:.1%}. "
                     f"Pausing new entries for 1 hour to prevent revenge trading."
                 )
+
+    def _rebuild_performance_stats_from_history(self):
+        """Replay every closed trade in trade_history through
+        `_update_performance_stats` so the in-memory tracker reflects
+        the full historical sample, not just trades closed since the
+        last bot start. Called once during boot after persisted history
+        loads. Cheap: O(n) over a 500-trade ceiling."""
+        # Reset to baseline before replay so calling this twice (e.g. test
+        # harness) doesn't double-count.
+        self.performance_stats = {
+            "total_trades": 0, "wins": 0, "losses": 0, "breakeven": 0,
+            "total_profit": 0.0, "total_loss": 0.0,
+            "largest_win": 0.0, "largest_loss": 0.0,
+            "current_streak": 0, "best_streak": 0, "worst_streak": 0,
+        }
+        for trade in self.trade_history:
+            try:
+                self._update_performance_stats(float(trade.get("pnl", 0) or 0))
+            except (TypeError, ValueError):
+                continue
+        log.info(
+            f"PERF STATS: rebuilt from history — total={self.performance_stats['total_trades']} "
+            f"W={self.performance_stats['wins']} L={self.performance_stats['losses']} "
+            f"net=${self.performance_stats['total_profit'] - self.performance_stats['total_loss']:+,.2f}"
+        )
 
     def _update_performance_stats(self, pnl):
         """Update win/loss tracking stats after a trade closes."""

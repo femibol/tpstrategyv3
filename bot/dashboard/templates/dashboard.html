@@ -1299,6 +1299,29 @@ async function apiPost(endpoint, body) {
 function fmt(v, d) { d = d !== undefined ? d : 2; return v != null ? v.toFixed(d) : '0.00'; }
 function fmtMoney(v) { return v != null ? v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00'; }
 function pnlCls(v) { return v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral'; }
+
+// Returns {count, pnl} for trades that closed today in America/New_York
+// (the market calendar). Used by the "Today P&L" card instead of
+// engine.daily_pnl, which resets at the 09:15-ET pre-market scan and
+// silently undercounts overnight/pre-market trades from earlier in the
+// same calendar day.
+function _todaysStatsFromTrades(trades) {
+    if (!trades || !trades.length) return {count: 0, pnl: 0};
+    var todayET = new Date().toLocaleDateString('en-CA', {timeZone: 'America/New_York'});
+    var count = 0, pnl = 0;
+    for (var i = 0; i < trades.length; i++) {
+        var t = trades[i];
+        var ts = t.exit_time || t.entry_time;
+        if (!ts) continue;
+        var d = new Date(ts);
+        if (isNaN(d.getTime())) continue;
+        if (d.toLocaleDateString('en-CA', {timeZone: 'America/New_York'}) === todayET) {
+            count += 1;
+            pnl += (typeof t.pnl === 'number' ? t.pnl : 0);
+        }
+    }
+    return {count: count, pnl: pnl};
+}
 function tvLink(symbol) {
     var s = symbol.replace('/', '');
     return '<a class="tv-link" href="https://www.tradingview.com/chart/?symbol=' + s + '" target="_blank" rel="noopener">' + symbol + '</a>';
@@ -2188,13 +2211,24 @@ async function update() {
         document.getElementById('regimeRisk').textContent = 'Risk: ' + (riskMult * 100).toFixed(0) + '%';
     }
 
-    // Quick win rate / profit factor in header
-    if (perfData && perfData.total_trades > 0) {
+    // Quick win rate / profit factor in header. Prefer the in-memory
+    // performance_stats source (perfData) when populated; fall back to
+    // tradesSummary which reads from trade_history. Without the fallback
+    // the card stuck at "--" between bot restart and first close — even
+    // with 200+ trades in history.
+    var wrSource = (perfData && perfData.total_trades > 0)
+        ? perfData
+        : (tradesSummary && tradesSummary.total > 0
+            ? {win_rate: tradesSummary.win_rate,
+               profit_factor: tradesSummary.profit_factor,
+               total_trades: tradesSummary.total}
+            : null);
+    if (wrSource) {
         var wrEl = document.getElementById('winRate');
-        wrEl.textContent = perfData.win_rate + '%';
-        wrEl.className = 'stat-value ' + (perfData.win_rate >= 50 ? 'positive' : 'negative');
-        var pfStr = perfData.profit_factor === Infinity ? '--' : perfData.profit_factor;
-        document.getElementById('profitFactor').textContent = 'PF: ' + pfStr + ' | ' + perfData.total_trades + ' trades';
+        wrEl.textContent = wrSource.win_rate + '%';
+        wrEl.className = 'stat-value ' + (wrSource.win_rate >= 50 ? 'positive' : 'negative');
+        var pfStr = (wrSource.profit_factor === Infinity || wrSource.profit_factor === null) ? '--' : wrSource.profit_factor;
+        document.getElementById('profitFactor').textContent = 'PF: ' + pfStr + ' | ' + wrSource.total_trades + ' trades';
     }
 
     // Status
@@ -2235,12 +2269,26 @@ async function update() {
 
         document.getElementById('balance').textContent = '$' + fmtMoney(status.balance);
         var retPct = status.total_return_pct;
-        document.getElementById('totalReturn').innerHTML = '<span class="' + pnlCls(retPct) + '">' + (retPct >= 0 ? '+' : '') + fmt(retPct) + '%</span>';
+        // Prefix "All-time" so the red %-down doesn't read as today's loss
+        // sitting next to the Today P&L card. Was just "%" — operator-confusing.
+        document.getElementById('totalReturn').innerHTML = 'All-time: <span class="' + pnlCls(retPct) + '">' + (retPct >= 0 ? '+' : '') + fmt(retPct) + '%</span>';
 
-        document.getElementById('dailyPnl').innerHTML = '<span class="' + pnlCls(status.daily_pnl) + '">$' + fmt(status.daily_pnl) + '</span>';
-        document.getElementById('dailyTrades').textContent = status.daily_trades + ' trades';
+        // Today P&L + count: compute from the trades list filtered to the
+        // calendar-day in ET, not from engine.daily_pnl/daily_trades. Those
+        // engine fields reset at the 09:15-ET _pre_market_scan and don't
+        // reflect overnight/pre-market closes that happened earlier in the
+        // calendar day. operator-facing "today" should mean today.
+        var today = _todaysStatsFromTrades(trades);
+        document.getElementById('dailyPnl').innerHTML = '<span class="' + pnlCls(today.pnl) + '">$' + fmt(today.pnl) + '</span>';
+        document.getElementById('dailyTrades').textContent = today.count + ' trades';
         document.getElementById('openPositions').textContent = status.positions;
-        document.getElementById('strategies').textContent = (status.strategies_active && status.strategies_active.length > 0) ? status.strategies_active.join(', ') : '--';
+        // Subtitle is "N strategies active" instead of a comma-joined list —
+        // the comma-list under "Positions" reads as a position-list, which
+        // is the wrong mental model. Full list available in the strategies tab.
+        var stratCount = (status.strategies_active || []).length;
+        var stratEl = document.getElementById('strategies');
+        stratEl.textContent = stratCount > 0 ? (stratCount + ' strategies active') : '--';
+        if (stratCount > 0) stratEl.title = status.strategies_active.join(', ');
         document.getElementById('drawdown').innerHTML = '<span class="' + (status.drawdown_pct > 5 ? 'negative' : 'neutral') + '">' + fmt(status.drawdown_pct) + '%</span>';
         document.getElementById('peakBalance').textContent = 'Peak: $' + fmtMoney(status.peak_balance);
 
