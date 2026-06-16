@@ -1,14 +1,23 @@
-=== executed: ef8a22fb9104f308b6e1f5a9a6ff6522cc69fe0f
-=== started:  2026-06-16T19:45:16Z
+=== executed: e9bbb20cd8a8a0fd841923d4fb37d29b73aab924
+=== started:  2026-06-16T19:49:04Z
 === exit:     
 === timeout:  90s
 ===
-=== using safe deploy script ===
-deploy: backed up 10 data/*.json files
-deploy: checked out b6ad2365 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
-=== exit: 0 ===
-=== quick post-deploy verification ===
--rw-r--r-- 1 root root 191375 Jun 16 19:10 data/trade_history.json
+=== data/trade_history.json on disk ===
+-rw-r--r-- 1 root root 191375 Jun 16 19:10 /opt/trading-bot/data/trade_history.json
+count:
+297
+=== boot log: TRADE HISTORY + PERF STATS ===
+2026-06-16 15:35:30 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 297 trades | 140W/157L | Net P&L: $-14.52 | Strategies: crypto_runner, rvol_momentum, momentum, crypto_test, mean_reversion, synced_from_ibkr, rvol_scalp
+2026-06-16 15:35:30 | INFO     | trading_bot.engine   | PERF STATS: rebuilt from history — total=297 W=140 L=117 net=$-14.52
+2026-06-16 15:45:28 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 297 trades | 140W/157L | Net P&L: $-14.52 | Strategies: synced_from_ibkr, rvol_momentum, mean_reversion, crypto_test, rvol_scalp, momentum, crypto_runner
+2026-06-16 15:45:28 | INFO     | trading_bot.engine   | PERF STATS: rebuilt from history — total=297 W=140 L=117 net=$-14.52
+=== /api/status total_trades ===
+total_trades: 297
+running: True
+=== /api/performance ===
+total_trades: 297
+win_rate: 47.1
+net_pnl: -14.52
+=== /api/trades count ===
+count: 100
