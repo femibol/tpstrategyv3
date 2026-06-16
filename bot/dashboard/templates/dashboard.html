@@ -543,15 +543,16 @@
 
         /* === TABS === */
         .tabs {
-            display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto;
+            display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto;
             -webkit-overflow-scrolling: touch; scrollbar-width: none;
             padding-bottom: 2px;
         }
         .tabs::-webkit-scrollbar { display: none; }
         .tab {
-            padding: 9px 16px; border-radius: 999px; font-size: 0.78em; font-weight: 700;
+            padding: 10px 18px; border-radius: 999px; font-size: 0.8em; font-weight: 700;
             white-space: nowrap; cursor: pointer; border: 1px solid var(--border);
             background: var(--card); color: var(--muted); transition: all 0.15s;
+            flex: 1; text-align: center; min-width: 0;
         }
         .tab:active { transform: scale(0.95); }
         .tab.active {
@@ -559,9 +560,36 @@
             color: #fff; border-color: transparent;
             box-shadow: 0 3px 12px rgba(91,140,255,0.32);
         }
+        .tab.more-btn { flex: 0 0 auto; padding: 10px 14px; }
         .tab-content { display: none; animation: fadeIn 0.18s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* More-menu popover (Wave-6 UI overhaul) — 13 cramped tabs were
+         * a usability bug; we now show 5 primary tabs visibly and tuck the
+         * rest behind a "More" button popover. Each popover item still
+         * dispatches the same `switchTab(name)` call so the existing
+         * tab-content blocks need no changes. */
+        .more-menu {
+            display: none; position: fixed; right: 12px; top: 70px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); box-shadow: var(--shadow-lg);
+            z-index: 100; padding: 6px; min-width: 180px;
+            -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+        }
+        .more-menu.open { display: block; animation: fadeIn 0.15s ease; }
+        .more-menu-item {
+            padding: 11px 14px; border-radius: 8px; cursor: pointer;
+            font-size: 0.86em; font-weight: 600; color: var(--text);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .more-menu-item:active { background: var(--surface); }
+        .more-menu-item.active { background: rgba(91,140,255,0.16); color: var(--accent); }
+        .more-menu-backdrop {
+            display: none; position: fixed; inset: 0; z-index: 99;
+            background: rgba(0,0,0,0.40);
+        }
+        .more-menu-backdrop.open { display: block; }
 
         /* === REGIME BADGE === */
         .regime-badge {
@@ -821,21 +849,32 @@
     <canvas class="chart-canvas" id="equityCanvas"></canvas>
 </div>
 
-<!-- TABS — reordered: most useful first -->
+<!-- TABS — consolidated to 5 primary + More menu (Wave-6 UI overhaul).
+     The previous 13-tab strip was cramped + bottom-truncated on mobile.
+     This shows the 5 high-frequency operator destinations inline and
+     tucks rare/admin tabs behind a More popover. switchTab() still
+     dispatches to the same data-tab values so every existing
+     <div class="tab-content" id="tab-X"> block keeps working. -->
 <div class="tabs">
     <div class="tab active" data-tab="positions" onclick="switchTab('positions')">Positions</div>
-    <div class="tab" data-tab="suggestions" onclick="switchTab('suggestions')">Signals</div>
     <div class="tab" data-tab="trades" onclick="switchTab('trades')">Trades</div>
-    <div class="tab" data-tab="rvol" onclick="switchTab('rvol')">RVOL</div>
+    <div class="tab" data-tab="performance" onclick="switchTab('performance')">Stats</div>
     <div class="tab" data-tab="scanner" onclick="switchTab('scanner')">Scanner</div>
-    <div class="tab" data-tab="history" onclick="switchTab('history')">History</div>
-    <div class="tab" data-tab="watchlist" onclick="switchTab('watchlist')">Watchlist</div>
-    <div class="tab" data-tab="performance" onclick="switchTab('performance')">W/L Stats</div>
-    <div class="tab" data-tab="strategies" onclick="switchTab('strategies')">Strategies</div>
-    <div class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analysis</div>
-    <div class="tab" data-tab="daily" onclick="switchTab('daily')">Daily Stats</div>
-    <div class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</div>
-    <div class="tab" data-tab="notifications" onclick="switchTab('notifications')">Alerts</div>
+    <div class="tab more-btn" data-more-btn onclick="toggleMoreMenu()">⋯</div>
+</div>
+
+<!-- More-menu popover: everything that doesn't fit in the top 5 tabs. -->
+<div class="more-menu-backdrop" id="moreMenuBackdrop" onclick="closeMoreMenu()"></div>
+<div class="more-menu" id="moreMenu" role="menu" aria-label="More views">
+    <div class="more-menu-item" data-tab="strategies" onclick="switchTabFromMenu('strategies')">Strategies</div>
+    <div class="more-menu-item" data-tab="history" onclick="switchTabFromMenu('history')">History</div>
+    <div class="more-menu-item" data-tab="daily" onclick="switchTabFromMenu('daily')">Daily Stats</div>
+    <div class="more-menu-item" data-tab="suggestions" onclick="switchTabFromMenu('suggestions')">Signals</div>
+    <div class="more-menu-item" data-tab="rvol" onclick="switchTabFromMenu('rvol')">RVOL</div>
+    <div class="more-menu-item" data-tab="watchlist" onclick="switchTabFromMenu('watchlist')">Watchlist</div>
+    <div class="more-menu-item" data-tab="analysis" onclick="switchTabFromMenu('analysis')">Analysis</div>
+    <div class="more-menu-item" data-tab="notifications" onclick="switchTabFromMenu('notifications')">Alerts</div>
+    <div class="more-menu-item" data-tab="settings" onclick="switchTabFromMenu('settings')">Settings</div>
 </div>
 
 <!-- TRADE SUGGESTIONS TAB -->
@@ -1967,15 +2006,48 @@ async function executeSuggestion(symbol, stop, target, conf, strategy, whyEncode
 var _histLoaded = false;
 function switchTab(tabName) {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.more-menu-item').forEach(function(m) { m.classList.remove('active'); });
     document.querySelectorAll('.tab-content').forEach(function(tc) { tc.classList.remove('active'); });
-    document.querySelector('.tab[data-tab="' + tabName + '"]').classList.add('active');
-    document.getElementById('tab-' + tabName).classList.add('active');
+    // The tab may live in the primary bar OR in the More menu. Light up
+    // whichever one matches; if it's a menu item, also light up the More
+    // button so the active state is visible from the primary bar.
+    var primaryTab = document.querySelector('.tab[data-tab="' + tabName + '"]');
+    if (primaryTab) {
+        primaryTab.classList.add('active');
+    } else {
+        var menuItem = document.querySelector('.more-menu-item[data-tab="' + tabName + '"]');
+        if (menuItem) menuItem.classList.add('active');
+        var moreBtn = document.querySelector('.tab.more-btn');
+        if (moreBtn) moreBtn.classList.add('active');
+    }
+    var contentEl = document.getElementById('tab-' + tabName);
+    if (contentEl) contentEl.classList.add('active');
     window.scrollTo(0, 0);
     // Lazy-load trade history on first visit
     if (tabName === 'history' && !_histLoaded) {
         _histLoaded = true;
         loadHistory();
     }
+}
+
+// More-menu popover handlers (Wave-6 UI overhaul).
+function toggleMoreMenu() {
+    var menu = document.getElementById('moreMenu');
+    var bd = document.getElementById('moreMenuBackdrop');
+    if (!menu || !bd) return;
+    var willOpen = !menu.classList.contains('open');
+    menu.classList.toggle('open', willOpen);
+    bd.classList.toggle('open', willOpen);
+}
+function closeMoreMenu() {
+    var menu = document.getElementById('moreMenu');
+    var bd = document.getElementById('moreMenuBackdrop');
+    if (menu) menu.classList.remove('open');
+    if (bd) bd.classList.remove('open');
+}
+function switchTabFromMenu(tabName) {
+    closeMoreMenu();
+    switchTab(tabName);
 }
 
 // === SETTINGS MANAGEMENT ===
