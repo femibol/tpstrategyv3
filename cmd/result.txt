@@ -1,37 +1,20 @@
-=== executed: 1ee747af94020344569931dd47fe90167efe053f
-=== started:  2026-06-16T18:57:08Z
+=== executed: a9eb5c5d26b0c6b9efe3b7f93a099bdfc3bcd3dc
+=== started:  2026-06-16T18:58:14Z
 === exit:     
 === timeout:  90s
 ===
-=== BEFORE ===
-9e5a09a6
- M config/settings.yaml
- M config/strategies.yaml
- M data/signal_log.json
- M data/trade_history.json
-?? bot/dashboard/templates/dashboard.html.bak.20260522_013652
-?? data/positions_state.json.bak.20260518_102746
-?? data/trade_history.json.bak.20260518_090525
-?? data/weekly-reviews/
-?? install.cmd
-=== fetch origin/main ===
-From github-write:femibol/tpstrategyv3
- * branch              main       -> FETCH_HEAD
-=== stashing local config edits ===
-Saved working directory and index state On main: pre-deploy auto-stash 2026-06-16T18:57:02Z
-=== checkout + reset to origin/main ===
-Your branch is behind 'origin/main' by 47 commits, and can be fast-forwarded.
-  (use "git pull" to update your local branch)
-HEAD is now at 7d338a98 Merge pull request #229 from femibol/claude/dashboard-ui-overhaul
-=== AFTER ===
-7d338a98
-=== restart trading-bot container ===
-trading-bot-trading-bot-1
-=== wait for /health (up to 60s) ===
-ready after 3s -- {"mode":"paper","running":false,"status":"ok","uptime":"2026-06-16T14:57:08.728193"}
-=== container status ===
-Up 4 seconds (health: starting)
-=== first lines of startup log ===
-2026-06-16 14:57:06 | INFO     | trading_bot.dashboard | Dashboard starting at http://0.0.0.0:5000
-2026-06-16 14:57:06 | INFO     | trading_bot          | Dashboard: http://localhost:5000
-=== done ===
+=== container ===
+trading-bot-trading-bot-1 | Up 57 seconds (healthy)
+=== /health ===
+{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-16T14:58:02.391866"}
+=== /api/status (key fields, with auth) ===
+PARSE FAIL: Expecting value: line 1 column 1 (char 0)
+=== dashboard HTML — UI overhaul markers present? ===
+stats-hero present: YES
+stat-card hero present: YES
+stats-tertiary present: YES
+_todaysStatsFromTrades present: YES
+=== last 30 log lines (look for engine bring-up signatures) ===
+2026-06-16 14:57:18 | INFO     | trading_bot.engine   | Trading engine started - entering main loop
+2026-06-16 14:57:18 | INFO     | trading_bot.notifications | [ALERT] System: ✅ **System**: Trading engine started
+=== any ERROR/CRITICAL in last 60s ===
