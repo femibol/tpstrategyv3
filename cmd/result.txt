@@ -1,46 +1,14 @@
-=== executed: c64c2faa9896a10542a2c3e74381d4aaeb89a06b
-=== started:  2026-06-16T19:28:01Z
+=== executed: ef8a22fb9104f308b6e1f5a9a6ff6522cc69fe0f
+=== started:  2026-06-16T19:45:16Z
 === exit:     
 === timeout:  90s
 ===
-=== /api/trades (default = limit 100) — first row shape ===
-count: 100
-first row keys: ['afterhours_hold', 'direction', 'entry_confidence', 'entry_price', 'entry_time', 'executed_via', 'exit_price', 'exit_time', 'final_stop', 'hold_time_mins', 'initial_stop', 'overnight_hold', 'pnl', 'pnl_pct', 'quantity', 'reason', 'reason_detail', 'regime', 'source', 'strategy', 'symbol']
-last row: {'exit_time': '2026-06-16T13:53:43.684791-04:00', 'entry_time': '2026-06-16T13:48:18.958796-04:00', 'symbol': 'AIBZ', 'strategy': 'synced_from_ibkr', 'pnl': 9.154306200000015}
-LAST FIVE:
-  2026-06-16T12:08:09 SUGP momentum pnl=$-29.92
-  2026-06-16T12:13:59 MATIC-USD mean_reversion pnl=$+0.50
-  2026-06-16T12:37:26 AIBZ momentum pnl=$+9.25
-  2026-06-16T13:53:38 AIBZ synced_from_ibkr pnl=$+5.92
-  2026-06-16T13:53:43 AIBZ synced_from_ibkr pnl=$+9.15
-
-=== exit_time format check (today's trades) ===
-<stdin>:3: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
-today UTC: 2026-06-16
-todays count: 26
-  exit_time='2026-06-16T02:20:53.115553-04:00'
-  exit_time='2026-06-16T04:36:17.933914-04:00'
-  exit_time='2026-06-16T06:52:23.477880-04:00'
-  exit_time='2026-06-16T07:15:46.757469-04:00'
-  exit_time='2026-06-16T07:22:43.201529-04:00'
-  exit_time='2026-06-16T09:09:11.302945-04:00'
-  exit_time='2026-06-16T09:13:11.900834-04:00'
-  exit_time='2026-06-16T09:38:05.579895-04:00'
-  exit_time='2026-06-16T09:41:36.113804-04:00'
-  exit_time='2026-06-16T09:48:20.663759-04:00'
-  exit_time='2026-06-16T09:48:41.351308-04:00'
-  exit_time='2026-06-16T09:52:11.016715-04:00'
-  exit_time='2026-06-16T10:08:10.201842-04:00'
-  exit_time='2026-06-16T10:08:15.503006-04:00'
-  exit_time='2026-06-16T10:33:23.167168-04:00'
-  exit_time='2026-06-16T10:43:35.396269-04:00'
-  exit_time='2026-06-16T10:46:40.167664-04:00'
-  exit_time='2026-06-16T10:56:51.552735-04:00'
-  exit_time='2026-06-16T11:38:58.215955-04:00'
-  exit_time='2026-06-16T11:42:32.182933-04:00'
-  exit_time='2026-06-16T11:51:39.338945-04:00'
-  exit_time='2026-06-16T12:08:09.073454-04:00'
-  exit_time='2026-06-16T12:13:59.747999-04:00'
-  exit_time='2026-06-16T12:37:26.107883-04:00'
-  exit_time='2026-06-16T13:53:38.566336-04:00'
-  exit_time='2026-06-16T13:53:43.684791-04:00'
+=== using safe deploy script ===
+deploy: backed up 10 data/*.json files
+deploy: checked out b6ad2365 on main
+deploy: container trading-bot-trading-bot-1 restarted
+deploy: dashboard ready after 6s
+deploy: ok
+=== exit: 0 ===
+=== quick post-deploy verification ===
+-rw-r--r-- 1 root root 191375 Jun 16 19:10 data/trade_history.json
