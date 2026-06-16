@@ -1,28 +1,37 @@
-=== executed: 6459de8d33d03143d64b374f6b905c2244eccf46
-=== started:  2026-06-16T17:59:02Z
+=== executed: 1ee747af94020344569931dd47fe90167efe053f
+=== started:  2026-06-16T18:57:08Z
 === exit:     
 === timeout:  90s
 ===
-key_len: 64
-=== /api/status ===
-running: True
-balance: 21759.11
-starting_balance: 25000
-total_return_pct: -12.96356
-daily_pnl: -362.9975880000004
-daily_trades: 0
-peak_balance: 21794.4776808
-drawdown_pct: 0.16227817577457068
-positions: 0
-strategies_active: ['mean_reversion', 'momentum', 'rvol_momentum', 'rvol_scalp', 'prebreakout', 'premarket_gap', 'momentum_runner', 'daily_trend_rider', 'low_float_catalyst', 'crypto_runner']
-total_trades: 297
-broker_connected: True
-execution_broker: IBKR
-position_details count: 0
-position_details symbols: []
-=== /api/positions ===
-count: 0
-=== /api/daily ===
-days returned: 0
-=== /health (sanity) ===
-{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-16T13:59:02.127839"}
+=== BEFORE ===
+9e5a09a6
+ M config/settings.yaml
+ M config/strategies.yaml
+ M data/signal_log.json
+ M data/trade_history.json
+?? bot/dashboard/templates/dashboard.html.bak.20260522_013652
+?? data/positions_state.json.bak.20260518_102746
+?? data/trade_history.json.bak.20260518_090525
+?? data/weekly-reviews/
+?? install.cmd
+=== fetch origin/main ===
+From github-write:femibol/tpstrategyv3
+ * branch              main       -> FETCH_HEAD
+=== stashing local config edits ===
+Saved working directory and index state On main: pre-deploy auto-stash 2026-06-16T18:57:02Z
+=== checkout + reset to origin/main ===
+Your branch is behind 'origin/main' by 47 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+HEAD is now at 7d338a98 Merge pull request #229 from femibol/claude/dashboard-ui-overhaul
+=== AFTER ===
+7d338a98
+=== restart trading-bot container ===
+trading-bot-trading-bot-1
+=== wait for /health (up to 60s) ===
+ready after 3s -- {"mode":"paper","running":false,"status":"ok","uptime":"2026-06-16T14:57:08.728193"}
+=== container status ===
+Up 4 seconds (health: starting)
+=== first lines of startup log ===
+2026-06-16 14:57:06 | INFO     | trading_bot.dashboard | Dashboard starting at http://0.0.0.0:5000
+2026-06-16 14:57:06 | INFO     | trading_bot          | Dashboard: http://localhost:5000
+=== done ===
