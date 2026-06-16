@@ -1,18 +1,10 @@
 #!/bin/bash
 set +e
-KEY=""
-for f in /opt/trading-bot/.env /opt/trading-bot-cmd/.env; do
-  if [ -f "$f" ]; then
-    KEY=$(grep -E '^DASHBOARD_SECRET_KEY=' "$f" | head -1 | cut -d= -f2- | tr -d '"'"'"'')
-    [ -n "$KEY" ] && { echo "source: $f"; break; }
-  fi
-done
-if [ -z "$KEY" ]; then
-  echo "DASHBOARD_SECRET_KEY not found in .env"
-  exit 0
-fi
-LEN=${#KEY}
-echo "length: $LEN chars"
-echo "starts with: ${KEY:0:6}"
-echo "ends with:   ${KEY: -6}"
-echo "(middle hidden — masked fingerprint only)"
+echo "=== tailscale binary ==="; command -v tailscale 2>&1 || echo "NOT INSTALLED on host"
+echo "=== tailscale version ==="; tailscale version 2>&1 | head -3
+echo "=== tailscaled service ==="; systemctl is-active tailscaled 2>&1
+echo "=== tailscale status (first 8 lines) ==="; tailscale status 2>&1 | head -8
+echo "=== this node MagicDNS name ==="; tailscale status --json 2>/dev/null | grep -oE '"DNSName":"[^"]+"' | head -1
+echo "=== existing serve config ==="; tailscale serve status 2>&1 | head -10
+echo "=== funnel status ==="; tailscale funnel status 2>&1 | head -5
+echo "=== is tailscale running in a container instead? ==="; docker ps --format '{{.Names}} {{.Image}}' 2>&1 | grep -i tailscale || echo "no tailscale container"
