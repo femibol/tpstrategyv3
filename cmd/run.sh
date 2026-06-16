@@ -1,10 +1,19 @@
 #!/bin/bash
 set +e
-echo "=== tailscale binary ==="; command -v tailscale 2>&1 || echo "NOT INSTALLED on host"
-echo "=== tailscale version ==="; tailscale version 2>&1 | head -3
-echo "=== tailscaled service ==="; systemctl is-active tailscaled 2>&1
-echo "=== tailscale status (first 8 lines) ==="; tailscale status 2>&1 | head -8
-echo "=== this node MagicDNS name ==="; tailscale status --json 2>/dev/null | grep -oE '"DNSName":"[^"]+"' | head -1
-echo "=== existing serve config ==="; tailscale serve status 2>&1 | head -10
-echo "=== funnel status ==="; tailscale funnel status 2>&1 | head -5
-echo "=== is tailscale running in a container instead? ==="; docker ps --format '{{.Names}} {{.Image}}' 2>&1 | grep -i tailscale || echo "no tailscale container"
+echo "=== installing tailscale ==="
+curl -fsSL https://tailscale.com/install.sh | sh 2>&1 | tail -6
+echo "=== version ==="; tailscale version 2>&1 | head -2
+systemctl enable --now tailscaled 2>&1 | tail -2; sleep 2
+echo "=== tailscaled active? ==="; systemctl is-active tailscaled 2>&1
+echo "=== initiating auth (background, capturing login URL) ==="
+rm -f /tmp/tsup.log
+( timeout 40 tailscale up --hostname=trading-bot-vps > /tmp/tsup.log 2>&1 ) &
+url=""
+for i in $(seq 1 15); do
+  url=$(grep -oE 'https://login\.tailscale\.com/[a-z]/[A-Za-z0-9]+' /tmp/tsup.log 2>/dev/null | head -1)
+  [ -n "$url" ] && break
+  sleep 2
+done
+echo "=== AUTH URL ==="; echo "${url:-NOT_FOUND_YET}"
+echo "=== raw tsup.log tail ==="; tail -4 /tmp/tsup.log 2>&1
+echo "=== status ==="; tailscale status 2>&1 | head -4
