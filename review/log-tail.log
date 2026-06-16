@@ -1,49 +1,3 @@
-2026-06-15 08:20:55 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy BYAH @ $1.47 conf=0.80
-2026-06-15 08:20:55 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDQ @ $3.74 conf=0.90
-2026-06-15 08:20:55 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy MSTU @ $3.53 conf=0.80
-2026-06-15 08:20:55 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.71 conf=0.80
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | REJECTED: buy AMKL | Setup broke: signal $28.50 → market $24.62 (-13.6%, max -5%)
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy MSFT | Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | REJECTED: buy MARA | Already in position: MARA
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy BYAH | Extreme RVOL 9.4x | Strong move +3.5% | RSI oversold bounce (20) | Strong breakout +3.5%
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy SNDQ | Extreme RVOL 19.9x | Moving up +1.9% | EMA trend bullish | MACD histogram positive
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy MSTU | Extreme RVOL 21.9x | Trending up +0.9% | EMA trend bullish | MACD histogram positive
-2026-06-15 08:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXS | Extreme RVOL 21.3x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
-2026-06-15 08:20:55 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 863 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ AMKL: score 95/100 — Momentum BUY: EMA cross, breakout>24.82, higher lows, Vol=3.
-  ✅ MSFT: score 80/100 — Momentum BUY: E
-2026-06-15 08:20:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (155.9s total): update_data=136.3s, update_scalp=14.7s
-2026-06-15 08:20:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-15 08:20:58 | WARNING  | trading_bot.engine   | LEARNING BLOCK: MSFT avoided — consistent loser (score: -38.8)
-2026-06-15 08:20:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-15 08:21:01 | INFO     | trading_bot.engine   | SLIPPAGE BLOCK: SOFI had a slippage_reject close 15370s ago — blocked for the rest of the session (structural liquidity problem, not timing)
-2026-06-15 08:21:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-15 08:21:04 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-15 08:21:04 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $264.67 → $50.00 (per-strategy ceiling)
-2026-06-15 08:21:04 | INFO     | trading_bot.risk.position_sizer | Position size: 263 shares @ $1.47 = $386.61 | Risk: $49.97 (0.2% of account) [tier: 10-5000 shares]
-2026-06-15 08:21:04 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: BYAH live ask $1.80 has drifted 22.4% above signal $1.47 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-15 08:21:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-15 08:21:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; BEX; NYSE; Unknown market data permissions - Depth: NASDAQ; ARCA; Top: IBEOS; OVERNIGHT; 
-2026-06-15 08:21:06 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SNDQ — bearish EMA imbalance -0.32
-2026-06-15 08:21:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; Unknown market data permissions - Depth: BATS; BEX; NYSE; IEX; 
-2026-06-15 08:21:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-15 08:21:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; Unknown market data permissions - Depth: BATS; BEX; NYSE; IEX; 
-2026-06-15 08:21:09 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: MSTU entry=$3.5300 stop=$3.4200 (3.12% gap). Setting 6% minimum stop.
-2026-06-15 08:21:09 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-15 08:21:09 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $264.67 → $50.00 (per-strategy ceiling)
-2026-06-15 08:21:09 | INFO     | trading_bot.risk.position_sizer | Position size: 236 shares @ $3.53 = $833.08 | Risk: $49.98 (0.2% of account) [tier: 10-2000 shares]
-2026-06-15 08:21:09 | WARNING  | trading_bot.engine   | R/R STRETCH: MSTU entry=$3.5300 stop=$3.3182 (risk=$0.2118) target=$3.8100 (reward=$0.2800, R/R=1.32) — stretching target to $3.9536 for 2:1 minimum.
-2026-06-15 08:21:09 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: MSTU live ask $3.98 has drifted 12.7% above signal $3.53 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-15 08:21:09 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-15 08:21:10 | WARNING  | trading_bot.engine   | LEARNING BLOCK: SOXS avoided — consistent loser (score: -18.0)
-2026-06-15 08:21:11 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-15 08:21:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-15 08:21:13 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-15 08:21:13 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[4]: APT-USD(weak 3d trend (-0.8%)), COMP-USD(weak 3d trend (-1.0%)), CRV-USD(weak 3d trend (-2.2%)), SNX-USD(weak 3d trend (+0.0%)) | warming=3 | neutral=33 | no_data=1
-2026-06-15 08:21:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.85
 2026-06-15 08:21:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $396.50
 2026-06-15 08:21:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.10
 2026-06-15 08:21:15 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
@@ -19998,3 +19952,49 @@ Signals found: 7
 2026-06-16 02:24:54 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-16 02:24:54 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-16 02:24:54 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-16 02:27:33 | INFO     | trading_bot.engine   | DATA COVERAGE: 73/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.34, RSI=13, BB=near, Vol=4.1x | STAK @ $5.81
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>2.71, Vol=8.7x | GOAI @ $2.90
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.11
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 80 | RVOL: 240.7x | Change: +2.5% | R:R 2.7
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: HUBC | Score: 80 | RVOL: 764.2x | Change: +0.6% | R:R 2.7
+2026-06-16 02:28:03 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CING | Score: 80 | RVOL: 7.1x | Change: +0.8% | R:R 1.7 | Target: $5.06 (+1.2%)
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> mean_reversion: buy STAK @ $5.81 conf=0.98
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> momentum: buy GOAI @ $2.90 conf=0.75
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> momentum: buy SHOP @ $112.11 conf=0.70
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.71 conf=0.85
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $20.86 conf=0.80
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy HUBC @ $1.68 conf=0.80
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CING @ $5.00 conf=0.80
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | APPROVED: buy STAK | Mean reversion BUY: Z=-2.34, RSI=13, BB=near, Vol=4.1x
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | REJECTED: buy GOAI | Setup broke: signal $2.90 → market $2.66 (-8.3%, max -3%)
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | APPROVED: buy SHOP | Momentum BUY: EMA trend, ADX=55, Vol=5.5x
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 240.7x | Moving up +2.5% | EMA trend bullish | MACD histogram positive
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | APPROVED: buy HUBC | Extreme RVOL 764.2x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
+2026-06-16 02:28:03 | INFO     | trading_bot.risk.manager | APPROVED: buy CING | Extreme RVOL 7.1x | Moving up +0.8% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-16 02:28:03 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — STAK, SHOP, SNAP, SPCH, HUBC, CING
+2026-06-16 02:28:03 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1066 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 7
+  ✅ STAK: score 98/100 — Mean reversion BUY: Z=-2.34, RSI=13, BB=near, Vol=4.1x
+  ✅ GOAI: score 75/100 — Momentum BUY: EMA tr
+2026-06-16 02:28:04 | WARNING  | trading_bot.engine   | SLOW CYCLE (194.1s total): update_data=159.3s, update_scalp=30.6s
+2026-06-16 02:28:07 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[8]: ATOM-USD(weak 3d trend (-3.5%)), CRV-USD(needs vol>=1.1x), ICP-USD(needs vol>1.3x), IMX-USD(weak 3d trend (+0.0%)), JUP-USD(weak 3d trend (-1.4%)), SHIB-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (+1.0%)) | warming=4 | neutral=27 | no_data=3
+2026-06-16 02:28:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.11
+2026-06-16 02:28:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
+2026-06-16 02:28:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.11
+2026-06-16 02:28:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
+2026-06-16 02:28:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.11
+2026-06-16 02:28:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
+2026-06-16 02:28:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-16 02:28:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-16 02:28:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-16 02:28:15 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-16 02:28:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-16 02:28:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-16 02:28:17 | INFO     | trading_bot.engine   | IBKR scanner: 101 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-16 02:28:17 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-16 02:28:17 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 123 low-priority equity names; max 90)
