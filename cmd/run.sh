@@ -1,32 +1,17 @@
 #!/bin/bash
+# Pull the new safe deploy script + run it. This deploy will pick up
+# everything currently on main (Wave 1-5 already deployed earlier
+# today; this brings the tab consolidation + the deploy script itself).
 set +e
-set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
-AUTH=$(printf 'admin:%s' "$DASHBOARD_SECRET_KEY" | base64 -w0)
-
-echo "=== /api/trades (default = limit 100) — first row shape ==="
-curl -s -m 12 -H "Authorization: Basic $AUTH" http://localhost:5000/api/trades > /tmp/trades.json
-python3 << 'PYEOF'
-import json
-d = json.load(open('/tmp/trades.json'))
-print(f"count: {len(d)}")
-if d:
-    print("first row keys:", sorted(d[0].keys()))
-    last = d[-1]
-    print("last row:", {k: last.get(k) for k in ['exit_time','entry_time','symbol','strategy','pnl']})
-    print("LAST FIVE:")
-    for t in d[-5:]:
-        print(f"  {t.get('exit_time','')[:19]} {t.get('symbol','')} {t.get('strategy','')} pnl=${t.get('pnl',0):+.2f}")
-PYEOF
-
-echo
-echo "=== exit_time format check (today's trades) ==="
-python3 << 'PYEOF'
-import json, datetime
-d = json.load(open('/tmp/trades.json'))
-today_et = datetime.datetime.utcnow().date().isoformat()
-print(f"today UTC: {today_et}")
-todays = [t for t in d if (t.get('exit_time') or '').startswith(today_et)]
-print(f"todays count: {len(todays)}")
-for t in todays:
-    print(f"  exit_time={t.get('exit_time')!r}")
-PYEOF
+cd /opt/trading-bot
+# We need scripts/deploy-vps.sh to exist locally before we can invoke it.
+# Easiest: fetch + extract from origin/main, then exec it.
+git fetch origin main --quiet 2>&1 | tail -3
+git show origin/main:scripts/deploy-vps.sh > scripts/deploy-vps.sh
+chmod +x scripts/deploy-vps.sh
+echo "=== using safe deploy script ==="
+scripts/deploy-vps.sh
+echo "=== exit: $? ==="
+echo "=== quick post-deploy verification ==="
+docker logs trading-bot-trading-bot-1 --since 60s 2>&1 | grep -E "TRADE HISTORY|PERF STATS" | tail -3
+ls -la data/trade_history.json 2>&1 | head -1
