@@ -1,48 +1,28 @@
-=== executed: eeab1576153a72f0457e8d769f3a1730844b2675
-=== started:  2026-06-16T17:57:12Z
+=== executed: 6459de8d33d03143d64b374f6b905c2244eccf46
+=== started:  2026-06-16T17:59:02Z
 === exit:     
 === timeout:  90s
 ===
-=== /api/status (selected fields) ===
-Traceback (most recent call last):
-  File "<string>", line 3, in <module>
-  File "/usr/lib/python3.12/json/__init__.py", line 293, in load
-    return loads(fp.read(),
-           ^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
-    return _default_decoder.decode(s)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
-    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/json/decoder.py", line 355, in raw_decode
-    raise JSONDecodeError("Expecting value", s, err.value) from None
-json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
-Error in sys.excepthook:
-Traceback (most recent call last):
-  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 228, in partial_apport_excepthook
-    return apport_excepthook(binary, exc_type, exc_obj, exc_tb)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 114, in apport_excepthook
-    report["ExecutableTimestamp"] = str(int(os.stat(binary).st_mtime))
-                                            ^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/opt/trading-bot/-c'
-
-Original exception was:
-Traceback (most recent call last):
-  File "<string>", line 3, in <module>
-  File "/usr/lib/python3.12/json/__init__.py", line 293, in load
-    return loads(fp.read(),
-           ^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/json/__init__.py", line 346, in loads
-    return _default_decoder.decode(s)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/json/decoder.py", line 337, in decode
-    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/json/decoder.py", line 355, in raw_decode
-    raise JSONDecodeError("Expecting value", s, err.value) from None
-json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+key_len: 64
+=== /api/status ===
+running: True
+balance: 21759.11
+starting_balance: 25000
+total_return_pct: -12.96356
+daily_pnl: -362.9975880000004
+daily_trades: 0
+peak_balance: 21794.4776808
+drawdown_pct: 0.16227817577457068
+positions: 0
+strategies_active: ['mean_reversion', 'momentum', 'rvol_momentum', 'rvol_scalp', 'prebreakout', 'premarket_gap', 'momentum_runner', 'daily_trend_rider', 'low_float_catalyst', 'crypto_runner']
+total_trades: 297
+broker_connected: True
+execution_broker: IBKR
+position_details count: 0
+position_details symbols: []
 === /api/positions ===
-[]
-=== /api/daily (last 3 days) ===
+count: 0
+=== /api/daily ===
+days returned: 0
+=== /health (sanity) ===
+{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-16T13:59:02.127839"}
