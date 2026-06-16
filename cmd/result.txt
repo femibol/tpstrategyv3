@@ -1,19 +1,16 @@
-=== executed: b5a52141dac7bcc4a8a66c8830f24fc551d42ba5
-=== started:  2026-06-16T17:12:12Z
+=== executed: 209b0e9d3230e303972be43279e75ffe62f7df32
+=== started:  2026-06-16T17:13:12Z
 === exit:     
 === timeout:  90s
 ===
-=== docker ===
-Docker version 29.4.0, build 9d7ad9f
-=== dashboard /health (localhost:5000) ===
-{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-16T13:12:01.830706"}
+=== cloudflared status ===
+cloudflared | Up 56 seconds
+=== public /health (expect JSON via tunnel) ===
+{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-16T13:13:02.900663"}
 
-=== pull cloudflared image ===
-docker.io/cloudflare/cloudflared:latest
-=== remove any old cloudflared ===
-=== start quick tunnel ===
-run-exit: 0
-=== TUNNEL URL ===
-https://acquisitions-algebra-favorites-installation.trycloudflare.com
-=== status ===
-cloudflared | Up 6 seconds
+=== public / no-auth (expect 401) ===
+HTTP 401
+=== public / WITH auth (expect 200) ===
+HTTP 200
+=== public /api/status WITH auth (expect 200) ===
+HTTP 200
