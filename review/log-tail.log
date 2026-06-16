@@ -1,165 +1,3 @@
-2026-06-16 09:06:19 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: HUBC spread 2.2% (price $1.68, tier max 5%) → size 1.00 × 0.97 = 0.97
-2026-06-16 09:06:19 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: HUBC entry=$1.6750 stop=$1.6000 (4.48% gap). Setting 6% minimum stop.
-2026-06-16 09:06:19 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-16 09:06:19 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $265.32 → $50.00 (per-strategy ceiling)
-2026-06-16 09:06:19 | INFO     | trading_bot.risk.position_sizer | Position size: 497 shares @ $1.68 = $832.48 | Risk: $49.95 (0.2% of account) [tier: 10-5000 shares]
-2026-06-16 09:06:19 | INFO     | trading_bot.engine   | RUNNER SIZING: HUBC size_mult=97% — reduced from 497 to 483 shares (entry_type=n/a)
-2026-06-16 09:06:19 | WARNING  | trading_bot.engine   | R/R STRETCH: HUBC entry=$1.6750 stop=$1.5745 (risk=$0.1005) target=$1.8700 (reward=$0.1950, R/R=1.94) — stretching target to $1.8760 for 2:1 minimum.
-2026-06-16 09:06:19 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: HUBC live ask $1.86 has drifted 11.0% above signal $1.68 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-16 09:06:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-16 09:06:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:21 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:21 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-16 09:06:21 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $265.32 → $50.00 (per-strategy ceiling)
-2026-06-16 09:06:21 | INFO     | trading_bot.risk.position_sizer | Position size: 41 shares @ $40.40 = $1,656.40 | Risk: $49.61 (0.2% of account) [tier: 2-300 shares]
-2026-06-16 09:06:21 | INFO     | trading_bot.engine   | Executing SNXX via IBKR  [OUTSIDE RTH]...
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SNXX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: SNXX (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: ValidationError | Filled: 0.0/41
-2026-06-16 09:06:21 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: ValidationError | Filled: 0.0/41
-2026-06-16 09:06:21 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: ValidationError | Filled: 0.0/41
-2026-06-16 09:06:21 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: PreSubmitted | Filled: 0.0/41.0
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: PreSubmitted | Filled: 0.0/41.0
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: PreSubmitted | Filled: 0.0/41.0
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: Filled | Filled: 41.0/41.0 | AvgPrice: $40.93
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: PreSubmitted | Filled: 0.0/41.0
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: PreSubmitted | Filled: 0.0/41.0
-2026-06-16 09:06:21 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: Submitted | Filled: 0.0/41.0
-2026-06-16 09:06:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:22 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 41 SNXX @ LIMIT $41.21 | TP: $43.63 | SL: $39.19 | Parent ID: 1029986
-2026-06-16 09:06:23 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 41/41 SNXX @ $40.9300 | signal $41.2100 | slippage -0.68% | parent=MARKET
-2026-06-16 09:06:23 | INFO     | trading_bot.engine   | BRACKET ORDER active: SNXX | SL: $39.19 | TP: $43.63 (managed by IBKR server-side)
-2026-06-16 09:06:23 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: SNXX expected $40.40 but filled @ $40.93
-2026-06-16 09:06:23 | WARNING  | trading_bot.engine   | SLIPPAGE WARNING: SNXX slippage +1.3% (threshold 1.5%, EXT) | Signal $40.40 → Fill $40.93
-2026-06-16 09:06:23 | INFO     | trading_bot.engine   | ORDER BUY SNXX via IBKR | Qty: 41 | Price: $40.93 | Cost: $1,678.13 | Stop: $39.19 (risk $71.34) | Target: $43.63 (reward $110.70) | R:R 1.6:1 | Strategy: rvol_momentum
-2026-06-16 09:06:23 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: SNXX**
-```
-  Entry: $40.93 x 41 shares = $1,678.13
-  Stop:  $39.19 (-$71.34 | -4.3%)
-  Targets: $41.61, $42.82, $45.25
-  Risk/Reward: 2.7
-```
-Strategy: **rvol_momentum** | C
-2026-06-16 09:06:23 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY SNXX qty=41 @ $40.93 → primary webhook (200)
-2026-06-16 09:06:23 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-16 09:06:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:26 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[12]: ARB-USD(weak 3d trend (+0.2%)), ATOM-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-0.6%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(needs vol>=1.1x), ICP-USD(weak 3d trend (-0.6%)), IMX-USD(weak 3d trend (+0.0%)), OP-USD(weak 3d trend (+0.9%)), RNDR-USD(weak 3d trend (+0.2%)), SHIB-USD(weak 3d trend (-0.4%)), SNX-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (+0.3%)) | warming=3 | neutral=25 | no_data=1
-2026-06-16 09:06:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.00
-2026-06-16 09:06:26 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.72
-2026-06-16 09:06:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:29 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.00
-2026-06-16 09:06:29 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.72
-2026-06-16 09:06:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:06:32 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.00
-2026-06-16 09:06:32 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.72
-2026-06-16 09:06:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
-2026-06-16 09:06:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-16 09:06:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-16 09:06:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-16 09:06:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-16 09:06:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-16 09:06:36 | INFO     | trading_bot.engine   | IBKR scanner: 90 unique symbols discovered | 49 gainers, 0 gaps, 20 losers
-2026-06-16 09:06:37 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-16 09:06:37 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
-2026-06-16 09:06:37 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 85 low-priority equity names; max 90)
-2026-06-16 09:06:37 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-16 09:06:37 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-16 09:06:37 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-16 09:08:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-16 09:08:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-16 09:09:10 | INFO     | trading_bot.broker.traderspost | EXIT signal for NEAR-USD - bypassing rate limits
-2026-06-16 09:09:10 | INFO     | trading_bot.broker.traderspost | Routing NEAR-USD to CRYPTO webhook
-2026-06-16 09:09:10 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "NEAR-USD", "action": "exit", "quantity": 816.65986, "price": 2.43}
-2026-06-16 09:09:10 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"8300b8d5-f7ae-4c1f-8166-8d6850739e28","logId":"8300b8d5-f7ae-4c1f-8166-8d6850739e28","payload":{"ticker":"NEAR-USD","action":"exit","quantity":816.65986,"price":2.43}}
-2026-06-16 09:09:10 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL NEAR-USD | Strategy: unknown | Qty: 816.65986 @ $2.43 = $1,984.48 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
-2026-06-16 09:09:10 | INFO     | trading_bot.engine   | CLOSED NEAR-USD via TradersPost | time_exit | P&L: $-15.52 | Max holding period exceeded
-2026-06-16 09:09:10 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: NEAR-USD** (time_exit)
-```
-  Entry: $2.45 → Exit: $2.43
-  P&L: $-15.52 (-0.78%)
-  Shares: 816.65986 | Value: $1,984.48
-  Hold: 1.3h
-```
-Strategy: **mean_reversion** | Max holding perio
-2026-06-16 09:09:11 | WARNING  | trading_bot.engine   | PSYCHOLOGY FLAG: 3 consecutive losses — review strategy mix; consider manual pause
-2026-06-16 09:09:11 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: NEAR-USD -15.52 (277 total in history)
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [NEAR-USD]: **AVOID:mean_reversion_NEAR-USD**
-
-41% win rate over 17 trades is statistically significant failure. Time-exit after 77min with only -0.8% move = no mean reversion occurring. Asset likely trending, no
-2026-06-16 09:09:16 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'mean_reversion_near' (total avoids: 1)
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.05
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=93, breakout>5.76, Vol=6.0x | RXT @ $7.16
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=74, breakout>20.81, Vol=1.8x | STXU @ $23.00
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>0.79, Vol=8.0x | CCTG @ $0.91
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=42, breakout>6.30, Vol=6.6x | AIBZ @ $7.10
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: RXT | Score: 90 | RVOL: 10.0x | Change: +3.2% | R:R 4.0
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 80 | RVOL: 9.0x | Change: +2.5% | R:R 2.7
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: HUBC | Score: 80 | RVOL: 28.7x | Change: +0.6% | R:R 2.7
-2026-06-16 09:09:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 14.2x | Change: +0.4% | R:R 2.7
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 10 signals from strategies
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> momentum: buy SHOP @ $112.05 conf=0.70
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> momentum: buy RXT @ $7.16 conf=0.85
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> momentum: buy SNAP @ $5.71 conf=0.85
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> momentum: buy STXU @ $23.00 conf=0.80
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> momentum: buy CCTG @ $0.91 conf=0.75
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> momentum: buy AIBZ @ $7.10 conf=0.85
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy RXT @ $5.92 conf=0.90
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $20.86 conf=0.80
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy HUBC @ $1.68 conf=0.80
-2026-06-16 09:09:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $40.40 conf=0.80
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | APPROVED: buy SHOP | Momentum BUY: EMA trend, ADX=55, Vol=5.5x
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | REJECTED: buy RXT | Setup broke: signal $7.16 → market $5.92 (-17.3%, max -5%)
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | APPROVED: buy SNAP | Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | REJECTED: buy STXU | Setup broke: signal $23.00 → market $20.99 (-8.7%, max -5%)
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | REJECTED: buy CCTG | Setup broke: signal $0.91 → market $0.80 (-12.3%, max -5%)
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | REJECTED: buy AIBZ | Setup broke: signal $7.10 → market $6.28 (-11.5%, max -5%)
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | APPROVED: buy RXT | Extreme RVOL 10.0x | Strong move +3.2% | EMA trend bullish | MACD histogram positive
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 9.0x | Moving up +2.5% | EMA trend bullish | MACD histogram positive
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | APPROVED: buy HUBC | Extreme RVOL 28.7x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
-2026-06-16 09:09:16 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Already in position: SNXX
-2026-06-16 09:09:16 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 838 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 10
-  ✅ SHOP: score 70/100 — Momentum BUY: EMA trend, ADX=55, Vol=5.5x
-  ✅ RXT: score 85/100 — Momentum BUY: EMA trend, ADX=93, b
-2026-06-16 09:09:17 | WARNING  | trading_bot.engine   | SLOW CYCLE (164.3s total): update_data=138.5s, update_scalp=15.3s, monitor_positions=5.8s
-2026-06-16 09:09:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-16 09:09:19 | WARNING  | trading_bot.engine   | LEARNING BLOCK: SHOP avoided — consistent loser (score: -2720.8)
-2026-06-16 09:09:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-16 09:09:22 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SNAP — bearish EMA imbalance -0.49
-2026-06-16 09:09:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-16 09:09:25 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RXT — bearish EMA imbalance -0.63
-2026-06-16 09:09:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-16 09:09:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-16 09:09:27 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-16 09:09:27 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $265.23 → $50.00 (per-strategy ceiling)
-2026-06-16 09:09:27 | INFO     | trading_bot.risk.position_sizer | Position size: 79 shares @ $20.86 = $1,647.94 | Risk: $49.77 (0.2% of account) [tier: 3-500 shares]
-2026-06-16 09:09:27 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: SPCH live ask $22.37 has drifted 7.2% above signal $20.86 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-16 09:09:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-16 09:09:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:31 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: HUBC entry=$1.6750 stop=$1.6000 (4.48% gap). Setting 6% minimum stop.
-2026-06-16 09:09:31 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x = 1.20% risk
-2026-06-16 09:09:31 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $265.23 → $50.00 (per-strategy ceiling)
-2026-06-16 09:09:31 | INFO     | trading_bot.risk.position_sizer | Position size: 497 shares @ $1.68 = $832.48 | Risk: $49.95 (0.2% of account) [tier: 10-5000 shares]
-2026-06-16 09:09:31 | WARNING  | trading_bot.engine   | R/R STRETCH: HUBC entry=$1.6750 stop=$1.5745 (risk=$0.1005) target=$1.8700 (reward=$0.1950, R/R=1.94) — stretching target to $1.8760 for 2:1 minimum.
-2026-06-16 09:09:31 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: HUBC live ask $1.84 has drifted 9.9% above signal $1.68 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-16 09:09:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[12]: ARB-USD(weak 3d trend (+0.2%)), ATOM-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (+0.1%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(needs green bar), ICP-USD(weak 3d trend (-0.6%)), IMX-USD(weak 3d trend (+0.0%)), OP-USD(weak 3d trend (+0.9%)), RNDR-USD(weak 3d trend (+0.2%)), SHIB-USD(weak 3d trend (-0.4%)), SNX-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (+0.3%)) | warming=4 | neutral=25 | no_data=1
-2026-06-16 09:09:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.05
-2026-06-16 09:09:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
-2026-06-16 09:09:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-16 09:09:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.05
 2026-06-16 09:09:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.71
 2026-06-16 09:09:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
 2026-06-16 09:09:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
@@ -19998,3 +19836,165 @@ Filtered: 1 signals rejected by risk ma
 2026-06-16 15:45:33 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETH-USD' — skipping streaming
 2026-06-16 15:45:39 | INFO     | trading_bot.broker.ibkr | Subscribed to 48 live market data streams
 2026-06-16 15:45:39 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-16 15:50:05 | INFO     | trading_bot.engine   | Shutdown signal received
+2026-06-16 15:50:18 | WARNING  | trading_bot.engine   | AUTO-RECOVERY state load failed (will treat as fresh): 'TradingEngine' object has no attribute 'tz'
+2026-06-16 15:50:18 | INFO     | trading_bot.dashboard | Dashboard starting at http://0.0.0.0:5000
+2026-06-16 15:50:18 | INFO     | trading_bot          | Dashboard: http://localhost:5000
+2026-06-16 15:50:18 | INFO     | trading_bot.engine   | ============================================================
+2026-06-16 15:50:18 | INFO     | trading_bot.engine   | ALGOBOT v1.0 - PAPER MODE
+2026-06-16 15:50:18 | INFO     | trading_bot.engine   | Config Starting Capital: $25,000.00
+2026-06-16 15:50:18 | INFO     | trading_bot.engine   | ============================================================
+2026-06-16 15:50:18 | INFO     | trading_bot.broker.ibkr | IBKR worker thread started (single-threaded ib_async access)
+2026-06-16 15:50:19 | INFO     | trading_bot.broker.ibkr | Connected to IBKR (PAPER) at 127.0.0.1:4002
+2026-06-16 15:50:19 | INFO     | trading_bot.engine   | Connected to IBKR (paper mode) - using as primary data source
+2026-06-16 15:50:19 | INFO     | trading_bot.engine   | IBKR BALANCE SYNC: $21,759.11 (overrides settings.yaml starting_balance $25,000.00)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | IBKR SYNC: no open positions at IBKR after 6 polls — treating account as flat.
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded 1 persisted positions from disk
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Restored persisted CRYPTO position NEAR-USD qty=872.2198 entry=$2.293 (TP has no positions API; trusting persisted state)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | CRYPTO RECONCILE: clean — no broker-side orphans in the last 48h
+2026-06-16 15:50:29 | WARNING  | trading_bot.engine   | MIRROR RECONCILE: 9 ORPHAN equity position(s) likely open on the TradersPost mirror account but NOT tracked by the engine: AIBZ=182, PAYO=157, XNDX=141, MSTU=81, SUGP=68, SNXX=67, RXT=60, SPCX=19, SPCH=12. IBKR is the source of truth; the bot does not manage stops/exits on these.
+2026-06-16 15:50:29 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
+```
+⚠️ MIRROR ORPHAN POSITIONS: 9 equity symbol(s) adrift on the TradersPost mirror without engine tracking. AIBZ=182, PAYO=157, XNDX=141, MSTU=81, SUGP=68, SNXX=67, RXT=60, SPCX=19, 
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Active Capital: $21,759.11 (after broker sync)
+2026-06-16 15:50:29 | INFO     | trading_bot.notifications | [ALERT] System: ✅ **System**: Bot starting in PAPER mode with $21,759.11
+2026-06-16 15:50:29 | INFO     | trading_bot.risk.manager | SCALING: Tier updated - Max positions: 15, Risk/trade: 1.0%, Max position: 15%
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Scaling tier active: balance >= $10,000 | max_positions=15 | risk_per_trade=1.0% | max_position_pct=15%
+2026-06-16 15:50:29 | INFO     | trading_bot.data.market_data | IBKR connected — primary data source (real-time streaming + bars)
+2026-06-16 15:50:29 | INFO     | trading_bot.broker.ibkr | No security definition for 'NEAR-USD' — skipping streaming
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | IBKR real-time streaming initialized (1 held + 0 watchlist)
+2026-06-16 15:50:29 | INFO     | trading_bot.broker.ibkr | Subscribed to real-time account PnL
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Trading universe loaded: 0 symbols
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: mean_reversion | Allocation: 15% ($3,263.87)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: momentum | Allocation: 15% ($3,263.87)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: rvol_momentum | Allocation: 10% ($2,175.91)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: rvol_scalp | Allocation: 5% ($1,087.96)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: prebreakout | Allocation: 10% ($2,175.91)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: premarket_gap | Allocation: 5% ($1,087.96)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: momentum_runner | Allocation: 30% ($6,527.73)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: daily_trend_rider | Allocation: 15% ($3,263.87)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: low_float_catalyst | Allocation: 5% ($1,087.96)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Loaded strategy: crypto_runner | Allocation: 4% ($870.36)
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Total strategies loaded: 10
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | TradersPost not configured — using IBKR as sole broker. Set TRADERSPOST_WEBHOOK_URL to also mirror signals there.
+2026-06-16 15:50:29 | INFO     | trading_bot.broker.traderspost | TradersPost CRYPTO webhook configured - crypto signals route separately
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | TradersPost CRYPTO broker enabled — crypto signals route to ...71f8458620eda1d432ba
+2026-06-16 15:50:29 | INFO     | trading_bot.broker.traderspost | TradersPost CRYPTO webhook configured - crypto signals route separately
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | TradersPost MIRROR enabled — IBKR fills will be mirrored to ...bb4616887d666ba21246
+2026-06-16 15:50:29 | INFO     | trading_bot.signals.politician_tracker | Loaded 61 seen politician trades from disk
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Politician trade tracker enabled
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | News catalyst scanner ENABLED (IBKR)
+2026-06-16 15:50:29 | INFO     | trading_bot.learning.trade_analyzer | Loaded 297 persisted trades from disk
+2026-06-16 15:50:29 | INFO     | trading_bot.learning.trade_analyzer | Loaded learning state from disk
+2026-06-16 15:50:29 | INFO     | trading_bot.engine   | Trade learning system enabled
+2026-06-16 15:50:29 | INFO     | trading_bot.integrations.google_sheets | Google Sheets disabled: set GOOGLE_SHEETS_CREDENTIALS and GOOGLE_SHEETS_SPREADSHEET_ID env vars
+2026-06-16 15:50:30 | INFO     | trading_bot.learning.ai_insights | Claude AI Insights enabled (API key configured)
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Claude AI Insights ENABLED
+2026-06-16 15:50:30 | INFO     | trading_bot.learning.auto_tuner | Auto-Tuner enabled (Claude API configured)
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Auto-Tuner ENABLED - bot will self-optimize parameters
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Weekly Review ENABLED — Saturday 10am ET to Discord
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 297 trades | 140W/157L | Net P&L: $-14.52 | Strategies: crypto_test, rvol_momentum, rvol_scalp, mean_reversion, synced_from_ibkr, momentum, crypto_runner
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | PERF STATS: rebuilt from history — total=297 W=140 L=117 net=$-14.52
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Market regime detector enabled
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Hedging system enabled (auto_hedge=False)
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | All components initialized successfully
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Engine state set to RUNNING
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Scheduler started
+2026-06-16 15:50:30 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-16 15:50:30 | INFO     | trading_bot.signals.politician_tracker | Politician trade tracker started (61 trades already seen)
+2026-06-16 15:50:30 | INFO     | trading_bot.broker.ibkr | IBKR real-time news subscription active
+2026-06-16 15:50:30 | INFO     | trading_bot.signals.news | News scanner started (IBKR) - scanning for catalysts
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | Trading engine started - entering main loop
+2026-06-16 15:50:30 | INFO     | trading_bot.notifications | [ALERT] System: ✅ **System**: Trading engine started
+2026-06-16 15:50:30 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(42 dyn), momentum(42 dyn), crypto_runner(42 dyn)
+2026-06-16 15:50:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-16 15:50:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-16 15:50:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-16 15:50:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-16 15:50:34 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 48 gainers, 13 gaps, 20 losers
+2026-06-16 15:50:34 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-16 15:50:34 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 77 low-priority equity names; max 90)
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | No security definition for 'SNX-USD' — skipping streaming
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | No security definition for 'DOT-USD' — skipping streaming
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | No security definition for 'TON-USD' — skipping streaming
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | No security definition for 'MATIC-USD' — skipping streaming
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | No security definition for 'APT-USD' — skipping streaming
+2026-06-16 15:50:34 | INFO     | trading_bot.broker.ibkr | No security definition for 'BTC-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'XRP-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'BONK-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'FET-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'AAVE-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'OP-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'DOGE-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'COMP-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'SEI-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'UNI-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'TRX-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'GRT-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'FLOKI-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'LINK-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'SHIB-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'PEPE-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ARB-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ALGO-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'WIF-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'IMX-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'XLM-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'SOL-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ICP-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETC-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'SUI-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'JUP-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'AVAX-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'CRV-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ATOM-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ETH-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'ADA-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'HBAR-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'LTC-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'TIA-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'MKR-USD' — skipping streaming
+2026-06-16 15:50:35 | INFO     | trading_bot.broker.ibkr | No security definition for 'RNDR-USD' — skipping streaming
+2026-06-16 15:50:41 | INFO     | trading_bot.broker.ibkr | Subscribed to 48 live market data streams
+2026-06-16 15:50:41 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 405 shares @ $2.68 = $1,085.40 | Risk: $32.56 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 71 shares @ $45.44 = $3,226.24 | Risk: $96.79 (0.4% of account) [tier: 2-300 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 148 shares @ $7.35 = $1,087.80 | Risk: $32.63 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 177 shares @ $6.12 = $1,083.24 | Risk: $14.16 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 697 shares @ $1.56 = $1,087.53 | Risk: $80.60 (0.4% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 184 shares @ $5.90 = $1,085.56 | Risk: $47.92 (0.2% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 310 shares @ $3.50 = $1,085.00 | Risk: $18.16 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:26 | INFO     | trading_bot.risk.position_sizer | Position size: 1026 shares @ $1.06 = $1,087.56 | Risk: $139.39 (0.6% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 405 shares @ $2.68 = $1,085.40 | Risk: $32.56 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 71 shares @ $45.44 = $3,226.24 | Risk: $96.79 (0.4% of account) [tier: 2-300 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 148 shares @ $7.35 = $1,087.80 | Risk: $32.63 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 177 shares @ $6.12 = $1,083.24 | Risk: $14.16 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 697 shares @ $1.56 = $1,087.53 | Risk: $80.60 (0.4% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 184 shares @ $5.90 = $1,085.56 | Risk: $47.92 (0.2% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 310 shares @ $3.50 = $1,085.00 | Risk: $18.16 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:30 | INFO     | trading_bot.risk.position_sizer | Position size: 1026 shares @ $1.06 = $1,087.56 | Risk: $139.39 (0.6% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 405 shares @ $2.68 = $1,085.40 | Risk: $32.56 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 71 shares @ $45.44 = $3,226.24 | Risk: $96.79 (0.4% of account) [tier: 2-300 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 148 shares @ $7.35 = $1,087.80 | Risk: $32.63 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 177 shares @ $6.12 = $1,083.24 | Risk: $14.16 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 697 shares @ $1.56 = $1,087.53 | Risk: $80.60 (0.4% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 184 shares @ $5.90 = $1,085.56 | Risk: $47.92 (0.2% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 310 shares @ $3.50 = $1,085.00 | Risk: $18.16 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:38 | INFO     | trading_bot.risk.position_sizer | Position size: 1026 shares @ $1.06 = $1,087.56 | Risk: $139.39 (0.6% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 405 shares @ $2.68 = $1,085.40 | Risk: $32.56 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 71 shares @ $45.44 = $3,226.24 | Risk: $96.79 (0.4% of account) [tier: 2-300 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 148 shares @ $7.35 = $1,087.80 | Risk: $32.63 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 177 shares @ $6.12 = $1,083.24 | Risk: $14.16 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 697 shares @ $1.56 = $1,087.53 | Risk: $80.60 (0.4% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 184 shares @ $5.90 = $1,085.56 | Risk: $47.92 (0.2% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 310 shares @ $3.50 = $1,085.00 | Risk: $18.16 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:46 | INFO     | trading_bot.risk.position_sizer | Position size: 1026 shares @ $1.06 = $1,087.56 | Risk: $139.39 (0.6% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 405 shares @ $2.68 = $1,085.40 | Risk: $32.56 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 71 shares @ $45.44 = $3,226.24 | Risk: $96.79 (0.4% of account) [tier: 2-300 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 148 shares @ $7.35 = $1,087.80 | Risk: $32.63 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 177 shares @ $6.12 = $1,083.24 | Risk: $14.16 (0.1% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 697 shares @ $1.56 = $1,087.53 | Risk: $80.60 (0.4% of account) [tier: 10-5000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 184 shares @ $5.90 = $1,085.56 | Risk: $47.92 (0.2% of account) [tier: 5-1000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 310 shares @ $3.50 = $1,085.00 | Risk: $18.16 (0.1% of account) [tier: 10-2000 shares]
+2026-06-16 15:54:54 | INFO     | trading_bot.risk.position_sizer | Position size: 1026 shares @ $1.06 = $1,087.56 | Risk: $139.39 (0.6% of account) [tier: 10-5000 shares]
