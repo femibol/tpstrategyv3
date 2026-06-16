@@ -1,36 +1,35 @@
-=== executed: 5b22987a4ad96f1cca40c4a21a2a7cd692aaca38
-=== started:  2026-06-16T19:10:17Z
-=== exit:     1
+=== executed: bddcd4ea8c213d5a111ff40a2c0329a05e8f7723
+=== started:  2026-06-16T19:11:03Z
+=== exit:     
 === timeout:  90s
 ===
-=== fetching claude/live-state for backup ===
-=== restoring trade_history.json from live-state snapshot ===
-size: 191375 bytes
-count: 297
-=== restoring signal_log.json from live-state snapshot ===
-size: 236715 bytes
-=== restart container so trade_history is reloaded ===
-trading-bot-trading-bot-1
-=== wait for /health ===
-ready after 3s
-=== verify trade history loaded ===
-=== check via API ===
-  File "<string>", line 4
-    print(f"total_trades: {d.get(\"total_trades\")}")
-                                  ^
-SyntaxError: unexpected character after line continuation character
-Error in sys.excepthook:
-Traceback (most recent call last):
-  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 228, in partial_apport_excepthook
-    return apport_excepthook(binary, exc_type, exc_obj, exc_tb)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 114, in apport_excepthook
-    report["ExecutableTimestamp"] = str(int(os.stat(binary).st_mtime))
-                                            ^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/opt/trading-bot/-c'
-
-Original exception was:
-  File "<string>", line 4
-    print(f"total_trades: {d.get(\"total_trades\")}")
-                                  ^
-SyntaxError: unexpected character after line continuation character
+=== container status ===
+Up 48 seconds (healthy)
+=== boot log lines for trade history + perf stats ===
+2026-06-16 15:02:03 | INFO     | trading_bot.learning.trade_analyzer | No trade history file found at /app/data/trade_history.json — starting fresh
+2026-06-16 15:02:03 | INFO     | trading_bot.learning.trade_analyzer | Loaded learning state from disk
+2026-06-16 15:02:03 | INFO     | trading_bot.engine   | TRADE HISTORY: No previous trades found — starting fresh
+2026-06-16 15:10:26 | INFO     | trading_bot.learning.trade_analyzer | Loaded 297 persisted trades from disk
+2026-06-16 15:10:26 | INFO     | trading_bot.learning.trade_analyzer | Loaded learning state from disk
+2026-06-16 15:10:26 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 297 trades | 140W/157L | Net P&L: $-14.52 | Strategies: rvol_scalp, crypto_runner, rvol_momentum, momentum, synced_from_ibkr, mean_reversion, crypto_test
+2026-06-16 15:10:26 | INFO     | trading_bot.engine   | PERF STATS: rebuilt from history — total=297 W=140 L=117 net=$-14.52
+=== /api/status (key fields via localhost) ===
+  running: True
+  balance: 21759.11
+  total_return_pct: -12.96356
+  daily_pnl: 0.0
+  daily_trades: 0
+  positions: 0
+  total_trades: 297
+  peak_balance: 21759.11
+  drawdown_pct: 0.0
+=== /api/performance (Win Rate fallback source) ===
+  total_trades: 297
+  win_rate: 47.1%
+  profit_factor: 0.99
+  net_pnl: $-14.52
+=== /api/trades?limit=5 ===
+  count: 5
+  - 2026-06-16T12:37:26 AIBZ momentum pnl=$+9.25
+  - 2026-06-16T13:53:38 AIBZ synced_from_ibkr pnl=$+5.92
+  - 2026-06-16T13:53:43 AIBZ synced_from_ibkr pnl=$+9.15
