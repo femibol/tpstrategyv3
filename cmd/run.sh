@@ -1,48 +1,32 @@
 #!/bin/bash
 set +e
-cd /opt/trading-bot
+set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
+AUTH=$(printf 'admin:%s' "$DASHBOARD_SECRET_KEY" | base64 -w0)
 
-echo "=== BEFORE ==="
-git rev-parse --short HEAD
-git status --porcelain | head -10
+echo "=== container ==="
+docker ps --filter name=trading-bot-trading-bot --format '{{.Names}} | {{.Status}}'
 
-echo "=== fetch origin/main ==="
-git fetch origin main 2>&1 | tail -3
+echo "=== /health ==="
+curl -s -m 5 http://localhost:5000/health
 
-# Stash any in-flight auto-tuner edits (config/*) so the merge can't conflict.
-# These get re-applied on the next tuner cycle anyway. PR #212 (overlay
-# pattern) makes this cleaner going forward, but the bot is currently on
-# pre-#212 code so the legacy stash-or-conflict is still the path.
-if ! git diff --quiet -- config/; then
-  echo "=== stashing local config edits ==="
-  git stash push -u -m "pre-deploy auto-stash $(date -u +%FT%TZ)" -- config/ 2>&1 | tail -2
-fi
+echo "=== /api/status (key fields, with auth) ==="
+curl -s -m 12 -H "Authorization: Basic $AUTH" http://localhost:5000/api/status | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception as e: print("PARSE FAIL:",e); sys.exit(0)
+for k in ["running","paused","balance","positions","total_trades","broker_connected","execution_broker"]:
+    print(f"{k}: {d.get(k)}")
+'
 
-echo "=== checkout + reset to origin/main ==="
-git checkout main 2>&1 | tail -2
-git reset --hard origin/main 2>&1 | tail -2
+echo "=== dashboard HTML — UI overhaul markers present? ==="
+HTML=$(curl -sS -m 10 -H "Authorization: Basic $AUTH" http://localhost:5000/)
+echo -n "stats-hero present: "; echo "$HTML" | grep -q "stats-hero" && echo YES || echo NO
+echo -n "stat-card hero present: "; echo "$HTML" | grep -q "stat-card hero" && echo YES || echo NO
+echo -n "stats-tertiary present: "; echo "$HTML" | grep -q "stats-tertiary" && echo YES || echo NO
+echo -n "_todaysStatsFromTrades present: "; echo "$HTML" | grep -q "_todaysStatsFromTrades" && echo YES || echo NO
 
-echo "=== AFTER ==="
-git rev-parse --short HEAD
+echo "=== last 30 log lines (look for engine bring-up signatures) ==="
+docker logs --tail 60 trading-bot-trading-bot-1 2>&1 | grep -E "TRADE HISTORY|PERF STATS|Loaded strategy|IBKR connect|engine ready|Strategy loaded|started|error|Error" | tail -20
 
-echo "=== restart trading-bot container ==="
-docker restart trading-bot-trading-bot-1 2>&1 | tail -2
-sleep 4
-
-echo "=== wait for /health (up to 60s) ==="
-ok=""
-for i in $(seq 1 20); do
-  resp=$(curl -s -m 3 http://localhost:5000/health 2>/dev/null)
-  if echo "$resp" | grep -q '"status":"ok"'; then
-    echo "ready after $((i*3))s -- $resp"; ok=1; break
-  fi
-  sleep 3
-done
-[ -z "$ok" ] && { echo "DASH DID NOT BECOME READY"; docker logs --tail 25 trading-bot-trading-bot-1 2>&1 | tail -25; exit 1; }
-
-echo "=== container status ==="
-docker ps --filter name=trading-bot-trading-bot --format '{{.Status}}'
-
-echo "=== first lines of startup log ==="
-docker logs --tail 30 trading-bot-trading-bot-1 2>&1 | grep -E "TRADE HISTORY|PERF STATS|Loaded strategy|IBKR connected|Dashboard|NEWS FEED" | head -20
-echo "=== done ==="
+echo "=== any ERROR/CRITICAL in last 60s ==="
+docker logs --since 60s trading-bot-trading-bot-1 2>&1 | grep -E "ERROR|CRITICAL|Traceback" | tail -15
