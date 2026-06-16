@@ -1,67 +1,3 @@
-  Targets: $2.84
-  Risk/Reward: 4.3
-```
-Strategy: **momentum** | Confidence: **70%**
-Reason
-2026-06-16 09:37:57 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY SUGP qty=172 @ $2.02 → primary webhook (200)
-2026-06-16 09:37:58 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-16 09:37:58 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-16 09:38:00 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: OBAI entry=$1.2100 stop=$1.1500 (4.96% gap). Setting 6% minimum stop.
-2026-06-16 09:38:00 | INFO     | trading_bot.engine   | VOL REGIME: OBAI short=0.2022 long=0.0899 ratio=2.25x → sizing mult 0.75x
-2026-06-16 09:38:00 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 1.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 0.75x = 1.12% risk
-2026-06-16 09:38:00 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $247.50 → $50.00 (per-strategy ceiling)
-2026-06-16 09:38:00 | INFO     | trading_bot.risk.position_sizer | Position size: 688 shares @ $1.21 = $832.48 | Risk: $49.95 (0.2% of account) [tier: 10-5000 shares]
-2026-06-16 09:38:00 | INFO     | trading_bot.engine   | Executing OBAI via IBKR...
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: OBAI → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: OBAI (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PreSubmitted | Filled: 0.0/688.0
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PreSubmitted | Filled: 0.0/688.0
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PreSubmitted | Filled: 0.0/688.0
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: Filled | Filled: 688.0/688.0 | AvgPrice: $1.24
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PreSubmitted | Filled: 0.0/688.0
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PreSubmitted | Filled: 0.0/688.0
-2026-06-16 09:38:00 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: Submitted | Filled: 0.0/688.0
-2026-06-16 09:38:01 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 688 OBAI @ LIMIT $1.23 | TP: $1.58 | SL: $1.14 | Parent ID: 1031820
-2026-06-16 09:38:02 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 688/688 OBAI @ $1.2400 | signal $1.2300 | slippage +0.81% | parent=MARKET
-2026-06-16 09:38:02 | INFO     | trading_bot.engine   | BRACKET ORDER active: OBAI | SL: $1.14 | TP: $1.58 (managed by IBKR server-side)
-2026-06-16 09:38:02 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: OBAI expected $1.21 but filled @ $1.24
-2026-06-16 09:38:02 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: OBAI chased +2.5% above market (max 0.8%, RTH) — closing position immediately | Signal $1.24 → Live $1.21 → Fill $1.24
-2026-06-16 09:38:02 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: OBAI filled $1.24 (signal $1.24, slippage +2.5%). Closing immediately.
-```
-2026-06-16 09:38:02 | INFO     | trading_bot.engine   | ORDER BUY OBAI via IBKR | Qty: 688 | Price: $1.24 | Cost: $853.12 | Stop: $1.14 (risk $70.59) | Target: $1.58 (reward $233.92) | R:R 3.3:1 | Strategy: rvol_momentum
-2026-06-16 09:38:02 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: OBAI**
-```
-  Entry: $1.24 x 688 shares = $853.12
-  Stop:  $1.14 (-$70.59 | -8.3%)
-  Targets: $1.33, $1.41, $1.58
-  Risk/Reward: 4.0
-```
-Strategy: **rvol_momentum** | Confide
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY OBAI qty=688 @ $1.24 → primary webhook (200)
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-16 09:38:03 | WARNING  | trading_bot.engine   | SLIPPAGE CLOSE: Closing OBAI — excessive entry slippage
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PendingCancel | Filled: 0.0/688.0
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order 1031822 cancelled
-2026-06-16 09:38:03 | INFO     | trading_bot.engine   | Cancelled broker stop order for OBAI
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PendingCancel | Filled: 0.0/688.0
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order 1031822 cancelled
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PendingCancel | Filled: 0.0/688.0
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: Cancelled | Filled: 0.0/688.0
-2026-06-16 09:38:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: Cancelled | Filled: 0.0/688.0
-2026-06-16 09:38:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-16 09:38:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 1031822 that needs to be cancelled cannot be cancelled, state: Cancelled.
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: OBAI → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: PreSubmitted | Filled: 0.0/688.0
-2026-06-16 09:38:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: AMEX; CHX; T24X; LTSE; DRCTEDGE; Need additional market data permissions - Depth: ARCA; BEX; Unknown market data permissions - Depth: NASDAQ; BATS; NYSE; Top: BYX; PEARL; IBEOS; NYSENAT; PSX; MEMX; EDGEA; OVERNIGHT; ISE; 
-2026-06-16 09:38:03 | INFO     | trading_bot.broker.ibkr | Order update: OBAI | Status: Filled | Filled: 688.0/688.0 | AvgPrice: $1.21
-2026-06-16 09:38:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; NYSE; Unknown market data permissions - Depth: ARCA; BEX; IEX; 
-2026-06-16 09:38:04 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 688 OBAI @ MARKET MKT | Order ID: 1031828
-2026-06-16 09:38:05 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 688/688 OBAI @ $1.21 | Order ID: 1031828
-2026-06-16 09:38:05 | INFO     | trading_bot.engine   | CLOSED OBAI via IBKR | slippage_reject | P&L: $-20.64 | Excessive slippage on entry — R:R invalid
 2026-06-16 09:38:05 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT OBAI qty=688 @ $1.21 → primary webhook (200)
 2026-06-16 09:38:05 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: OBAI** (slippage_reject)
 ```
@@ -19998,3 +19934,67 @@ Signals found: 2
 2026-06-16 17:37:24 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
 2026-06-16 17:37:24 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
 2026-06-16 17:37:24 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
+2026-06-16 17:40:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-16 17:40:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-16 17:40:52 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=100, breakout>19.94, higher lows, Vol=15.5x | DGICB @ $21.15
+2026-06-16 17:40:52 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.7 | Target: $6.15 (+1.2%)
+2026-06-16 17:40:52 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-16 17:40:52 | INFO     | trading_bot.engine   |   -> momentum: buy DGICB @ $21.15 conf=0.90
+2026-06-16 17:40:52 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
+2026-06-16 17:40:52 | INFO     | trading_bot.risk.manager | APPROVED: buy DGICB | Momentum BUY: pullback entry, ADX=100, breakout>19.94, higher lows, Vol=15.5x
+2026-06-16 17:40:52 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
+2026-06-16 17:40:52 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 900 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ DGICB: score 90/100 — Momentum BUY: pullback entry, ADX=100, breakout>19.94, highe
+  ✅ RRGB: score 80/100 — Extreme RVOL 4
+2026-06-16 17:40:52 | WARNING  | trading_bot.engine   | SLOW CYCLE (211.6s total): update_data=192.3s, update_scalp=14.8s
+2026-06-16 17:40:52 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-16 17:40:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-16 17:40:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-16 17:40:59 | WARNING  | trading_bot.engine   | STALE PRICE REJECT: DGICB signal @ $21.15 but live price $22.69 (7.3% deviation > 5% max) — stops/targets would be invalid
+2026-06-16 17:40:59 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-16 17:41:02 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RRGB — wide spread 4.9% (>2% for $6.08)
+2026-06-16 17:41:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-16 17:41:05 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[10]: ADA-USD(weak 3d trend (+0.3%)), DOGE-USD(weak 3d trend (-0.8%)), FET-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-1.0%)), ICP-USD(weak 3d trend (-7.1%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (+0.5%)), SHIB-USD(weak 3d trend (-0.6%)), SOL-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-1.3%)) | warming=5 | neutral=24 | no_data=3
+2026-06-16 17:41:10 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-16 17:41:11 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-16 17:41:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-16 17:41:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-16 17:41:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-16 17:41:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-16 17:41:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-16 17:41:15 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 48 gainers, 12 gaps, 20 losers
+2026-06-16 17:41:15 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-16 17:41:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
+2026-06-16 17:43:56 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=100, breakout>19.94, higher lows, Vol=15.5x | DGICB @ $21.15
+2026-06-16 17:43:56 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.7 | Target: $6.15 (+1.2%)
+2026-06-16 17:43:56 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-16 17:43:56 | INFO     | trading_bot.engine   |   -> momentum: buy DGICB @ $21.15 conf=0.90
+2026-06-16 17:43:56 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
+2026-06-16 17:43:56 | INFO     | trading_bot.risk.manager | APPROVED: buy DGICB | Momentum BUY: pullback entry, ADX=100, breakout>19.94, higher lows, Vol=15.5x
+2026-06-16 17:43:56 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
+2026-06-16 17:43:56 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 900 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ DGICB: score 90/100 — Momentum BUY: pullback entry, ADX=100, breakout>19.94, highe
+  ✅ RRGB: score 80/100 — Extreme RVOL 4
+2026-06-16 17:43:56 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.1s total): update_data=142.1s, update_scalp=18.6s
+2026-06-16 17:43:56 | INFO     | trading_bot.engine   | CYCLE #13: regime=sideways | signals=2->approved=2 | positions=0/15 | bars_warm=62/62 | equity_open=True | pm=False pwr_hr=False
+2026-06-16 17:43:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-16 17:44:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-16 17:44:03 | WARNING  | trading_bot.engine   | STALE PRICE REJECT: DGICB signal @ $21.15 but live price $22.69 (7.3% deviation > 5% max) — stops/targets would be invalid
+2026-06-16 17:44:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-16 17:44:06 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RRGB — wide spread 4.9% (>2% for $6.08)
+2026-06-16 17:44:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-16 17:44:09 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[10]: ADA-USD(weak 3d trend (+0.3%)), DOGE-USD(weak 3d trend (-1.3%)), FET-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-1.0%)), ICP-USD(weak 3d trend (-7.1%)), IMX-USD(weak 3d trend (+0.0%)), MATIC-USD(weak 3d trend (+0.8%)), RNDR-USD(weak 3d trend (-2.4%)), SHIB-USD(weak 3d trend (-0.8%)), TRX-USD(weak 3d trend (-1.3%)) | warming=6 | neutral=23 | no_data=3
+2026-06-16 17:44:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-16 17:44:15 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-16 17:44:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-16 17:44:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-16 17:44:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-16 17:44:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-16 17:44:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-16 17:44:19 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 48 gainers, 13 gaps, 20 losers
+2026-06-16 17:44:19 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-16 17:44:19 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 80 low-priority equity names; max 90)
