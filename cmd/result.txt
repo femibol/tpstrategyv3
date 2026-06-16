@@ -1,21 +1,11 @@
-=== executed: b159d84fdf45575822a14ba8bb0b749c850fa92a
-=== started:  2026-06-16T17:41:04Z
-=== exit:     28
+=== executed: f494582ea8d56738cbaf4de035353725b6e412a5
+=== started:  2026-06-16T17:43:02Z
+=== exit:     
 === timeout:  90s
 ===
-=== tailscale status ===
-100.110.168.19  trading-bot-vps  femmybol@  linux  -  
-100.66.72.66    iphone181        femmybol@  iOS    -  
-=== this node MagicDNS name ===
 name=trading-bot-vps.tail5db65d.ts.net
-=== HTTPS available in tailnet? (cert probe) ===
-Usage: tailscale cert [flags] <domain>
-HTTPS cert support is not enabled/configured for your tailnet.
-
+=== reset old serve config ===
 === configure serve: dashboard on https://NAME/ ===
-Success.
-Available within your tailnet:
-
 https://trading-bot-vps.tail5db65d.ts.net/
 |-- proxy http://localhost:5000
 
@@ -25,7 +15,9 @@ To disable the proxy, run: tailscale serve --https=443 off
 https://trading-bot-vps.tail5db65d.ts.net (tailnet only)
 |-- / proxy http://localhost:5000
 
-=== final dashboard URL ===
+=== smoke test (VPS → tailnet hostname) ===
+HTTP 200
+=== smoke test no-auth on / (expect 401) ===
+HTTP 401
+=== final URL ===
 https://trading-bot-vps.tail5db65d.ts.net/
-=== smoke test (from VPS to itself via tailnet) ===
-HTTP 000
