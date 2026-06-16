@@ -1,1 +1,19 @@
-IyEvYmluL2Jhc2gKZWNobyAiPT09IGRvY2tlciA9PT0iOyBkb2NrZXIgLS12ZXJzaW9uIDI+JjEKZWNobyAiPT09IGRhc2hib2FyZCAvaGVhbHRoIChsb2NhbGhvc3Q6NTAwMCkgPT09IjsgY3VybCAtcyAtbSA1IGh0dHA6Ly9sb2NhbGhvc3Q6NTAwMC9oZWFsdGggMj4mMSB8IGhlYWQgLTMKZWNobyAiPT09IGV4aXN0aW5nIGNsb3VkZmxhcmVkID09PSI7IGRvY2tlciBwcyAtYSAtLWZpbHRlciBuYW1lPWNsb3VkZmxhcmVkIC0tZm9ybWF0ICd7ey5OYW1lc319IHwge3suU3RhdHVzfX0nIDI+JjEgfCBoZWFkIC01CmVjaG8gIj09PSBwb3J0IDUwMDAgb24gaG9zdCA9PT0iOyAoc3MgLXRsbnAgMj4vZGV2L251bGwgfCBncmVwICc6NTAwMCcgfHwgZWNobyBub25lKQplY2hvICI9PT0gY2xvdWRmbGFyZWQgaW1hZ2UgcHJlc2VudD8gPT09IjsgZG9ja2VyIGltYWdlcyBjbG91ZGZsYXJlL2Nsb3VkZmxhcmVkIC0tZm9ybWF0ICd7ey5SZXBvc2l0b3J5fX06e3suVGFnfX0nIDI+JjEgfCBoZWFkIC0yCg==
+#!/bin/bash
+set +e
+echo "=== docker ==="; docker --version 2>&1
+echo "=== dashboard /health (localhost:5000) ==="; curl -s -m 5 http://localhost:5000/health 2>&1 | head -c 300; echo
+echo "=== pull cloudflared image ==="; docker pull -q cloudflare/cloudflared:latest 2>&1 | tail -1
+echo "=== remove any old cloudflared ==="; docker rm -f cloudflared 2>/dev/null
+echo "=== start quick tunnel ==="
+docker run -d --name cloudflared --restart unless-stopped --network host \
+  cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://localhost:5000 >/dev/null 2>&1
+echo "run-exit: $?"
+url=""
+for i in $(seq 1 18); do
+  url=$(docker logs cloudflared 2>&1 | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
+  [ -n "$url" ] && break
+  sleep 3
+done
+echo "=== TUNNEL URL ==="; echo "${url:-NOT_FOUND_YET}"
+echo "=== status ==="; docker ps --filter name=cloudflared --format '{{.Names}} | {{.Status}}' 2>&1
+if [ -z "$url" ]; then echo "=== last logs ==="; docker logs cloudflared 2>&1 | tail -12; fi
