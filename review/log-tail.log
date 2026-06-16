@@ -1,118 +1,3 @@
-2026-06-15 05:12:35 | INFO     | trading_bot.risk.manager | APPROVED: buy BYAH | Extreme RVOL 37.7x | Strong move +3.5% | RSI oversold bounce (20) | Strong breakout +3.5%
-2026-06-15 05:12:35 | INFO     | trading_bot.risk.manager | APPROVED: buy QBTZ | Extreme RVOL 45.8x | Trending up +0.8% | EMA trend bullish | RSI healthy (51)
-2026-06-15 05:12:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SNDQ | Extreme RVOL 79.8x | Moving up +1.9% | EMA trend bullish | MACD histogram positive
-2026-06-15 05:12:35 | INFO     | trading_bot.risk.manager | APPROVED: buy MSTU | Extreme RVOL 87.4x | Trending up +0.9% | EMA trend bullish | MACD histogram positive
-2026-06-15 05:12:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXS | Extreme RVOL 85.0x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
-2026-06-15 05:12:35 | INFO     | trading_bot.risk.manager | APPROVED: buy RGTZ | Extreme RVOL 62.6x | Moving up +2.3% | EMA trend bullish | RSI healthy (53)
-2026-06-15 05:12:35 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 8 equity buy signal(s) — MSFT, SOFI, BYAH, QBTZ, SNDQ, MSTU, SOXS, RGTZ
-2026-06-15 05:12:35 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 911 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 11
-  ✅ NEAR-USD: score 96/100 — Mean reversion BUY: Z=-2.47, RSI=41, BB=lower, Vol=2.6x
-  ✅ AMKL: score 95/100 — Momentum BUY: E
-2026-06-15 05:12:35 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.2s total): update_data=150.3s, update_scalp=15.5s
-2026-06-15 05:12:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: NEAR-USD(z=-2.47 rsi=40.7 bb=LOWER) | WAIT[10]: ATOM-USD(weak 3d trend (+0.9%)), COMP-USD(weak 3d trend (-2.9%)), CRV-USD(weak 3d trend (-6.0%)), ETC-USD(weak 3d trend (-0.6%)), FET-USD(needs green bar), ICP-USD(needs vol>=1.1x), RNDR-USD(needs vol>=1.1x), SHIB-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-1.8%)) | warming=4 | neutral=25 | no_data=2
-2026-06-15 05:12:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.47, RSI=41, BB=lower, Vol=2.6x | NEAR-USD @ $2.35
-2026-06-15 05:12:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.74
-2026-06-15 05:12:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.24
-2026-06-15 05:12:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.18
-2026-06-15 05:12:38 | INFO     | trading_bot.risk.manager | APPROVED: buy NEAR-USD | Mean reversion BUY: Z=-2.47, RSI=41, BB=lower, Vol=2.6x
-2026-06-15 05:12:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy NEAR-USD from mean_reversion conf=0.96 price=2.352 reason=Mean reversion BUY: Z=-2.47, RSI=41, BB=lower, Vol=2.6x
-2026-06-15 05:12:38 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: NEAR-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-15 05:12:38 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: NEAR-USD entry=$2.3520 stop=$2.3316 (0.87% gap). Setting 5% minimum stop.
-2026-06-15 05:12:38 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x = 2.00% risk
-2026-06-15 05:12:38 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $441.03 → $100.00 (per-strategy ceiling)
-2026-06-15 05:12:38 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 850.34014 NEAR-USD @ $2.35 = $2,000.00 | Risk: $100.00 (0.5% of account)
-2026-06-15 05:12:38 | INFO     | trading_bot.engine   | R/R STRETCH: NEAR-USD entry=$2.3520 stop=$2.2344 (risk=$0.1176) target=$2.3929 (reward=$0.0409, R/R=0.35) — stretching target to $2.5872 for 2:1 minimum.
-2026-06-15 05:12:38 | INFO     | trading_bot.engine   | Executing NEAR-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-15 05:12:38 | INFO     | trading_bot.broker.traderspost | Routing NEAR-USD to CRYPTO webhook
-2026-06-15 05:12:38 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "NEAR-USD", "action": "buy", "sentiment": "bullish", "quantity": 850.34014, "price": 2.352, "stopLoss": {"type": "stop", "stopPrice": 2.23}, "takeProfit": {"type": "limit", "limitPrice": 2.59}}
-2026-06-15 05:12:39 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"167e2b64-718e-4e63-bbfe-848c79196cc5","logId":"167e2b64-718e-4e63-bbfe-848c79196cc5","payload":{"ticker":"NEAR-USD","action":"buy","sentiment":"bullish","quantity":850.34014,"price":2.352,"stopLoss":{"type":"stop","stopPrice":2.23},"takeProfit":{"type":"limit","limitPrice":2.59
-2026-06-15 05:12:39 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY NEAR-USD | Strategy: unknown | Qty: 850.34014 @ $2.35 = $2,000.00 | Risk: $100.00 | Reward: $200.00 | R:R 2.0:1 | Response: 200
-2026-06-15 05:12:39 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: NEAR-USD qty=850.34014. SL $2.23 / TP $2.59 managed by bot (no broker-side bracket).
-2026-06-15 05:12:39 | INFO     | trading_bot.engine   | ORDER BUY NEAR-USD via TradersPost | Qty: 850.34014 | Price: $2.35 | Cost: $2,000.00 | Stop: $2.23 (risk $100.00) | Target: $2.59 (reward $200.00) | R:R 2.0:1 | Strategy: mean_reversion
-2026-06-15 05:12:39 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: NEAR-USD**
-```
-  Entry: $2.35 x 850.34014 shares = $2,000.00
-  Stop:  $2.23 (-$100.00 | -5.0%)
-  Targets: $2.59
-  Risk/Reward: 2.0
-```
-Strategy: **mean_reversion** | Confide
-2026-06-15 05:12:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.74
-2026-06-15 05:12:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.24
-2026-06-15 05:12:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.18
-2026-06-15 05:12:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.74
-2026-06-15 05:12:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.24
-2026-06-15 05:12:45 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.17
-2026-06-15 05:12:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-15 05:12:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-15 05:12:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-15 05:12:47 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-15 05:12:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-15 05:12:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-15 05:12:49 | INFO     | trading_bot.engine   | IBKR scanner: 107 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-15 05:12:49 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-15 05:12:49 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
-2026-06-15 05:12:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
-2026-06-15 05:12:49 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
-2026-06-15 05:12:49 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-15 05:12:49 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.59, RSI=23, BB=lower, Vol=9.6x | HBAR-USD @ $0.08
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, breakout>24.82, higher lows, Vol=3.4x | AMKL @ $28.08
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.35
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.17
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.75
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: BYAH | Score: 80 | RVOL: 37.7x | Change: +3.5% | R:R 4.0
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: QBTZ | Score: 70 | RVOL: 45.8x | Change: +0.8% | R:R 2.7
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDQ | Score: 90 | RVOL: 79.8x | Change: +1.9% | R:R 2.7
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: MSTU | Score: 80 | RVOL: 87.4x | Change: +0.9% | R:R 2.7
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 85.0x | Change: +0.6% | R:R 2.7
-2026-06-15 05:15:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: RGTZ | Score: 75 | RVOL: 62.6x | Change: +2.3% | R:R 2.7
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 11 signals from strategies
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> mean_reversion: buy HBAR-USD @ $0.08 conf=1.00
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> momentum: buy AMKL @ $28.08 conf=0.95
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> momentum: buy MSFT @ $398.35 conf=0.80
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $17.17 conf=0.90
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> momentum: buy MARA @ $14.75 conf=0.75
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy BYAH @ $1.47 conf=0.80
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy QBTZ @ $4.75 conf=0.70
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDQ @ $3.74 conf=0.90
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy MSTU @ $3.53 conf=0.80
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.71 conf=0.80
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy RGTZ @ $3.58 conf=0.75
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | REJECTED: buy HBAR-USD | Cost gate: edge 33bps < 2× cost 50bps (need 100bps)
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | REJECTED: buy AMKL | Setup broke: signal $28.08 → market $24.62 (-12.3%, max -5%)
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy MSFT | Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | REJECTED: buy MARA | Already in position: MARA
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy BYAH | Extreme RVOL 37.7x | Strong move +3.5% | RSI oversold bounce (20) | Strong breakout +3.5%
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy QBTZ | Extreme RVOL 45.8x | Trending up +0.8% | EMA trend bullish | RSI healthy (51)
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SNDQ | Extreme RVOL 79.8x | Moving up +1.9% | EMA trend bullish | MACD histogram positive
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy MSTU | Extreme RVOL 87.4x | Trending up +0.9% | EMA trend bullish | MACD histogram positive
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXS | Extreme RVOL 85.0x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
-2026-06-15 05:15:35 | INFO     | trading_bot.risk.manager | APPROVED: buy RGTZ | Extreme RVOL 62.6x | Moving up +2.3% | EMA trend bullish | RSI healthy (53)
-2026-06-15 05:15:35 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 8 equity buy signal(s) — MSFT, SOFI, BYAH, QBTZ, SNDQ, MSTU, SOXS, RGTZ
-2026-06-15 05:15:35 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 911 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 11
-  ✅ HBAR-USD: score 100/100 — Mean reversion BUY: Z=-3.59, RSI=23, BB=lower, Vol=9.6x
-  ✅ AMKL: score 95/100 — Momentum BUY: 
-2026-06-15 05:15:35 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.2s total): update_data=150.2s, update_scalp=15.5s
-2026-06-15 05:15:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | BUY[1]: HBAR-USD(z=-3.59 rsi=22.7 bb=LOWER) | WAIT[10]: ATOM-USD(weak 3d trend (+0.9%)), COMP-USD(weak 3d trend (-2.9%)), CRV-USD(weak 3d trend (-6.0%)), ETC-USD(weak 3d trend (-0.6%)), FET-USD(needs green bar), ICP-USD(needs vol>=1.1x), RNDR-USD(needs vol>=1.1x), SHIB-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-2.0%)) | warming=5 | neutral=23 | no_data=2
-2026-06-15 05:15:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.59, RSI=23, BB=lower, Vol=9.6x | HBAR-USD @ $0.08
-2026-06-15 05:15:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.75
-2026-06-15 05:15:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.35
-2026-06-15 05:15:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.17
-2026-06-15 05:15:38 | INFO     | trading_bot.risk.manager | REJECTED: buy HBAR-USD | Cost gate: edge 33bps < 2× cost 50bps (need 100bps)
-2026-06-15 05:15:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.59, RSI=23, BB=lower, Vol=9.6x | HBAR-USD @ $0.08
-2026-06-15 05:15:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.75
-2026-06-15 05:15:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.35
-2026-06-15 05:15:41 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.21
-2026-06-15 05:15:41 | INFO     | trading_bot.risk.manager | REJECTED: buy HBAR-USD | Cost gate: edge 33bps < 2× cost 50bps (need 100bps)
-2026-06-15 05:15:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.59, RSI=23, BB=lower, Vol=9.6x | HBAR-USD @ $0.08
-2026-06-15 05:15:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>14.17, Vol=3.5x | MARA @ $14.75
-2026-06-15 05:15:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>391.00, Vol=4.2x | MSFT @ $398.35
 2026-06-15 05:15:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=48, breakout>16.59, higher lows, Vol=3.2x | SOFI @ $17.21
 2026-06-15 05:15:44 | INFO     | trading_bot.risk.manager | REJECTED: buy HBAR-USD | Cost gate: edge 33bps < 2× cost 50bps (need 100bps)
 2026-06-15 05:15:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
@@ -19998,3 +19883,118 @@ Signals found: 4
 2026-06-15 20:03:48 | INFO     | trading_bot.engine   | IBKR scanner: 122 unique symbols discovered | 50 gainers, 10 gaps, 18 losers
 2026-06-15 20:03:48 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-15 20:03:48 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-15 20:06:21 | INFO     | trading_bot.broker.traderspost | EXIT signal for NEAR-USD - bypassing rate limits
+2026-06-15 20:06:21 | INFO     | trading_bot.broker.traderspost | Routing NEAR-USD to CRYPTO webhook
+2026-06-15 20:06:21 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "NEAR-USD", "action": "exit", "quantity": 826.10492, "price": 2.391}
+2026-06-15 20:06:21 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"2dca58c5-8cae-492b-bc8e-77505db22645","logId":"2dca58c5-8cae-492b-bc8e-77505db22645","payload":{"ticker":"NEAR-USD","action":"exit","quantity":826.10492,"price":2.391}}
+2026-06-15 20:06:21 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL NEAR-USD | Strategy: unknown | Qty: 826.10492 @ $2.39 = $1,975.22 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-15 20:06:21 | INFO     | trading_bot.engine   | CLOSED NEAR-USD via TradersPost | time_exit | P&L: $-24.78 | Max holding period exceeded
+2026-06-15 20:06:21 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: NEAR-USD** (time_exit)
+```
+  Entry: $2.42 → Exit: $2.39
+  P&L: $-24.78 (-1.24%)
+  Shares: 826.10492 | Value: $1,975.22
+  Hold: 1.3h
+```
+Strategy: **mean_reversion** | Max holding perio
+2026-06-15 20:06:22 | WARNING  | trading_bot.engine   | PSYCHOLOGY FLAG: 4 consecutive losses — review strategy mix; consider manual pause
+2026-06-15 20:06:22 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: NEAR-USD -24.78 (265 total in history)
+2026-06-15 20:06:27 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [NEAR-USD]: **AVOID:mean_reversion_NEAR-USD**
+
+30% win rate over 10 trades = systematic failure. Time_exit after 78min with -1.2% loss means no mean reversion occurred. Pattern broken — stop trading this strategy
+2026-06-15 20:06:27 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'mean_reversion_near' (total avoids: 1)
+2026-06-15 20:06:30 | INFO     | trading_bot.engine   | AI INSIGHT: **Stop trading until you identify why 80% of trades are losing.**
+
+Specifically, pull every losing trade and categorize which strategy generated it — with 4 different strategies running simultaneously
+2026-06-15 20:06:30 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: AI Quick Insight (after 265 trades):
+**Stop trading until you identify why 80% of trades are losing.**
+
+Specifically, pull every losing trade and categorize which strategy generated it 
+2026-06-15 20:06:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>61.59, higher lows, Vol=1.8x | SPCL @ $70.48
+2026-06-15 20:06:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>190.98, higher lows, Vol=3.1x | SPCX @ $200.25
+2026-06-15 20:06:31 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIMZ | Score: 95 | RVOL: 5.0x | Change: +0.4% | R:R 2.0 | Target: $38.71 (+1.2%)
+2026-06-15 20:06:31 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: CMTL | Score: 53 | Squeeze: True | Vol: 1.7x | R:R 2.5 | Target: $2.96
+2026-06-15 20:06:31 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-15 20:06:31 | INFO     | trading_bot.engine   |   -> momentum: buy SPCL @ $70.48 conf=0.75
+2026-06-15 20:06:31 | INFO     | trading_bot.engine   |   -> momentum: buy SPCX @ $200.25 conf=0.80
+2026-06-15 20:06:31 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIMZ @ $38.43 conf=0.95
+2026-06-15 20:06:31 | INFO     | trading_bot.engine   |   -> prebreakout: buy CMTL @ $2.75 conf=0.53
+2026-06-15 20:06:31 | INFO     | trading_bot.risk.manager | REJECTED: buy SPCL | Setup broke: signal $70.48 → market $62.53 (-11.3%, max -3%)
+2026-06-15 20:06:31 | INFO     | trading_bot.risk.manager | REJECTED: buy SPCX | Setup broke: signal $200.25 → market $192.43 (-3.9%, max -3%)
+2026-06-15 20:06:31 | INFO     | trading_bot.risk.manager | APPROVED: buy HIMZ | Extreme RVOL 5.0x | Moving up +0.4% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-15 20:06:31 | INFO     | trading_bot.risk.manager | APPROVED: buy CMTL | BB squeeze (33% tight) | Volume accumulating 1.7x | Breakout candle! | RSI 53 (room to run)
+2026-06-15 20:06:31 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — HIMZ, CMTL
+2026-06-15 20:06:31 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 905 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ SPCL: score 75/100 — Momentum BUY: EMA trend, breakout>61.59, higher lows, Vol=1.
+  ✅ SPCX: score 80/100 — Momentum BUY: E
+2026-06-15 20:06:31 | WARNING  | trading_bot.engine   | SLOW CYCLE (167.4s total): update_data=138.1s, update_scalp=14.9s, monitor_positions=9.7s
+2026-06-15 20:06:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[6]: ARB-USD(weak 3d trend (+0.6%)), ATOM-USD(weak 3d trend (-0.7%)), CRV-USD(weak 3d trend (+0.6%)), JUP-USD(weak 3d trend (-1.4%)), MATIC-USD(needs vol>=1.1x), SNX-USD(weak 3d trend (+0.0%)) | warming=7 | neutral=27 | no_data=1
+2026-06-15 20:06:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-15 20:06:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 0 results
+2026-06-15 20:06:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-15 20:06:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 0 results
+2026-06-15 20:06:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-15 20:06:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 0 results
+2026-06-15 20:06:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-15 20:06:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-15 20:06:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-15 20:06:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 0 results
+2026-06-15 20:06:44 | INFO     | trading_bot.engine   | IBKR scanner: 0 unique symbols discovered | 0 gainers, 0 gaps, 0 losers
+2026-06-15 20:06:44 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-15 20:06:44 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-15 20:06:44 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 92 low-priority equity names; max 90)
+2026-06-15 20:09:33 | INFO     | trading_bot.broker.traderspost | EXIT signal for XLM-USD - bypassing rate limits
+2026-06-15 20:09:33 | INFO     | trading_bot.broker.traderspost | Routing XLM-USD to CRYPTO webhook
+2026-06-15 20:09:33 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "XLM-USD", "action": "exit", "quantity": 5000, "price": 0.21467}
+2026-06-15 20:09:33 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"5048a564-c1f2-4f98-84b6-eeff82d3c24c","logId":"5048a564-c1f2-4f98-84b6-eeff82d3c24c","payload":{"ticker":"XLM-USD","action":"exit","quantity":5000,"price":0.21467}}
+2026-06-15 20:09:33 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL XLM-USD | Strategy: unknown | Qty: 5000 @ $0.21 = $1,073.35 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-15 20:09:33 | INFO     | trading_bot.engine   | CLOSED XLM-USD via TradersPost | time_exit | P&L: $-0.75 | Max holding period exceeded
+2026-06-15 20:09:33 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: XLM-USD** (time_exit)
+```
+  Entry: $0.21 → Exit: $0.21
+  P&L: $-0.75 (-0.07%)
+  Shares: 5000 | Value: $1,073.35
+  Hold: 1.3h
+```
+Strategy: **mean_reversion** | Max holding period excee
+2026-06-15 20:09:33 | WARNING  | trading_bot.engine   | PSYCHOLOGY FLAG: 5 consecutive losses — review strategy mix; consider manual pause
+2026-06-15 20:09:33 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: XLM-USD -0.75 (266 total in history)
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [XLM-USD]: **AVOID:mean_reversion_XLM**
+
+27% win rate on 11 trades = clear pattern failure. Time_exit on flat price ($0.21→$0.21) shows no edge. Mean reversion not working on XLM current regime.
+2026-06-15 20:09:36 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'mean_reversion_xlm' (total avoids: 1)
+2026-06-15 20:09:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>61.59, higher lows, Vol=1.8x | SPCL @ $70.48
+2026-06-15 20:09:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, breakout>190.98, higher lows, Vol=3.1x | SPCX @ $201.18
+2026-06-15 20:09:36 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: HIMZ | Score: 95 | RVOL: 5.0x | Change: +0.4% | R:R 2.0 | Target: $38.71 (+1.2%)
+2026-06-15 20:09:36 | INFO     | trading_bot.strategy.prebreakout | PRE-BREAKOUT: CMTL | Score: 53 | Squeeze: True | Vol: 1.7x | R:R 2.5 | Target: $2.96
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   |   -> momentum: buy SPCL @ $70.48 conf=0.75
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   |   -> momentum: buy SPCX @ $201.18 conf=0.80
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy HIMZ @ $38.43 conf=0.95
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   |   -> prebreakout: buy CMTL @ $2.75 conf=0.53
+2026-06-15 20:09:36 | INFO     | trading_bot.risk.manager | REJECTED: buy SPCL | Setup broke: signal $70.48 → market $62.53 (-11.3%, max -3%)
+2026-06-15 20:09:36 | INFO     | trading_bot.risk.manager | REJECTED: buy SPCX | Setup broke: signal $201.18 → market $192.43 (-4.3%, max -3%)
+2026-06-15 20:09:36 | INFO     | trading_bot.risk.manager | APPROVED: buy HIMZ | Extreme RVOL 5.0x | Moving up +0.4% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-15 20:09:36 | INFO     | trading_bot.risk.manager | APPROVED: buy CMTL | BB squeeze (33% tight) | Volume accumulating 1.7x | Breakout candle! | RSI 53 (room to run)
+2026-06-15 20:09:36 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — HIMZ, CMTL
+2026-06-15 20:09:36 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 899 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ SPCL: score 75/100 — Momentum BUY: EMA trend, breakout>61.59, higher lows, Vol=1.
+  ✅ SPCX: score 80/100 — Momentum BUY: E
+2026-06-15 20:09:37 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.5s total): update_data=154.1s, update_scalp=14.6s
+2026-06-15 20:09:37 | INFO     | trading_bot.engine   | CYCLE #373: regime=sideways | signals=4->approved=0 | positions=0/15 | bars_warm=188/188 | equity_open=False | pm=False pwr_hr=False
+2026-06-15 20:09:40 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[5]: ARB-USD(weak 3d trend (+0.6%)), ATOM-USD(weak 3d trend (-1.2%)), CRV-USD(weak 3d trend (+0.6%)), JUP-USD(weak 3d trend (-1.4%)), SNX-USD(weak 3d trend (+0.0%)) | warming=9 | neutral=27 | no_data=1
+2026-06-15 20:09:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-15 20:09:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-15 20:09:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-15 20:09:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-15 20:09:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-15 20:09:50 | INFO     | trading_bot.engine   | IBKR scanner: 117 unique symbols discovered | 50 gainers, 18 gaps, 20 losers
+2026-06-15 20:09:50 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-15 20:09:50 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 170 low-priority equity names; max 90)
+2026-06-15 20:09:50 | INFO     | trading_bot.data.market_data | Pruned 18 stale IBKR streams — now 29/95
+2026-06-15 20:09:53 | INFO     | trading_bot.broker.ibkr | Subscribed to 19 live market data streams
+2026-06-15 20:09:53 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
