@@ -1,20 +1,3 @@
-2026-06-15 09:39:46 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for MARA: This event loop is already running
-2026-06-15 09:39:46 | ERROR    | trading_bot.engine   | IBKR close order FAILED for MARA
-2026-06-15 09:39:46 | ERROR    | trading_bot.engine   | CLOSE FAILED for MARA — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-15 09:39:47 | WARNING  | trading_bot.broker.ibkr | Order 968601 not found
-2026-06-15 09:39:47 | INFO     | trading_bot.engine   | Cancelled broker stop order for MARA
-2026-06-15 09:39:47 | WARNING  | trading_bot.broker.ibkr | Order 968601 not found
-2026-06-15 09:39:47 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: MARA → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-15 09:39:47 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: PreSubmitted | Filled: 0.0/74.0
-2026-06-15 09:39:47 | INFO     | trading_bot.broker.ibkr | Order update: MARA | Status: Filled | Filled: 74.0/74.0 | AvgPrice: $14.94
-2026-06-15 09:39:48 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 74 MARA @ MARKET MKT | Order ID: 974855
-2026-06-15 09:39:48 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 74/74 MARA @ $14.94 | Order ID: 974855
-2026-06-15 09:39:48 | INFO     | trading_bot.engine   | CLOSED MARA via IBKR | trailing_stop | P&L: $+3.70 | Trailing stop at $14.93 (trail 1.5%)
-2026-06-15 09:39:48 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT MARA qty=74 @ $14.94 → primary webhook (200)
-2026-06-15 09:39:48 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: MARA** (trailing_stop)
-```
-  Entry: $14.89 → Exit: $14.94
-  P&L: $+3.70 (+0.34%)
   Shares: 74 | Value: $1,105.56
   Hold: 1.7h
 ```
@@ -19998,3 +19981,20 @@ Signals found: 6
 2026-06-16 04:54:46 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-16 04:54:46 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-16 04:54:46 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-16 04:57:16 | INFO     | trading_bot.engine   | DATA COVERAGE: 73/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-16 04:58:06 | WARNING  | trading_bot.engine   | STOP WATCHDOG: SNXX has NO broker-side stop! Placing emergency stop @ $40.48 for 25 shares
+2026-06-16 04:58:06 | WARNING  | trading_bot.broker.ibkr | Order 1013945 not found
+2026-06-16 04:58:06 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SNXX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-16 04:58:06 | INFO     | trading_bot.broker.ibkr | Order update: SNXX | Status: Cancelled | Filled: 0.0/25
+2026-06-16 04:58:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
+2026-06-16 04:58:07 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 25 SNXX @ STOP 40.480439999999994 [OUTSIDE RTH] | Order ID: 1017050
+2026-06-16 04:58:07 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: SNXX | Order ID: 1017050
+2026-06-16 04:58:07 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: SNXX — IBKR returned None
+2026-06-16 04:58:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=55, Vol=5.5x | SHOP @ $112.13
+2026-06-16 04:58:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=100, breakout>5.68, Vol=5.8x | SNAP @ $5.72
+2026-06-16 04:58:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA trend, ADX=74, breakout>20.81, Vol=1.8x | STXU @ $22.83
+2026-06-16 04:58:07 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 80 | RVOL: 90.2x | Change: +2.5% | R:R 2.7
+2026-06-16 04:58:07 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: HUBC | Score: 80 | RVOL: 286.6x | Change: +0.6% | R:R 2.7
+2026-06-16 04:58:07 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 142.3x | Change: +0.4% | R:R 2.7
+2026-06-16 04:58:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-16 04:58:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
