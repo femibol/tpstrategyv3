@@ -1,19 +1,21 @@
 #!/bin/bash
 set +e
-echo "=== docker ==="; docker --version 2>&1
-echo "=== dashboard /health (localhost:5000) ==="; curl -s -m 5 http://localhost:5000/health 2>&1 | head -c 300; echo
-echo "=== pull cloudflared image ==="; docker pull -q cloudflare/cloudflared:latest 2>&1 | tail -1
-echo "=== remove any old cloudflared ==="; docker rm -f cloudflared 2>/dev/null
-echo "=== start quick tunnel ==="
-docker run -d --name cloudflared --restart unless-stopped --network host \
-  cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://localhost:5000 >/dev/null 2>&1
-echo "run-exit: $?"
-url=""
-for i in $(seq 1 18); do
-  url=$(docker logs cloudflared 2>&1 | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
-  [ -n "$url" ] && break
-  sleep 3
+BASE="https://acquisitions-algebra-favorites-installation.trycloudflare.com"
+echo "=== cloudflared status ==="
+docker ps --filter name=cloudflared --format '{{.Names}} | {{.Status}}' 2>&1
+echo "=== public /health (expect JSON via tunnel) ==="
+curl -s -m 15 "$BASE/health" 2>&1; echo
+echo "=== public / no-auth (expect 401) ==="
+curl -s -m 15 -o /dev/null -w "HTTP %{http_code}\n" "$BASE/" 2>&1
+KEY=""
+for f in /opt/trading-bot/.env /opt/trading-bot-cmd/.env; do
+  [ -f "$f" ] && KEY=$(grep -E '^DASHBOARD_SECRET_KEY=' "$f" | head -1 | cut -d= -f2- | tr -d '"'"'"'' ) && [ -n "$KEY" ] && break
 done
-echo "=== TUNNEL URL ==="; echo "${url:-NOT_FOUND_YET}"
-echo "=== status ==="; docker ps --filter name=cloudflared --format '{{.Names}} | {{.Status}}' 2>&1
-if [ -z "$url" ]; then echo "=== last logs ==="; docker logs cloudflared 2>&1 | tail -12; fi
+if [ -n "$KEY" ]; then
+  echo "=== public / WITH auth (expect 200) ==="
+  curl -s -m 15 -o /dev/null -w "HTTP %{http_code}\n" -u "admin:$KEY" "$BASE/" 2>&1
+  echo "=== public /api/status WITH auth (expect 200) ==="
+  curl -s -m 15 -o /dev/null -w "HTTP %{http_code}\n" -u "admin:$KEY" "$BASE/api/status" 2>&1
+else
+  echo "=== could not read DASHBOARD_SECRET_KEY from .env (auth test skipped) ==="
+fi
