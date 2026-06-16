@@ -1,32 +1,24 @@
-=== executed: 9c184566cdfc862657cb1ed7e05dc66441a2f982
-=== started:  2026-06-16T19:08:02Z
+=== executed: 5b22987a4ad96f1cca40c4a21a2a7cd692aaca38
+=== started:  2026-06-16T19:10:17Z
 === exit:     1
 === timeout:  90s
 ===
-=== data/ on disk ===
-total 224
-drwxr-xr-x  3 root root   4096 Jun 16 18:57 .
-drwxr-xr-x 18 root root   4096 Jun 16 18:57 ..
--rw-r--r--  1 root root     64 Jun  5 02:16 auto_recovery_state.json
--rw-r--r--  1 root root 117613 Jun 16 16:30 auto_tune_changelog.json
--rw-r--r--  1 root root   1272 Jun 16 05:34 crypto_scanner_cache.json
--rw-r--r--  1 root root    808 Jun 16 17:56 finviz_float_cache.json
--rw-r--r--  1 root root    383 Jun 16 16:14 learning_adjustments.json
--rw-r--r--  1 root root   8068 Jun 16 08:00 learning_state.json
--rw-r--r--  1 root root   2485 Jun  4 13:20 politician_seen_trades.json
--rw-r--r--  1 root root      2 Jun 16 17:53 positions_state.json
--rw-r--r--  1 root root   3936 May 18 10:27 positions_state.json.bak.20260518_102746
--rw-r--r--  1 root root  59793 May 18 09:05 trade_history.json.bak.20260518_090525
-drwxr-xr-x  2 root root   4096 Jun 14 22:00 weekly-reviews
-=== trade_history.json (head) ===
-ls: cannot access 'data/trade_history.json': No such file or directory
-first 200B:
-head: cannot open 'data/trade_history.json' for reading: No such file or directory
-
-count entries:
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-FileNotFoundError: [Errno 2] No such file or directory: 'data/trade_history.json'
+=== fetching claude/live-state for backup ===
+=== restoring trade_history.json from live-state snapshot ===
+size: 191375 bytes
+count: 297
+=== restoring signal_log.json from live-state snapshot ===
+size: 236715 bytes
+=== restart container so trade_history is reloaded ===
+trading-bot-trading-bot-1
+=== wait for /health ===
+ready after 3s
+=== verify trade history loaded ===
+=== check via API ===
+  File "<string>", line 4
+    print(f"total_trades: {d.get(\"total_trades\")}")
+                                  ^
+SyntaxError: unexpected character after line continuation character
 Error in sys.excepthook:
 Traceback (most recent call last):
   File "/usr/lib/python3/dist-packages/apport_python_hook.py", line 228, in partial_apport_excepthook
@@ -38,23 +30,7 @@ Traceback (most recent call last):
 FileNotFoundError: [Errno 2] No such file or directory: '/opt/trading-bot/-c'
 
 Original exception was:
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-FileNotFoundError: [Errno 2] No such file or directory: 'data/trade_history.json'
-=== full container log for trade-history line ===
-2026-06-16 15:02:03 | INFO     | trading_bot.signals.politician_tracker | Loaded 61 seen politician trades from disk
-2026-06-16 15:02:03 | INFO     | trading_bot.learning.trade_analyzer | No trade history file found at /app/data/trade_history.json — starting fresh
-2026-06-16 15:02:03 | INFO     | trading_bot.learning.trade_analyzer | Loaded learning state from disk
-2026-06-16 15:02:03 | INFO     | trading_bot.engine   | TRADE HISTORY: No previous trades found — starting fresh
-=== docker volume / mounts ===
-/opt/trading-bot/bot -> /app/bot
-/var/run/docker.sock -> /var/run/docker.sock
-/opt/trading-bot/data -> /app/data
-/opt/trading-bot/logs -> /app/logs
-/opt/trading-bot/config -> /app/config
-
-=== in-container path matches host? ===
-ls: cannot access '/app/data/trade_history.json': No such file or directory
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-FileNotFoundError: [Errno 2] No such file or directory: '/app/data/trade_history.json'
+  File "<string>", line 4
+    print(f"total_trades: {d.get(\"total_trades\")}")
+                                  ^
+SyntaxError: unexpected character after line continuation character
