@@ -1,40 +1,42 @@
 #!/bin/bash
 set +e
-cd /opt/trading-bot
-
-echo "=== fetching claude/live-state for backup ==="
-git fetch origin claude/live-state -q 2>&1 | tail -2
-
-echo "=== restoring trade_history.json from live-state snapshot ==="
-git show origin/claude/live-state:data/trade_history.json > data/trade_history.json 2>/tmp/restore.err
-echo "size: $(stat -c%s data/trade_history.json 2>/dev/null) bytes"
-echo "count: $(python3 -c 'import json; print(len(json.load(open("data/trade_history.json"))))' 2>&1)"
-
-echo "=== restoring signal_log.json from live-state snapshot ==="
-git show origin/claude/live-state:data/signal_log.json > data/signal_log.json 2>/tmp/restore.err
-echo "size: $(stat -c%s data/signal_log.json 2>/dev/null) bytes"
-
-echo "=== restart container so trade_history is reloaded ==="
-docker restart trading-bot-trading-bot-1
-sleep 4
-
-echo "=== wait for /health ==="
-for i in $(seq 1 20); do
-  if curl -s -m 3 http://localhost:5000/health | grep -q '"status":"ok"'; then
-    echo "ready after $((i*3))s"; break
-  fi
-  sleep 3
-done
-
-echo "=== verify trade history loaded ==="
-docker logs --since 90s trading-bot-trading-bot-1 2>&1 | grep -E "TRADE HISTORY|PERF STATS" | head -5
-
-echo "=== check via API ==="
 set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
 AUTH=$(printf 'admin:%s' "$DASHBOARD_SECRET_KEY" | base64 -w0)
-curl -s -m 12 -H "Authorization: Basic $AUTH" http://localhost:5000/api/status | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-print(f"total_trades: {d.get(\"total_trades\")}")
-print(f"running: {d.get(\"running\")}")
-'
+
+echo "=== container status ==="
+docker ps --filter name=trading-bot-trading-bot --format '{{.Status}}'
+
+echo "=== boot log lines for trade history + perf stats ==="
+docker logs trading-bot-trading-bot-1 2>&1 | grep -E "TRADE HISTORY|PERF STATS|trade_analyzer" | tail -8
+
+echo "=== /api/status (key fields via localhost) ==="
+curl -s -m 12 -H "Authorization: Basic $AUTH" http://localhost:5000/api/status > /tmp/status.json
+python3 << 'PYEOF'
+import json
+d = json.load(open('/tmp/status.json'))
+keys = ["running","balance","total_return_pct","daily_pnl","daily_trades",
+        "positions","total_trades","peak_balance","drawdown_pct"]
+for k in keys:
+    print(f"  {k}: {d.get(k)}")
+PYEOF
+
+echo "=== /api/performance (Win Rate fallback source) ==="
+curl -s -m 12 -H "Authorization: Basic $AUTH" http://localhost:5000/api/performance > /tmp/perf.json
+python3 << 'PYEOF'
+import json
+d = json.load(open('/tmp/perf.json'))
+print(f"  total_trades: {d.get('total_trades')}")
+print(f"  win_rate: {d.get('win_rate')}%")
+print(f"  profit_factor: {d.get('profit_factor')}")
+print(f"  net_pnl: ${d.get('net_pnl')}")
+PYEOF
+
+echo "=== /api/trades?limit=5 ==="
+curl -s -m 12 -H "Authorization: Basic $AUTH" "http://localhost:5000/api/trades?limit=5" > /tmp/trades.json
+python3 << 'PYEOF'
+import json
+d = json.load(open('/tmp/trades.json'))
+print(f"  count: {len(d)}")
+for t in d[-3:]:
+    print(f"  - {t.get('exit_time','')[:19]} {t.get('symbol','')} {t.get('strategy','')} pnl=${t.get('pnl',0):+.2f}")
+PYEOF
