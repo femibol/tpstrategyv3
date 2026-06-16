@@ -30,8 +30,8 @@
         ::selection { background: rgba(91,140,255,0.30); }
         body {
             background:
-                radial-gradient(900px 600px at 100% -10%, rgba(91,140,255,0.10), transparent 60%),
-                radial-gradient(700px 500px at -10% 0%, rgba(155,125,255,0.08), transparent 55%),
+                radial-gradient(900px 600px at 100% -10%, rgba(91,140,255,0.06), transparent 60%),
+                radial-gradient(700px 500px at -10% 0%, rgba(155,125,255,0.04), transparent 55%),
                 var(--bg);
             background-attachment: fixed;
             color: var(--text);
@@ -88,19 +88,43 @@
         .data-connected { background: rgba(91,140,255,0.14);  color: var(--accent); border: 1px solid rgba(91,140,255,0.35); }
         .mode-live      { background: rgba(255,93,108,0.14);  color: var(--red);    border: 1px solid rgba(255,93,108,0.35); }
 
-        /* === STATS GRID === */
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        /* === STATS GRID — hierarchy: hero / secondary / tertiary ===
+         * The operator looks at the dashboard to answer one question first:
+         * "How am I doing right now?" Make Today P&L the hero card,
+         * Balance + Positions the secondary row, and demote everything
+         * else (drawdown, win rate, regime, all-time) to a tertiary band.
+         * Gradient top-edge accent is reserved for the hero — using it on
+         * every card made the eye skip over the actual primary number. */
+        .stats-hero {
+            display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px;
+        }
+        .stats-secondary {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;
+        }
+        .stats-tertiary {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px;
+        }
         .stat-card {
             background: linear-gradient(180deg, var(--card), var(--border-soft));
             border: 1px solid var(--border); border-radius: var(--radius);
             padding: 14px 16px; box-shadow: var(--shadow);
             position: relative; overflow: hidden;
         }
-        .stat-card::before {
+        /* Hero — bigger, gets the gradient accent edge */
+        .stat-card.hero {
+            padding: 18px 20px;
+        }
+        .stat-card.hero::before {
             content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
             background: linear-gradient(90deg, var(--accent), var(--accent2));
-            opacity: 0.55;
+            opacity: 0.7;
         }
+        .stat-card.hero .stat-value { font-size: 2.6em; letter-spacing: -0.8px; }
+        /* Tertiary — denser, no gradient edge, smaller value */
+        .stat-card.tert { padding: 10px 12px; }
+        .stat-card.tert .stat-value { font-size: 1.15em; }
+        .stat-card.tert .stat-label { font-size: 0.56em; letter-spacing: 1.1px; }
+        .stat-card.tert .stat-sub { font-size: 0.66em; margin-top: 2px; }
         .stat-label { font-size: 0.62em; color: var(--muted); text-transform: uppercase; letter-spacing: 1.4px; font-weight: 700; }
         .stat-value { font-size: 1.6em; font-weight: 800; margin-top: 5px; line-height: 1.15; letter-spacing: -0.5px; }
         .stat-sub { font-size: 0.74em; color: var(--muted); margin-top: 3px; }
@@ -742,37 +766,41 @@
 <!-- PULL TO REFRESH -->
 <div class="pull-indicator" id="pullIndicator">Refreshing...</div>
 
-<!-- STATS -->
-<div class="stats">
+<!-- STATS — hero / secondary / tertiary bands (Wave-6 UI overhaul) -->
+<div class="stats-hero">
+    <div class="stat-card hero">
+        <div class="stat-label">Today P&L</div>
+        <div class="stat-value" id="dailyPnl">$0</div>
+        <div class="stat-sub" id="dailyTrades">0 trades</div>
+    </div>
+</div>
+<div class="stats-secondary">
     <div class="stat-card">
         <div class="stat-label">Balance</div>
         <div class="stat-value" id="balance">$0</div>
         <div class="stat-sub" id="totalReturn">--</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Today P&L</div>
-        <div class="stat-value" id="dailyPnl">$0</div>
-        <div class="stat-sub" id="dailyTrades">0 trades</div>
-    </div>
-    <div class="stat-card">
         <div class="stat-label">Positions</div>
         <div class="stat-value" id="openPositions">0</div>
         <div class="stat-sub" id="strategies">--</div>
     </div>
-    <div class="stat-card">
+</div>
+<div class="stats-tertiary">
+    <div class="stat-card tert">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="winRate">--</div>
+        <div class="stat-sub" id="profitFactor">PF: --</div>
+    </div>
+    <div class="stat-card tert">
         <div class="stat-label">Drawdown</div>
         <div class="stat-value" id="drawdown">0%</div>
         <div class="stat-sub" id="peakBalance">Peak: $0</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">Market Regime</div>
+    <div class="stat-card tert">
+        <div class="stat-label">Regime</div>
         <div class="stat-value"><span class="regime-badge" id="regimeBadge">--</span></div>
         <div class="stat-sub" id="regimeRisk">Risk: --</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Win Rate</div>
-        <div class="stat-value" id="winRate">--</div>
-        <div class="stat-sub" id="profitFactor">PF: --</div>
     </div>
 </div>
 
@@ -2359,19 +2387,70 @@ async function update() {
         nList.innerHTML = '<div class="empty">No notifications</div>';
     }
 
-    // Live Feed (top of page — latest activity at a glance)
+    // Live Feed — backfilled from recent closed trades (UI overhaul).
+    // Previously the feed read only from notifier.history which is
+    // in-memory and empty across restarts, so the operator saw
+    // "Waiting for activity..." even with 200+ trades in disk history.
+    // Now: trade rows take priority (always available, color-coded by
+    // P&L), with any live notifier entries blended in by time.
     var feedEl = document.getElementById('liveFeed');
-    if (feedEl && notifs && notifs.length > 0) {
-        var icons = {trade:'💹', scanner:'📡', risk:'🚨', system:'⚙️', position:'📍', summary:'📊'};
-        feedEl.innerHTML = notifs.slice(-8).reverse().map(function(n) {
-            var icon = icons[n.category] || '📋';
-            var t = new Date(n.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-            var msg = (n.message || '').replace(/\*\*/g, '').replace(/```[^`]*```/g, '').substring(0, 120);
-            return '<div style="padding:4px 0;border-bottom:1px solid var(--border)">' +
-                '<span style="color:var(--muted);font-size:0.85em">' + t + '</span> ' +
-                icon + ' ' + msg +
-            '</div>';
-        }).join('');
+    if (feedEl) {
+        var rows = [];
+        // Recent closes — color-coded, newest first
+        if (trades && trades.length > 0) {
+            var recent = trades.slice(-25);
+            for (var i = 0; i < recent.length; i++) {
+                var t = recent[i];
+                var ts = t.exit_time || t.entry_time;
+                if (!ts) continue;
+                rows.push({
+                    kind: 'trade',
+                    ts: new Date(ts).getTime(),
+                    sym: t.symbol || '?',
+                    strat: t.strategy || '',
+                    pnl: t.pnl || 0,
+                    reason: t.reason || ''
+                });
+            }
+        }
+        // Notifier entries (live, transient) — blended by time
+        if (notifs && notifs.length > 0) {
+            var icons = {trade:'💹', scanner:'📡', risk:'🚨', system:'⚙️', position:'📍', summary:'📊'};
+            var recentNotifs = notifs.slice(-10);
+            for (var j = 0; j < recentNotifs.length; j++) {
+                var n = recentNotifs[j];
+                rows.push({
+                    kind: 'notif',
+                    ts: new Date(n.time).getTime(),
+                    icon: icons[n.category] || '📋',
+                    msg: (n.message || '').replace(/\*\*/g, '').replace(/```[^`]*```/g, '').substring(0, 100)
+                });
+            }
+        }
+        // Sort by time DESC, take top 15, render
+        rows.sort(function(a, b) { return b.ts - a.ts; });
+        rows = rows.slice(0, 15);
+        if (rows.length === 0) {
+            feedEl.innerHTML = '<div class="empty" style="padding:8px">Waiting for activity...</div>';
+        } else {
+            feedEl.innerHTML = rows.map(function(r) {
+                var time = new Date(r.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                if (r.kind === 'trade') {
+                    var sign = r.pnl >= 0 ? '+' : '';
+                    var cls = r.pnl > 0.01 ? 'positive' : r.pnl < -0.01 ? 'negative' : 'neutral';
+                    return '<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:8px">' +
+                        '<span style="color:var(--muted);font-size:0.78em;font-variant-numeric:tabular-nums">' + time + '</span>' +
+                        '<span style="font-weight:700">' + r.sym + '</span>' +
+                        '<span style="color:var(--muted);font-size:0.78em;flex:1">' + r.strat + '</span>' +
+                        '<span class="' + cls + '" style="font-weight:700;font-variant-numeric:tabular-nums">' + sign + '$' + fmt(r.pnl) + '</span>' +
+                    '</div>';
+                }
+                return '<div style="padding:6px 0;border-bottom:1px solid var(--border)">' +
+                    '<span style="color:var(--muted);font-size:0.78em">' + time + '</span> ' +
+                    r.icon + ' ' + r.msg +
+                '</div>';
+            }).join('');
+        }
     }
     var updEl = document.getElementById('lastUpdate');
     if (updEl) updEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
