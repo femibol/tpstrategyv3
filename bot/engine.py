@@ -10195,12 +10195,21 @@ class TradingEngine:
         log.info("Engine stopped")
 
     def get_scanner_data(self):
-        """Get live scanner data from all strategies for dashboard."""
+        """Get live scanner data from all strategies for dashboard.
+
+        One bad strategy used to 500 the entire endpoint (live diagnostic
+        2026-06-16: /api/scanner returned HTTP 500). Now each strategy's
+        scan_results is fetched independently with a per-strategy
+        try/except so an outlier doesn't break the whole pane.
+        """
         scanner = {}
         for name, strategy in self.strategies.items():
-            scan = strategy.get_scan_results()
-            if scan:
-                scanner[name] = scan
+            try:
+                scan = strategy.get_scan_results()
+                if scan:
+                    scanner[name] = scan
+            except Exception as e:
+                log.debug(f"scanner: {name} get_scan_results failed: {e}")
         return scanner
 
     def get_analysis_log(self):
@@ -10263,23 +10272,42 @@ class TradingEngine:
         return status
 
     def _get_ibkr_features_status(self):
-        """Get status of active IBKR features for dashboard."""
+        """Get status of active IBKR features for dashboard.
+
+        Called on every /api/status hit. The broker calls (get_realtime_pnl,
+        get_open_orders) go through the @_on_worker decorator and queue
+        behind the worker thread, which is busy serving 48 streaming
+        symbols. Live diagnostic 2026-06-16 measured /api/status at 18.3s
+        — Promise.all on the dashboard then waits for the slowest call,
+        iOS Safari aborts before resolution, and every card that depends
+        on status renders empty. Fix: short TTL cache so the slow path
+        runs at most once every few seconds.
+        """
+        now = time.time()
+        cached = getattr(self, "_ibkr_features_cache", None)
+        # 5-second cache. Dashboard refresh cadence is 8s so this rarely
+        # forces a stale render, but it cuts the 18s blocking call to
+        # ~once-per-second avg load on the worker queue.
+        if cached and (now - cached["ts"]) < 5:
+            return cached["value"]
+
         if not self.broker or not self.broker.is_connected():
-            return {"active": False}
-
-        pnl = self.broker.get_realtime_pnl() if hasattr(self.broker, 'get_realtime_pnl') else None
-        live_bars_count = len(self.broker._live_bars) if hasattr(self.broker, '_live_bars') else 0
-        open_orders = len(self.broker.get_open_orders()) if hasattr(self.broker, 'get_open_orders') else 0
-
-        return {
-            "active": True,
-            "bracket_orders": True,
-            "outside_rth": True,
-            "realtime_pnl": pnl,
-            "five_sec_bars_symbols": live_bars_count,
-            "open_orders": open_orders,
-            "news_subscription": hasattr(self.broker, '_news_callback') and self.broker._news_callback is not None,
-        }
+            value = {"active": False}
+        else:
+            pnl = self.broker.get_realtime_pnl() if hasattr(self.broker, 'get_realtime_pnl') else None
+            live_bars_count = len(self.broker._live_bars) if hasattr(self.broker, '_live_bars') else 0
+            open_orders = len(self.broker.get_open_orders()) if hasattr(self.broker, 'get_open_orders') else 0
+            value = {
+                "active": True,
+                "bracket_orders": True,
+                "outside_rth": True,
+                "realtime_pnl": pnl,
+                "five_sec_bars_symbols": live_bars_count,
+                "open_orders": open_orders,
+                "news_subscription": hasattr(self.broker, '_news_callback') and self.broker._news_callback is not None,
+            }
+        self._ibkr_features_cache = {"ts": now, "value": value}
+        return value
 
     def _get_data_source_info(self):
         """Get current data source status for dashboard."""
