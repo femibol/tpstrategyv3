@@ -1,128 +1,3 @@
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCU @ $30.47 conf=0.85
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $22.89 conf=0.85
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NAUT @ $2.19 conf=0.95
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.68 → market $2.10 (-21.5%, max -5%)
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 180.3x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCU | Extreme RVOL 43.2x | Strong move +5.5% | RSI healthy (35) | Range expansion
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 53.8x | Strong move +6.3% | RSI healthy (36) | Range expansion
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 53.6x | Trending up +0.8% | EMA trend bullish | MACD histogram positive
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | APPROVED: buy NAUT | Extreme RVOL 4.5x | Moving up +0.5% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-06-17 05:38:35 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 05:38:35 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 6 equity buy signal(s) — CRVO, SPCU, SPCH, SQQQ, NAUT, RRGB
-2026-06-17 05:38:35 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 859 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 7
-  ✅ MCRP: score 85/100 — Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8
-  ✅ CRVO: score 65/100 — Extreme RVOL 18
-2026-06-17 05:38:36 | WARNING  | trading_bot.engine   | SLOW CYCLE (183.1s total): update_data=163.1s, update_scalp=15.1s
-2026-06-17 05:38:39 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | WAIT[12]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-0.8%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.7%)), DOGE-USD(weak 3d trend (-1.5%)), DOT-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-1.8%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.4%)), SHIB-USD(weak 3d trend (-0.8%)) | warming=14 | neutral=12 | no_data=2
-2026-06-17 05:38:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 05:38:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 05:38:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 05:38:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 05:38:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 05:38:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 05:38:49 | INFO     | trading_bot.engine   | IBKR scanner: 97 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 05:38:49 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 05:38:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 75 low-priority equity names; max 90)
-2026-06-17 05:38:49 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-17 05:38:49 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-17 05:38:49 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 05:42:02 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.66
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 180.3x | Change: +2.7% | R:R 2.2
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCU | Score: 85 | RVOL: 43.2x | Change: +5.5% | R:R 3.3
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 85 | RVOL: 53.8x | Change: +6.3% | R:R 3.3
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SQQQ | Score: 75 | RVOL: 53.6x | Change: +0.8% | R:R 2.2
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NAUT | Score: 95 | RVOL: 4.5x | Change: +0.5% | R:R 1.9 | Target: $2.21 (+1.2%)
-2026-06-17 05:42:17 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.66 conf=0.85
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCU @ $30.47 conf=0.85
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $22.89 conf=0.85
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NAUT @ $2.19 conf=0.95
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.66 → market $2.10 (-20.9%, max -5%)
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 180.3x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCU | Extreme RVOL 43.2x | Strong move +5.5% | RSI healthy (35) | Range expansion
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 53.8x | Strong move +6.3% | RSI healthy (36) | Range expansion
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 53.6x | Trending up +0.8% | EMA trend bullish | MACD histogram positive
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | APPROVED: buy NAUT | Extreme RVOL 4.5x | Moving up +0.5% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-06-17 05:42:18 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 05:42:18 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 6 equity buy signal(s) — CRVO, SPCU, SPCH, SQQQ, NAUT, RRGB
-2026-06-17 05:42:18 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 877 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 7
-  ✅ MCRP: score 85/100 — Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8
-  ✅ CRVO: score 65/100 — Extreme RVOL 18
-2026-06-17 05:42:18 | WARNING  | trading_bot.engine   | SLOW CYCLE (213.1s total): update_data=192.9s, update_scalp=15.2s
-2026-06-17 05:42:21 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | WAIT[12]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-0.8%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.7%)), DOGE-USD(weak 3d trend (-1.5%)), DOT-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-1.8%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.4%)), SHIB-USD(weak 3d trend (-0.8%)) | warming=14 | neutral=12 | no_data=2
-2026-06-17 05:42:27 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
-2026-06-17 05:42:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 05:42:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 05:42:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 05:42:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 05:42:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 05:42:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 05:42:31 | INFO     | trading_bot.engine   | IBKR scanner: 98 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 05:42:31 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 05:42:31 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
-2026-06-17 05:42:31 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 76 low-priority equity names; max 90)
-2026-06-17 05:42:31 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-17 05:42:31 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-17 05:42:31 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.66
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 180.3x | Change: +2.7% | R:R 2.2
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCU | Score: 85 | RVOL: 43.2x | Change: +5.5% | R:R 3.3
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 85 | RVOL: 53.8x | Change: +6.3% | R:R 3.3
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SQQQ | Score: 75 | RVOL: 53.6x | Change: +0.8% | R:R 2.2
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NAUT | Score: 95 | RVOL: 4.5x | Change: +0.5% | R:R 1.9 | Target: $2.21 (+1.2%)
-2026-06-17 05:45:24 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.66 conf=0.85
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCU @ $30.47 conf=0.85
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $22.89 conf=0.85
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NAUT @ $2.19 conf=0.95
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.66 → market $2.10 (-20.9%, max -5%)
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 180.3x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCU | Extreme RVOL 43.2x | Strong move +5.5% | RSI healthy (35) | Range expansion
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 53.8x | Strong move +6.3% | RSI healthy (36) | Range expansion
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 53.6x | Trending up +0.8% | EMA trend bullish | MACD histogram positive
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | APPROVED: buy NAUT | Extreme RVOL 4.5x | Moving up +0.5% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-06-17 05:45:24 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 05:45:24 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 6 equity buy signal(s) — CRVO, SPCU, SPCH, SQQQ, NAUT, RRGB
-2026-06-17 05:45:24 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 883 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 7
-  ✅ MCRP: score 85/100 — Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8
-  ✅ CRVO: score 65/100 — Extreme RVOL 18
-2026-06-17 05:45:24 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.1s total): update_data=156.9s, update_scalp=15.8s
-2026-06-17 05:45:27 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | WAIT[11]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-0.8%)), ATOM-USD(weak 3d trend (+0.9%)), BTC-USD(weak 3d trend (+0.7%)), DOGE-USD(weak 3d trend (-1.5%)), DOT-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-1.8%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.4%)), SHIB-USD(weak 3d trend (-0.8%)) | warming=11 | neutral=16 | no_data=2
-2026-06-17 05:45:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 05:45:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 05:45:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 05:45:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 05:45:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 05:45:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 05:45:37 | INFO     | trading_bot.engine   | IBKR scanner: 98 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 05:45:37 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 05:45:37 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-17 05:45:37 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 79 low-priority equity names; max 90)
-2026-06-17 05:45:37 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-17 05:45:38 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-17 05:45:38 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 05:48:46 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.63
-2026-06-17 05:48:46 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 180.3x | Change: +2.7% | R:R 2.2
-2026-06-17 05:48:46 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCU | Score: 85 | RVOL: 43.2x | Change: +5.5% | R:R 3.3
-2026-06-17 05:48:46 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 85 | RVOL: 53.8x | Change: +6.3% | R:R 3.3
 2026-06-17 05:48:46 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SQQQ | Score: 75 | RVOL: 53.6x | Change: +0.8% | R:R 2.2
 2026-06-17 05:48:46 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NAUT | Score: 95 | RVOL: 4.5x | Change: +0.5% | R:R 1.9 | Target: $2.21 (+1.2%)
 2026-06-17 05:48:46 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
@@ -19998,3 +19873,128 @@ Strategy: **mean_reversion** | Confidence: **
 2026-06-17 15:38:45 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-17 15:38:45 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-17 15:38:45 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-17 15:40:24 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-17 15:41:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x | PEPE-USD @ $0.00
+2026-06-17 15:41:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.70, RSI=0, BB=lower, Vol=19.7x | AAVE-USD @ $74.12
+2026-06-17 15:41:34 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-17 15:41:34 | INFO     | trading_bot.engine   |   -> mean_reversion: buy PEPE-USD @ $0.00 conf=0.86
+2026-06-17 15:41:34 | INFO     | trading_bot.engine   |   -> mean_reversion: buy AAVE-USD @ $74.12 conf=1.00
+2026-06-17 15:41:34 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:34 | INFO     | trading_bot.risk.manager | APPROVED: buy AAVE-USD | Mean reversion BUY: Z=-2.70, RSI=0, BB=lower, Vol=19.7x
+2026-06-17 15:41:34 | INFO     | trading_bot.engine   | LATE-DAY ENTRY BLOCK: Blocked 2 buy signals after 3:30 PM — exits only in final 30 min
+2026-06-17 15:41:34 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 942 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ PEPE-USD: score 86/100 — Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+  ✅ AAVE-USD: score 100/100 — Mean reversi
+2026-06-17 15:41:34 | WARNING  | trading_bot.engine   | SLOW CYCLE (174.0s total): update_data=149.6s, update_scalp=19.2s
+2026-06-17 15:41:34 | INFO     | trading_bot.engine   | CYCLE #43: regime=sideways | signals=2->approved=0 | positions=1/15 | bars_warm=92/92 | equity_open=True | pm=False pwr_hr=True
+2026-06-17 15:41:37 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | BUY[2]: AAVE-USD(z=-2.7 rsi=0.0 bb=LOWER), PEPE-USD(z=-2.29 rsi=25.0 bb=MIDDLE) | WAIT[22]: ADA-USD(weak 3d trend (+0.0%)), ALGO-USD(needs vol>=1.1x), ATOM-USD(weak 3d trend (-1.9%)), BTC-USD(weak 3d trend (+0.8%)), COMP-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-1.3%)), DOT-USD(needs vol>1.3x), ETH-USD(needs green bar), FET-USD(weak 3d trend (-0.7%)), FLOKI-USD(needs vol>=1.1x), GRT-USD(needs vol>=1.1x), ICP-USD(weak 3d trend (+0.7%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(needs vol>=1.1x), LTC-USD(needs green bar), OP-USD(weak 3d trend (+0.9%)), RNDR-USD(weak 3d trend (-4.1%)), SHIB-USD(weak 3d trend (+0.2%)), SOL-USD(needs vol>=1.1x), SUI-USD(needs green bar), XLM-USD(needs green bar), XRP-USD(needs green bar) | warming=10 | neutral=6 | no_data=1
+2026-06-17 15:41:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x | PEPE-USD @ $0.00
+2026-06-17 15:41:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.70, RSI=0, BB=lower, Vol=19.7x | AAVE-USD @ $74.12
+2026-06-17 15:41:37 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:37 | INFO     | trading_bot.risk.manager | APPROVED: buy AAVE-USD | Mean reversion BUY: Z=-2.70, RSI=0, BB=lower, Vol=19.7x
+2026-06-17 15:41:37 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy PEPE-USD from mean_reversion conf=0.86 price=2.9e-06 reason=Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: PEPE-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: PEPE-USD entry=$0.0000 stop=$0.0000 (0.64% gap). Setting 5% minimum stop.
+2026-06-17 15:41:38 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 2.00% risk
+2026-06-17 15:41:38 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $428.05 → $100.00 (per-strategy ceiling)
+2026-06-17 15:41:38 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 689655172.41379 PEPE-USD @ $0.00 = $2,000.00 | Risk: $100.00 (0.5% of account)
+2026-06-17 15:41:38 | WARNING  | trading_bot.engine   | TIER CAP: PEPE-USD signal qty=689655172.41379 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | R/R STRETCH: PEPE-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.40) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | Executing PEPE-USD via TradersPost (CRYPTO)...
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | Routing PEPE-USD to CRYPTO webhook
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "PEPE-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 2.9e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"41328e30-e3d1-4d61-adb6-b3acc6f95195","logId":"41328e30-e3d1-4d61-a
+2026-06-17 15:41:38 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-17 15:41:38 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for PEPE-USD — no execution.
+2026-06-17 15:41:38 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY PEPE-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy AAVE-USD from mean_reversion conf=1.00 price=74.12 reason=Mean reversion BUY: Z=-2.70, RSI=0, BB=lower, Vol=19.7x
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: AAVE-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: AAVE-USD entry=$74.1200 stop=$73.7586 (0.49% gap). Setting 5% minimum stop.
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | VOL REGIME: AAVE-USD short=0.0084 long=0.0039 ratio=2.17x → sizing mult 0.78x
+2026-06-17 15:41:38 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 0.78x × Slip 1.00x = 2.00% risk
+2026-06-17 15:41:38 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $428.05 → $100.00 (per-strategy ceiling)
+2026-06-17 15:41:38 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 26.98327 AAVE-USD @ $74.12 = $2,000.00 | Risk: $100.00 (0.5% of account)
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | R/R STRETCH: AAVE-USD entry=$74.1200 stop=$70.4140 (risk=$3.7060) target=$76.3105 (reward=$2.1905, R/R=0.59) — stretching target to $81.5320 for 2:1 minimum.
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | Executing AAVE-USD via TradersPost (CRYPTO)...
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | Routing AAVE-USD to CRYPTO webhook
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "AAVE-USD", "action": "buy", "sentiment": "bullish", "quantity": 26.98327, "price": 74.12, "stopLoss": {"type": "stop", "stopPrice": 70.41}, "takeProfit": {"type": "limit", "limitPrice": 81.53}}
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"7d908a59-d83e-41f0-9c40-4ef7f4a3e745","logId":"7d908a59-d83e-41f0-9c40-4ef7f4a3e745","payload":{"ticker":"AAVE-USD","action":"buy","sentiment":"bullish","quantity":26.98327,"price":74.12,"stopLoss":{"type":"stop","stopPrice":70.41},"takeProfit":{"type":"limit","limitPrice":81.5
+2026-06-17 15:41:38 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY AAVE-USD | Strategy: unknown | Qty: 26.98327 @ $74.12 = $2,000.00 | Risk: $100.00 | Reward: $200.00 | R:R 2.0:1 | Response: 200
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: AAVE-USD qty=26.98327. SL $70.41 / TP $81.53 managed by bot (no broker-side bracket).
+2026-06-17 15:41:38 | INFO     | trading_bot.engine   | ORDER BUY AAVE-USD via TradersPost | Qty: 26.98327 | Price: $74.12 | Cost: $2,000.00 | Stop: $70.41 (risk $100.00) | Target: $81.53 (reward $200.00) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-17 15:41:38 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: AAVE-USD**
+```
+  Entry: $74.12 x 26.98327 shares = $2,000.00
+  Stop:  $70.41 (-$100.00 | -5.0%)
+  Targets: $81.53
+  Risk/Reward: 2.0
+```
+Strategy: **mean_reversion** | Confi
+2026-06-17 15:41:42 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x | PEPE-USD @ $0.00
+2026-06-17 15:41:42 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy PEPE-USD from mean_reversion conf=0.86 price=2.9e-06 reason=Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:42 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: PEPE-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-17 15:41:42 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: PEPE-USD score 86 overrides cooldown (4s ago) — strong signal
+2026-06-17 15:41:42 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: PEPE-USD entry=$0.0000 stop=$0.0000 (0.64% gap). Setting 5% minimum stop.
+2026-06-17 15:41:42 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 2.00% risk
+2026-06-17 15:41:42 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $428.05 → $100.00 (per-strategy ceiling)
+2026-06-17 15:41:42 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 689655172.41379 PEPE-USD @ $0.00 = $2,000.00 | Risk: $100.00 (0.5% of account)
+2026-06-17 15:41:42 | WARNING  | trading_bot.engine   | TIER CAP: PEPE-USD signal qty=689655172.41379 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-17 15:41:42 | INFO     | trading_bot.engine   | R/R STRETCH: PEPE-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.40) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-17 15:41:42 | INFO     | trading_bot.engine   | Executing PEPE-USD via TradersPost (CRYPTO)...
+2026-06-17 15:41:42 | INFO     | trading_bot.broker.traderspost | Routing PEPE-USD to CRYPTO webhook
+2026-06-17 15:41:42 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "PEPE-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 2.9e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-17 15:41:42 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"9b1e5a23-6c14-482e-8251-39d636e6ba7d","logId":"9b1e5a23-6c14-482e-8
+2026-06-17 15:41:42 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-17 15:41:42 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for PEPE-USD — no execution.
+2026-06-17 15:41:42 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY PEPE-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-17 15:41:45 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x | PEPE-USD @ $0.00
+2026-06-17 15:41:45 | INFO     | trading_bot.risk.manager | APPROVED: buy PEPE-USD | Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:45 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy PEPE-USD from mean_reversion conf=0.86 price=2.9e-06 reason=Mean reversion BUY: Z=-2.29, RSI=25, BB=near, Vol=9.5x
+2026-06-17 15:41:45 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: PEPE-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-17 15:41:45 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: PEPE-USD score 86 overrides cooldown (3s ago) — strong signal
+2026-06-17 15:41:45 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: PEPE-USD entry=$0.0000 stop=$0.0000 (0.64% gap). Setting 5% minimum stop.
+2026-06-17 15:41:45 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 2.00% risk
+2026-06-17 15:41:45 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $428.05 → $100.00 (per-strategy ceiling)
+2026-06-17 15:41:45 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 689655172.41379 PEPE-USD @ $0.00 = $2,000.00 | Risk: $100.00 (0.5% of account)
+2026-06-17 15:41:45 | WARNING  | trading_bot.engine   | TIER CAP: PEPE-USD signal qty=689655172.41379 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-17 15:41:45 | INFO     | trading_bot.engine   | R/R STRETCH: PEPE-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.40) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-17 15:41:45 | INFO     | trading_bot.engine   | Executing PEPE-USD via TradersPost (CRYPTO)...
+2026-06-17 15:41:45 | INFO     | trading_bot.broker.traderspost | Routing PEPE-USD to CRYPTO webhook
+2026-06-17 15:41:45 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "PEPE-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 2.9e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-17 15:41:45 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"d14778c5-b540-464c-82d0-2914fbb68886","logId":"d14778c5-b540-464c-8
+2026-06-17 15:41:45 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-17 15:41:45 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for PEPE-USD — no execution.
+2026-06-17 15:41:45 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY PEPE-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-17 15:41:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-17 15:41:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 15:41:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 15:41:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 15:41:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 15:41:49 | INFO     | trading_bot.engine   | IBKR scanner: 117 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-17 15:41:49 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-06-17 15:41:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 85 low-priority equity names; max 90)
+2026-06-17 15:44:20 | INFO     | trading_bot.engine   | DATA COVERAGE: 83/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-17 15:44:39 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CCTG | Score: 85 | RVOL: 4.8x | Change: +1.6% | R:R 1.6 | Target: $1.30 (+1.2%)
+2026-06-17 15:44:40 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-17 15:44:40 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CCTG @ $1.28 conf=0.85
+2026-06-17 15:44:40 | INFO     | trading_bot.risk.manager | APPROVED: buy CCTG | Extreme RVOL 4.8x | Strong move +1.6% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-17 15:44:40 | INFO     | trading_bot.engine   | LATE-DAY ENTRY BLOCK: Blocked 1 buy signals after 3:30 PM — exits only in final 30 min
+2026-06-17 15:44:40 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 942 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ CCTG: score 85/100 — Extreme RVOL 4.8x | Strong move +1.6% | Breakout confirmed (
+Filtered: 1 signals rejected by risk man
+2026-06-17 15:44:40 | WARNING  | trading_bot.engine   | SLOW CYCLE (175.1s total): update_data=151.1s, update_scalp=19.1s
+2026-06-17 15:44:43 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | WAIT[26]: ADA-USD(weak 3d trend (-0.2%)), ALGO-USD(needs vol>=1.1x), ATOM-USD(weak 3d trend (-2.4%)), AVAX-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.7%)), COMP-USD(needs vol>=1.1x), CRV-USD(needs green bar), DOGE-USD(weak 3d trend (-1.5%)), DOT-USD(needs vol>=1.1x), ETH-USD(needs green bar), FET-USD(weak 3d trend (-0.0%)), FLOKI-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (+0.0%)), ICP-USD(weak 3d trend (+0.7%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(needs vol>=1.1x), LTC-USD(needs green bar), NEAR-USD(needs green bar), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-3.8%)), SHIB-USD(weak 3d trend (-0.2%)), SOL-USD(needs green bar), SUI-USD(needs green bar), XLM-USD(needs green bar), XRP-USD(needs green bar) | warming=7 | neutral=6 | no_data=1
+2026-06-17 15:44:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-17 15:44:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 15:44:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 15:44:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 15:44:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 15:44:54 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 49 gainers, 7 gaps, 20 losers
+2026-06-17 15:44:54 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-06-17 15:44:54 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-17 15:44:54 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 85 low-priority equity names; max 90)
