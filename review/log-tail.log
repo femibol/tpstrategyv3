@@ -1,42 +1,3 @@
-2026-06-17 05:02:55 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 05:02:55 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
-2026-06-17 05:02:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 75 low-priority equity names; max 90)
-2026-06-17 05:02:55 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-17 05:02:55 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-17 05:02:55 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.16, RSI=18, BB=near, Vol=8.7x | HBAR-USD @ $0.08
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=5, BB=near, Vol=17.7x | LINK-USD @ $8.18
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.69
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 180.3x | Change: +2.7% | R:R 2.2
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCU | Score: 85 | RVOL: 43.2x | Change: +5.5% | R:R 3.3
-2026-06-17 05:06:02 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   |   -> mean_reversion: buy HBAR-USD @ $0.08 conf=0.75
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   |   -> mean_reversion: buy LINK-USD @ $8.18 conf=0.84
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.69 conf=0.85
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCU @ $30.47 conf=0.85
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 05:06:03 | INFO     | trading_bot.risk.manager | REJECTED: buy HBAR-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 05:06:03 | INFO     | trading_bot.risk.manager | REJECTED: buy LINK-USD | Cost gate: edge 85bps < 2× cost 50bps (need 100bps)
-2026-06-17 05:06:03 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.69 → market $2.10 (-21.7%, max -5%)
-2026-06-17 05:06:03 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 180.3x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 05:06:03 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCU | Extreme RVOL 43.2x | Strong move +5.5% | RSI healthy (35) | Range expansion
-2026-06-17 05:06:03 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 05:06:03 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 3 equity buy signal(s) — CRVO, SPCU, RRGB
-2026-06-17 05:06:03 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 877 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ HBAR-USD: score 75/100 — Mean reversion BUY: Z=-1.16, RSI=18, BB=near, Vol=8.7x
-  ✅ LINK-USD: score 84/100 — Mean reversio
-2026-06-17 05:06:03 | WARNING  | trading_bot.engine   | SLOW CYCLE (191.7s total): update_data=171.8s, update_scalp=15.6s
-2026-06-17 05:06:06 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | BUY[2]: HBAR-USD(z=-1.16 rsi=17.7 bb=MIDDLE), LINK-USD(z=-1.3 rsi=4.9 bb=MIDDLE) | WAIT[20]: ADA-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.8%)), DOGE-USD(weak 3d trend (-1.6%)), DOT-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-2.9%)), FLOKI-USD(needs vol>=1.1x), ICP-USD(weak 3d trend (-1.8%)), IMX-USD(weak 3d trend (+0.0%)), LTC-USD(needs vol>=1.1x), NEAR-USD(needs vol>=1.1x), OP-USD(needs vol>=1.1x), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-4.5%)), SHIB-USD(weak 3d trend (-1.2%)), SOL-USD(needs vol>=1.1x), SUI-USD(needs vol>=1.1x), TIA-USD(needs vol>=1.1x), XRP-USD(needs green bar) | warming=8 | neutral=9 | no_data=2
-2026-06-17 05:06:06 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.16, RSI=18, BB=near, Vol=8.7x | HBAR-USD @ $0.08
-2026-06-17 05:06:06 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
-2026-06-17 05:06:06 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=5, BB=near, Vol=17.7x | LINK-USD @ $8.18
-2026-06-17 05:06:06 | INFO     | trading_bot.risk.manager | REJECTED: buy HBAR-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 05:06:06 | INFO     | trading_bot.risk.manager | REJECTED: buy LINK-USD | Cost gate: edge 85bps < 2× cost 50bps (need 100bps)
 2026-06-17 05:06:09 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.16, RSI=18, BB=near, Vol=8.7x | HBAR-USD @ $0.08
 2026-06-17 05:06:09 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
 2026-06-17 05:06:09 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.30, RSI=5, BB=near, Vol=17.7x | LINK-USD @ $8.18
@@ -19998,3 +19959,42 @@ Filtered: 1 signals rejected by risk manage
 2026-06-17 14:27:15 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-17 14:27:15 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
 2026-06-17 14:27:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 85 low-priority equity names; max 90)
+2026-06-17 14:30:19 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: CRVO | Score: 95 | RVOL: 4.6x | Change: +0.4% | R:R 1.6 | Target: $3.96 (+1.2%)
+2026-06-17 14:30:19 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-17 14:30:19 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy CRVO @ $3.92 conf=0.95
+2026-06-17 14:30:19 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 4.6x | Moving up +0.4% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
+2026-06-17 14:30:19 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (14:00 ET): dropped 1 equity buy signal(s) — CRVO
+2026-06-17 14:30:19 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 942 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ CRVO: score 95/100 — Extreme RVOL 4.6x | Moving up +0.4% | Breakout confirmed (2 
+Filtered: 1 signals rejected by risk man
+2026-06-17 14:30:20 | WARNING  | trading_bot.engine   | SLOW CYCLE (189.6s total): update_data=164.5s, update_scalp=19.6s
+2026-06-17 14:30:23 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[19]: ADA-USD(needs green bar), ALGO-USD(needs vol>=1.1x), ATOM-USD(weak 3d trend (-1.0%)), BONK-USD(needs vol>=1.1x), BTC-USD(needs vol>=1.1x), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (+0.7%)), ETC-USD(needs vol>=1.1x), FET-USD(needs vol>=1.1x), FLOKI-USD(needs vol>=1.1x), HBAR-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (+0.0%)), MATIC-USD(needs vol>=1.1x), NEAR-USD(needs vol>=1.1x), OP-USD(needs vol>=1.1x), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-2.9%)), SEI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+0.6%)) | warming=13 | neutral=8 | no_data=1
+2026-06-17 14:30:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-17 14:30:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 14:30:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 14:30:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 14:30:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 14:30:33 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 50 gainers, 7 gaps, 20 losers
+2026-06-17 14:30:33 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-17 14:30:33 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-17 14:30:33 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 86 low-priority equity names; max 90)
+2026-06-17 14:30:33 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-17 14:30:33 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-17 14:30:33 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-17 14:34:03 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: XLM-USD skipped — 4 trades, 25% WR, $-4.45/trade
+2026-06-17 14:34:04 | WARNING  | trading_bot.engine   | SLOW CYCLE (214.7s total): update_data=193.1s, update_scalp=17.5s
+2026-06-17 14:34:07 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[25]: ADA-USD(needs vol>=1.1x), ALGO-USD(needs vol>=1.1x), ATOM-USD(weak 3d trend (-1.3%)), AVAX-USD(needs vol>=1.1x), BONK-USD(needs vol>=1.1x), BTC-USD(needs vol>=1.1x), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (+0.6%)), DOT-USD(needs green bar), ETC-USD(needs vol>=1.1x), FET-USD(needs vol>=1.1x), FLOKI-USD(needs vol>=1.1x), HBAR-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(needs vol>=1.1x), LTC-USD(needs vol>=1.1x), MATIC-USD(needs vol>=1.1x), NEAR-USD(needs green bar), OP-USD(needs vol>=1.1x), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-2.9%)), SEI-USD(needs vol>=1.1x), SUI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+0.4%)), XRP-USD(needs vol>=1.1x) | warming=8 | neutral=7 | no_data=1
+2026-06-17 14:34:07 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: XLM-USD skipped — 4 trades, 25% WR, $-4.45/trade
+2026-06-17 14:34:10 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: XLM-USD skipped — 4 trades, 25% WR, $-4.45/trade
+2026-06-17 14:34:13 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: XLM-USD skipped — 4 trades, 25% WR, $-4.45/trade
+2026-06-17 14:34:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-17 14:34:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 14:34:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 14:34:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 14:34:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 14:34:17 | INFO     | trading_bot.engine   | IBKR scanner: 117 unique symbols discovered | 50 gainers, 7 gaps, 20 losers
+2026-06-17 14:34:17 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-17 14:34:17 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 18 stale symbols across strategies
+2026-06-17 14:34:17 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 83 low-priority equity names; max 90)
