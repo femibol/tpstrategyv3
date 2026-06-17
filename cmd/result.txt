@@ -1,15 +1,107 @@
-=== executed: c4ef3d8377494b6fd20e2fe2251deeba98ad4a07
-=== started:  2026-06-17T21:09:16Z
+=== executed: 1f70ed5942b22ef3225ea51c7d3ee17085f077ff
+=== started:  2026-06-17T21:16:02Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 12 data/*.json files
-deploy: checked out 4075cef3 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
-=== verify update() split is live ===
-(checks the inline JS in the served dashboard contains both renderCritical + renderSecondary)
-renderCritical count: 2
-renderSecondary count: 2
-(expect both >= 2 — one def, one call)
+=== /api/positions — full body ===
+type: list, len: 0
+[]
+---
+null-or-missing field audit:
+=== /api/trades — first 3 entries + null/missing-field audit ===
+count: 100
+first 3:
+[
+  {
+    "afterhours_hold": false,
+    "direction": "long",
+    "entry_confidence": 1.0,
+    "entry_price": 20.73,
+    "entry_time": "2026-06-15T09:36:07.338665-04:00",
+    "executed_via": "IBKR",
+    "exit_price": 20.59,
+    "exit_time": "2026-06-15T09:36:10.523935-04:00",
+    "final_stop": 19.256598877105425,
+    "hold_time_mins": 0.0,
+    "initial_stop": 19.256598877105425,
+    "overnight_hold": false,
+    "pnl": -8.680000000000035,
+    "pnl_pct": -0.006753497346840356,
+    "quantity": 62,
+    "reason": "slippage_reject",
+    "reason_detail": "Excessive slippage on entry \u2014 R:R invalid",
+    "regime": "unknown",
+    "source": "",
+    "strategy": "momentum",
+    "symbol": "AXTU"
+  },
+  {
+    "afterhours_hold": false,
+    "direction": "long",
+    "entry_confidence": 0.75,
+    "entry_price": 14.890000000000002,
+    "entry_time": "2026-06-15T07:57:08.989582-04:00",
+    "executed_via": "IBKR",
+    "exit_price": 14.94,
+    "exit_time": "2026-06-15T09:39:49.582970-04:00",
+    "final_stop": 14.90489,
+    "hold_time_mins": 102.7,
+    "initial_stop": 14.4336,
+    "overnight_hold": false,
+    "pnl": 3.6999999999997897,
+    "pnl_pct": 0.0033579583613161284,
+    "quantity": 74,
+    "reason": "trailing_stop",
+    "reason_detail": "Trailing stop at $14.93 (trail 1.5%)",
+    "regime": "unknown",
+    "source": "",
+    "strategy": "momentum",
+    "symbol": "MARA"
+  },
+  {
+    "afterhours_hold": false,
+    "direction": "long",
+    "entry_confidence": 1.0,
+    "entry_price": 0.05439,
+    "entry_time": "2026-06-15T08:36:21.725170-04:00",
+    "executed_via": "TradersPost",
+    "exit_price": 0.05381,
+    "exit_time": "2026-06-15T09:52:27.259418-04:00",
+    "final_stop": 0.05300285,
+    "hold_time_mins": 76.1,
+    "initial_stop": 0.0516705,
+    "overnight_hold": false,
+    "pnl": -2.900000000000021,
+    "pnl_pct": -0.010663724949439311,
+    "quantity": 5000,
+    "reason": "time_exit",
+    "reason_detail": "Max holding period exceeded",
+    "regime": "unknown",
+    "source": "",
+    "strategy": "mean_reversion",
+    "symbol": "SEI-USD"
+  }
+]
+---
+null-or-missing field audit across all rows:
+  all rows look clean (no null symbol/direction/etc)
+
+=== Monday-through-now trade stats ===
+trades since Mon 06-15 ET: 100
+  wins/losses/flats: 45/44/11
+  win rate: 45.0%
+  total P&L: $-175.58
+  gross win: $722.30 | gross loss: $897.88 | PF: 0.80
+  avg win: $16.05
+  avg loss: $-20.41
+  by day:
+    Mon 06-15: 40 trades, $+164.73, wr 45%
+    Tue 06-16: 31 trades, $-41.12, wr 61%
+    Wed 06-17: 29 trades, $-299.19, wr 28%
+  by strategy:
+    synced_from_ibkr: 4 trades, $+28.56, wr 75%
+    momentum: 34 trades, $+28.45, wr 56%
+    crypto_runner: 3 trades, $+0.84, wr 33%
+    mean_reversion: 44 trades, $-24.58, wr 43%
+    rvol_momentum: 11 trades, $-47.54, wr 27%
+    rvol_scalp: 4 trades, $-161.31, wr 0%
