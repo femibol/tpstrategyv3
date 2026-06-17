@@ -1,24 +1,22 @@
-=== executed: a19f07d7fe060e31ebff8b042f7fc4b0a9e8f020
-=== started:  2026-06-17T17:02:08Z
+=== executed: f31612fe9f7d382de0f84054ad1b264470dd70a6
+=== started:  2026-06-17T17:09:17Z
 === exit:     
 === timeout:  90s
 ===
-=== /api/status.positions (count from header card) ===
-positions count: 2
-position_details keys: ['AMC', 'WIF-USD']
-=== /api/positions (what the Positions tab fetches) ===
-type: list
-count: 2
-  AMC momentum qty=300 entry=2.78 cur=2.75 pnl=$-9.0
-  WIF-USD mean_reversion qty=5000 entry=0.174 cur=0.1715 pnl=$-12.5
-=== /api/trades (what the Trades tab fetches) ===
-count: 100
-first row keys: ['afterhours_hold', 'direction', 'entry_confidence', 'entry_price', 'entry_time', 'executed_via', 'exit_price', 'exit_time'] ...
-last 2:
-  2026-06-17T10:49:29 AMAU momentum pnl=$-9.66
-  2026-06-17T11:25:04 NEAR-USD mean_reversion pnl=$+12.22
-=== through tailnet — same endpoints, with auth ===
-  /api/status       HTTP 200 in 0.099612s  len=29
-  /api/positions    HTTP 200 in 0.054756s  len=2
-  /api/trades       HTTP 200 in 0.047427s  len=100
-  /api/performance  HTTP 200 in 0.036876s  len=21
+deploy: backed up 12 data/*.json files
+deploy: checked out f87dfdf1 on main
+deploy: container trading-bot-trading-bot-1 restarted
+deploy: dashboard ready after 6s
+deploy: ok
+=== verify Cache-Control header on / ===
+HTTP/1.1 200 OK
+Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+Pragma: no-cache
+Expires: 0
+Access-Control-Allow-Origin: http://localhost:5000
+=== via tailnet ===
+HTTP/2 200 
+access-control-allow-origin: http://localhost:5000
+cache-control: no-store, no-cache, must-revalidate, max-age=0
+expires: 0
+pragma: no-cache
