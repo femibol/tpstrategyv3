@@ -1390,8 +1390,39 @@ function _todaysStatsFromTrades(trades) {
     return {count: count, pnl: pnl};
 }
 function tvLink(symbol) {
+    // Defensive: a single null symbol from upstream would throw inside
+    // `.replace()`, killing the entire trades/positions `.map()` and
+    // leaving the tab empty with no error visible to the operator.
+    if (symbol == null || typeof symbol !== 'string') return String(symbol || '?');
     var s = symbol.replace('/', '');
     return '<a class="tv-link" href="https://www.tradingview.com/chart/?symbol=' + s + '" target="_blank" rel="noopener">' + symbol + '</a>';
+}
+
+// Per-block render guard. If a render section throws, log to console and
+// surface the error visibly when ?debug=1 is in the URL. Without this,
+// the whole renderCritical batch silently dies on the first throw and
+// every tab below stays empty — which is the failure mode that kept
+// Trades/Positions/Live-Feed unreadable on phone for several PR cycles.
+window._renderErrors = [];
+function _renderBlock(name, fn) {
+    try { fn(); }
+    catch (e) {
+        try { console.error('[dashboard render: ' + name + ']', e); } catch (_) {}
+        window._renderErrors.push(name + ': ' + (e && e.message ? e.message : e));
+        try {
+            var p = new URLSearchParams(window.location.search);
+            if (p.get('debug') === '1') {
+                var d = document.getElementById('renderErrorBox');
+                if (!d) {
+                    d = document.createElement('div');
+                    d.id = 'renderErrorBox';
+                    d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#3a0d0d;color:#ffd1d1;padding:8px 12px;font:11px monospace;z-index:9999;max-height:40vh;overflow:auto;border-top:2px solid #f85149';
+                    document.body.appendChild(d);
+                }
+                d.innerHTML = '<b>render errors:</b><br>' + window._renderErrors.map(function(s){return '• '+s;}).join('<br>');
+            }
+        } catch (_) {}
+    }
 }
 
 // === SCANNER RENDERING ===
@@ -2300,6 +2331,8 @@ async function update() {
 }
 
 function renderCritical(status, positions, trades, notifs, perfData, tradesSummary) {
+    window._renderErrors = [];  // reset per update tick
+    _renderBlock('regime', function() {
     // Regime badge (from status)
     if (status && status.regime) {
         var r = status.regime;
@@ -2318,7 +2351,9 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
         var riskMult = r.risk_multiplier || 1.0;
         document.getElementById('regimeRisk').textContent = 'Risk: ' + (riskMult * 100).toFixed(0) + '%';
     }
+    });
 
+    _renderBlock('winRateHeader', function() {
     // Quick win rate / profit factor in header. Prefer the in-memory
     // performance_stats source (perfData) when populated; fall back to
     // tradesSummary which reads from trade_history. Without the fallback
@@ -2338,7 +2373,9 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
         var pfStr = (wrSource.profit_factor === Infinity || wrSource.profit_factor === null) ? '--' : wrSource.profit_factor;
         document.getElementById('profitFactor').textContent = 'PF: ' + pfStr + ' | ' + wrSource.total_trades + ' trades';
     }
+    });
 
+    _renderBlock('statusBlock', function() {
     // Status
     if (status) {
         var dot = document.getElementById('statusDot');
@@ -2389,7 +2426,12 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
         var today = _todaysStatsFromTrades(trades);
         document.getElementById('dailyPnl').innerHTML = '<span class="' + pnlCls(today.pnl) + '">$' + fmt(today.pnl) + '</span>';
         document.getElementById('dailyTrades').textContent = today.count + ' trades';
-        document.getElementById('openPositions').textContent = status.positions;
+        // Use the positions array length (not status.positions) so the
+        // header "Open Positions" number always matches the Positions
+        // tab. They previously disagreed when fast scalp trades opened
+        // and closed between the two endpoint reads in the same batch.
+        document.getElementById('openPositions').textContent =
+            (positions && positions.length != null) ? positions.length : (status.positions || 0);
         // Subtitle is "N strategies active" instead of a comma-joined list —
         // the comma-list under "Positions" reads as a position-list, which
         // is the wrong mental model. Full list available in the strategies tab.
@@ -2404,7 +2446,9 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
         document.getElementById('btnPause').style.display = status.paused ? 'none' : 'block';
         document.getElementById('btnResume').style.display = status.paused ? 'block' : 'none';
     }
+    });
 
+    _renderBlock('positions', function() {
     // Positions
     var posList = document.getElementById('positionsList');
     document.getElementById('posCount').textContent = positions ? positions.length : 0;
@@ -2434,7 +2478,9 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
     } else {
         posList.innerHTML = '<div class="empty">No open positions</div>';
     }
+    });
 
+    _renderBlock('trades', function() {
     // Trades
     var trList = document.getElementById('tradesList');
     document.getElementById('tradeCount').textContent = trades ? trades.length : 0;
@@ -2453,7 +2499,9 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
     } else {
         trList.innerHTML = '<div class="empty">No closed trades yet. Open positions appear under the Positions tab.</div>';
     }
+    });
 
+    _renderBlock('notifications', function() {
     // Notifications
     var nList = document.getElementById('notifList');
     if (notifs && notifs.length > 0) {
@@ -2466,7 +2514,9 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
     } else {
         nList.innerHTML = '<div class="empty">No notifications</div>';
     }
+    });
 
+    _renderBlock('liveFeed', function() {
     // Live Feed — backfilled from recent closed trades (UI overhaul).
     // Previously the feed read only from notifier.history which is
     // in-memory and empty across restarts, so the operator saw
@@ -2532,11 +2582,17 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
             }).join('');
         }
     }
+    });
+
+    _renderBlock('lastUpdate', function() {
     var updEl = document.getElementById('lastUpdate');
     if (updEl) updEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    });
 
+    _renderBlock('performance', function() {
     // Performance tab — uses perfData from the critical batch
     renderPerformance(perfData);
+    });
 }
 
 function renderSecondary(daily, equity, scanner, analysisData, watchlistData,
