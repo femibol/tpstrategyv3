@@ -1,73 +1,3 @@
-2026-06-17 05:59:20 | WARNING  | trading_bot.engine   | SLOW CYCLE (209.3s total): update_data=185.2s, update_scalp=19.7s
-2026-06-17 05:59:23 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[10]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-1.1%)), ATOM-USD(weak 3d trend (+0.9%)), BTC-USD(weak 3d trend (+0.5%)), DOGE-USD(weak 3d trend (-1.5%)), FET-USD(weak 3d trend (-3.7%)), ICP-USD(weak 3d trend (-1.8%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.4%)), SHIB-USD(weak 3d trend (-0.8%)) | warming=8 | neutral=21 | no_data=2
-2026-06-17 05:59:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 05:59:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 05:59:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 05:59:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 05:59:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 05:59:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 05:59:33 | INFO     | trading_bot.engine   | IBKR scanner: 96 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 05:59:33 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 05:59:33 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-17 05:59:33 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 84 low-priority equity names; max 90)
-2026-06-17 05:59:33 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-17 05:59:33 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-17 05:59:33 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 06:00:00 | INFO     | trading_bot.engine   | PREMARKET NEWS SWEEP: 0 overnight holds, all clean
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.04, RSI=0, BB=lower, Vol=5.9x | ARB-USD @ $0.09
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.69
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 108.2x | Change: +2.7% | R:R 2.2
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 85 | RVOL: 32.3x | Change: +6.3% | R:R 3.3
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SQQQ | Score: 75 | RVOL: 32.1x | Change: +0.8% | R:R 2.2
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 06:02:34 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: NAUT | Score: 95 | RVOL: 4.5x | Change: +0.5% | R:R 1.9 | Target: $2.21 (+1.2%)
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ARB-USD @ $0.09 conf=1.00
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.69 conf=0.85
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $22.89 conf=0.85
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 06:05:13 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy NAUT @ $2.19 conf=0.95
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | REJECTED: buy ARB-USD | Cost gate: edge 81bps < 2× cost 50bps (need 100bps)
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.69 → market $2.10 (-21.7%, max -5%)
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 108.2x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 32.3x | Strong move +6.3% | RSI healthy (36) | Range expansion
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 32.1x | Trending up +0.8% | EMA trend bullish | MACD histogram positive
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 06:05:13 | INFO     | trading_bot.risk.manager | APPROVED: buy NAUT | Extreme RVOL 4.5x | Moving up +0.5% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
-2026-06-17 06:05:13 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 931 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 7
-  ✅ ARB-USD: score 100/100 — Mean reversion BUY: Z=-3.04, RSI=0, BB=lower, Vol=5.9x
-  ✅ MCRP: score 85/100 — Momentum BUY: pul
-2026-06-17 06:05:14 | WARNING  | trading_bot.engine   | SLOW CYCLE (344.8s total): update_data=164.7s, run_strategies=159.2s, update_scalp=16.2s
-2026-06-17 06:05:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-17 06:05:17 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: CRVO spread 2.9% (price $4.52, tier max 3%) → size 1.00 × 0.54 = 0.54
-2026-06-17 06:05:17 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: CRVO — bearish EMA imbalance -0.66
-2026-06-17 06:05:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-17 06:05:19 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SPCH — bearish EMA imbalance -0.74
-2026-06-17 06:05:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-17 06:05:21 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SQQQ — bearish EMA imbalance -0.40
-2026-06-17 06:05:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-17 06:05:24 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: RRGB — wide spread 29.0% (>2% for $6.08)
-2026-06-17 06:05:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: AMEX; PEARL; CHX; PSX; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; IBEOS; NYSENAT; T24X; MEMX; OVERNIGHT; EDGEA; LTSE; ISE; 
-2026-06-17 06:05:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-17 06:05:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:26 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:26 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: NAUT — wide spread 31.1% (>3% for $2.19)
-2026-06-17 06:05:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:29 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | BUY[1]: ARB-USD(z=-3.04 rsi=0.0 bb=LOWER) | WAIT[10]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-1.1%)), ATOM-USD(weak 3d trend (+0.9%)), BTC-USD(weak 3d trend (+0.5%)), DOGE-USD(weak 3d trend (-1.5%)), FET-USD(weak 3d trend (-3.7%)), ICP-USD(weak 3d trend (-1.8%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-3.4%)), SHIB-USD(weak 3d trend (-0.8%)) | warming=7 | neutral=21 | no_data=2
-2026-06-17 06:05:29 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.04, RSI=0, BB=lower, Vol=5.9x | ARB-USD @ $0.09
-2026-06-17 06:05:30 | INFO     | trading_bot.risk.manager | REJECTED: buy ARB-USD | Cost gate: edge 81bps < 2× cost 50bps (need 100bps)
-2026-06-17 06:05:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:33 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.04, RSI=0, BB=lower, Vol=5.9x | ARB-USD @ $0.09
-2026-06-17 06:05:33 | INFO     | trading_bot.risk.manager | REJECTED: buy ARB-USD | Cost gate: edge 81bps < 2× cost 50bps (need 100bps)
-2026-06-17 06:05:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-17 06:05:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
 2026-06-17 06:05:36 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.04, RSI=0, BB=lower, Vol=5.9x | ARB-USD @ $0.09
 2026-06-17 06:05:36 | INFO     | trading_bot.risk.manager | REJECTED: buy ARB-USD | Cost gate: edge 81bps < 2× cost 50bps (need 100bps)
 2026-06-17 06:05:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
@@ -19998,3 +19928,73 @@ Signals found: 2
 2026-06-17 15:58:08 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
 2026-06-17 15:58:08 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-17 15:58:08 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-17 16:00:44 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-17 16:01:06 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: BIRD | Score: 70 | RVOL: 3.8x | Change: +3.8% | R:R 2.9
+2026-06-17 16:01:06 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-17 16:01:06 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy BIRD @ $5.50 conf=0.70
+2026-06-17 16:01:06 | INFO     | trading_bot.risk.manager | APPROVED: buy BIRD | Very high RVOL 3.8x | Strong move +3.8% | RSI healthy (42) | Strong breakout +3.8%
+2026-06-17 16:01:06 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — BIRD
+2026-06-17 16:01:06 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 967 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ BIRD: score 70/100 — Very high RVOL 3.8x | Strong move +3.8% | RSI healthy (42) |
+Filtered: 1 signals rejected by risk man
+2026-06-17 16:01:07 | WARNING  | trading_bot.engine   | SLOW CYCLE (184.2s total): update_data=155.7s, update_scalp=22.4s, discover=5.5s
+2026-06-17 16:01:07 | INFO     | trading_bot.engine   | CYCLE #49: regime=sideways | signals=1->approved=0 | positions=3/15 | bars_warm=94/94 | equity_open=False | pm=False pwr_hr=False
+2026-06-17 16:01:10 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | WAIT[28]: ADA-USD(weak 3d trend (-0.0%)), ALGO-USD(needs vol>=1.1x), ATOM-USD(weak 3d trend (-2.4%)), AVAX-USD(needs green bar), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.6%)), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-1.4%)), DOT-USD(needs vol>=1.1x), ETH-USD(needs green bar), FET-USD(weak 3d trend (+0.0%)), FLOKI-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (-0.5%)), HBAR-USD(needs vol>=1.1x), ICP-USD(weak 3d trend (-3.7%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(needs green bar), LTC-USD(needs vol>=1.1x), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-4.1%)), SHIB-USD(weak 3d trend (-0.4%)), SOL-USD(needs green bar), SUI-USD(needs green bar), TRX-USD(weak 3d trend (+0.7%)), XLM-USD(needs green bar), XRP-USD(needs vol>=1.1x) | warming=6 | neutral=4 | no_data=1
+2026-06-17 16:01:16 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
+2026-06-17 16:01:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 16:01:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 16:01:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 16:01:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 16:01:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 16:01:20 | INFO     | trading_bot.engine   | IBKR scanner: 118 unique symbols discovered | 48 gainers, 10 gaps, 20 losers
+2026-06-17 16:01:20 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-17 16:01:20 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
+2026-06-17 16:01:20 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-06-17 16:01:20 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-17 16:01:21 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-17 16:01:21 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-17 16:04:51 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.40, RSI=16, BB=near, Vol=2.3x | ALGO-USD @ $0.10
+2026-06-17 16:04:51 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.18, RSI=12, BB=near, Vol=4.2x | SUI-USD @ $0.77
+2026-06-17 16:04:51 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=30, breakout>1.43, Vol=9.6x | BBLG @ $1.49
+2026-06-17 16:04:51 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: BIRD | Score: 70 | RVOL: 3.8x | Change: +3.8% | R:R 2.9
+2026-06-17 16:04:52 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-17 16:04:52 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ALGO-USD @ $0.10 conf=0.75
+2026-06-17 16:04:52 | INFO     | trading_bot.engine   |   -> mean_reversion: buy SUI-USD @ $0.77 conf=0.74
+2026-06-17 16:04:52 | INFO     | trading_bot.engine   |   -> momentum: buy BBLG @ $1.49 conf=0.80
+2026-06-17 16:04:52 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy BIRD @ $5.50 conf=0.70
+2026-06-17 16:04:52 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-1.40, RSI=16, BB=near, Vol=2.3x
+2026-06-17 16:04:52 | INFO     | trading_bot.risk.manager | APPROVED: buy SUI-USD | Mean reversion BUY: Z=-1.18, RSI=12, BB=near, Vol=4.2x
+2026-06-17 16:04:52 | INFO     | trading_bot.risk.manager | APPROVED: buy BBLG | Momentum BUY: pullback entry, ADX=30, breakout>1.43, Vol=9.6x
+2026-06-17 16:04:52 | INFO     | trading_bot.risk.manager | APPROVED: buy BIRD | Very high RVOL 3.8x | Strong move +3.8% | RSI healthy (42) | Strong breakout +3.8%
+2026-06-17 16:04:52 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1003 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ ALGO-USD: score 75/100 — Mean reversion BUY: Z=-1.40, RSI=16, BB=near, Vol=2.3x
+  ✅ SUI-USD: score 74/100 — Mean reversio
+2026-06-17 16:04:52 | WARNING  | trading_bot.engine   | SLOW CYCLE (216.2s total): update_data=192.6s, update_scalp=18.3s
+2026-06-17 16:04:54 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: BBLG — wide spread 16.6% (>5% for $1.49)
+2026-06-17 16:04:54 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-17 16:04:56 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: BIRD — bearish EMA imbalance -0.32
+2026-06-17 16:04:59 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | BUY[2]: ALGO-USD(z=-1.4 rsi=15.5 bb=MIDDLE), SUI-USD(z=-1.18 rsi=11.9 bb=MIDDLE) | WAIT[26]: ADA-USD(weak 3d trend (-0.0%)), ATOM-USD(weak 3d trend (-2.4%)), AVAX-USD(needs vol>=1.1x), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.7%)), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-1.4%)), DOT-USD(needs vol>=1.1x), ETH-USD(needs vol>=1.1x), FET-USD(weak 3d trend (+0.0%)), FLOKI-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (-0.5%)), HBAR-USD(needs vol>=1.1x), ICP-USD(weak 3d trend (-3.7%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(needs vol>=1.1x), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-4.1%)), SHIB-USD(weak 3d trend (-0.4%)), SOL-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+1.0%)), UNI-USD(needs vol>=1.1x), XLM-USD(needs vol>=1.1x), XRP-USD(needs vol>=1.1x) | warming=6 | neutral=4 | no_data=1
+2026-06-17 16:04:59 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.40, RSI=16, BB=near, Vol=2.3x | ALGO-USD @ $0.10
+2026-06-17 16:04:59 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.18, RSI=12, BB=near, Vol=4.2x | SUI-USD @ $0.77
+2026-06-17 16:04:59 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-1.40, RSI=16, BB=near, Vol=2.3x
+2026-06-17 16:04:59 | INFO     | trading_bot.risk.manager | APPROVED: buy SUI-USD | Mean reversion BUY: Z=-1.18, RSI=12, BB=near, Vol=4.2x
+2026-06-17 16:04:59 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.75 price=0.09642 reason=Mean reversion BUY: Z=-1.40, RSI=16, BB=near, Vol=2.3x
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   | === END OF DAY ===
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   | === STRATEGY SIGNAL SUMMARY (since last EOD) ===
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   mean_reversion         fired=121  filled=  4  (3% conversion)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   momentum               fired=  9  filled=  2  (22% conversion)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   rvol_momentum          fired=  5  filled=  0  FIRED-BUT-NEVER-FILLED
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   rvol_scalp             fired=  3  filled=  0  FIRED-BUT-NEVER-FILLED
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   prebreakout            fired=  0  filled=  0  (silent)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   premarket_gap          fired=  0  filled=  0  (silent)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   momentum_runner        fired=  0  filled=  0  (silent)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   daily_trend_rider      fired=  0  filled=  0  (silent)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   low_float_catalyst     fired=  0  filled=  0  (silent)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   |   crypto_runner          fired=  0  filled=  0  (silent)
+2026-06-17 16:05:00 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
+2026-06-17 16:05:00 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SUI-USD from mean_reversion conf=0.74 price=0.773 reason=Mean reversion BUY: Z=-1.18, RSI=12, BB=near, Vol=4.2x
+2026-06-17 16:05:00 | WARNING  | trading_bot.engine   | LEARNING BLOCK: SUI-USD avoided — consistent loser (score: -98.5)
