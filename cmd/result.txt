@@ -1,15 +1,17 @@
-=== executed: 42ed1e9818bf7af11389fbe35b9e1e18a45e4881
-=== started:  2026-06-16T20:54:16Z
+=== executed: a19013f0a7486ed7353797a17b82d7c848bb30fa
+=== started:  2026-06-17T01:07:03Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 11 data/*.json files
-deploy: checked out bdb54532 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
-=== verify /api/status is now fast ===
-first call:  HTTP 200 in 0.027277s
-second call: HTTP 200 in 0.002579s
-scanner:     HTTP 200 in 0.002520s
-trade_history.json: 192060 bytes
+=== before ===
+cloudflared | Up 8 hours
+=== stop + remove cloudflared (Tailscale Serve is the stable replacement) ===
+cloudflared
+=== after ===
+=== confirm tailscale serve still primary ===
+https://trading-bot-vps.tail5db65d.ts.net (tailnet only)
+|-- / proxy http://localhost:5000
+
+=== confirm dashboard still reachable through tailnet ===
+tailnet /api/status -> HTTP 200 in 0.703450s
+=== done ===
