@@ -17,11 +17,11 @@ allocation:
                                    # cap added below to bound single-trade damage.
   momentum_runner: 0.30            # 30% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
   rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
-  rvol_scalp: 0.05                # 5% — kept enabled 2026-06-11. -$412/30d but the entire
-                                   # bleed was HIBS -$375 in one 5-second blow-up; with the
-                                   # leveraged-ETF class filter + slippage_reject floor (this
-                                   # PR), the catastrophic pattern is structurally blocked.
-                                   # Tight $40 risk cap below as belt-and-suspenders.
+  rvol_scalp: 0.00                # DISABLED 2026-06-17 — 0-for-5 over two weeks, 0% WR.
+                                   # The class filter + slippage floor blocked the
+                                   # catastrophic tail, but the base signal has no edge:
+                                   # every fill this fortnight lost. Allocation zeroed;
+                                   # `enabled: false` set below. Re-enable on backtest proof.
   vwap_scalp: 0.00
   pairs_trading: 0.00
   prebreakout: 0.10               # 10% - enter BEFORE the breakout (accumulation detection, multi-bagger setups)
@@ -188,20 +188,27 @@ momentum_runner:
 rvol_momentum:
   enabled: true
   timeframe: "5m"
-  min_rvol: 3.0                    # Raised from 1.5 (conservative dial 2026-05-18). Matches premarket gate; runner days clear 5-10x RVOL trivially.
-  min_score: 60                    # Raised from 40 → classical "good setup" bar.
+  min_rvol: 4.0                    # Raised 3.0→4.0 (2026-06-17). Two weeks of no edge
+                                   # (wk1 0% WR/4t, wk2 25% WR/12t, both net negative).
+                                   # Demand a stronger volume thrust before committing.
+  min_score: 75                    # Raised 60→75 (2026-06-17). Higher composite bar.
   min_price: 1.00                  # $1 floor
   max_price: 100.00                # $100 ceiling
   min_volume: 300000               # Lowered from 500K — captures more mid-cap movers
   atr_stop_multiplier: 1.5        # Tight stop: 1.5x ATR
   atr_target_multiplier: 4.0      # 4x ATR target
   max_hold_minutes: 180            # Max 3 hours
-  max_trades_per_day: 8            # Reduced — momentum_runner is primary
+  max_trades_per_day: 4            # Cut 8→4 (2026-06-17). It traded 5x more this week
+                                   # with no edge — throttle until it proves itself.
   symbols: []                      # EMPTY — scanner discovers everything
 
 # --- RVOL Scalp Strategy ---
 rvol_scalp:
-  enabled: true  # kept on 2026-06-11 — HIBS class filter + slippage floor neutralize the catastrophic tail. $40 cap.
+  enabled: false  # DISABLED 2026-06-17 — 0-for-5 over two weeks (wk1 -$13/1t, wk2
+                  # -$161/4t), 0% win rate. The HIBS class filter + slippage floor
+                  # killed the catastrophic *tail*, but the strategy has no positive
+                  # edge to begin with: every fill this fortnight lost. Re-enable only
+                  # after a backtest shows a real signal, not just tail protection.
   timeframe: "1m"
   min_rvol: 3.0                    # Raised from 1.5 (conservative dial 2026-05-18). Scalps need extreme RVOL to overcome friction; weaker setups bleed to cost.
   min_score: 70                    # Raised from 40 → high bar for short-hold trades.
