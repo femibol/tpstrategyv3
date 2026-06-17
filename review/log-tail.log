@@ -1,277 +1,3 @@
-2026-06-17 03:18:04 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 901.7x | Change: +2.7% | R:R 2.2
-2026-06-17 03:18:04 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 03:18:05 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ASTI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.1x | Change: +1.6% | R:R 3.0 | Size: 100%
-2026-06-17 03:18:05 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
-2026-06-17 03:18:05 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.89 conf=0.85
-2026-06-17 03:18:05 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 03:18:05 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 03:18:05 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ASTI @ $6.79 conf=0.60
-2026-06-17 03:18:05 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.89 → market $2.10 (-27.2%, max -3%)
-2026-06-17 03:18:05 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 901.7x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 03:18:05 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 03:18:05 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTI | [BREAKOUT] Score:6/12 RVOL:10.1x | Confirmed | Chg:+1.6%
-2026-06-17 03:18:05 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — CRVO, RRGB, ASTI
-2026-06-17 03:18:05 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 883 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 4
-  ✅ MCRP: score 85/100 — Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8
-  ✅ CRVO: score 65/100 — Extreme RVOL 90
-2026-06-17 03:18:05 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.8s total): update_data=156.2s, update_scalp=15.8s
-2026-06-17 03:18:08 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[11]: ADA-USD(weak 3d trend (+0.1%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), CRV-USD(needs vol>1.3x), DOGE-USD(weak 3d trend (-0.4%)), FET-USD(weak 3d trend (-2.1%)), IMX-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (+0.8%)) | warming=10 | neutral=18 | no_data=2
-2026-06-17 03:18:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 03:18:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 03:18:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 03:18:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 03:18:17 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 03:18:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 03:18:18 | INFO     | trading_bot.engine   | IBKR scanner: 105 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 03:18:18 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 03:18:18 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-17 03:18:18 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 77 low-priority equity names; max 90)
-2026-06-17 03:18:18 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-17 03:18:18 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-17 03:18:18 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 03:20:40 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-17 03:21:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.87
-2026-06-17 03:21:10 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 901.7x | Change: +2.7% | R:R 2.2
-2026-06-17 03:21:10 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 03:21:10 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ASTI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.1x | Change: +1.6% | R:R 3.0 | Size: 100%
-2026-06-17 03:21:10 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
-2026-06-17 03:21:10 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.87 conf=0.85
-2026-06-17 03:21:10 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 03:21:10 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 03:21:10 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ASTI @ $6.79 conf=0.60
-2026-06-17 03:21:10 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.87 → market $2.10 (-26.7%, max -3%)
-2026-06-17 03:21:10 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 901.7x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 03:21:10 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 03:21:10 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTI | [BREAKOUT] Score:6/12 RVOL:10.1x | Confirmed | Chg:+1.6%
-2026-06-17 03:21:10 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — CRVO, RRGB, ASTI
-2026-06-17 03:21:10 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 889 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 4
-  ✅ MCRP: score 85/100 — Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8
-  ✅ CRVO: score 65/100 — Extreme RVOL 90
-2026-06-17 03:21:11 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.4s total): update_data=156.6s, update_scalp=15.5s
-2026-06-17 03:21:14 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[11]: ADA-USD(weak 3d trend (+0.1%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), CRV-USD(needs vol>1.3x), DOGE-USD(weak 3d trend (-0.4%)), FET-USD(weak 3d trend (-2.1%)), IMX-USD(weak 3d trend (+0.0%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (+0.8%)) | warming=9 | neutral=19 | no_data=2
-2026-06-17 03:21:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 03:21:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 03:21:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 03:21:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 03:21:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 03:21:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 03:21:23 | INFO     | trading_bot.engine   | IBKR scanner: 105 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 03:21:24 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 03:21:24 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-17 03:21:24 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 76 low-priority equity names; max 90)
-2026-06-17 03:24:01 | INFO     | trading_bot.engine   | DATA COVERAGE: 81/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-17 03:24:16 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.18, RSI=0, BB=lower, Vol=10.6x | NEAR-USD @ $2.29
-2026-06-17 03:24:16 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | TIA-USD @ $0.41
-2026-06-17 03:24:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.84
-2026-06-17 03:24:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 901.7x | Change: +2.7% | R:R 2.2
-2026-06-17 03:24:16 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 03:24:16 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ASTI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.1x | Change: +1.6% | R:R 3.0 | Size: 100%
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   |   -> mean_reversion: buy NEAR-USD @ $2.29 conf=1.00
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   |   -> mean_reversion: buy TIA-USD @ $0.41 conf=1.00
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.84 conf=0.85
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ASTI @ $6.79 conf=0.60
-2026-06-17 03:24:16 | INFO     | trading_bot.risk.manager | APPROVED: buy NEAR-USD | Mean reversion BUY: Z=-3.18, RSI=0, BB=lower, Vol=10.6x
-2026-06-17 03:24:16 | INFO     | trading_bot.risk.manager | APPROVED: buy TIA-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-17 03:24:16 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.84 → market $2.10 (-25.9%, max -3%)
-2026-06-17 03:24:16 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 901.7x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 03:24:16 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 03:24:16 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTI | [BREAKOUT] Score:6/12 RVOL:10.1x | Confirmed | Chg:+1.6%
-2026-06-17 03:24:16 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — CRVO, RRGB, ASTI
-2026-06-17 03:24:16 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 883 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ NEAR-USD: score 100/100 — Mean reversion BUY: Z=-3.18, RSI=0, BB=lower, Vol=10.6x
-  ✅ TIA-USD: score 100/100 — Mean revers
-2026-06-17 03:24:16 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.4s total): update_data=157.0s, update_scalp=15.1s
-2026-06-17 03:24:17 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: NEAR-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-17 03:24:17 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: NEAR-USD entry=$2.2930 stop=$2.2871 (0.26% gap). Setting 5% minimum stop.
-2026-06-17 03:24:17 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 2.00% risk
-2026-06-17 03:24:17 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $435.20 → $100.00 (per-strategy ceiling)
-2026-06-17 03:24:17 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 872.2198 NEAR-USD @ $2.29 = $2,000.00 | Risk: $100.00 (0.5% of account)
-2026-06-17 03:24:17 | INFO     | trading_bot.engine   | R/R STRETCH: NEAR-USD entry=$2.2930 stop=$2.1784 (risk=$0.1147) target=$2.3236 (reward=$0.0305, R/R=0.27) — stretching target to $2.5223 for 2:1 minimum.
-2026-06-17 03:24:17 | INFO     | trading_bot.engine   | Executing NEAR-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-17 03:24:17 | INFO     | trading_bot.broker.traderspost | Routing NEAR-USD to CRYPTO webhook
-2026-06-17 03:24:17 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "NEAR-USD", "action": "buy", "sentiment": "bullish", "quantity": 872.2198, "price": 2.293, "stopLoss": {"type": "stop", "stopPrice": 2.18}, "takeProfit": {"type": "limit", "limitPrice": 2.52}}
-2026-06-17 03:24:17 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"32fa3ef9-f772-4f87-9c6e-b4bef148fe44","logId":"32fa3ef9-f772-4f87-9c6e-b4bef148fe44","payload":{"ticker":"NEAR-USD","action":"buy","sentiment":"bullish","quantity":872.2198,"price":2.293,"stopLoss":{"type":"stop","stopPrice":2.18},"takeProfit":{"type":"limit","limitPrice":2.52}
-2026-06-17 03:24:17 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY NEAR-USD | Strategy: unknown | Qty: 872.2198 @ $2.29 = $2,000.00 | Risk: $100.00 | Reward: $200.00 | R:R 2.0:1 | Response: 200
-2026-06-17 03:24:17 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: NEAR-USD qty=872.2198. SL $2.18 / TP $2.52 managed by bot (no broker-side bracket).
-2026-06-17 03:24:17 | INFO     | trading_bot.engine   | ORDER BUY NEAR-USD via TradersPost | Qty: 872.2198 | Price: $2.29 | Cost: $2,000.00 | Stop: $2.18 (risk $100.00) | Target: $2.52 (reward $200.00) | R:R 2.0:1 | Strategy: mean_reversion
-2026-06-17 03:24:17 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: NEAR-USD**
-```
-  Entry: $2.29 x 872.2198 shares = $2,000.00
-  Stop:  $2.18 (-$100.00 | -5.0%)
-  Targets: $2.52
-  Risk/Reward: 2.0
-```
-Strategy: **mean_reversion** | Confiden
-2026-06-17 03:24:19 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: TIA-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-17 03:24:19 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: TIA-USD entry=$0.4059 stop=$0.4023 (0.88% gap). Setting 5% minimum stop.
-2026-06-17 03:24:19 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 2.00x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 2.00% risk
-2026-06-17 03:24:19 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: mean_reversion risk $435.20 → $100.00 (per-strategy ceiling)
-2026-06-17 03:24:19 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 4927.322 TIA-USD @ $0.41 = $2,000.00 | Risk: $100.00 (0.5% of account)
-2026-06-17 03:24:19 | INFO     | trading_bot.engine   | R/R STRETCH: TIA-USD entry=$0.4059 stop=$0.3856 (risk=$0.0203) target=$0.4297 (reward=$0.0238, R/R=1.17) — stretching target to $0.4465 for 2:1 minimum.
-2026-06-17 03:24:19 | INFO     | trading_bot.engine   | Executing TIA-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-17 03:24:19 | INFO     | trading_bot.broker.traderspost | Routing TIA-USD to CRYPTO webhook
-2026-06-17 03:24:19 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "TIA-USD", "action": "buy", "sentiment": "bullish", "quantity": 4927.322, "price": 0.4059, "stopLoss": {"type": "stop", "stopPrice": 0.39}, "takeProfit": {"type": "limit", "limitPrice": 0.45}}
-2026-06-17 03:24:19 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"458e74ac-27d2-48f7-8a90-9571dd2466e4","logId":"458e74ac-27d2-48f7-8a90-9571dd2466e4","payload":{"ticker":"TIA-USD","action":"buy","sentiment":"bullish","quantity":4927.322,"price":0.4059,"stopLoss":{"type":"stop","stopPrice":0.39},"takeProfit":{"type":"limit","limitPrice":0.45}
-2026-06-17 03:24:19 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY TIA-USD | Strategy: unknown | Qty: 4927.322 @ $0.41 = $2,000.00 | Risk: $100.00 | Reward: $200.00 | R:R 2.0:1 | Response: 200
-2026-06-17 03:24:19 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: TIA-USD qty=4927.322. SL $0.39 / TP $0.45 managed by bot (no broker-side bracket).
-2026-06-17 03:24:19 | INFO     | trading_bot.engine   | ORDER BUY TIA-USD via TradersPost | Qty: 4927.322 | Price: $0.41 | Cost: $2,000.00 | Stop: $0.39 (risk $100.00) | Target: $0.45 (reward $200.00) | R:R 2.0:1 | Strategy: mean_reversion
-2026-06-17 03:24:19 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: TIA-USD**
-```
-  Entry: $0.41 x 4927.322 shares = $2,000.00
-  Stop:  $0.39 (-$100.00 | -5.0%)
-  Targets: $0.45
-  Risk/Reward: 2.0
-```
-Strategy: **mean_reversion** | Confidenc
-2026-06-17 03:24:22 | INFO     | trading_bot.engine   | BREAK-EVEN: ARB-USD stop → $0.09 (was $0.08, P&L: 1.0%)
-2026-06-17 03:24:22 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | WAIT[14]: ADA-USD(weak 3d trend (-0.1%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(needs green bar), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-0.4%)), ETH-USD(needs green bar), FET-USD(weak 3d trend (-2.4%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+0.0%)), SOL-USD(needs green bar), TRX-USD(weak 3d trend (+0.8%)), XRP-USD(needs green bar) | warming=7 | neutral=16 | no_data=2
-2026-06-17 03:24:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 03:24:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 03:24:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 03:24:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 03:24:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 03:24:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 03:24:32 | INFO     | trading_bot.engine   | IBKR scanner: 105 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 03:24:32 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 03:24:32 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 12 stale symbols across strategies
-2026-06-17 03:24:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
-2026-06-17 03:24:32 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-17 03:24:32 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-17 03:24:32 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.35, RSI=0, BB=lower, Vol=13.6x | NEAR-USD @ $2.29
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | TIA-USD @ $0.41
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.34, RSI=28, BB=near, Vol=10.3x | ARB-USD @ $0.09
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.84
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 901.7x | Change: +2.7% | R:R 2.2
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ASTI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.1x | Change: +1.6% | R:R 3.0 | Size: 100%
-2026-06-17 03:28:00 | INFO     | trading_bot.strategy.crypto_runner | CRYPTO-RUNNER SIGNAL: UNI-USD @ $3.993 | 1h +10.7% | RVOL 26.7x | static univ | conf 0.81
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> mean_reversion: buy NEAR-USD @ $2.29 conf=1.00
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> mean_reversion: buy TIA-USD @ $0.41 conf=1.00
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ARB-USD @ $0.09 conf=0.73
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.84 conf=0.85
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ASTI @ $6.79 conf=0.60
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   |   -> crypto_runner: buy UNI-USD @ $3.99 conf=0.81
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | REJECTED: buy NEAR-USD | Already in position: NEAR-USD
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | REJECTED: buy TIA-USD | Already in position: TIA-USD
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | REJECTED: buy ARB-USD | Already in position: ARB-USD
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.84 → market $2.10 (-25.9%, max -3%)
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 901.7x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTI | [BREAKOUT] Score:6/12 RVOL:10.1x | Confirmed | Chg:+1.6%
-2026-06-17 03:28:00 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | 1h +10.7% | RVOL 26.7x
-2026-06-17 03:28:00 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — CRVO, RRGB, ASTI
-2026-06-17 03:28:00 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 871 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ NEAR-USD: score 100/100 — Mean reversion BUY: Z=-3.35, RSI=0, BB=lower, Vol=13.6x
-  ✅ TIA-USD: score 100/100 — Mean revers
-2026-06-17 03:28:00 | WARNING  | trading_bot.engine   | SLOW CYCLE (211.9s total): update_data=192.7s, update_scalp=14.7s
-2026-06-17 03:28:01 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: UNI-USD — symbol history bad: 1/3 wins (33%), avg P&L $-1.33
-2026-06-17 03:28:04 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | WAIT[15]: ADA-USD(weak 3d trend (-0.1%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(needs green bar), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-0.4%)), ETH-USD(needs green bar), FET-USD(weak 3d trend (-2.4%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+0.0%)), SUI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+0.8%)), XLM-USD(needs vol>=1.1x), XRP-USD(needs green bar) | warming=6 | neutral=16 | no_data=2
-2026-06-17 03:28:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 03:28:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 03:28:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 03:28:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 03:28:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 03:28:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 03:28:14 | INFO     | trading_bot.engine   | IBKR scanner: 105 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 03:28:14 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 03:28:14 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
-2026-06-17 03:28:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
-2026-06-17 03:28:14 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-17 03:28:14 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-17 03:28:14 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 03:31:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
-2026-06-17 03:31:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.97, RSI=26, BB=near, Vol=1.7x | ETH-USD @ $1785.67
-2026-06-17 03:31:00 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.83
-2026-06-17 03:31:00 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 901.7x | Change: +2.7% | R:R 2.2
-2026-06-17 03:31:00 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 03:31:00 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ASTI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.1x | Change: +1.6% | R:R 3.0 | Size: 100%
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   |   -> mean_reversion: buy DOT-USD @ $1.02 conf=1.00
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ETH-USD @ $1785.67 conf=0.80
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.83 conf=0.85
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ASTI @ $6.79 conf=0.60
-2026-06-17 03:31:00 | INFO     | trading_bot.risk.manager | REJECTED: buy DOT-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:00 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 62bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:00 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.83 → market $2.10 (-25.6%, max -3%)
-2026-06-17 03:31:00 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 901.7x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 03:31:00 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 03:31:00 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTI | [BREAKOUT] Score:6/12 RVOL:10.1x | Confirmed | Chg:+1.6%
-2026-06-17 03:31:00 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — CRVO, RRGB, ASTI
-2026-06-17 03:31:00 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 871 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ DOT-USD: score 100/100 — Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x
-  ✅ ETH-USD: score 80/100 — Mean reversio
-2026-06-17 03:31:01 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.8s total): update_data=151.4s, update_scalp=14.9s
-2026-06-17 03:31:01 | INFO     | trading_bot.engine   | CYCLE #61: regime=sideways | signals=6->approved=0 | positions=3/15 | bars_warm=104/104 | equity_open=False | pm=False pwr_hr=False
-2026-06-17 03:31:04 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | BUY[2]: DOT-USD(z=-3.8 rsi=25.0 bb=LOWER), ETH-USD(z=-1.97 rsi=26.4 bb=MIDDLE) | WAIT[15]: ADA-USD(weak 3d trend (-0.1%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(needs green bar), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-0.4%)), FET-USD(weak 3d trend (-2.4%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+0.0%)), SOL-USD(needs vol>=1.1x), SUI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+0.8%)), XLM-USD(needs green bar), XRP-USD(needs green bar) | warming=6 | neutral=14 | no_data=2
-2026-06-17 03:31:04 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
-2026-06-17 03:31:04 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.97, RSI=26, BB=near, Vol=1.7x | ETH-USD @ $1785.67
-2026-06-17 03:31:04 | INFO     | trading_bot.risk.manager | REJECTED: buy DOT-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:04 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 62bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:07 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
-2026-06-17 03:31:07 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.97, RSI=26, BB=near, Vol=1.7x | ETH-USD @ $1785.67
-2026-06-17 03:31:07 | INFO     | trading_bot.risk.manager | REJECTED: buy DOT-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:07 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 62bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:10 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
-2026-06-17 03:31:10 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.97, RSI=26, BB=near, Vol=1.7x | ETH-USD @ $1785.67
-2026-06-17 03:31:10 | INFO     | trading_bot.risk.manager | REJECTED: buy DOT-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:10 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 62bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:31:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-17 03:31:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-17 03:31:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 03:31:12 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 03:31:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 03:31:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 03:31:14 | INFO     | trading_bot.engine   | IBKR scanner: 104 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 03:31:14 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 03:31:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
-2026-06-17 03:34:06 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
-2026-06-17 03:34:06 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.97, RSI=26, BB=near, Vol=1.7x | ETH-USD @ $1785.67
-2026-06-17 03:34:06 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.82
-2026-06-17 03:34:06 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 901.7x | Change: +2.7% | R:R 2.2
-2026-06-17 03:34:06 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 03:34:06 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ASTI | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.1x | Change: +1.6% | R:R 3.0 | Size: 100%
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   |   -> mean_reversion: buy DOT-USD @ $1.02 conf=1.00
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ETH-USD @ $1785.67 conf=0.80
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.82 conf=0.85
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ASTI @ $6.79 conf=0.60
-2026-06-17 03:34:06 | INFO     | trading_bot.risk.manager | REJECTED: buy DOT-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:34:06 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 62bps < 2× cost 50bps (need 100bps)
-2026-06-17 03:34:06 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.82 → market $2.10 (-25.4%, max -3%)
-2026-06-17 03:34:06 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 901.7x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 03:34:06 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
-2026-06-17 03:34:06 | INFO     | trading_bot.risk.manager | APPROVED: buy ASTI | [BREAKOUT] Score:6/12 RVOL:10.1x | Confirmed | Chg:+1.6%
-2026-06-17 03:34:06 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — CRVO, RRGB, ASTI
-2026-06-17 03:34:06 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 871 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ DOT-USD: score 100/100 — Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x
-  ✅ ETH-USD: score 80/100 — Mean reversio
-2026-06-17 03:34:06 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.6s total): update_data=157.2s, update_scalp=14.9s
-2026-06-17 03:34:09 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=39 | BUY[2]: DOT-USD(z=-3.8 rsi=25.0 bb=LOWER), ETH-USD(z=-1.97 rsi=26.4 bb=MIDDLE) | WAIT[15]: ADA-USD(weak 3d trend (-0.1%)), ATOM-USD(weak 3d trend (+0.9%)), BONK-USD(needs vol>=1.1x), BTC-USD(needs green bar), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (-0.4%)), FET-USD(weak 3d trend (-2.4%)), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (+0.0%)), SOL-USD(needs vol>=1.1x), SUI-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+0.8%)), XLM-USD(needs green bar), XRP-USD(needs green bar) | warming=6 | neutral=14 | no_data=2
-2026-06-17 03:34:09 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
-2026-06-17 03:34:09 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.97, RSI=26, BB=near, Vol=1.7x | ETH-USD @ $1785.67
 2026-06-17 03:34:09 | INFO     | trading_bot.risk.manager | REJECTED: buy DOT-USD | Cost gate: edge 58bps < 2× cost 50bps (need 100bps)
 2026-06-17 03:34:09 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 62bps < 2× cost 50bps (need 100bps)
 2026-06-17 03:34:12 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.80, RSI=25, BB=lower, Vol=2.1x | DOT-USD @ $1.02
@@ -19998,3 +19724,277 @@ Signals found: 2
 2026-06-17 12:52:39 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-17 12:52:39 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
 2026-06-17 12:52:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 84 low-priority equity names; max 90)
+2026-06-17 12:55:21 | INFO     | trading_bot.engine   | DATA COVERAGE: 75/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-17 12:55:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x | CRV-USD @ $0.24
+2026-06-17 12:55:37 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 10.2x | Change: +0.7% | R:R 2.2
+2026-06-17 12:55:37 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: NIVF | Score: 95 | RVOL: 10.9x | Change: +6.3% | R:R 3.3
+2026-06-17 12:55:37 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-17 12:55:37 | INFO     | trading_bot.engine   |   -> mean_reversion: buy CRV-USD @ $0.24 conf=1.00
+2026-06-17 12:55:37 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $3.80 conf=0.65
+2026-06-17 12:55:37 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy NIVF @ $1.03 conf=0.95
+2026-06-17 12:55:37 | INFO     | trading_bot.risk.manager | APPROVED: buy CRV-USD | Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:37 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 10.2x | Trending up +0.7% | MACD histogram positive | RSI healthy (44)
+2026-06-17 12:55:37 | INFO     | trading_bot.risk.manager | REJECTED: buy NIVF | Setup broke: signal $1.03 → market $0.79 (-23.6%, max -3%)
+2026-06-17 12:55:37 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 935 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ CRV-USD: score 100/100 — Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+  ✅ CRVO: score 65/100 — Extreme RVOL 10.
+2026-06-17 12:55:37 | WARNING  | trading_bot.engine   | SLOW CYCLE (182.8s total): update_data=161.3s, update_scalp=15.9s
+2026-06-17 12:55:38 | WARNING  | trading_bot.engine   | LEARNING BLOCK: CRV-USD avoided — consistent loser (score: -80.0)
+2026-06-17 12:55:41 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: CRVO — bearish EMA imbalance -0.75
+2026-06-17 12:55:44 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | BUY[1]: CRV-USD(z=-2.35 rsi=26.1 bb=LOWER) | WAIT[5]: ATOM-USD(weak 3d trend (-0.2%)), ICP-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (+0.1%)), XLM-USD(needs green bar) | warming=6 | neutral=28 | no_data=1
+2026-06-17 12:55:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x | CRV-USD @ $0.24
+2026-06-17 12:55:44 | INFO     | trading_bot.risk.manager | APPROVED: buy CRV-USD | Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:44 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy CRV-USD from mean_reversion conf=1.00 price=0.2394 reason=Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:44 | WARNING  | trading_bot.engine   | LEARNING BLOCK: CRV-USD avoided — consistent loser (score: -80.0)
+2026-06-17 12:55:47 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x | CRV-USD @ $0.24
+2026-06-17 12:55:47 | INFO     | trading_bot.risk.manager | APPROVED: buy CRV-USD | Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:47 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy CRV-USD from mean_reversion conf=1.00 price=0.2394 reason=Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:47 | WARNING  | trading_bot.engine   | LEARNING BLOCK: CRV-USD avoided — consistent loser (score: -80.0)
+2026-06-17 12:55:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; IBEOS; T24X; MEMX; EDGEA; OVERNIGHT; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NYSE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Top: CHX; NYSENAT; PSX; 
+2026-06-17 12:55:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-17 12:55:50 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x | CRV-USD @ $0.24
+2026-06-17 12:55:50 | INFO     | trading_bot.risk.manager | APPROVED: buy CRV-USD | Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:50 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy CRV-USD from mean_reversion conf=1.00 price=0.2394 reason=Mean reversion BUY: Z=-2.35, RSI=26, BB=lower, Vol=6.6x
+2026-06-17 12:55:50 | WARNING  | trading_bot.engine   | LEARNING BLOCK: CRV-USD avoided — consistent loser (score: -80.0)
+2026-06-17 12:55:50 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-17 12:55:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-17 12:55:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 12:55:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 12:55:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 12:55:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 12:55:54 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 6 gaps, 20 losers
+2026-06-17 12:55:55 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-17 12:55:55 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-17 12:55:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 83 low-priority equity names; max 90)
+2026-06-17 12:55:55 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-17 12:55:55 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-17 12:55:55 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 2041 shares @ $0.53 = $1,078.46 | Risk: $214.48 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:23 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 2094 shares @ $0.52 = $1,078.41 | Risk: $212.27 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:31 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 2094 shares @ $0.52 = $1,078.41 | Risk: $212.27 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:39 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 2094 shares @ $0.52 = $1,078.41 | Risk: $212.27 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:47 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 2094 shares @ $0.52 = $1,078.41 | Risk: $212.27 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:58:55 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 2094 shares @ $0.52 = $1,078.41 | Risk: $212.27 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:03 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 328 shares @ $3.28 = $1,076.17 | Risk: $32.29 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 4505 shares @ $0.24 = $1,078.50 | Risk: $32.35 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 106 shares @ $10.16 = $1,076.96 | Risk: $18.17 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 32 shares @ $100.23 = $3,207.36 | Risk: $141.62 (0.7% of account) [tier: 1-150 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 464 shares @ $2.32 = $1,076.48 | Risk: $56.84 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 275 shares @ $3.91 = $1,075.25 | Risk: $24.75 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 669 shares @ $1.61 = $1,077.09 | Risk: $2.87 (0.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.43 = $1,074.40 | Risk: $4.46 (0.0% of account) [tier: 3-500 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 467 shares @ $2.31 = $1,076.44 | Risk: $53.36 (0.2% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 306 shares @ $3.52 = $1,077.12 | Risk: $21.42 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 35 shares @ $90.87 = $3,180.45 | Risk: $44.15 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 1888 shares @ $0.57 = $1,078.24 | Risk: $37.00 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 54 shares @ $59.67 = $3,222.18 | Risk: $133.15 (0.6% of account) [tier: 1-150 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 37 shares @ $86.55 = $3,202.35 | Risk: $53.02 (0.2% of account) [tier: 1-150 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 80 shares @ $13.46 = $1,076.80 | Risk: $11.77 (0.1% of account) [tier: 3-500 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 1361 shares @ $0.79 = $1,077.78 | Risk: $13.26 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 68 shares @ $47.44 = $3,225.92 | Risk: $14.28 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 836 shares @ $1.29 = $1,078.44 | Risk: $45.24 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 246 shares @ $4.38 = $1,077.48 | Risk: $14.76 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 423 shares @ $2.54 = $1,076.54 | Risk: $24.38 (0.1% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 733 shares @ $1.47 = $1,077.51 | Risk: $25.36 (0.1% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 581 shares @ $1.85 = $1,076.88 | Risk: $33.86 (0.2% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 119 shares @ $27.02 = $3,215.38 | Risk: $40.63 (0.2% of account) [tier: 2-300 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 258 shares @ $4.17 = $1,077.15 | Risk: $63.88 (0.3% of account) [tier: 10-2000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 124 shares @ $25.95 = $3,217.80 | Risk: $17.36 (0.1% of account) [tier: 2-300 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 2094 shares @ $0.52 = $1,078.41 | Risk: $212.27 (1.0% of account) [tier: 10-5000 shares]
+2026-06-17 12:59:11 | INFO     | trading_bot.risk.position_sizer | Position size: 191 shares @ $5.62 = $1,073.42 | Risk: $40.93 (0.2% of account) [tier: 5-1000 shares]
+2026-06-17 12:59:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=79, Vol=2.2x | BFLX @ $25.94
+2026-06-17 12:59:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 10.2x | Change: +0.5% | R:R 2.2
+2026-06-17 12:59:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: NIVF | Score: 95 | RVOL: 10.9x | Change: +6.3% | R:R 3.3
+2026-06-17 12:59:16 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-17 12:59:16 | INFO     | trading_bot.engine   |   -> momentum: buy BFLX @ $25.94 conf=0.80
+2026-06-17 12:59:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $3.84 conf=0.65
+2026-06-17 12:59:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy NIVF @ $1.03 conf=0.95
+2026-06-17 12:59:16 | INFO     | trading_bot.risk.manager | APPROVED: buy BFLX | Momentum BUY: pullback entry, ADX=79, Vol=2.2x
+2026-06-17 12:59:16 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 10.2x | Trending up +0.5% | MACD histogram positive | RSI healthy (48)
+2026-06-17 12:59:16 | INFO     | trading_bot.risk.manager | REJECTED: buy NIVF | Setup broke: signal $1.03 → market $0.78 (-23.9%, max -3%)
+2026-06-17 12:59:16 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 929 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ BFLX: score 80/100 — Momentum BUY: pullback entry, ADX=79, Vol=2.2x
+  ✅ CRVO: score 65/100 — Extreme RVOL 10.2x | Trending
+2026-06-17 12:59:17 | WARNING  | trading_bot.engine   | SLOW CYCLE (207.0s total): update_data=181.3s, update_scalp=20.2s
+2026-06-17 12:59:19 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: BFLX — bearish EMA imbalance -0.68
+2026-06-17 12:59:22 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: CRVO spread 2.1% (price $3.84, tier max 3%) → size 1.00 × 0.95 = 0.95
+2026-06-17 12:59:22 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: CRVO — bearish EMA imbalance -0.54
+2026-06-17 12:59:25 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[8]: ATOM-USD(weak 3d trend (-0.2%)), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (+0.9%)), HBAR-USD(needs green bar), ICP-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (+0.1%)), XLM-USD(needs vol>=1.1x) | warming=7 | neutral=25 | no_data=1
+2026-06-17 12:59:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; NYSENAT; T24X; MEMX; EDGEA; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: CHX; IBEOS; PSX; OVERNIGHT; 
+2026-06-17 12:59:28 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-17 12:59:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-17 12:59:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; 
+2026-06-17 12:59:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-17 12:59:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
+2026-06-17 12:59:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-17 12:59:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 12:59:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 12:59:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 12:59:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 12:59:35 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 50 gainers, 7 gaps, 20 losers
+2026-06-17 12:59:35 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-17 12:59:35 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 6 stale symbols across strategies
+2026-06-17 12:59:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 86 low-priority equity names; max 90)
+2026-06-17 12:59:35 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-17 12:59:36 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-17 12:59:36 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
