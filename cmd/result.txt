@@ -1,19 +1,36 @@
-=== executed: 9865fc9b36dbe822986e9f399546ff07c011930c
-=== started:  2026-06-17T21:42:16Z
+=== executed: a2be526fce87f8807e8d31ddadb63c808c774fbe
+=== started:  2026-06-17T23:55:02Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 11 data/*.json files
-deploy: checked out ca745387 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
-=== verify strategy config is live (read from container) ===
-rvol_scalp.enabled   = False (expect False)
-rvol_scalp alloc     = 0.0 (expect 0.0)
-rvol_momentum.enabled= True (expect True)
-rvol_momentum min_rvol  = 4.0 (expect 4.0)
-rvol_momentum min_score = 75 (expect 75)
-rvol_momentum max/day   = 4 (expect 4)
-=== confirm bot loaded strategies (log tail) ===
-2026-06-17 17:39:41 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+=== did scanner / signal pipeline ever see any of these today? ===
+  ICCM    log hits today: 0
+  SNBR    log hits today: 0
+  EHGO    log hits today: 0
+  SDOT    log hits today: 0
+  YMAT    log hits today: 0
+  QURE    log hits today: 0
+  FTHM    log hits today: 0
+  ELTX    log hits today: 0
+  ALOT    log hits today: 17
+
+=== signal_log.json — did we ever generate ANY signal for these? ===
+total signals in log: 740
+matches across the list: 0
+
+=== trade_history.json — did we ever TRADE these? ===
+trades on these names (ever): 0
+
+=== what symbols DID our scanner discover today? (last 50 from log) ===
+
+=== universe size today (TOP_PERC_GAIN scan results) ===
+2026-06-17 19:24:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:27:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:30:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:33:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:37:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:42:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:45:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:48:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:51:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-17 19:54:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
