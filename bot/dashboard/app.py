@@ -13,7 +13,7 @@ import time
 import urllib.request
 from datetime import datetime, timedelta
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 from flask_cors import CORS
 
 from bot.utils.logger import get_logger
@@ -119,7 +119,20 @@ class Dashboard:
             # Auth is enforced by the global before_request hook (Basic auth).
             # The browser session carries the credentials on subsequent XHRs,
             # so the template no longer needs the secret rendered into it.
-            return render_template("dashboard.html", dashboard_key="")
+            #
+            # Cache-Control: no-store on the dashboard HTML (Wave-6 ops fix).
+            # iOS Safari aggressively caches PWA-style single-page dashboards,
+            # so users were still seeing the pre-bugfix JS days after we'd
+            # shipped fixes — even after pull-to-refresh. Force the browser
+            # to refetch the HTML+inline-JS on every visit. The JSON endpoints
+            # are already not cached (Authorization-bearing fetches bypass
+            # browser HTTP cache by default), so this single header on the
+            # HTML route is the operative fix.
+            resp = make_response(render_template("dashboard.html", dashboard_key=""))
+            resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
 
         @self.app.route("/health")
         def health():
