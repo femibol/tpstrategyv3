@@ -1,16 +1,62 @@
-=== executed: c5c0831485e9f80b04acdf008b43216480d09ea7
-=== started:  2026-06-17T21:24:16Z
+=== executed: e683fe7bc33c68fa9bbdd9232405ea7c6e2178a0
+=== started:  2026-06-17T21:33:02Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 11 data/*.json files
-deploy: checked out 8c44489f on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
-=== verify render guards are live ===
-_renderBlock count: 10
-renderErrorBox count: 2
-tvLink-guard present: 1
-positions.length header fallback: 1
-(expect _renderBlock >= 8, renderErrorBox >= 1, guards == 1, length-fallback == 1)
+total history rows: 331
+
+=== HEAD-TO-HEAD ===
+last week (06-08..06-14): 20 trades, $-63.68, wr 35%, PF 0.58, avgW $12.62 / avgL $-16.89
+this week (06-15..now) : 105 trades, $-132.10, wr 46%, PF 0.85, avgW $16.02 / avgL $-19.59
+
+=== STRATEGY DELTA (this week vs last week) ===
+  strategy                               last wk                 this wk    delta
+  crypto_runner             $   +0.00 /  0t / wr  0%    $   +0.84 /  3t / wr 33%    $   +0.84 ·
+  mean_reversion            $  +38.77 /  9t / wr 44%    $  +14.08 / 46t / wr 46%    $  -24.68 ↓
+  momentum                  $  -38.14 /  6t / wr 50%    $  +35.59 / 36t / wr 56%    $  +73.73 ↑
+  rvol_momentum             $  -51.11 /  4t / wr  0%    $  -49.86 / 12t / wr 25%    $   +1.25 ·
+  rvol_scalp                $  -13.20 /  1t / wr  0%    $ -161.31 /  4t / wr  0%    $ -148.11 ↓
+  synced_from_ibkr          $   +0.00 /  0t / wr  0%    $  +28.56 /  4t / wr 75%    $  +28.56 ↑
+
+=== HOUR-OF-DAY HEAT (this week) — verify dead-hour block ===
+  h ET  trades         P&L     wr
+     0       2  $  +11.21    50%
+     1       2  $   +0.00     0%
+     2       1  $   +7.00   100%
+     3       2  $   +3.50    50%
+     4       5  $  -70.93    20%
+     5       1  $   -2.00     0%  <- DEAD HOUR (should be blocked for equity)
+     6       3  $  +97.21   100%
+     7       3  $ -123.41    33%
+     9      18  $  -14.81    44%
+    10      12  $ -231.00    25%
+    11       6  $  +63.61   100%
+    12       8  $  -27.33    50%
+    13       3  $   +5.08    67%
+    14       5  $  +15.51    60%  <- DEAD HOUR (should be blocked for equity)
+    15       9  $  +18.76    44%
+    16       6  $   -3.45    17%
+    17       6  $  +41.48    50%
+    18       1  $   +0.00     0%
+    19       2  $   -7.00     0%
+    20       3  $  -25.53     0%
+    21       1  $  +23.30   100%
+    22       2  $  -10.60    50%
+    23       4  $  +97.31   100%
+
+=== REJECTION REASONS (this week) ===
+  count         P&L  reason
+     40  $  -70.66  time_exit
+     21  $ +244.43  trailing_stop
+     19  $ -411.09  stop_loss
+     10  $ +145.41  partial_target_-1
+      6  $  +44.78  webhook_exit
+      5  $  -36.68  slippage_reject
+      2  $   -0.12  stale_exit
+      1  $  -18.25  power_hour_trim
+      1  $  -29.92  portfolio_risk
+
+=== bot log: dead-hour block firing? ===
+118
+=== bot log: REJECTED rows this week ===
+5172
