@@ -2270,28 +2270,36 @@ function renderStratActivity(activity) {
 }
 
 // === UPDATE ALL ===
+// Split into two batches so iOS Safari (6 concurrent fetches/origin) renders
+// the critical tabs first instead of queueing 17 fetches in a single
+// Promise.all where the tail-end ones starve and resolve to null — which is
+// what caused the Positions/Trades/Live-Feed-empty bug on phone.
 async function update() {
-    var results = await Promise.all([
+    var critical = await Promise.all([
         api('status'), api('positions'), api('trades'),
-        api('notifications'), api('daily'), api('equity'),
-        api('scanner'), api('analysis'), api('watchlist'),
-        api('performance'), api('tips'), api('rvol'),
-        api('suggestions'), api('movers'), api('runners'),
-        api('trades/summary'), api('strategies/activity')
+        api('notifications'), api('performance'), api('trades/summary')
     ]);
-    var status = results[0], positions = results[1], trades = results[2],
-        notifs = results[3], daily = results[4], equity = results[5],
-        scanner = results[6], analysisData = results[7],
-        watchlistData = results[8], perfData = results[9], tipsData = results[10],
-        rvolData = results[11], suggestionsData = results[12],
-        moversData = results[13], runnersData = results[14],
-        tradesSummary = results[15], stratActivity = results[16];
+    var status = critical[0], positions = critical[1], trades = critical[2],
+        notifs = critical[3], perfData = critical[4], tradesSummary = critical[5];
 
-    // Strategy dashboard viz — three widgets in the Strategies tab.
-    renderStratPnlBars(tradesSummary);
-    renderStratHeatmap(tradesSummary);
-    renderStratActivity(stratActivity);
+    renderCritical(status, positions, trades, notifs, perfData, tradesSummary);
 
+    var rest = await Promise.all([
+        api('daily'), api('equity'), api('scanner'), api('analysis'),
+        api('watchlist'), api('tips'), api('rvol'), api('suggestions'),
+        api('movers'), api('runners'), api('strategies/activity')
+    ]);
+    var daily = rest[0], equity = rest[1], scanner = rest[2],
+        analysisData = rest[3], watchlistData = rest[4], tipsData = rest[5],
+        rvolData = rest[6], suggestionsData = rest[7], moversData = rest[8],
+        runnersData = rest[9], stratActivity = rest[10];
+
+    renderSecondary(daily, equity, scanner, analysisData, watchlistData,
+        tipsData, rvolData, suggestionsData, moversData, runnersData,
+        tradesSummary, stratActivity);
+}
+
+function renderCritical(status, positions, trades, notifs, perfData, tradesSummary) {
     // Regime badge (from status)
     if (status && status.regime) {
         var r = status.regime;
@@ -2527,6 +2535,19 @@ async function update() {
     var updEl = document.getElementById('lastUpdate');
     if (updEl) updEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
+    // Performance tab — uses perfData from the critical batch
+    renderPerformance(perfData);
+}
+
+function renderSecondary(daily, equity, scanner, analysisData, watchlistData,
+                        tipsData, rvolData, suggestionsData, moversData,
+                        runnersData, tradesSummary, stratActivity) {
+
+    // Strategy dashboard viz — three widgets in the Strategies tab.
+    renderStratPnlBars(tradesSummary);
+    renderStratHeatmap(tradesSummary);
+    renderStratActivity(stratActivity);
+
     // Daily Stats
     var dList = document.getElementById('dailyList');
     if (daily && daily.length > 0) {
@@ -2556,9 +2577,6 @@ async function update() {
 
     // Watchlist
     renderWatchlist(watchlistData);
-
-    // Performance
-    renderPerformance(perfData);
 
     // Tips
     renderTips(tipsData);
