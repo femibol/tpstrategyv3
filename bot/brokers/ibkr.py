@@ -138,6 +138,21 @@ class IBKRBroker(BaseBroker):
             )
         ]
 
+        # IBKR scanner location code. `STK.US.MAJOR` (the IBKR default we
+        # used until 2026-06-18) is documented as NYSE + NASDAQ + AMEX, but
+        # in practice the 50-row TOP_PERC_GAIN cap gets saturated by
+        # bigger-cap movers and small-cap NASDAQ runners (ICCM, SDOT, YMAT,
+        # EHGO-class +100%/day names) never appear in the result set —
+        # verified live 2026-06-17: 8 of 9 top gainers we'd seen on Yahoo
+        # had ZERO log hits in our scanner. Configurable here so the
+        # operator can pick a broader code (e.g. `STK.US` — all US equities
+        # including OTC) without a code change. Downstream filters
+        # (min_price, RVOL, score, max_float, leveraged-ETF class filter)
+        # gate quality regardless of what the scanner returns.
+        self._scanner_location = str(
+            risk_cfg.get("scanner_location", "STK.US.MAJOR")
+        )
+
         # Real-time streaming data
         self._streaming_contracts = {}   # symbol -> Contract
         self._streaming_tickers = {}     # symbol -> Ticker object
@@ -2086,7 +2101,7 @@ class IBKRBroker(BaseBroker):
 
     @_on_worker
     def scan_market(self, scan_code="TOP_PERC_GAIN", instrument="STK",
-                    location="STK.US.MAJOR", num_rows=50,
+                    location=None, num_rows=50,
                     price_above=1.0, price_below=500.0,
                     volume_above=0, market_cap_above=0):
         """
@@ -2095,10 +2110,21 @@ class IBKRBroker(BaseBroker):
         Scan codes: TOP_PERC_GAIN, TOP_PERC_LOSE, MOST_ACTIVE,
                     HOT_BY_VOLUME, HIGH_OPEN_GAP, LOW_OPEN_GAP
 
+        Location codes: STK.US.MAJOR (NYSE/NASDAQ/AMEX — historical default),
+                        STK.US (all US incl. OTC/Pink), STK.US.NASDAQ,
+                        STK.US.NYSE. `location=None` (default) falls back to
+                        `self._scanner_location` set from
+                        `risk.scanner_location` in settings.yaml.
+
         Returns list of dicts: [{symbol, price, change_pct, volume, ...}]
         """
         if not self.is_connected() or not ScannerSubscription:
             return []
+
+        # Resolve location: explicit call arg > instance config > IBKR default.
+        location = location or getattr(
+            self, "_scanner_location", None
+        ) or "STK.US.MAJOR"
 
         try:
             sub = ScannerSubscription(
