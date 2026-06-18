@@ -1,17 +1,3 @@
-2026-06-17 09:11:16 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 09:11:16 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: BBBY | Score: 85 | RVOL: 12.9x | Change: +0.3% | R:R 1.9 | Target: $6.09 (+1.2%)
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> momentum: buy XCUR @ $2.40 conf=0.85
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.34 conf=0.85
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $22.89 conf=0.85
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
-2026-06-17 09:11:16 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy BBBY @ $6.02 conf=0.85
-2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | REJECTED: buy XCUR | Setup broke: signal $2.40 → market $2.18 (-9.2%, max -5%)
-2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | REJECTED: buy MCRP | Setup broke: signal $2.34 → market $2.10 (-10.0%, max -5%)
-2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | APPROVED: buy CRVO | Extreme RVOL 33.8x | Moving up +2.7% | RSI oversold bounce (29)
-2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 10.1x | Strong move +6.3% | RSI healthy (36) | Range expansion
 2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 10.1x | Trending up +0.8% | EMA trend bullish | MACD histogram positive
 2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | APPROVED: buy RRGB | Extreme RVOL 4.1x | Moving up +0.7% | Breakout confirmed (2 bars) | Short-term trend bullish
 2026-06-17 09:11:16 | INFO     | trading_bot.risk.manager | APPROVED: buy BBBY | Extreme RVOL 12.9x | Moving up +0.3% | Breakout confirmed (2 bars) | Volume accelerating bar-over-bar
@@ -19998,3 +19984,17 @@ Approved: 1 trades
 2026-06-17 21:27:49 | INFO     | trading_bot.engine   | IBKR scanner: 147 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
 2026-06-17 21:27:49 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-17 21:27:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
+2026-06-17 21:30:35 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 59/90 have prices | IBKR blacklisted: 42
+2026-06-17 21:31:53 | INFO     | trading_bot.strategy.daily_trend_rider | TREND RIDER: 1 candidates from 149 scanned — MRAAY
+2026-06-17 21:31:53 | WARNING  | trading_bot.engine   | SLOW CYCLE (247.8s total): update_data=165.9s, run_strategies=78.0s
+2026-06-17 21:31:53 | INFO     | trading_bot.engine   | CYCLE #19: regime=sideways | signals=0->approved=0 | positions=0/15 | bars_warm=82/82 | equity_open=False | pm=False pwr_hr=False
+2026-06-17 21:31:56 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[21]: ADA-USD(weak 3d trend (-7.3%)), ARB-USD(weak 3d trend (+0.6%)), ATOM-USD(weak 3d trend (-4.0%)), BTC-USD(weak 3d trend (-1.2%)), CRV-USD(weak 3d trend (-6.8%)), DOGE-USD(weak 3d trend (-2.3%)), FET-USD(weak 3d trend (-4.7%)), GRT-USD(weak 3d trend (-2.5%)), HBAR-USD(weak 3d trend (+0.1%)), ICP-USD(weak 3d trend (-8.9%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (+0.0%)), LTC-USD(weak 3d trend (-0.4%)), NEAR-USD(weak 3d trend (-0.4%)), OP-USD(weak 3d trend (-0.9%)), RNDR-USD(weak 3d trend (-6.9%)), SEI-USD(weak 3d trend (+1.0%)), SHIB-USD(weak 3d trend (-1.4%)), SUI-USD(weak 3d trend (-2.1%)), TRX-USD(weak 3d trend (-0.7%)), XRP-USD(weak 3d trend (+0.9%)) | warming=5 | neutral=14 | no_data=2
+2026-06-17 21:32:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-17 21:32:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 21:32:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 21:32:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 21:32:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 21:32:05 | INFO     | trading_bot.engine   | IBKR scanner: 147 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
+2026-06-17 21:32:05 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-17 21:32:05 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-17 21:32:05 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 101 low-priority equity names; max 90)
