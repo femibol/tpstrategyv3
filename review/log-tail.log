@@ -1,42 +1,3 @@
-2026-06-17 13:25:48 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x × Slip 0.66x = 0.25% risk
-2026-06-17 13:25:48 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $53.91 → $50.00 (per-strategy ceiling)
-2026-06-17 13:25:48 | INFO     | trading_bot.risk.position_sizer | Position size: 109 shares @ $15.16 = $1,652.44 | Risk: $49.57 (0.2% of account) [tier: 3-500 shares]
-2026-06-17 13:25:48 | WARNING  | trading_bot.engine   | R/R STRETCH: USGG entry=$15.1600 stop=$14.7052 (risk=$0.4548) target=$15.8809 (reward=$0.7209, R/R=1.58) — stretching target to $16.0696 for 2:1 minimum.
-2026-06-17 13:25:48 | INFO     | trading_bot.engine   | Executing USGG via IBKR...
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: USGG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: USGG (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: PreSubmitted | Filled: 0.0/109.0
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: PreSubmitted | Filled: 0.0/109.0
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: Submitted | Filled: 0.0/109.0
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: Filled | Filled: 109.0/109.0 | AvgPrice: $15.15
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: PreSubmitted | Filled: 0.0/109.0
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: PreSubmitted | Filled: 0.0/109.0
-2026-06-17 13:25:48 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: Submitted | Filled: 0.0/109.0
-2026-06-17 13:25:49 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 109 USGG @ LIMIT $15.46 | TP: $16.07 | SL: $14.71 | Parent ID: 1087283
-2026-06-17 13:25:50 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 109/109 USGG @ $15.1500 | signal $15.4600 | slippage -2.01% | parent=MARKET
-2026-06-17 13:25:50 | INFO     | trading_bot.engine   | BRACKET ORDER active: USGG | SL: $14.71 | TP: $16.07 (managed by IBKR server-side)
-2026-06-17 13:25:50 | INFO     | trading_bot.engine   | ORDER BUY USGG via IBKR | Qty: 109 | Price: $15.15 | Cost: $1,651.35 | Stop: $14.71 (risk $48.48) | Target: $16.07 (reward $100.24) | R:R 2.1:1 | Strategy: momentum
-2026-06-17 13:25:50 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: USGG**
-```
-  Entry: $15.15 x 109 shares = $1,651.35
-  Stop:  $14.71 (-$48.48 | -2.9%)
-  Targets: $16.07
-  Risk/Reward: 2.1
-```
-Strategy: **momentum** | Confidence: **75%**
-R
-2026-06-17 13:25:50 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY USGG qty=109 @ $15.15 → primary webhook (200)
-2026-06-17 13:25:50 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-17 13:25:51 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-17 13:25:54 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=40 | BUY[1]: GRT-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[11]: ATOM-USD(weak 3d trend (-0.2%)), AVAX-USD(needs vol>=1.1x), CRV-USD(needs vol>=1.1x), DOGE-USD(weak 3d trend (+0.5%)), FLOKI-USD(needs vol>=1.1x), HBAR-USD(needs vol>=1.1x), IMX-USD(weak 3d trend (+0.0%)), LTC-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-0.1%)), SUI-USD(needs vol>=1.1x), UNI-USD(needs vol>=1.1x) | warming=10 | neutral=17 | no_data=1
-2026-06-17 13:25:54 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | GRT-USD @ $0.02
-2026-06-17 13:25:54 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 96bps < 2× cost 50bps (need 100bps)
-2026-06-17 13:25:57 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | GRT-USD @ $0.02
-2026-06-17 13:25:57 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 96bps < 2× cost 50bps (need 100bps)
-2026-06-17 13:25:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; NYSE; Unknown market data permissions - Depth: BATS; ARCA; BEX; 
-2026-06-17 13:25:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; ARCA; BEX; Unknown market data permissions - Depth: NASDAQ; NYSE; IEX; 
-2026-06-17 13:25:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; ARCA; BEX; Unknown market data permissions - Depth: NASDAQ; NYSE; IEX; 
-2026-06-17 13:26:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | GRT-USD @ $0.02
 2026-06-17 13:26:00 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 96bps < 2× cost 50bps (need 100bps)
 2026-06-17 13:26:01 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
 2026-06-17 13:26:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
@@ -19998,3 +19959,42 @@ Signals found: 2
 2026-06-18 10:12:41 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 45/95
 2026-06-18 10:12:41 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-18 10:12:41 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-18 10:15:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=53, breakout>10.17, Vol=1.4x | MFI @ $10.29
+2026-06-18 10:15:33 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-18 10:15:33 | INFO     | trading_bot.engine   |   -> momentum: buy MFI @ $10.29 conf=0.75
+2026-06-18 10:15:33 | INFO     | trading_bot.risk.manager | REJECTED: buy MFI | Setup broke: signal $10.29 → market $9.75 (-5.2%, max -3%)
+2026-06-18 10:15:33 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 980 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ MFI: score 75/100 — Momentum BUY: pullback entry, ADX=53, breakout>10.17, Vol=1.
+Filtered: 1 signals rejected by risk mana
+2026-06-18 10:15:34 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.7s total): update_data=171.9s
+2026-06-18 10:15:34 | INFO     | trading_bot.engine   | CYCLE #193: regime=sideways | signals=1->approved=0 | positions=0/15 | bars_warm=218/218 | equity_open=True | pm=False pwr_hr=False
+2026-06-18 10:15:37 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-3.1%)), ADA-USD(weak 3d trend (-12.3%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-7.1%)), ATOM-USD(weak 3d trend (-7.7%)), AVAX-USD(weak 3d trend (-4.5%)), BONK-USD(weak 3d trend (-9.0%)), BTC-USD(weak 3d trend (-4.1%)), CRV-USD(weak 3d trend (-7.4%)), DOGE-USD(weak 3d trend (-6.8%)), DOT-USD(weak 3d trend (-6.2%)), ETC-USD(weak 3d trend (-4.0%)), ETH-USD(weak 3d trend (-4.4%)), FET-USD(weak 3d trend (-9.6%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-10.3%)), HBAR-USD(weak 3d trend (-3.4%)), ICP-USD(weak 3d trend (-10.9%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-5.4%)), LTC-USD(weak 3d trend (-4.1%)), MATIC-USD(weak 3d trend (+0.3%)), NEAR-USD(weak 3d trend (-9.1%)), OP-USD(weak 3d trend (-2.7%)), PEPE-USD(weak 3d trend (-4.0%)), RNDR-USD(weak 3d trend (-6.1%)), SEI-USD(weak 3d trend (-4.0%)), SHIB-USD(weak 3d trend (-6.8%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-3.6%)), SUI-USD(weak 3d trend (-10.1%)), TON-USD(weak 3d trend (-3.0%)), TRX-USD(weak 3d trend (-0.3%)), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (-6.3%)) | warming=2 | neutral=3 | no_data=2
+2026-06-18 10:15:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 10:15:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 10:15:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 10:15:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-18 10:15:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 10:15:48 | INFO     | trading_bot.engine   | IBKR scanner: 118 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
+2026-06-18 10:15:48 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-18 10:15:48 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 20 stale symbols across strategies
+2026-06-18 10:15:48 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 115 low-priority equity names; max 90)
+2026-06-18 10:15:48 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 45/95
+2026-06-18 10:15:48 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-18 10:15:48 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-18 10:18:57 | INFO     | trading_bot.engine   | DATA COVERAGE: 81/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 48 | bar-fetch backoff: 6
+2026-06-18 10:18:57 | WARNING  | trading_bot.engine   | SLOW CYCLE (194.1s total): update_data=188.9s, discover=5.1s
+2026-06-18 10:19:00 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-3.1%)), ADA-USD(weak 3d trend (-12.3%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-7.1%)), ATOM-USD(weak 3d trend (-7.7%)), AVAX-USD(weak 3d trend (-4.5%)), BONK-USD(weak 3d trend (-8.4%)), BTC-USD(weak 3d trend (-4.1%)), CRV-USD(weak 3d trend (-7.4%)), DOGE-USD(weak 3d trend (-7.0%)), DOT-USD(weak 3d trend (-4.3%)), ETC-USD(weak 3d trend (-4.0%)), ETH-USD(weak 3d trend (-4.3%)), FET-USD(weak 3d trend (-9.6%)), FLOKI-USD(weak 3d trend (-1.9%)), GRT-USD(weak 3d trend (-10.3%)), HBAR-USD(weak 3d trend (-3.4%)), ICP-USD(weak 3d trend (-10.9%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-5.6%)), LTC-USD(weak 3d trend (-4.1%)), MATIC-USD(weak 3d trend (+0.3%)), NEAR-USD(weak 3d trend (-9.7%)), OP-USD(weak 3d trend (-2.7%)), PEPE-USD(weak 3d trend (-4.0%)), RNDR-USD(weak 3d trend (-6.5%)), SEI-USD(weak 3d trend (-4.0%)), SHIB-USD(weak 3d trend (-6.8%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-3.8%)), SUI-USD(weak 3d trend (-10.1%)), TON-USD(weak 3d trend (-3.0%)), TRX-USD(weak 3d trend (-0.3%)), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (-6.4%)) | warming=2 | neutral=3 | no_data=2
+2026-06-18 10:19:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 10:19:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 10:19:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 10:19:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-18 10:19:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 10:19:11 | INFO     | trading_bot.engine   | IBKR scanner: 118 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
+2026-06-18 10:19:11 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-18 10:19:11 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 35 stale symbols across strategies
+2026-06-18 10:19:11 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 111 low-priority equity names; max 90)
+2026-06-18 10:19:11 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-18 10:19:11 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-18 10:19:11 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
