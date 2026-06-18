@@ -1,46 +1,3 @@
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY SPCH qty=39 @ $23.29 → primary webhook (200)
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-17 09:48:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10190: Max number of tick-by-tick requests has been reached.
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-17 09:48:34 | WARNING  | trading_bot.engine   | SLIPPAGE CLOSE: Closing SPCH — excessive entry slippage
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: PendingCancel | Filled: 0.0/39.0
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | Order 1079525 cancelled
-2026-06-17 09:48:34 | INFO     | trading_bot.engine   | Cancelled broker stop order for SPCH
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: PendingCancel | Filled: 0.0/39.0
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | Order 1079525 cancelled
-2026-06-17 09:48:34 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: Cancelled | Filled: 0.0/39.0
-2026-06-17 09:48:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 1079525 that needs to be cancelled cannot be cancelled, state: PendingCancel.
-2026-06-17 09:48:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: PendingCancel | Filled: 0.0/39.0
-2026-06-17 09:48:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: Cancelled | Filled: 0.0/39.0
-2026-06-17 09:48:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-17 09:48:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: Cancelled | Filled: 0.0/39.0
-2026-06-17 09:48:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-17 09:48:35 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SPCH → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-17 09:48:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: PreSubmitted | Filled: 0.0/39.0
-2026-06-17 09:48:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCH | Status: Filled | Filled: 39.0/39.0 | AvgPrice: $23.25
-2026-06-17 09:48:36 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 39 SPCH @ MARKET MKT | Order ID: 1079531
-2026-06-17 09:48:36 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 39/39 SPCH @ $23.25 | Order ID: 1079531
-2026-06-17 09:48:36 | INFO     | trading_bot.engine   | CLOSED SPCH via IBKR | slippage_reject | P&L: $-1.56 | Excessive slippage on entry — R:R invalid
-2026-06-17 09:48:36 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT SPCH qty=39 @ $23.25 → primary webhook (200)
-2026-06-17 09:48:36 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: SPCH** (slippage_reject)
-```
-  Entry: $23.29 → Exit: $23.25
-  P&L: $-1.56 (-0.17%)
-  Shares: 39 | Value: $906.75
-  Hold: 0m
-```
-Strategy: **rvol_momentum** | Excessive slippage on entr
-2026-06-17 09:48:37 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SPCH -1.56 (317 total in history)
-2026-06-17 09:48:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; NYSENAT; IBEOS; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
-2026-06-17 09:48:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
-2026-06-17 09:48:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
-2026-06-17 09:48:39 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: SQQQ EMA imbalance +0.40 ramping → score 75 → 85
-2026-06-17 09:48:39 | WARNING  | trading_bot.engine   | LEARNING BLOCK: SQQQ avoided — consistent loser (score: -16.2)
-2026-06-17 09:48:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; PEARL; AMEX; NYSENAT; IBEOS; T24X; PSX; MEMX; OVERNIGHT; EDGEA; LTSE; DRCTEDGE; 
-2026-06-17 09:48:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-17 09:48:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-17 09:48:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[5]: DOGE-USD(weak 3d trend (+0.2%)), IMX-USD(weak 3d trend (+0.0%)), OP-USD(weak 3d trend (+0.9%)), RNDR-USD(weak 3d trend (-0.3%)), SHIB-USD(weak 3d trend (+0.4%)) | warming=5 | neutral=30 | no_data=2
-2026-06-17 09:48:47 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NYSE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; 
 2026-06-17 09:48:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
 2026-06-17 09:48:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; Unknown market data permissions - Depth: NYSE; IEX; 
 2026-06-17 09:48:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
@@ -19998,3 +19955,46 @@ Signals found: 3
 2026-06-18 08:57:16 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
 2026-06-18 08:57:16 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-18 08:57:16 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-18 09:00:08 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: EHGO | Score: 100 | RVOL: 9.8x | Change: +4.3% | R:R 2.9
+2026-06-18 09:00:08 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ELTX | Score: 75 | RVOL: 6.2x | Change: +1.5% | R:R 1.9
+2026-06-18 09:00:08 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: NVCR | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.5x | Change: +0.4% | R:R 3.0 | Size: 100%
+2026-06-18 09:00:08 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-18 09:00:08 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy EHGO @ $2.88 conf=1.00
+2026-06-18 09:00:08 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ELTX @ $4.72 conf=0.75
+2026-06-18 09:00:08 | INFO     | trading_bot.engine   |   -> momentum_runner: buy NVCR @ $17.86 conf=0.60
+2026-06-18 09:00:08 | INFO     | trading_bot.risk.manager | REJECTED: buy EHGO | Setup broke: signal $2.88 → market $2.23 (-22.6%, max -5%)
+2026-06-18 09:00:08 | INFO     | trading_bot.risk.manager | REJECTED: buy ELTX | Setup broke: signal $4.72 → market $3.88 (-17.8%, max -5%)
+2026-06-18 09:00:08 | INFO     | trading_bot.risk.manager | REJECTED: buy NVCR | Setup broke: signal $17.86 → market $14.81 (-17.1%, max -5%)
+2026-06-18 09:00:08 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 906 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ EHGO: score 100/100 — Extreme RVOL 9.8x | Strong move +4.3% | EMA trend bullish | 
+  ✅ ELTX: score 75/100 — Extreme RVOL 6
+2026-06-18 09:00:08 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.9s total): update_data=171.6s
+2026-06-18 09:00:16 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-1.2%)), ADA-USD(weak 3d trend (-11.4%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-5.6%)), ATOM-USD(weak 3d trend (-7.3%)), AVAX-USD(weak 3d trend (-4.1%)), BONK-USD(weak 3d trend (-8.5%)), BTC-USD(weak 3d trend (-3.3%)), CRV-USD(weak 3d trend (-6.2%)), DOGE-USD(weak 3d trend (-5.9%)), DOT-USD(weak 3d trend (-4.3%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (-1.5%)), FET-USD(weak 3d trend (-9.4%)), FLOKI-USD(weak 3d trend (-3.2%)), GRT-USD(weak 3d trend (-10.3%)), HBAR-USD(weak 3d trend (-1.9%)), ICP-USD(weak 3d trend (-12.9%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-3.2%)), LTC-USD(weak 3d trend (-3.7%)), MATIC-USD(weak 3d trend (-0.6%)), NEAR-USD(weak 3d trend (-9.2%)), OP-USD(weak 3d trend (-2.7%)), PEPE-USD(weak 3d trend (-3.0%)), RNDR-USD(weak 3d trend (-7.3%)), SEI-USD(weak 3d trend (+0.5%)), SHIB-USD(weak 3d trend (-4.7%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-1.7%)), SUI-USD(weak 3d trend (-8.0%)), TIA-USD(weak 3d trend (-0.5%)), TON-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-0.2%)), UNI-USD(needs vol>=1.1x), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (-5.5%)) | warming=1 | neutral=2 | no_data=2
+2026-06-18 09:00:26 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 09:00:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 09:00:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 09:00:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-18 09:00:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 09:00:38 | INFO     | trading_bot.engine   | IBKR scanner: 124 unique symbols discovered | 50 gainers, 30 gaps, 20 losers
+2026-06-18 09:00:38 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-18 09:00:38 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 25 stale symbols across strategies
+2026-06-18 09:00:38 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 104 low-priority equity names; max 90)
+2026-06-18 09:00:43 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 45/95
+2026-06-18 09:00:56 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-18 09:00:56 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-18 09:04:44 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: EHGO | Score: 100 | RVOL: 7.4x | Change: +4.3% | R:R 2.9
+2026-06-18 09:04:44 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: NVCR | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.5x | Change: +0.4% | R:R 3.0 | Size: 100%
+2026-06-18 09:04:44 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-18 09:04:44 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy EHGO @ $2.88 conf=1.00
+2026-06-18 09:04:44 | INFO     | trading_bot.engine   |   -> momentum_runner: buy NVCR @ $17.86 conf=0.60
+2026-06-18 09:04:44 | INFO     | trading_bot.risk.manager | REJECTED: buy EHGO | Setup broke: signal $2.88 → market $2.23 (-22.6%, max -5%)
+2026-06-18 09:04:44 | INFO     | trading_bot.risk.manager | REJECTED: buy NVCR | Setup broke: signal $17.86 → market $14.72 (-17.6%, max -5%)
+2026-06-18 09:04:44 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 901 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ EHGO: score 100/100 — Extreme RVOL 7.4x | Strong move +4.3% | EMA trend bullish | 
+  ✅ NVCR: score 60/100 — [BREAKOUT] Sco
+2026-06-18 09:04:44 | WARNING  | trading_bot.engine   | SLOW CYCLE (261.6s total): update_data=245.1s, discover=15.9s
+2026-06-18 09:04:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-1.2%)), ADA-USD(weak 3d trend (-11.4%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-5.6%)), ATOM-USD(weak 3d trend (-7.3%)), AVAX-USD(weak 3d trend (-4.1%)), BONK-USD(weak 3d trend (-8.5%)), BTC-USD(weak 3d trend (-3.3%)), CRV-USD(weak 3d trend (-6.2%)), DOGE-USD(weak 3d trend (-5.9%)), DOT-USD(weak 3d trend (-4.3%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (-2.2%)), FET-USD(weak 3d trend (-9.0%)), FLOKI-USD(weak 3d trend (-3.2%)), GRT-USD(weak 3d trend (-10.3%)), HBAR-USD(weak 3d trend (-1.9%)), ICP-USD(weak 3d trend (-12.8%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-3.4%)), LTC-USD(weak 3d trend (-3.7%)), MATIC-USD(weak 3d trend (-1.3%)), NEAR-USD(weak 3d trend (-9.2%)), OP-USD(weak 3d trend (-2.7%)), PEPE-USD(weak 3d trend (-3.0%)), RNDR-USD(weak 3d trend (-7.3%)), SEI-USD(weak 3d trend (+0.5%)), SHIB-USD(weak 3d trend (-4.7%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-2.1%)), SUI-USD(weak 3d trend (-7.9%)), TIA-USD(weak 3d trend (-0.5%)), TON-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-0.3%)), UNI-USD(needs vol>=1.1x), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (-5.5%)) | warming=1 | neutral=2 | no_data=2
