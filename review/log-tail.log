@@ -1,28 +1,3 @@
-2026-06-17 09:18:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-17 09:18:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-17 09:18:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-17 09:18:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-17 09:18:46 | INFO     | trading_bot.engine   | IBKR scanner: 94 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-17 09:18:47 | INFO     | trading_bot.engine   | Injected 5 runners into all strategies
-2026-06-17 09:18:47 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 30 stale symbols across strategies
-2026-06-17 09:18:47 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
-2026-06-17 09:18:47 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-17 09:18:47 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-17 09:18:47 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-17 09:20:45 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.79, RSI=0, BB=near, Vol=4.7x | CRV-USD @ $0.24
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, breakout>2.29, Vol=2.4x | XCUR @ $2.40
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=36, breakout>2.15, Vol=5.8x | MCRP @ $2.43
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: CRVO | Score: 65 | RVOL: 33.8x | Change: +2.7% | R:R 2.2
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCH | Score: 85 | RVOL: 10.1x | Change: +6.3% | R:R 3.3
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SQQQ | Score: 75 | RVOL: 10.1x | Change: +0.8% | R:R 2.2
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: RRGB | Score: 80 | RVOL: 4.1x | Change: +0.7% | R:R 1.6 | Target: $6.15 (+1.2%)
-2026-06-17 09:22:15 | INFO     | trading_bot.strategy.rvol_scalp | SCALP SIGNAL: BBBY | Score: 85 | RVOL: 12.9x | Change: +0.3% | R:R 1.9 | Target: $6.09 (+1.2%)
-2026-06-17 09:22:15 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> mean_reversion: buy CRV-USD @ $0.24 conf=0.90
-2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> momentum: buy XCUR @ $2.40 conf=0.85
-2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> momentum: buy MCRP @ $2.43 conf=0.85
-2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy CRVO @ $4.52 conf=0.65
 2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCH @ $22.89 conf=0.85
 2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
 2026-06-17 09:22:15 | INFO     | trading_bot.engine   |   -> rvol_scalp: buy RRGB @ $6.08 conf=0.80
@@ -19998,3 +19973,28 @@ Filtered: 1 signals rejected by risk manag
 2026-06-17 22:19:54 | INFO     | trading_bot.engine   | IBKR scanner: 147 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
 2026-06-17 22:19:54 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-17 22:19:54 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
+2026-06-17 22:22:47 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.21, RSI=37, BB=near, Vol=4.0x | SOL-USD @ $72.23
+2026-06-17 22:22:47 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-17 22:22:47 | INFO     | trading_bot.engine   |   -> mean_reversion: buy SOL-USD @ $72.23 conf=0.67
+2026-06-17 22:22:47 | INFO     | trading_bot.risk.manager | REJECTED: buy SOL-USD | Cost gate: edge 47bps < 2× cost 50bps (need 100bps)
+2026-06-17 22:22:47 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 891 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ SOL-USD: score 67/100 — Mean reversion BUY: Z=-1.21, RSI=37, BB=near, Vol=4.0x
+Filtered: 1 signals rejected by risk manage
+2026-06-17 22:22:47 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.4s total): update_data=172.8s
+2026-06-17 22:22:50 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: SOL-USD(z=-1.21 rsi=36.9 bb=MIDDLE) | WAIT[25]: ADA-USD(weak 3d trend (-7.9%)), ARB-USD(weak 3d trend (+0.6%)), ATOM-USD(weak 3d trend (-4.6%)), AVAX-USD(weak 3d trend (+0.4%)), BTC-USD(weak 3d trend (-1.7%)), CRV-USD(weak 3d trend (-4.9%)), DOGE-USD(weak 3d trend (-3.2%)), ETH-USD(needs green bar), FET-USD(weak 3d trend (-5.6%)), GRT-USD(weak 3d trend (-3.5%)), HBAR-USD(weak 3d trend (-0.0%)), ICP-USD(weak 3d trend (-8.9%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.4%)), LTC-USD(weak 3d trend (-1.1%)), MATIC-USD(weak 3d trend (+0.3%)), NEAR-USD(weak 3d trend (-1.4%)), OP-USD(weak 3d trend (-0.9%)), PEPE-USD(needs vol>=1.1x), RNDR-USD(weak 3d trend (-6.0%)), SEI-USD(weak 3d trend (+1.0%)), SHIB-USD(weak 3d trend (-1.0%)), SUI-USD(weak 3d trend (-4.2%)), TRX-USD(weak 3d trend (+0.2%)), XRP-USD(weak 3d trend (+0.1%)) | warming=6 | neutral=8 | no_data=2
+2026-06-17 22:22:50 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.21, RSI=37, BB=near, Vol=4.0x | SOL-USD @ $72.23
+2026-06-17 22:22:50 | INFO     | trading_bot.risk.manager | REJECTED: buy SOL-USD | Cost gate: edge 47bps < 2× cost 50bps (need 100bps)
+2026-06-17 22:22:53 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.21, RSI=37, BB=near, Vol=4.0x | SOL-USD @ $72.23
+2026-06-17 22:22:53 | INFO     | trading_bot.risk.manager | REJECTED: buy SOL-USD | Cost gate: edge 47bps < 2× cost 50bps (need 100bps)
+2026-06-17 22:22:56 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.21, RSI=37, BB=near, Vol=4.0x | SOL-USD @ $72.23
+2026-06-17 22:22:56 | INFO     | trading_bot.risk.manager | REJECTED: buy SOL-USD | Cost gate: edge 47bps < 2× cost 50bps (need 100bps)
+2026-06-17 22:22:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-17 22:22:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-17 22:22:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-17 22:22:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-17 22:23:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-17 22:23:00 | INFO     | trading_bot.engine   | IBKR scanner: 147 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
+2026-06-17 22:23:00 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-17 22:23:00 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
