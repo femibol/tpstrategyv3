@@ -1,48 +1,3 @@
-2026-06-17 09:35:43 | INFO     | trading_bot.risk.position_sizer | Position size: 66 shares @ $26.95 = $1,778.70 | Risk: $49.48 (0.2% of account) [tier: 2-300 shares]
-2026-06-17 09:35:43 | INFO     | trading_bot.engine   | Executing AMAU via IBKR...
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AMAU → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: AMAU (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: PreSubmitted | Filled: 0.0/66.0
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: PreSubmitted | Filled: 0.0/66.0
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: Submitted | Filled: 0.0/66.0
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: Filled | Filled: 66.0/66.0 | AvgPrice: $27.07
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: PreSubmitted | Filled: 0.0/66.0
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: PreSubmitted | Filled: 0.0/66.0
-2026-06-17 09:35:43 | INFO     | trading_bot.broker.ibkr | Order update: AMAU | Status: Submitted | Filled: 0.0/66.0
-2026-06-17 09:35:44 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 66 AMAU @ LIMIT $27.49 | TP: $29.44 | SL: $26.20 | Parent ID: 1078333
-2026-06-17 09:35:44 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 66/66 AMAU @ $27.0700 | signal $27.4900 | slippage -1.53% | parent=MARKET
-2026-06-17 09:35:44 | INFO     | trading_bot.engine   | BRACKET ORDER active: AMAU | SL: $26.20 | TP: $29.44 (managed by IBKR server-side)
-2026-06-17 09:35:44 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: AMAU expected $26.95 but filled @ $27.07
-2026-06-17 09:35:44 | WARNING  | trading_bot.engine   | SLIPPAGE WARNING: AMAU slippage +0.4% (threshold 0.8%, RTH) | Signal $27.00 → Fill $27.07
-2026-06-17 09:35:44 | INFO     | trading_bot.engine   | ORDER BUY AMAU via IBKR | Qty: 66 | Price: $27.07 | Cost: $1,786.62 | Stop: $26.20 (risk $57.40) | Target: $29.44 (reward $156.66) | R:R 2.7:1 | Strategy: momentum
-2026-06-17 09:35:44 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: AMAU**
-```
-  Entry: $27.07 x 66 shares = $1,786.62
-  Stop:  $26.20 (-$57.40 | -3.2%)
-  Targets: $29.44
-  Risk/Reward: 2.7
-```
-Strategy: **momentum** | Confidence: **95%**
-Re
-2026-06-17 09:35:45 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY AMAU qty=66 @ $27.07 → primary webhook (200)
-2026-06-17 09:35:45 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-17 09:35:45 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-17 09:35:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-17 09:35:46 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: VIVK entry=$0.7048 stop=$0.6710 (4.80% gap). Setting 6% minimum stop.
-2026-06-17 09:35:46 | INFO     | trading_bot.engine   | VOL REGIME: VIVK short=0.0761 long=0.0351 ratio=2.17x → sizing mult 0.78x
-2026-06-17 09:35:46 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 0.78x × Slip 1.00x = 0.29% risk
-2026-06-17 09:35:46 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $63.51 → $50.00 (per-strategy ceiling)
-2026-06-17 09:35:46 | INFO     | trading_bot.risk.position_sizer | Position size: 1182 shares @ $0.70 = $833.07 | Risk: $49.98 (0.2% of account) [tier: 10-5000 shares]
-2026-06-17 09:35:46 | INFO     | trading_bot.engine   | Executing VIVK via IBKR...
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: VIVK → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: VIVK (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: PreSubmitted | Filled: 0.0/1182.0
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: PreSubmitted | Filled: 0.0/1182.0
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: ValidationError | Filled: 0.0/1182
-2026-06-17 09:35:47 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: BUY 1,182 VIVK NASDAQ.SCM  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 0.7143 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: Submitted | Filled: 0.0/1182.0
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: PreSubmitted | Filled: 0.0/166.0
-2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: PreSubmitted | Filled: 0.0/166.0
 2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: Submitted | Filled: 166.0/1182.0 | AvgPrice: $0.71
 2026-06-17 09:35:47 | INFO     | trading_bot.broker.ibkr | Order update: VIVK | Status: Submitted | Filled: 0.0/166.0
 2026-06-17 09:35:48 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 1182 VIVK @ LIMIT $0.72 | TP: $0.83 | SL: $0.66 | Parent ID: 1078347
@@ -19998,3 +19953,48 @@ Filtered: 1 signals rejected by risk man
 2026-06-18 03:42:45 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
 2026-06-18 03:42:45 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
 2026-06-18 03:42:45 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 75 low-priority equity names; max 90)
+2026-06-18 03:45:32 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ELTX | Score: 75 | RVOL: 123.0x | Change: +1.5% | R:R 1.9
+2026-06-18 03:45:32 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-18 03:45:32 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ELTX @ $4.72 conf=0.75
+2026-06-18 03:45:32 | INFO     | trading_bot.risk.manager | REJECTED: buy ELTX | Setup broke: signal $4.72 → market $3.93 (-16.7%, max -3%)
+2026-06-18 03:45:32 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 756 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ ELTX: score 75/100 — Extreme RVOL 123.0x | Moving up +1.5% | EMA trend bullish | 
+Filtered: 1 signals rejected by risk man
+2026-06-18 03:45:32 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.8s total): update_data=166.5s
+2026-06-18 03:45:35 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[32]: ADA-USD(weak 3d trend (-7.5%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-3.4%)), ATOM-USD(weak 3d trend (-7.1%)), AVAX-USD(weak 3d trend (-1.6%)), BONK-USD(weak 3d trend (-1.3%)), BTC-USD(weak 3d trend (-1.9%)), CRV-USD(weak 3d trend (-4.8%)), DOGE-USD(weak 3d trend (-4.2%)), DOT-USD(weak 3d trend (-3.0%)), ETC-USD(weak 3d trend (+0.3%)), FET-USD(weak 3d trend (-7.2%)), FLOKI-USD(weak 3d trend (+0.2%)), GRT-USD(weak 3d trend (-6.8%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (-9.7%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-2.1%)), LTC-USD(weak 3d trend (-1.2%)), MATIC-USD(weak 3d trend (-1.5%)), NEAR-USD(weak 3d trend (-7.8%)), OP-USD(weak 3d trend (-3.6%)), PEPE-USD(weak 3d trend (-0.7%)), RNDR-USD(weak 3d trend (-7.5%)), SEI-USD(weak 3d trend (-2.2%)), SHIB-USD(weak 3d trend (-2.8%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (+0.5%)), SUI-USD(weak 3d trend (-5.3%)), TRX-USD(needs vol>=1.1x), WIF-USD(weak 3d trend (-2.4%)), XRP-USD(weak 3d trend (-0.2%)) | warming=1 | neutral=6 | no_data=3
+2026-06-18 03:45:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 03:45:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 03:45:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 03:45:44 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-18 03:45:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-18 03:45:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 03:45:45 | INFO     | trading_bot.engine   | IBKR scanner: 108 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-18 03:45:45 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-18 03:45:45 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 76 low-priority equity names; max 90)
+2026-06-18 03:47:56 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ELTX | Score: 75 | RVOL: 123.0x | Change: +1.5% | R:R 1.9
+2026-06-18 03:47:56 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-18 03:47:56 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ELTX @ $4.72 conf=0.75
+2026-06-18 03:47:56 | INFO     | trading_bot.risk.manager | REJECTED: buy ELTX | Setup broke: signal $4.72 → market $3.90 (-17.4%, max -3%)
+2026-06-18 03:47:56 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 761 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ ELTX: score 75/100 — Extreme RVOL 123.0x | Moving up +1.5% | EMA trend bullish | 
+Filtered: 1 signals rejected by risk man
+2026-06-18 03:47:56 | WARNING  | trading_bot.engine   | SLOW CYCLE (134.9s total): update_data=130.4s
+2026-06-18 03:47:56 | INFO     | trading_bot.engine   | CYCLE #73: regime=sideways | signals=1->approved=0 | positions=0/15 | bars_warm=132/132 | equity_open=False | pm=False pwr_hr=False
+2026-06-18 03:47:59 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[31]: ADA-USD(weak 3d trend (-7.5%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-3.4%)), ATOM-USD(weak 3d trend (-6.6%)), AVAX-USD(weak 3d trend (-1.5%)), BONK-USD(weak 3d trend (-1.3%)), BTC-USD(weak 3d trend (-1.9%)), CRV-USD(weak 3d trend (-4.8%)), DOGE-USD(weak 3d trend (-4.2%)), DOT-USD(weak 3d trend (-3.0%)), ETC-USD(weak 3d trend (+0.3%)), FET-USD(weak 3d trend (-7.4%)), FLOKI-USD(weak 3d trend (+0.7%)), GRT-USD(weak 3d trend (-6.8%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (-9.3%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-2.2%)), LTC-USD(weak 3d trend (-1.5%)), MATIC-USD(weak 3d trend (-1.5%)), NEAR-USD(weak 3d trend (-7.5%)), OP-USD(weak 3d trend (-3.6%)), PEPE-USD(weak 3d trend (-0.7%)), RNDR-USD(weak 3d trend (-7.5%)), SEI-USD(weak 3d trend (-2.2%)), SHIB-USD(weak 3d trend (-2.8%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (+0.6%)), SUI-USD(weak 3d trend (-5.3%)), WIF-USD(weak 3d trend (-2.4%)), XRP-USD(weak 3d trend (-0.1%)) | warming=1 | neutral=7 | no_data=3
+2026-06-18 03:48:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 03:48:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 03:48:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 03:48:07 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-18 03:48:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-18 03:48:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 03:48:09 | INFO     | trading_bot.engine   | IBKR scanner: 108 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-18 03:48:09 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-18 03:48:09 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
+2026-06-18 03:48:09 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 75 low-priority equity names; max 90)
+2026-06-18 03:48:09 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 43/95
+2026-06-18 03:48:09 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-18 03:48:09 | INFO     | trading_bot.data.market_data | IBKR streaming active for 44 symbols
