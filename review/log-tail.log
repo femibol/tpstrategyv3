@@ -1,30 +1,3 @@
-2026-06-17 14:04:13 | WARNING  | trading_bot.broker.ibkr | Order 1087285 not found
-2026-06-17 14:04:13 | INFO     | trading_bot.engine   | Cancelled broker stop order for USGG
-2026-06-17 14:04:13 | WARNING  | trading_bot.broker.ibkr | Order 1087285 not found
-2026-06-17 14:04:13 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for USGG: This event loop is already running
-2026-06-17 14:04:13 | ERROR    | trading_bot.engine   | IBKR close order FAILED for USGG
-2026-06-17 14:04:13 | ERROR    | trading_bot.engine   | CLOSE FAILED for USGG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-17 14:04:34 | WARNING  | trading_bot.broker.ibkr | Order 1087285 not found
-2026-06-17 14:04:34 | INFO     | trading_bot.engine   | Cancelled broker stop order for USGG
-2026-06-17 14:04:34 | WARNING  | trading_bot.broker.ibkr | Order 1087285 not found
-2026-06-17 14:04:34 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for USGG: This event loop is already running
-2026-06-17 14:04:34 | ERROR    | trading_bot.engine   | IBKR close order FAILED for USGG
-2026-06-17 14:04:34 | ERROR    | trading_bot.engine   | CLOSE FAILED for USGG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-17 14:04:54 | WARNING  | trading_bot.broker.ibkr | Order 1087285 not found
-2026-06-17 14:04:54 | INFO     | trading_bot.engine   | Cancelled broker stop order for USGG
-2026-06-17 14:04:54 | WARNING  | trading_bot.broker.ibkr | Order 1087285 not found
-2026-06-17 14:04:54 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: USGG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-17 14:04:54 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: PreSubmitted | Filled: 0.0/109.0
-2026-06-17 14:04:54 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: Submitted | Filled: 0.0/109.0
-2026-06-17 14:04:54 | INFO     | trading_bot.broker.ibkr | Order update: USGG | Status: Filled | Filled: 109.0/109.0 | AvgPrice: $14.46
-2026-06-17 14:04:55 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 109 USGG @ MARKET MKT | Order ID: 1089216
-2026-06-17 14:04:55 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 109/109 USGG @ $14.46 | Order ID: 1089216
-2026-06-17 14:04:55 | INFO     | trading_bot.engine   | CLOSED USGG via IBKR | stop_loss | P&L: $-75.21 | Stop hit at $14.50
-2026-06-17 14:04:56 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT USGG qty=109 @ $14.46 → primary webhook (200)
-2026-06-17 14:04:56 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: USGG** (stop_loss)
-```
-  Entry: $15.15 → Exit: $14.46
-  P&L: $-75.21 (-4.55%)
   Shares: 109 | Value: $1,576.14
   Hold: 39m
 ```
@@ -19998,3 +19971,30 @@ Strategy: **momentum** | Confidence: **75%**
 2026-06-18 11:23:08 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
 2026-06-18 11:23:08 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-18 11:23:08 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
+2026-06-18 11:26:00 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 48 | bar-fetch backoff: 6
+2026-06-18 11:26:00 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.0s total): update_data=171.8s, discover=5.1s
+2026-06-18 11:26:03 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-3.1%)), ADA-USD(weak 3d trend (-13.1%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-7.1%)), ATOM-USD(weak 3d trend (-8.4%)), AVAX-USD(weak 3d trend (-8.7%)), BONK-USD(weak 3d trend (-8.7%)), BTC-USD(weak 3d trend (-5.0%)), CRV-USD(weak 3d trend (-7.3%)), DOGE-USD(weak 3d trend (-7.1%)), DOT-USD(weak 3d trend (-5.9%)), ETC-USD(weak 3d trend (-7.6%)), ETH-USD(weak 3d trend (-5.1%)), FET-USD(weak 3d trend (-10.2%)), FLOKI-USD(weak 3d trend (-2.8%)), GRT-USD(weak 3d trend (-9.5%)), HBAR-USD(weak 3d trend (-4.1%)), ICP-USD(weak 3d trend (-8.0%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-6.2%)), LTC-USD(weak 3d trend (-4.0%)), MATIC-USD(weak 3d trend (-1.8%)), NEAR-USD(weak 3d trend (-9.7%)), OP-USD(weak 3d trend (-2.7%)), PEPE-USD(weak 3d trend (-5.0%)), RNDR-USD(weak 3d trend (-6.5%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-6.9%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-5.2%)), SUI-USD(weak 3d trend (-9.8%)), TON-USD(weak 3d trend (-3.0%)), TRX-USD(weak 3d trend (+0.0%)), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (-8.9%)) | warming=2 | neutral=2 | no_data=2
+2026-06-18 11:26:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 11:26:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 11:26:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 11:26:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-18 11:26:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 11:26:13 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 50 gainers, 7 gaps, 20 losers
+2026-06-18 11:26:13 | INFO     | trading_bot.engine   | Injected 4 runners into all strategies
+2026-06-18 11:26:13 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 15 stale symbols across strategies
+2026-06-18 11:26:13 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
+2026-06-18 11:26:13 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-18 11:29:18 | WARNING  | trading_bot.engine   | SLOW CYCLE (188.9s total): update_data=184.7s
+2026-06-18 11:29:21 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-3.1%)), ADA-USD(weak 3d trend (-12.9%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-7.1%)), ATOM-USD(weak 3d trend (-8.4%)), AVAX-USD(weak 3d trend (-8.3%)), BONK-USD(weak 3d trend (-8.5%)), BTC-USD(weak 3d trend (-5.0%)), CRV-USD(weak 3d trend (-7.3%)), DOGE-USD(weak 3d trend (-7.1%)), DOT-USD(weak 3d trend (-5.9%)), ETC-USD(weak 3d trend (-5.0%)), ETH-USD(weak 3d trend (-5.1%)), FET-USD(weak 3d trend (-10.5%)), FLOKI-USD(weak 3d trend (-2.8%)), GRT-USD(weak 3d trend (-7.3%)), HBAR-USD(weak 3d trend (-4.1%)), ICP-USD(weak 3d trend (-8.0%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-6.0%)), LTC-USD(weak 3d trend (-4.3%)), MATIC-USD(weak 3d trend (-1.9%)), NEAR-USD(weak 3d trend (-9.2%)), OP-USD(weak 3d trend (-3.6%)), PEPE-USD(weak 3d trend (-5.4%)), RNDR-USD(weak 3d trend (-8.7%)), SEI-USD(weak 3d trend (-6.0%)), SHIB-USD(weak 3d trend (-6.9%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-5.3%)), SUI-USD(weak 3d trend (-9.8%)), TON-USD(weak 3d trend (-3.0%)), TRX-USD(weak 3d trend (-1.2%)), WIF-USD(weak 3d trend (-3.6%)), XLM-USD(needs green bar), XRP-USD(weak 3d trend (-8.6%)) | warming=1 | neutral=2 | no_data=2
+2026-06-18 11:29:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 11:29:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 11:29:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-18 11:29:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-18 11:29:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 11:29:32 | INFO     | trading_bot.engine   | IBKR scanner: 116 unique symbols discovered | 50 gainers, 6 gaps, 20 losers
+2026-06-18 11:29:32 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
+2026-06-18 11:29:32 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-18 11:29:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
+2026-06-18 11:29:32 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 45/95
+2026-06-18 11:29:32 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-18 11:29:32 | INFO     | trading_bot.data.market_data | IBKR streaming active for 46 symbols
