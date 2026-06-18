@@ -116,6 +116,19 @@ risk:
   # legitimate exits fill in seconds, anything older than 2h is stuck.
   stale_pending_sell_max_hours: 2.0
 
+  # IBKR scanner location code. Was hard-coded `STK.US.MAJOR` in
+  # `bot/brokers/ibkr.py:scan_market` until 2026-06-18 when a live audit
+  # showed 8 of 9 same-day Yahoo top gainers (ICCM +200%, SNBR +121%,
+  # EHGO +119%, SDOT, YMAT, QURE, FTHM, ELTX — all NASDAQ-listed) had
+  # ZERO scanner hits. The 50-row TOP_PERC_GAIN response was saturated by
+  # bigger-cap movers; small-cap NASDAQ runners fell off the list.
+  # Broadening to `STK.US` (all US equities including OTC/Pink) gives
+  # the scanner more headroom; downstream filters (min_price, RVOL,
+  # score, max_float, leveraged-ETF class filter) still enforce quality.
+  # Set back to "STK.US.MAJOR" if OTC garbage floods the universe.
+  # Other valid codes: STK.US.NASDAQ, STK.US.NYSE, STK.US.AMEX.
+  scanner_location: "STK.US"
+
 # Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
 # take_profit edge can't clear estimated round-trip cost by ratio×.
 # Ratio-based so cheap-stock momentum scalps with big % moves still
