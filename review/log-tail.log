@@ -1,47 +1,3 @@
-2026-06-17 09:48:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SQQQ @ $38.37 conf=0.75
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | REJECTED: buy AMAU | Already in position: AMAU
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ACMR | Momentum BUY: pullback entry, ADX=71, higher lows, Vol=3.8x
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | APPROVED: buy MCRP | Momentum BUY: pullback entry, ADX=80, higher lows, Vol=1.8x
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | APPROVED: buy RXT | Very high RVOL 3.8x | Moving up +1.5% | EMA trend bullish | MACD histogram positive
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCU | Very high RVOL 4.3x | Strong move +5.5% | RSI healthy (35) | Range expansion
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | REJECTED: buy NIVF | Setup broke: signal $1.03 → market $0.99 (-3.9%, max -3%)
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCH | Extreme RVOL 5.4x | Strong move +6.3% | RSI healthy (36) | Range expansion
-2026-06-17 09:48:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SQQQ | Extreme RVOL 5.4x | Trending up +0.8% | EMA trend bullish | MACD histogram positive
-2026-06-17 09:48:02 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1159 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ AMAU: score 85/100 — Momentum BUY: pullback entry, ADX=62, higher lows, Vol=8.3x
-  ✅ ACMR: score 85/100 — Momentum BUY: p
-2026-06-17 09:48:02 | WARNING  | trading_bot.engine   | SLOW CYCLE (215.2s total): update_data=169.7s, update_scalp=34.9s
-2026-06-17 09:48:05 | INFO     | trading_bot.engine   | VOL REGIME: ACMR short=0.0342 long=0.0154 ratio=2.22x → sizing mult 0.76x
-2026-06-17 09:48:05 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 0.76x × Slip 1.00x = 0.29% risk
-2026-06-17 09:48:05 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $62.33 → $50.00 (per-strategy ceiling)
-2026-06-17 09:48:05 | INFO     | trading_bot.risk.position_sizer | Position size: 17 shares @ $102.95 = $1,750.15 | Risk: $48.28 (0.2% of account) [tier: 1-150 shares]
-2026-06-17 09:48:05 | INFO     | trading_bot.engine   | Executing ACMR via IBKR...
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: ACMR → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: ACMR (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: PreSubmitted | Filled: 0.0/17.0
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: PreSubmitted | Filled: 0.0/17.0
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: PreSubmitted | Filled: 0.0/17.0
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: Filled | Filled: 17.0/17.0 | AvgPrice: $103.33
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: PreSubmitted | Filled: 0.0/17.0
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: PreSubmitted | Filled: 0.0/17.0
-2026-06-17 09:48:05 | INFO     | trading_bot.broker.ibkr | Order update: ACMR | Status: Submitted | Filled: 0.0/17.0
-2026-06-17 09:48:06 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 17 ACMR @ LIMIT $105.01 | TP: $111.63 | SL: $100.11 | Parent ID: 1079485
-2026-06-17 09:48:06 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 17/17 ACMR @ $103.3300 | signal $105.0100 | slippage -1.60% | parent=MARKET
-2026-06-17 09:48:06 | INFO     | trading_bot.engine   | BRACKET ORDER active: ACMR | SL: $100.11 | TP: $111.63 (managed by IBKR server-side)
-2026-06-17 09:48:06 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: ACMR expected $102.95 but filled @ $103.33
-2026-06-17 09:48:06 | INFO     | trading_bot.engine   | ORDER BUY ACMR via IBKR | Qty: 17 | Price: $103.33 | Cost: $1,756.61 | Stop: $100.11 (risk $54.74) | Target: $111.63 (reward $141.07) | R:R 2.6:1 | Strategy: momentum
-2026-06-17 09:48:06 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: ACMR**
-```
-  Entry: $103.33 x 17 shares = $1,756.61
-  Stop:  $100.11 (-$54.74 | -3.1%)
-  Targets: $111.63
-  Risk/Reward: 2.6
-```
-Strategy: **momentum** | Confidence: **85%**
-2026-06-17 09:48:07 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY ACMR qty=17 @ $103.33 → primary webhook (200)
-2026-06-17 09:48:07 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
 2026-06-17 09:48:10 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: MCRP spread 2.1% (price $2.36, tier max 3%) → size 1.00 × 0.94 = 0.94
 2026-06-17 09:48:10 | INFO     | trading_bot.engine   | VOL REGIME: MCRP short=0.0422 long=0.0216 ratio=1.95x → sizing mult 0.85x
 2026-06-17 09:48:10 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 0.85x × Slip 1.00x = 0.25% risk
@@ -19998,3 +19954,47 @@ Signals found: 3
 2026-06-18 08:44:32 | INFO     | trading_bot.risk.position_sizer | Position size: 1845 shares @ $0.58 = $1,070.10 | Risk: $19.14 (0.1% of account) [tier: 10-5000 shares]
 2026-06-18 08:44:32 | INFO     | trading_bot.risk.position_sizer | Position size: 42 shares @ $75.91 = $3,188.20 | Risk: $23.79 (0.1% of account) [tier: 1-150 shares]
 2026-06-18 08:44:32 | INFO     | trading_bot.risk.position_sizer | Position size: 52 shares @ $61.63 = $3,204.89 | Risk: $78.71 (0.4% of account) [tier: 1-150 shares]
+2026-06-18 08:47:29 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x | UNI-USD @ $3.09
+2026-06-18 08:47:29 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: EHGO | Score: 100 | RVOL: 9.8x | Change: +4.3% | R:R 2.9
+2026-06-18 08:47:29 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ELTX | Score: 75 | RVOL: 6.2x | Change: +1.5% | R:R 1.9
+2026-06-18 08:47:29 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: NVCR | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 10.5x | Change: +0.4% | R:R 3.0 | Size: 100%
+2026-06-18 08:47:29 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-18 08:47:29 | INFO     | trading_bot.engine   |   -> mean_reversion: buy UNI-USD @ $3.09 conf=0.81
+2026-06-18 08:47:29 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy EHGO @ $2.88 conf=1.00
+2026-06-18 08:47:29 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ELTX @ $4.72 conf=0.75
+2026-06-18 08:47:29 | INFO     | trading_bot.engine   |   -> momentum_runner: buy NVCR @ $17.86 conf=0.60
+2026-06-18 08:47:29 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:29 | INFO     | trading_bot.risk.manager | REJECTED: buy EHGO | Setup broke: signal $2.88 → market $2.30 (-20.1%, max -5%)
+2026-06-18 08:47:29 | INFO     | trading_bot.risk.manager | REJECTED: buy ELTX | Setup broke: signal $4.72 → market $3.90 (-17.4%, max -5%)
+2026-06-18 08:47:29 | INFO     | trading_bot.risk.manager | REJECTED: buy NVCR | Setup broke: signal $17.86 → market $15.03 (-15.8%, max -5%)
+2026-06-18 08:47:29 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 891 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ UNI-USD: score 81/100 — Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+  ✅ EHGO: score 100/100 — Extreme RVOL 9.8x
+2026-06-18 08:47:30 | WARNING  | trading_bot.engine   | SLOW CYCLE (188.6s total): update_data=184.0s
+2026-06-18 08:47:33 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: UNI-USD(z=-2.02 rsi=25.2 bb=MIDDLE) | WAIT[35]: AAVE-USD(weak 3d trend (-1.2%)), ADA-USD(weak 3d trend (-11.6%)), APT-USD(weak 3d trend (-4.1%)), ARB-USD(weak 3d trend (-5.6%)), ATOM-USD(weak 3d trend (-7.3%)), AVAX-USD(weak 3d trend (-4.1%)), BONK-USD(weak 3d trend (-6.7%)), BTC-USD(weak 3d trend (-3.4%)), CRV-USD(weak 3d trend (-6.2%)), DOGE-USD(weak 3d trend (-6.1%)), DOT-USD(weak 3d trend (-4.3%)), ETC-USD(weak 3d trend (-3.1%)), ETH-USD(weak 3d trend (-1.5%)), FET-USD(weak 3d trend (-9.3%)), FLOKI-USD(weak 3d trend (-1.6%)), GRT-USD(weak 3d trend (-10.3%)), HBAR-USD(weak 3d trend (-2.5%)), ICP-USD(weak 3d trend (-13.8%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-3.5%)), LTC-USD(weak 3d trend (-3.7%)), MATIC-USD(weak 3d trend (-0.9%)), NEAR-USD(weak 3d trend (-9.0%)), OP-USD(weak 3d trend (-2.7%)), PEPE-USD(weak 3d trend (-3.3%)), RNDR-USD(weak 3d trend (-7.9%)), SEI-USD(weak 3d trend (+0.5%)), SHIB-USD(weak 3d trend (-4.7%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-2.2%)), SUI-USD(weak 3d trend (-7.9%)), TON-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-0.1%)), WIF-USD(weak 3d trend (-3.6%)), XRP-USD(weak 3d trend (-6.0%)) | warming=1 | neutral=3 | no_data=2
+2026-06-18 08:47:33 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x | UNI-USD @ $3.09
+2026-06-18 08:47:33 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:33 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy UNI-USD from mean_reversion conf=0.81 price=3.089 reason=Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:33 | WARNING  | trading_bot.engine   | LEARNING BLOCK: UNI-USD avoided — consistent loser (score: -117.4)
+2026-06-18 08:47:36 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x | UNI-USD @ $3.09
+2026-06-18 08:47:36 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:36 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy UNI-USD from mean_reversion conf=0.81 price=3.089 reason=Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:36 | WARNING  | trading_bot.engine   | LEARNING BLOCK: UNI-USD avoided — consistent loser (score: -117.4)
+2026-06-18 08:47:39 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x | UNI-USD @ $3.09
+2026-06-18 08:47:39 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:39 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy UNI-USD from mean_reversion conf=0.81 price=3.089 reason=Mean reversion BUY: Z=-2.02, RSI=25, BB=near, Vol=1.9x
+2026-06-18 08:47:39 | WARNING  | trading_bot.engine   | LEARNING BLOCK: UNI-USD avoided — consistent loser (score: -117.4)
+2026-06-18 08:47:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-18 08:47:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-18 08:47:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-18 08:47:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-18 08:47:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-18 08:47:43 | INFO     | trading_bot.engine   | IBKR scanner: 122 unique symbols discovered | 50 gainers, 30 gaps, 20 losers
+2026-06-18 08:47:43 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-18 08:47:43 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
+2026-06-18 08:47:43 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 104 low-priority equity names; max 90)
+2026-06-18 08:47:43 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
+2026-06-18 08:47:43 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-18 08:47:43 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
