@@ -1,26 +1,20 @@
-=== executed: 60517acad7b65e7e250943553f83665e060cda55
-=== started:  2026-06-19T02:34:16Z
+=== executed: 34aac07b33d4e87297cd3dd57d527928d7d5f1ae
+=== started:  2026-06-19T02:40:18Z
 === exit:     
 === timeout:  90s
 ===
 deploy: backed up 11 data/*.json files
-deploy: checked out faf96a02 on main
+deploy: checked out dc149121 on main
 deploy: container trading-bot-trading-bot-1 restarted
 deploy: dashboard ready after 6s
 deploy: ok
 
-=== verify all 12 keys are now under risk: at runtime ===
-profit_taking.enabled         = True (expect True)
-profit_taking.targets count   = 10 (expect 10)
-velocity_exits.enabled        = True
-breakeven.enabled             = True
-strategy_daily_dd_pause_pct   = 0.05 (expect 0.05)
-min_volume                    = 200000 (expect 200000)
-max_total_trades_per_day      = 25 (expect 25)
-falling_knife_pct             = -5.0 (expect -5.0)
-portfolio_limits.max_single_name_pct = 0.25 (expect 0.25)
-blocked_symbols count         = 55 (expect 55)
+=== verify watchlist guard is live ===
+1
+(expect 1 = the log.warning line is present)
 
-=== confirm cost_model still has its own keys ===
-cost_model keys: ['crypto_fee_bps', 'crypto_spread_bps_default', 'enabled', 'equity_fee_bps', 'equity_spread_bps_default', 'min_edge_cost_ratio', 'spread_mult']
-cost_model.equity_fee_bps = 2.0
+=== preset cleansed of leveraged ETFs ===
+preset symbols: ['SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'VTI', 'XLK', 'XLF', 'XLE', 'XLV', 'XLI']
+leveraged in preset: [] (expect [])
+
+=== bot log: WATCHLIST BLOCKED warnings since restart? ===
