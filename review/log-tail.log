@@ -1,60 +1,3 @@
-2026-06-18 13:26:23 | ERROR    | trading_bot.engine   | CLOSE FAILED for LNKS — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-18 13:26:23 | WARNING  | trading_bot.broker.ibkr | Order 1101866 not found
-2026-06-18 13:26:23 | INFO     | trading_bot.engine   | Cancelled broker stop order for LNKS
-2026-06-18 13:26:23 | WARNING  | trading_bot.broker.ibkr | Order 1101866 not found
-2026-06-18 13:26:23 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for LNKS: This event loop is already running
-2026-06-18 13:26:23 | ERROR    | trading_bot.engine   | IBKR close order FAILED for LNKS
-2026-06-18 13:26:23 | ERROR    | trading_bot.engine   | CLOSE FAILED for LNKS — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-18 13:26:24 | WARNING  | trading_bot.broker.ibkr | Order 1101866 not found
-2026-06-18 13:26:24 | INFO     | trading_bot.engine   | Cancelled broker stop order for LNKS
-2026-06-18 13:26:24 | WARNING  | trading_bot.broker.ibkr | Order 1101866 not found
-2026-06-18 13:26:24 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: LNKS → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-18 13:26:24 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: Submitted | Filled: 0.0/147.0
-2026-06-18 13:26:24 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: Filled | Filled: 147.0/147.0 | AvgPrice: $3.18
-2026-06-18 13:26:25 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 147 LNKS @ MARKET MKT | Order ID: 1103023
-2026-06-18 13:26:25 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 147/147 LNKS @ $3.18 | Order ID: 1103023
-2026-06-18 13:26:25 | INFO     | trading_bot.engine   | CLOSED LNKS via IBKR | trailing_stop | P&L: $+63.21 | Trailing stop at $3.19 (trail 2.5%)
-2026-06-18 13:26:25 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT LNKS qty=147 @ $3.18 → primary webhook (200)
-2026-06-18 13:26:25 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: LNKS** (trailing_stop)
-```
-  Entry: $2.75 → Exit: $3.18
-  P&L: $+63.21 (+15.64%)
-  Shares: 147 | Value: $467.46
-  Hold: 12m
-```
-Strategy: **momentum** | Trailing stop at $3.19 (trail 2
-2026-06-18 13:26:26 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: LNKS +63.21 (344 total in history)
-2026-06-18 13:26:28 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [LNKS]: **BOOST:momentum**
-
-Strong 15.6% gain in 12min, trailing stop worked perfectly on LNKS. 53% win rate is borderline — boosting allocation on clean momentum setups reinforces what's working.
-2026-06-18 13:26:28 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'momentum' (total boosts: 1)
-2026-06-18 13:26:28 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=77, breakout>2.86, Vol=5.6x | LNKS @ $3.23
-2026-06-18 13:26:28 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-18 13:26:28 | INFO     | trading_bot.engine   |   -> momentum: buy LNKS @ $3.23 conf=0.85
-2026-06-18 13:26:28 | INFO     | trading_bot.risk.manager | APPROVED: buy LNKS | Momentum BUY: pullback entry, ADX=77, breakout>2.86, Vol=5.6x
-2026-06-18 13:26:28 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 855 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ LNKS: score 85/100 — Momentum BUY: pullback entry, ADX=77, breakout>2.86, Vol=5.6
-Approved: 1 trades
-2026-06-18 13:26:29 | WARNING  | trading_bot.engine   | SLOW CYCLE (174.0s total): update_data=163.8s
-2026-06-18 13:26:31 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.545% over 16 fills → sizing mult 0.59x
-2026-06-18 13:26:31 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 0.59x = 0.25% risk
-2026-06-18 13:26:31 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $53.54 → $50.00 (per-strategy ceiling)
-2026-06-18 13:26:31 | INFO     | trading_bot.risk.position_sizer | Position size: 138 shares @ $3.25 = $448.50 | Risk: $49.69 (0.2% of account) [tier: 10-2000 shares]
-2026-06-18 13:26:31 | INFO     | trading_bot.engine   | Executing LNKS via IBKR...
-2026-06-18 13:26:31 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: LNKS → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-18 13:26:31 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: LNKS (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-18 13:26:31 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: PreSubmitted | Filled: 0.0/138.0
-2026-06-18 13:26:31 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: PreSubmitted | Filled: 0.0/138.0
-2026-06-18 13:26:31 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: PreSubmitted | Filled: 0.0/138.0
-2026-06-18 13:26:31 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: Filled | Filled: 138.0/138.0 | AvgPrice: $3.25
-2026-06-18 13:26:32 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: PreSubmitted | Filled: 0.0/138.0
-2026-06-18 13:26:32 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: PreSubmitted | Filled: 0.0/138.0
-2026-06-18 13:26:32 | INFO     | trading_bot.broker.ibkr | Order update: LNKS | Status: Submitted | Filled: 0.0/138.0
-2026-06-18 13:26:32 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 138 LNKS @ LIMIT $3.31 | TP: $4.33 | SL: $2.89 | Parent ID: 1103031
-2026-06-18 13:26:33 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 138/138 LNKS @ $3.2500 | signal $3.3100 | slippage -1.81% | parent=MARKET
-2026-06-18 13:26:33 | INFO     | trading_bot.engine   | BRACKET ORDER active: LNKS | SL: $2.89 | TP: $4.33 (managed by IBKR server-side)
 2026-06-18 13:26:33 | WARNING  | trading_bot.engine   | SLIPPAGE WARNING: LNKS slippage +0.6% (threshold 0.8%, RTH) | Signal $3.23 → Fill $3.25
 2026-06-18 13:26:33 | INFO     | trading_bot.engine   | ORDER BUY LNKS via IBKR | Qty: 138 | Price: $3.25 | Cost: $448.50 | Stop: $2.89 (risk $49.69) | Target: $4.33 (reward $148.45) | R:R 3.0:1 | Strategy: momentum
 2026-06-18 13:26:33 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: LNKS**
@@ -19998,3 +19941,60 @@ Signals found: 5
 2026-06-19 05:33:06 | INFO     | trading_bot.engine   | IBKR scanner: 129 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
 2026-06-19 05:33:06 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-19 05:33:06 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 83 low-priority equity names; max 90)
+2026-06-19 05:36:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=61, higher lows, Vol=3.1x | SOFI @ $17.88
+2026-06-19 05:36:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=82, Vol=2.5x | BEX @ $76.00
+2026-06-19 05:36:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=48, higher lows, Vol=8.4x | SMU @ $11.65
+2026-06-19 05:36:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AMC | Score: 80 | RVOL: 64.0x | Change: +2.7% | R:R 1.7
+2026-06-19 05:36:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LNKS | Score: 80 | RVOL: 62.3x | Change: +6.5% | R:R 2.5
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $17.88 conf=0.85
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   |   -> momentum: buy BEX @ $76.00 conf=0.80
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   |   -> momentum: buy SMU @ $11.65 conf=0.85
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AMC @ $2.83 conf=0.80
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LNKS @ $2.65 conf=0.80
+2026-06-19 05:36:17 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: pullback entry, ADX=61, higher lows, Vol=3.1x
+2026-06-19 05:36:17 | INFO     | trading_bot.risk.manager | APPROVED: buy BEX | Momentum BUY: pullback entry, ADX=82, Vol=2.5x
+2026-06-19 05:36:17 | INFO     | trading_bot.risk.manager | APPROVED: buy SMU | Momentum BUY: pullback entry, ADX=48, higher lows, Vol=8.4x
+2026-06-19 05:36:17 | INFO     | trading_bot.risk.manager | APPROVED: buy AMC | Extreme RVOL 64.0x | Moving up +2.7% | EMA trend bullish | MACD histogram positive
+2026-06-19 05:36:17 | INFO     | trading_bot.risk.manager | REJECTED: buy LNKS | Setup broke: signal $2.65 → market $2.51 (-5.3%, max -3%)
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — SOFI, BEX, SMU, AMC
+2026-06-19 05:36:17 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 795 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ SOFI: score 85/100 — Momentum BUY: pullback entry, ADX=61, higher lows, Vol=3.1x
+  ✅ BEX: score 80/100 — Momentum BUY: pul
+2026-06-19 05:36:17 | WARNING  | trading_bot.engine   | SLOW CYCLE (195.0s total): update_data=190.3s
+2026-06-19 05:36:17 | INFO     | trading_bot.engine   | CYCLE #91: regime=sideways | signals=5->approved=0 | positions=0/15 | bars_warm=82/82 | equity_open=False | pm=False pwr_hr=False
+2026-06-19 05:36:20 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-11.1%)), ALGO-USD(weak 3d trend (-5.7%)), APT-USD(weak 3d trend (-6.1%)), ARB-USD(weak 3d trend (-6.5%)), ATOM-USD(weak 3d trend (-7.7%)), AVAX-USD(weak 3d trend (-12.6%)), BONK-USD(weak 3d trend (-7.7%)), BTC-USD(weak 3d trend (-6.3%)), CRV-USD(weak 3d trend (-12.5%)), DOGE-USD(weak 3d trend (-7.3%)), DOT-USD(weak 3d trend (-7.2%)), ETH-USD(weak 3d trend (-5.4%)), FET-USD(weak 3d trend (-11.3%)), FLOKI-USD(weak 3d trend (-2.7%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-5.2%)), ICP-USD(weak 3d trend (-10.5%)), IMX-USD(weak 3d trend (+0.0%)), JUP-USD(weak 3d trend (-0.1%)), LINK-USD(weak 3d trend (-6.3%)), LTC-USD(weak 3d trend (-5.6%)), MATIC-USD(weak 3d trend (-2.3%)), NEAR-USD(weak 3d trend (-15.2%)), OP-USD(weak 3d trend (-6.5%)), PEPE-USD(weak 3d trend (-6.7%)), RNDR-USD(weak 3d trend (-8.1%)), SHIB-USD(weak 3d trend (-7.7%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-8.5%)), SUI-USD(weak 3d trend (-11.0%)), TON-USD(weak 3d trend (-2.9%)), TRX-USD(weak 3d trend (+0.8%)), UNI-USD(weak 3d trend (-0.1%)), WIF-USD(weak 3d trend (-2.4%)), XLM-USD(weak 3d trend (-0.4%)), XRP-USD(weak 3d trend (-8.9%)) | neutral=1 | no_data=5
+2026-06-19 05:36:27 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-19 05:36:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-19 05:36:28 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-19 05:36:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-19 05:36:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-19 05:36:30 | INFO     | trading_bot.engine   | IBKR scanner: 129 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
+2026-06-19 05:36:30 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-19 05:36:30 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 83 low-priority equity names; max 90)
+2026-06-19 05:39:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=61, higher lows, Vol=3.1x | SOFI @ $17.88
+2026-06-19 05:39:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=82, Vol=2.5x | BEX @ $76.00
+2026-06-19 05:39:53 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=48, higher lows, Vol=8.4x | SMU @ $11.65
+2026-06-19 05:39:53 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AMC | Score: 80 | RVOL: 64.0x | Change: +2.7% | R:R 1.7
+2026-06-19 05:39:53 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LNKS | Score: 80 | RVOL: 62.3x | Change: +6.5% | R:R 2.5
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   |   -> momentum: buy SOFI @ $17.88 conf=0.85
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   |   -> momentum: buy BEX @ $76.00 conf=0.80
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   |   -> momentum: buy SMU @ $11.65 conf=0.85
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AMC @ $2.83 conf=0.80
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LNKS @ $2.65 conf=0.80
+2026-06-19 05:39:53 | INFO     | trading_bot.risk.manager | APPROVED: buy SOFI | Momentum BUY: pullback entry, ADX=61, higher lows, Vol=3.1x
+2026-06-19 05:39:53 | INFO     | trading_bot.risk.manager | APPROVED: buy BEX | Momentum BUY: pullback entry, ADX=82, Vol=2.5x
+2026-06-19 05:39:53 | INFO     | trading_bot.risk.manager | APPROVED: buy SMU | Momentum BUY: pullback entry, ADX=48, higher lows, Vol=8.4x
+2026-06-19 05:39:53 | INFO     | trading_bot.risk.manager | APPROVED: buy AMC | Extreme RVOL 64.0x | Moving up +2.7% | EMA trend bullish | MACD histogram positive
+2026-06-19 05:39:53 | INFO     | trading_bot.risk.manager | REJECTED: buy LNKS | Setup broke: signal $2.65 → market $2.51 (-5.3%, max -3%)
+2026-06-19 05:39:53 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 4 buy signal(s) — SOFI, BEX, SMU, AMC
+2026-06-19 05:39:53 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 795 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ SOFI: score 85/100 — Momentum BUY: pullback entry, ADX=61, higher lows, Vol=3.1x
+  ✅ BEX: score 80/100 — Momentum BUY: pul
+2026-06-19 05:39:53 | WARNING  | trading_bot.engine   | SLOW CYCLE (206.8s total): update_data=202.7s
+2026-06-19 05:39:56 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-11.1%)), ALGO-USD(weak 3d trend (-5.7%)), APT-USD(weak 3d trend (-6.1%)), ARB-USD(weak 3d trend (-6.5%)), ATOM-USD(weak 3d trend (-7.7%)), AVAX-USD(weak 3d trend (-12.4%)), BONK-USD(weak 3d trend (-7.7%)), BTC-USD(weak 3d trend (-6.4%)), CRV-USD(weak 3d trend (-12.5%)), DOGE-USD(weak 3d trend (-7.5%)), DOT-USD(weak 3d trend (-7.2%)), ETH-USD(weak 3d trend (-5.5%)), FET-USD(weak 3d trend (-11.3%)), FLOKI-USD(weak 3d trend (-2.7%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-5.7%)), ICP-USD(weak 3d trend (-10.5%)), IMX-USD(weak 3d trend (+0.0%)), JUP-USD(weak 3d trend (-0.1%)), LINK-USD(weak 3d trend (-6.3%)), LTC-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-2.3%)), NEAR-USD(weak 3d trend (-15.2%)), OP-USD(weak 3d trend (-6.5%)), PEPE-USD(weak 3d trend (-6.7%)), RNDR-USD(weak 3d trend (-8.1%)), SHIB-USD(weak 3d trend (-7.7%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-8.8%)), SUI-USD(weak 3d trend (-11.0%)), TON-USD(weak 3d trend (-2.9%)), TRX-USD(weak 3d trend (+0.8%)), UNI-USD(weak 3d trend (-0.1%)), WIF-USD(weak 3d trend (-2.4%)), XLM-USD(weak 3d trend (-1.1%)), XRP-USD(weak 3d trend (-8.9%)) | neutral=1 | no_data=5
