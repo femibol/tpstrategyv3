@@ -1,19 +1,26 @@
-=== executed: 90b59fe99b6bb57dba0f53523677d7b7da3a579c
-=== started:  2026-06-19T01:50:16Z
+=== executed: 60517acad7b65e7e250943553f83665e060cda55
+=== started:  2026-06-19T02:34:16Z
 === exit:     
 === timeout:  90s
 ===
 deploy: backed up 11 data/*.json files
-deploy: checked out 2fa063f6 on main
+deploy: checked out faf96a02 on main
 deploy: container trading-bot-trading-bot-1 restarted
 deploy: dashboard ready after 6s
 deploy: ok
 
-=== verify blocked_symbols is now visible at runtime ===
-blocked_symbols count: 55 (expect 55)
-SOXL in list: True (expect True)
-JNUG in list: True (expect True)
-TZA  in list: True  (expect True)
-TQQQ in list: True (expect True)
+=== verify all 12 keys are now under risk: at runtime ===
+profit_taking.enabled         = True (expect True)
+profit_taking.targets count   = 10 (expect 10)
+velocity_exits.enabled        = True
+breakeven.enabled             = True
+strategy_daily_dd_pause_pct   = 0.05 (expect 0.05)
+min_volume                    = 200000 (expect 200000)
+max_total_trades_per_day      = 25 (expect 25)
+falling_knife_pct             = -5.0 (expect -5.0)
+portfolio_limits.max_single_name_pct = 0.25 (expect 0.25)
+blocked_symbols count         = 55 (expect 55)
 
-=== bot log: any BLOCKED SYMBOL warnings since restart? ===
+=== confirm cost_model still has its own keys ===
+cost_model keys: ['crypto_fee_bps', 'crypto_spread_bps_default', 'enabled', 'equity_fee_bps', 'equity_spread_bps_default', 'min_edge_cost_ratio', 'spread_mult']
+cost_model.equity_fee_bps = 2.0
