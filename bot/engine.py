@@ -8806,8 +8806,25 @@ class TradingEngine:
             perf["losses"] += 1
 
     def add_to_watchlist(self, symbol):
-        """Add a symbol to the weekly watchlist AND inject into active strategies."""
+        """Add a symbol to the weekly watchlist AND inject into active strategies.
+
+        Rejects symbols on `risk.blocked_symbols` — a manually-added watchlist
+        symbol bypasses the scanner's leveraged-ETF class filter (the filter
+        only runs inside `scan_market`). The 2026-06-18 SOXL bleed traced to
+        this exact gap: the symbol came in via a preset, the engine's blocked
+        guard at `_execute_signal` was unreachable due to a YAML mis-nesting,
+        and we lost $65. PR #240 fixed the YAML; this guard adds a second
+        layer so the next person who adds a leveraged ticker by hand gets
+        rejected at the source.
+        """
         symbol = symbol.upper()
+        blocked = self.config.risk_config.get("blocked_symbols", []) or []
+        if symbol in {s.upper() for s in blocked}:
+            log.warning(
+                f"WATCHLIST BLOCKED: {symbol} is on risk.blocked_symbols — "
+                f"refusing to add (would bypass the scanner's class filter)"
+            )
+            return self.watchlist
         if symbol not in self.watchlist:
             self.watchlist.append(symbol)
             log.info(f"Added {symbol} to watchlist")
@@ -8857,9 +8874,17 @@ class TradingEngine:
                         "RKLB", "SOFI", "HOOD", "AFRM", "U", "SE"],
         },
         "sp500_etfs": {
-            "label": "S&P 500 ETFs",
+            "label": "Broad market ETFs",
+            # 2026-06-18: dropped TQQQ + SOXL + ARKK. The first two are 3x
+            # leveraged products this long-only bot has no business holding
+            # (SOXL silently traded through blocked_symbols on 2026-06-18 — see
+            # PR #240 for the YAML mis-nesting that allowed it). ARKK is a
+            # thematic active-management fund, not an index ETF, and was
+            # mis-categorized here. Defense in depth: `add_to_watchlist` now
+            # also rejects symbols in `risk.blocked_symbols` so even a
+            # custom preset can't sneak a leveraged ETF in.
             "symbols": ["SPY", "QQQ", "IWM", "DIA", "VOO", "VTI", "XLK",
-                        "XLF", "XLE", "XLV", "XLI", "ARKK", "TQQQ", "SOXL"],
+                        "XLF", "XLE", "XLV", "XLI"],
         },
         "crypto_major": {
             "label": "Crypto Major",
