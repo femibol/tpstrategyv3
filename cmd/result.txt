@@ -1,58 +1,70 @@
-=== executed: 36c70b1addf21c35f44f49c056706de83a5620ea
-=== started:  2026-06-19T01:25:07Z
+=== executed: a4d0bf1306ad448e27e3790cfe5defa17bd6b385
+=== started:  2026-06-19T01:35:04Z
 === exit:     
 === timeout:  90s
 ===
-Now (ET): 2026-06-18 21:25:02
+=== SOXL: how did it enter the universe today? ===
+--- first SOXL log line in last 24h ---
+2026-06-18 09:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=32, Vol=1.2x | SOXL @ $268.59
+2026-06-18 09:40:21 | INFO     | trading_bot.engine   |   -> momentum: buy SOXL @ $268.59 conf=0.80
+2026-06-18 09:40:21 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXL | Momentum BUY: EMA cross, ADX=32, Vol=1.2x
 
-=== TODAY (Thu 2026-06-18 ET) ===
-today                 : 18 trades, $-92.96, wr 50%, PF 0.57
-yesterday (06-17) ref: 29 trades, $-299.19, wr 28%, PF 0.20
+--- any 'add to watchlist' / 'inject' / 'preset' for SOXL? ---
 
-=== TODAY by strategy ===
-  momentum                  17t  $  -29.74  wr  53%
-  mean_reversion             1t  $  -63.22  wr   0%
+--- SOXL leveraged-ETF filter activity (did the filter ever DROP SOXL?) ---
 
-=== TODAY by hour ET ===
-  02:00    1t  $  -63.22  wr   0%
-  09:00    5t  $  -39.14  wr  60%
-  11:00    4t  $  -58.56  wr  50%
-  12:00    1t  $   +0.00  wr   0%
-  13:00    4t  $  +97.23  wr 100%
-  15:00    3t  $  -29.27  wr   0%
+--- recent LEVERAGED ETF FILTER lines (last 5) — confirm filter is firing on OTHER ETFs ---
 
-=== TODAY most recent 12 trades ===
-  11:38  SOXL    momentum            $ -61.83  (stop_loss)
-  11:39  LNKS    momentum            +$   2.45  (partial_target_0)
-  11:42  LNKS    momentum            +$   5.32  (partial_target_-1)
-  11:45  LNKS    momentum            $  -4.50  (stop_loss)
-  12:56  WPRT    momentum            +$   0.00  (slippage_reject)
-  13:23  LNKS    momentum            +$  28.56  (partial_target_0)
-  13:26  LNKS    momentum            +$  63.21  (trailing_stop)
-  13:39  LNKS    momentum            +$   3.80  (partial_target_-1)
-  13:42  LNKS    momentum            +$   1.66  (trailing_stop)
-  15:21  HQ      momentum            $  -8.58  (slippage_reject)
-  15:34  OM      momentum            $ -11.69  (stop_loss)
-  15:50  GLWG    momentum            $  -9.00  (stop_loss)
+=== where is SOXL right now in the running engine? ===
 
-=== open positions right now (via API) ===
-  open: 0
-
-=== new-broader-scanner check — any unusual tickers post-deploy? ===
-    107 IBKR scanner [TOP_PERC_LOSE]: 20 results
-    107 IBKR scanner [TOP_PERC_GAIN]: 50 results
-    107 IBKR scanner [MOST_ACTIVE]: 30 results
-    107 IBKR scanner [HIGH_OPEN_GAP]: 30 results
-     93 IBKR scanner [HOT_BY_VOLUME]: 30 results
-     14 IBKR scanner [HOT_BY_VOLUME]: 29 results
-
-  TODAY ICCM/SNBR/EHGO/SDOT/YMAT log presence (the names that were 0 yesterday):
-    ICCM   53
-    SNBR   0
-    EHGO   20
-    SDOT   0
-    YMAT   0
-    QURE   0
-    FTHM   0
-    ELTX   4
-    ALOT   0
+=== SOXL trade today, full reason context ===
+2026-06-18 09:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=68, Vol=6.7x | WPRT @ $2.09
+2026-06-18 09:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, higher lows, Vol=2.5x | LINT @ $242.80
+2026-06-18 09:40:21 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=32, Vol=1.2x | SOXL @ $268.59
+2026-06-18 09:40:21 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: EHGO | Score: 95 | RVOL: 3.9x | Change: +4.3% | R:R 2.9
+2026-06-18 09:40:21 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
+--
+2026-06-18 09:40:21 | INFO     | trading_bot.engine   |   -> momentum: buy WPRT @ $2.09 conf=0.80
+2026-06-18 09:40:21 | INFO     | trading_bot.engine   |   -> momentum: buy LINT @ $242.80 conf=0.85
+2026-06-18 09:40:21 | INFO     | trading_bot.engine   |   -> momentum: buy SOXL @ $268.59 conf=0.80
+2026-06-18 09:40:21 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy EHGO @ $2.88 conf=0.95
+2026-06-18 09:40:21 | INFO     | trading_bot.risk.manager | APPROVED: buy AMBO | Mean reversion BUY: Z=-2.65, RSI=23, BB=lower, Vol=6.5x
+--
+2026-06-18 09:40:21 | INFO     | trading_bot.risk.manager | REJECTED: buy WPRT | Already in position: WPRT
+2026-06-18 09:40:21 | INFO     | trading_bot.risk.manager | APPROVED: buy LINT | Momentum BUY: pullback entry, ADX=50, higher lows, Vol=2.5x
+2026-06-18 09:40:21 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXL | Momentum BUY: EMA cross, ADX=32, Vol=1.2x
+2026-06-18 09:40:21 | INFO     | trading_bot.risk.manager | REJECTED: buy EHGO | Setup broke: signal $2.88 → market $2.42 (-16.0%, max -3%)
+2026-06-18 09:40:21 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1167 symbols
+--
+2026-06-18 09:40:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-18 09:40:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-18 09:40:39 | INFO     | trading_bot.engine   | VOL REGIME: SOXL short=0.0439 long=0.0210 ratio=2.09x → sizing mult 0.80x
+2026-06-18 09:40:39 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.583% over 10 fills → sizing mult 0.53x
+2026-06-18 09:40:39 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 0.80x × Slip 0.53x = 0.25% risk
+2026-06-18 09:40:39 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $53.48 → $50.00 (per-strategy ceiling)
+2026-06-18 09:40:39 | INFO     | trading_bot.risk.position_sizer | Position size: 3 shares @ $268.98 = $806.94 | Risk: $43.83 (0.2% of account) [tier: 1-50 shares]
+2026-06-18 09:40:39 | INFO     | trading_bot.engine   | Executing SOXL via IBKR...
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SOXL → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: SOXL (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: PreSubmitted | Filled: 0.0/3.0
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: PreSubmitted | Filled: 0.0/3.0
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: PreSubmitted | Filled: 0.0/3.0
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: Filled | Filled: 3.0/3.0 | AvgPrice: $268.89
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: PreSubmitted | Filled: 0.0/3.0
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: PreSubmitted | Filled: 0.0/3.0
+2026-06-18 09:40:39 | INFO     | trading_bot.broker.ibkr | Order update: SOXL | Status: Submitted | Filled: 0.0/3.0
+2026-06-18 09:40:40 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 3 SOXL @ LIMIT $274.36 | TP: $314.41 | SL: $254.37 | Parent ID: 1096316
+2026-06-18 09:40:41 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 3/3 SOXL @ $268.8900 | signal $274.3600 | slippage -1.99% | parent=MARKET
+2026-06-18 09:40:41 | INFO     | trading_bot.engine   | BRACKET ORDER active: SOXL | SL: $254.37 | TP: $314.41 (managed by IBKR server-side)
+2026-06-18 09:40:41 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: SOXL expected $268.98 but filled @ $268.89
+2026-06-18 09:40:41 | INFO     | trading_bot.engine   | ORDER BUY SOXL via IBKR | Qty: 3 | Price: $268.89 | Cost: $806.67 | Stop: $254.37 (risk $43.56) | Target: $314.41 (reward $136.57) | R:R 3.1:1 | Strategy: momentum
+2026-06-18 09:40:41 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: SOXL**
+```
+  Entry: $268.89 x 3 shares = $806.67
+--
+Strategy: **momentum** | Confidence: **80%**
+Re
+2026-06-18 09:40:41 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY SOXL qty=3 @ $268.89 → primary webhook (200)
+2026-06-18 09:40:41 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
+2026-06-18 09:40:41 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
+--
