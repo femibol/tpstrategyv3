@@ -1,25 +1,61 @@
-=== executed: 0f5bcde76d56288cd2516f1b10d0cb4d0282f453
-=== started:  2026-06-19T01:40:04Z
+=== executed: a79fbe29a1ca17c8772590a4236b734ca7557255
+=== started:  2026-06-19T01:43:02Z
 === exit:     
 === timeout:  90s
 ===
-=== runtime blocked_symbols (what the BOT actually sees) ===
+=== runtime config — what blocked_symbols does the bot actually see? ===
+blocked_symbols type: list, count: 0
+SOXL in list: False
+TQQQ in list: False
+JNUG in list: False
+first 8 entries: []
 
-=== did 'BLOCKED SYMBOL' guard fire today at all? (last 24h) ===
+=== auto-tuner overlay files ===
+-rw-r--r-- 1 root root  81 Jun 18 16:05 /app/data/auto-tuner-overrides.yaml
+-rw-r--r-- 1 root root 873 Jun 18 16:05 /app/data/strategy-tuner-overrides.yaml
+risk:
+  stop_loss_pct: 0.0512
+  trailing_stop_pct: 0.032
+  take_profit_pct: 0.15
+---
+momentum:
+  adx_threshold: 28
+  atr_stop_multiplier: 2.3
+  atr_target_multiplier: 6.0
+  volume_surge_multiplier: 1.7
+rvol_momentum:
+  min_rvol: 3.8
+  min_score: 78
+  atr_stop_multiplier: 2.1
+  atr_target_multiplier: 3.5
+rvol_scalp:
+  min_rvol: 4.499999999999999
+  min_score: 80
+  atr_stop_multiplier: 1.2
+  atr_target_multiplier: 2.5999999999999996
+mean_reversion:
+  entry_zscore: -2.7
+  bollinger_std: 2.9
+  rsi_oversold: 30
+allocation:
+  smc_forever: 0.15
+  mean_reversion: 0.15
+  momentum: 0.178
+  vwap_scalp: 0.083
+  pairs_trading: 0.083
+  momentum_runner: 0.095
+  rvol_momentum: 0.042
+  rvol_scalp: 0.042
+  prebreakout: 0.032
+  premarket_gap: 0.016
 
-=== SAFETY GATE BLOCK lines today ===
-2026-06-18 11:48:47 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: LINT via momentum — momentum hit daily DD limit (-3.01%)
-2026-06-18 11:51:46 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: CIFU via momentum — momentum hit daily DD limit (-3.01%)
-2026-06-18 11:51:49 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: LINT via momentum — momentum hit daily DD limit (-3.01%)
-2026-06-18 12:01:10 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: LINT via momentum — momentum hit daily DD limit (-3.01%)
-2026-06-18 12:10:04 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: CIFU via momentum — momentum hit daily DD limit (-3.01%)
-2026-06-18 12:16:10 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: CIFU via momentum — momentum hit daily DD limit (-3.01%)
-2026-06-18 12:16:12 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: LINT via momentum — momentum hit daily DD limit (-3.01%)
+=== JNUG trade context (2026-06-15) — same bypass pattern as SOXL? ===
+<stdin>:6: SyntaxWarning: invalid escape sequence '\$'
+  2026-05-18T10:08:21  TZA  strat=momentum  pnl=\$-21.75  reason=trailing_stop
+  2026-05-18T11:27:34  TZA  strat=momentum  pnl=\$+0.00  reason=trailing_stop
+  2026-06-15T10:38:41  JNUG  strat=momentum  pnl=\$-46.09  reason=stop_loss
+  2026-06-18T09:59:29  SOXL  strat=momentum  pnl=\$-3.42  reason=stop_loss
+  2026-06-18T11:38:50  SOXL  strat=momentum  pnl=\$-61.83  reason=stop_loss
 
-=== Did the bot detect SOXL as crypto by mistake? ===
-
-=== Other leveraged-ETF tickers in trade_history (ever)? ===
-leveraged-ETF symbols in trade_history:
-  JNUG     1t  $  -46.09  last=2026-06-15
-  SOXL     2t  $  -65.25  last=2026-06-18
-  TZA      2t  $  -21.75  last=2026-05-18
+=== source-level: does _execute_signal even run for these? ===
+(search trade-execution paths that DON'T go through _execute_signal)
