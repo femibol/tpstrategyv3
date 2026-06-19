@@ -129,6 +129,77 @@ risk:
   # Other valid codes: STK.US.NASDAQ, STK.US.NYSE, STK.US.AMEX.
   scanner_location: "STK.US"
 
+  # --- Blocked Symbols ---
+  # Inverse and leveraged ETFs that appear as "gainers" but are directionally
+  # wrong for a long-only momentum bot (going long SQQQ = betting against
+  # Nasdaq). Also includes crypto pairs the bot has structurally lost on —
+  # gate enforced in `_execute_signal` (engine.py:5918) so dynamic-scanner
+  # injection can't sneak them back in. NOTE 2026-06-18: this list was
+  # previously mis-nested under `cost_model:` due to an indentation slip,
+  # making it invisible to the engine (`risk.blocked_symbols → None`). Three
+  # leveraged ETFs (SOXL -$65, JNUG -$46, TZA -$22) traded through unblocked
+  # before the move-back. If you add new tickers, KEEP THIS UNDER `risk:`.
+  blocked_symbols:
+    - "SQQQ"   # 3x inverse Nasdaq
+    - "TQQQ"   # 3x leveraged Nasdaq (extreme slippage risk)
+    - "SOXS"   # 3x inverse semiconductors
+    - "SOXL"   # 3x leveraged semiconductors
+    - "SPXS"   # 3x inverse S&P 500
+    - "SPXU"   # 3x inverse S&P 500
+    - "SDOW"   # 3x inverse Dow
+    - "LABD"   # 3x inverse biotech
+    - "LABU"   # 3x leveraged biotech
+    - "UVXY"   # 1.5x leveraged VIX
+    - "SVXY"   # 0.5x inverse VIX
+    - "VIXY"   # VIX short-term futures
+    - "UVIX"   # 2x leveraged VIX
+    - "SH"     # 1x inverse S&P 500
+    - "TZA"    # 3x inverse small-cap (-$22 on 2026-05-18 premarket momo, trail bug + wrong-direction)
+    - "TNA"    # 3x leveraged small-cap (paired with TZA — both inverse pairs blocked)
+    # Crypto blacklist — these symbols re-entered today via dynamic scanner
+    # injection even though removed from the static crypto.symbols list.
+    - "BCH-USD"  # 3/3 losses today, -$63 — single worst symbol; high ATR vs entry size
+    - "FIL-USD"  # 1/4 win, -$20 today (combined with -$20 historical)
+    - "SDS"    # 2x inverse S&P 500
+    - "PSQ"    # 1x inverse Nasdaq
+    - "QID"    # 2x inverse Nasdaq
+    - "DOG"    # 1x inverse Dow
+    - "DXD"    # 2x inverse Dow
+    - "SRTY"   # 3x inverse Russell 2000
+    - "FAZ"    # 3x inverse financials
+    - "ERY"    # 2x inverse energy
+    - "DUST"   # 2x inverse gold miners
+    - "GDXD"   # 2x inverse gold miners
+    - "JDST"   # 2x inverse junior gold miners
+    - "YANG"   # 3x inverse China
+    - "DRIP"   # 2x inverse S&P Oil & Gas E&P
+    - "WEBS"   # 3x inverse Dow
+    - "HIBS"   # 3x inverse high beta — bled -$375 in 5s on 2026-06-05 (slippage_reject below stop_loss)
+    # Added 2026-06-05 — companions to the above + leveraged variants
+    # that whipsaw faster than the bot's exit logic can react.
+    - "HIBL"   # 3x leveraged high beta
+    - "EDZ"    # 3x inverse emerging markets — lost -$47.70 today (2026-06-05)
+    - "EDC"    # 3x leveraged emerging markets
+    - "GUSH"   # 2x leveraged S&P Oil & Gas E&P
+    - "YINN"   # 3x leveraged China
+    - "DRN"    # 3x leveraged real estate
+    - "DRV"    # 3x inverse real estate
+    - "NUGT"   # 2x leveraged junior gold miners
+    - "JNUG"   # 2x leveraged junior gold miners (-$46 on 2026-06-15, this bug)
+    - "ERX"    # 2x leveraged energy
+    - "TECS"   # 3x inverse technology
+    - "TECL"   # 3x leveraged technology
+    - "FNGD"   # 3x inverse FANG+
+    - "FNGU"   # 3x leveraged FANG+
+    - "BNKD"   # 3x inverse banks
+    - "BNKU"   # 3x leveraged banks
+    - "TSLL"   # 2x leveraged Tesla — 2026-06-09 open position flagged for blocking
+    - "TSLZ"   # 2x inverse Tesla (paired block)
+    - "TSLQ"   # 1.5x inverse Tesla
+    - "TSLS"   # 1x inverse Tesla
+    - "NVDL"   # 2x leveraged NVIDIA
+    - "NVD"    # 2x inverse NVIDIA
+
 # Cost-vs-edge gate (RiskManager Rule 6.5). Rejects entries whose
 # take_profit edge can't clear estimated round-trip cost by ratio×.
 # Ratio-based so cheap-stock momentum scalps with big % moves still
@@ -222,73 +293,9 @@ cost_model:
   scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
   # Bot rides runners past $500 if uptrend is confirmed
   falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
-
-  # --- Blocked Symbols ---
-  # Inverse and leveraged ETFs that appear as "gainers" but are directionally wrong
-  # for a long-only momentum bot (going long SQQQ = betting against Nasdaq).
-  # Also includes crypto pairs the bot has structurally lost on — gate enforced
-  # in _execute_signal so dynamic-scanner injection can't sneak them back in
-  # (the static crypto.symbols list cleanup was bypassed by _dynamic_symbols).
-  blocked_symbols:
-    - "SQQQ"   # 3x inverse Nasdaq
-    - "TQQQ"   # 3x leveraged Nasdaq (extreme slippage risk)
-    - "SOXS"   # 3x inverse semiconductors
-    - "SOXL"   # 3x leveraged semiconductors
-    - "SPXS"   # 3x inverse S&P 500
-    - "SPXU"   # 3x inverse S&P 500
-    - "SDOW"   # 3x inverse Dow
-    - "LABD"   # 3x inverse biotech
-    - "LABU"   # 3x leveraged biotech
-    - "UVXY"   # 1.5x leveraged VIX
-    - "SVXY"   # 0.5x inverse VIX
-    - "VIXY"   # VIX short-term futures
-    - "UVIX"   # 2x leveraged VIX
-    - "SH"     # 1x inverse S&P 500
-    - "TZA"    # 3x inverse small-cap (-$22 on 2026-05-18 premarket momo, trail bug + wrong-direction)
-    - "TNA"    # 3x leveraged small-cap (paired with TZA — both inverse pairs blocked)
-    # Crypto blacklist — these symbols re-entered today via dynamic scanner
-    # injection even though removed from the static crypto.symbols list.
-    - "BCH-USD"  # 3/3 losses today, -$63 — single worst symbol; high ATR vs entry size
-    - "FIL-USD"  # 1/4 win, -$20 today (combined with -$20 historical)
-    - "SDS"    # 2x inverse S&P 500
-    - "PSQ"    # 1x inverse Nasdaq
-    - "QID"    # 2x inverse Nasdaq
-    - "DOG"    # 1x inverse Dow
-    - "DXD"    # 2x inverse Dow
-    - "SRTY"   # 3x inverse Russell 2000
-    - "FAZ"    # 3x inverse financials
-    - "ERY"    # 2x inverse energy
-    - "DUST"   # 2x inverse gold miners
-    - "GDXD"   # 2x inverse gold miners
-    - "JDST"   # 2x inverse junior gold miners
-    - "YANG"   # 3x inverse China
-    - "DRIP"   # 2x inverse S&P Oil & Gas E&P
-    - "WEBS"   # 3x inverse Dow
-    - "HIBS"   # 3x inverse high beta — bled -$375 in 5s on 2026-06-05 (slippage_reject below stop_loss)
-    # Added 2026-06-05 — companions to the above + leveraged variants
-    # that whipsaw faster than the bot's exit logic can react.
-    - "HIBL"   # 3x leveraged high beta
-    - "EDZ"    # 3x inverse emerging markets — lost -$47.70 today (2026-06-05)
-    - "EDC"    # 3x leveraged emerging markets
-    - "GUSH"   # 2x leveraged S&P Oil & Gas E&P
-    - "YINN"   # 3x leveraged China
-    - "DRN"    # 3x leveraged real estate
-    - "DRV"    # 3x inverse real estate
-    - "NUGT"   # 2x leveraged junior gold miners
-    - "JNUG"   # 2x leveraged junior gold miners
-    - "ERX"    # 2x leveraged energy
-    - "TECS"   # 3x inverse technology
-    - "TECL"   # 3x leveraged technology
-    - "FNGD"   # 3x inverse FANG+
-    - "FNGU"   # 3x leveraged FANG+
-    - "BNKD"   # 3x inverse banks
-    - "BNKU"   # 3x leveraged banks
-    - "TSLL"   # 2x leveraged Tesla — 2026-06-09 open position flagged for blocking
-    - "TSLZ"   # 2x inverse Tesla (paired block)
-    - "TSLQ"   # 1.5x inverse Tesla
-    - "TSLS"   # 1x inverse Tesla
-    - "NVDL"   # 2x leveraged NVIDIA
-    - "NVD"    # 2x inverse NVIDIA
+  # NOTE 2026-06-18: `blocked_symbols:` previously lived here under
+  # `cost_model:` due to an indentation slip — engine reads `risk.blocked_symbols`
+  # so the list was invisible at runtime. Moved back to `risk:` block above.
 
   # --- Portfolio-Level Risk Limits ---
   # Prevents concentrated bets, runaway exposure, and unmanaged positions
