@@ -129,6 +129,94 @@ risk:
   # Other valid codes: STK.US.NASDAQ, STK.US.NYSE, STK.US.AMEX.
   scanner_location: "STK.US"
 
+  # === Below moved from `cost_model:` to `risk:` on 2026-06-18. ===========
+  # `Config().risk_config` reads from settings["risk"]; engine code consistently
+  # asks `risk_config.get("<key>", <default>)`. Keys nested under `cost_model:`
+  # silently fell back to the hardcoded code defaults — three behavior drifts
+  # we caught: strategy_daily_dd_pause_pct (code 0.03 vs YAML 0.05),
+  # min_volume (code 50000 vs YAML 200000), and profit_taking (code disabled
+  # vs YAML 9-tier ladder). Tests in `tests/test_risk_yaml_nesting_all.py`
+  # pin every key here so the indentation slip can't recur.
+  # =======================================================================
+
+  # --- New-entry safety gates (block buys, never block exits) ---
+  max_total_trades_per_day: 25      # Hard cap on equity entries per day across all strategies (0 = disabled)
+  max_total_crypto_trades_per_day: 50  # Separate cap for crypto — 24/7 market needs more headroom than RTH equity (0 = disabled)
+  strategy_daily_dd_pause_pct: 0.05 # If a strategy is down >5% on its allocated capital today, pause its new entries until tomorrow (0 = disabled). Raised 3%→5% 2026-05-28 after RKLB -$82.56 overnight tripped momentum at -4.15% and killed the whole RTH session — one bad trade nuked the bot's primary equity strategy for the day. 5% lets momentum absorb a single overnight slip and keep trying instead of compounding into a dead day.
+  premarket_news_check: true        # 6 AM ET sweep over overnight holds — close at open if a bearish catalyst dropped overnight
+
+  # --- Universe / scanner filters ---
+  min_volume: 200000              # 200K floor so sub-$3 low-float runners (RPGL, FCHL, BIYA tier) get through. Spread-safety still enforced per-strategy.
+  min_price: 0.50                 # Floor: $0.50 — admits proper low-floats while excluding true penny junk
+  scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners. Bot rides runners past $500 if uptrend is confirmed
+  falling_knife_pct: -5.0         # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
+
+  # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
+  # Checked every 3 seconds on every tick — not candle-close.
+  # 10 tiers starting at 0.5% — lock in gains EARLY, let runners run later.
+  # Trailing stop ratchets up on every price tick for the remaining shares.
+  # This is optimized for momentum stocks that reverse fast.
+  profit_taking:
+    enabled: true
+    targets:
+      - pct_from_entry: 0.005      # At +0.5% — scalp the first move
+        close_pct: 0.08            # Close 8%
+      - pct_from_entry: 0.01       # At +1% — small gain locked
+        close_pct: 0.08            # Close 8%
+      - pct_from_entry: 0.015      # At +1.5% — immediate breakeven lock
+        close_pct: 0.10            # Close 10%
+        move_stop: "breakeven"     # Risk-free from here
+      - pct_from_entry: 0.025      # At +2.5% — real profit
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.012       # 1.2% trail
+      - pct_from_entry: 0.04       # At +4% — strong move
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.015       # 1.5% trail
+      - pct_from_entry: 0.07       # At +7% — trending
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.02        # 2% trail
+      - pct_from_entry: 0.12       # At +12% — runner confirmed
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.025       # 2.5% trail
+      - pct_from_entry: 0.20       # At +20% — big winner
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.03        # 3% trail — give runner room
+      - pct_from_entry: 0.35       # At +35% — monster
+        close_pct: 0.10            # Close 10%
+        tighten_trail: 0.04        # 4% trail
+      - pct_from_entry: 0.60       # At +60% — extreme runner
+        close_pct: 0.08            # Close 8%
+        tighten_trail: 0.05        # 5% trail — ride it
+      # Remaining ~16% rides with dynamic trailing stop (no ceiling)
+      # Trail widens at extreme levels: 6% at 100%+, 8% at 200%+
+
+  # --- Velocity-Based Quick Exits ---
+  # Price spikes (e.g. 1% in 30 seconds) trigger instant partial takes.
+  # Momentum stocks reverse fast — grab profits before the reversal.
+  velocity_exits:
+    enabled: true
+    fast_spike_pct: 0.015        # 1.5% move within window → take partial
+    fast_spike_window_sec: 45    # Within 45 seconds
+    fast_spike_close_pct: 0.25   # Take 25% off the table
+    # Momentum reversal: significant retracement from high = trim hard
+    reversal_retrace_pct: 0.30   # HWM drops 30% = trim
+    reversal_close_pct: 0.40     # Take 40% off on reversal
+
+  # --- Break Even Stop ---
+  breakeven:
+    enabled: true
+    trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
+    buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
+
+  # --- Portfolio-Level Risk Limits ---
+  # Prevents concentrated bets, runaway exposure, and unmanaged positions
+  portfolio_limits:
+    max_single_name_pct: 0.25       # HARD CEILING: No single position > 25% of net liquidation
+    max_gross_exposure_pct: 1.50    # Max 150% gross exposure (longs + |shorts|) / net liq
+    max_net_exposure_pct: 1.00      # Max 100% net exposure (longs - |shorts|) / net liq
+    max_loss_per_position_pct: 0.08 # Force-close any position down > 8% from entry
+    monitor_all_broker_positions: true  # Track ALL broker positions (including shorts) for risk monitoring
+
   # --- Blocked Symbols ---
   # Inverse and leveraged ETFs that appear as "gainers" but are directionally
   # wrong for a long-only momentum bot (going long SQQQ = betting against
@@ -224,87 +312,9 @@ cost_model:
   crypto_spread_bps_default: 10.0
   spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
   min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
-
-  # --- New-entry safety gates (block buys, never block exits) ---
-  max_total_trades_per_day: 25      # Hard cap on equity entries per day across all strategies (0 = disabled)
-  max_total_crypto_trades_per_day: 50  # Separate cap for crypto — 24/7 market needs more headroom than RTH equity (0 = disabled)
-  strategy_daily_dd_pause_pct: 0.05 # If a strategy is down >5% on its allocated capital today, pause its new entries until tomorrow (0 = disabled). Raised 3%→5% 2026-05-28 after RKLB -$82.56 overnight tripped momentum at -4.15% and killed the whole RTH session — one bad trade nuked the bot's primary equity strategy for the day. 5% lets momentum absorb a single overnight slip and keep trying instead of compounding into a dead day.
-  premarket_news_check: true        # 6 AM ET sweep over overnight holds — close at open if a bearish catalyst dropped overnight
-
-  # --- AGGRESSIVE Profit Taking (Intra-Candle Partials) ---
-  # Checked every 3 seconds on every tick — not candle-close.
-  # 9 tiers starting at 0.5% — lock in gains EARLY, let runners run later.
-  # Trailing stop ratchets up on every price tick for the remaining shares.
-  # This is optimized for momentum stocks that reverse fast.
-  profit_taking:
-    enabled: true
-    targets:
-      - pct_from_entry: 0.005      # At +0.5% — scalp the first move
-        close_pct: 0.08            # Close 8%
-      - pct_from_entry: 0.01       # At +1% — small gain locked
-        close_pct: 0.08            # Close 8%
-      - pct_from_entry: 0.015      # At +1.5% — immediate breakeven lock
-        close_pct: 0.10            # Close 10%
-        move_stop: "breakeven"     # Risk-free from here
-      - pct_from_entry: 0.025      # At +2.5% — real profit
-        close_pct: 0.10            # Close 10%
-        tighten_trail: 0.012       # 1.2% trail
-      - pct_from_entry: 0.04       # At +4% — strong move
-        close_pct: 0.10            # Close 10%
-        tighten_trail: 0.015       # 1.5% trail
-      - pct_from_entry: 0.07       # At +7% — trending
-        close_pct: 0.10            # Close 10%
-        tighten_trail: 0.02        # 2% trail
-      - pct_from_entry: 0.12       # At +12% — runner confirmed
-        close_pct: 0.10            # Close 10%
-        tighten_trail: 0.025       # 2.5% trail
-      - pct_from_entry: 0.20       # At +20% — big winner
-        close_pct: 0.10            # Close 10%
-        tighten_trail: 0.03        # 3% trail — give runner room
-      - pct_from_entry: 0.35       # At +35% — monster
-        close_pct: 0.10            # Close 10%
-        tighten_trail: 0.04        # 4% trail
-      - pct_from_entry: 0.60       # At +60% — extreme runner
-        close_pct: 0.08            # Close 8%
-        tighten_trail: 0.05        # 5% trail — ride it
-      # Remaining ~16% rides with dynamic trailing stop (no ceiling)
-      # Trail widens at extreme levels: 6% at 100%+, 8% at 200%+
-
-  # --- Velocity-Based Quick Exits ---
-  # Price spikes (e.g. 1% in 30 seconds) trigger instant partial takes.
-  # Momentum stocks reverse fast — grab profits before the reversal.
-  velocity_exits:
-    enabled: true
-    fast_spike_pct: 0.015        # 1.5% move within window → take partial
-    fast_spike_window_sec: 45    # Within 45 seconds
-    fast_spike_close_pct: 0.25   # Take 25% off the table
-
-    # Momentum reversal: significant retracement from high = trim hard
-    reversal_retrace_pct: 0.30   # HWM drops 30% = trim
-    reversal_close_pct: 0.40     # Take 40% off on reversal
-
-  # --- Break Even Stop ---
-  breakeven:
-    enabled: true
-    trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
-    buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
-  min_volume: 200000              # 200K floor so sub-$3 low-float runners (RPGL, FCHL, BIYA tier) get through. Spread-safety still enforced per-strategy.
-  min_price: 0.50                 # Floor: $0.50 — admits proper low-floats while excluding true penny junk
-  scanner_max_price: 500.00       # Raised from $100 — top gainers scanner needs this to catch mid/large-cap runners
-  # Bot rides runners past $500 if uptrend is confirmed
-  falling_knife_pct: -5.0          # Block longs on stocks down >5% on the day — don't buy falling knives (WAL pattern)
-  # NOTE 2026-06-18: `blocked_symbols:` previously lived here under
-  # `cost_model:` due to an indentation slip — engine reads `risk.blocked_symbols`
-  # so the list was invisible at runtime. Moved back to `risk:` block above.
-
-  # --- Portfolio-Level Risk Limits ---
-  # Prevents concentrated bets, runaway exposure, and unmanaged positions
-  portfolio_limits:
-    max_single_name_pct: 0.25       # HARD CEILING: No single position > 25% of net liquidation
-    max_gross_exposure_pct: 1.50    # Max 150% gross exposure (longs + |shorts|) / net liq
-    max_net_exposure_pct: 1.00      # Max 100% net exposure (longs - |shorts|) / net liq
-    max_loss_per_position_pct: 0.08 # Force-close any position down > 8% from entry
-    monitor_all_broker_positions: true  # Track ALL broker positions (including shorts) for risk monitoring
+# Everything that was nested here from 2026-06-18 backwards (profit_taking,
+# velocity_exits, breakeven, portfolio_limits, blocked_symbols, etc.) has
+# moved back under `risk:` where the engine actually reads it.
 
 # --- Trading Schedule ---
 schedule:
