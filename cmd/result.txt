@@ -1,20 +1,40 @@
-=== executed: 34aac07b33d4e87297cd3dd57d527928d7d5f1ae
-=== started:  2026-06-19T02:40:18Z
+=== executed: e1e728e7e3cb6605079e10682650a99d7a6725b1
+=== started:  2026-06-19T02:44:09Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 11 data/*.json files
-deploy: checked out dc149121 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
+=== container uptime + health ===
+NAMES                       STATUS                   IMAGE
+trading-bot-trading-bot-1   Up 3 minutes (healthy)   trading-bot-trading-bot
+trading-bot-autoheal-1      Up 23 hours (healthy)    willfarrell/autoheal:latest
+trading-bot-ib-gateway-1    Up 23 hours (healthy)    gnzsnz/ib-gateway:10.37.1r
 
-=== verify watchlist guard is live ===
-1
-(expect 1 = the log.warning line is present)
+=== git SHA the container is on ===
+OCI runtime exec failed: exec failed: unable to start container process: exec: "git": executable file not found in $PATH
 
-=== preset cleansed of leveraged ETFs ===
-preset symbols: ['SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'VTI', 'XLK', 'XLF', 'XLE', 'XLV', 'XLI']
-leveraged in preset: [] (expect [])
+=== boot log: any errors / tracebacks since restart? ===
 
-=== bot log: WATCHLIST BLOCKED warnings since restart? ===
+=== safety guards firing? (last hour) ===
+
+=== runtime invariants ===
+  blocked_symbols count            = 55
+  profit_taking enabled            = True
+  profit_taking tiers              = 10
+  velocity_exits enabled           = True
+  breakeven enabled                = True
+  strategy_daily_dd_pause_pct      = 0.05
+  min_volume                       = 200000
+  falling_knife_pct                = -5.0
+  max_total_trades_per_day         = 25
+  portfolio max single name        = 0.25
+  portfolio max gross expo         = 1.5
+  scanner_location                 = 'STK.US'
+
+=== dashboard health (via tailnet) ===
+/health:
+{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-18T22:44:02.717365"}
+
+/api/status quick fields:
+  running=True paused=False mode=paper
+  balance=$21302.85  positions=0  daily_trades=0
+  broker_connected=True execution_broker=IBKR
