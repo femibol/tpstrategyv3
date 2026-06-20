@@ -1,40 +1,52 @@
-=== executed: e1e728e7e3cb6605079e10682650a99d7a6725b1
-=== started:  2026-06-19T02:44:09Z
+=== executed: 8d356240010f89aa7691a82fa9e58315c61ebcad
+=== started:  2026-06-20T02:08:03Z
 === exit:     
 === timeout:  90s
 ===
-=== container uptime + health ===
-NAMES                       STATUS                   IMAGE
-trading-bot-trading-bot-1   Up 3 minutes (healthy)   trading-bot-trading-bot
-trading-bot-autoheal-1      Up 23 hours (healthy)    willfarrell/autoheal:latest
-trading-bot-ib-gateway-1    Up 23 hours (healthy)    gnzsnz/ib-gateway:10.37.1r
+=== last 30 crypto trades (any -USD/-USDT symbol) ===
+total crypto trades in history: 238
+first crypto: 2026-05-15T16:54:00  BTC-USD
+last crypto:  2026-06-19T17:54:33  TRX-USD
+DAYS SINCE LAST CRYPTO TRADE: 0 days, 4h
 
-=== git SHA the container is on ===
-OCI runtime exec failed: exec failed: unable to start container process: exec: "git": executable file not found in $PATH
+last 10 crypto trades:
+  2026-06-17T14:23:59  NEAR-USD    strat=mean_reversion    pnl=$-35.99  reason=time_exit
+  2026-06-17T15:21:41  ARB-USD     strat=mean_reversion    pnl=$+0.00  reason=time_exit
+  2026-06-17T16:48:36  MATIC-USD   strat=mean_reversion    pnl=$-1.50  reason=time_exit
+  2026-06-17T16:58:35  AAVE-USD    strat=mean_reversion    pnl=$-7.29  reason=time_exit
+  2026-06-17T17:08:43  ARB-USD     strat=mean_reversion    pnl=$+1.00  reason=time_exit
+  2026-06-18T02:30:31  AAVE-USD    strat=mean_reversion    pnl=$-63.22  reason=time_exit
+  2026-06-19T17:51:20  TRX-USD     strat=mean_reversion    pnl=$+1.96  reason=partial_target_1
+  2026-06-19T17:51:24  TRX-USD     strat=mean_reversion    pnl=$+1.80  reason=partial_target_2
+  2026-06-19T17:51:27  TRX-USD     strat=mean_reversion    pnl=$+2.07  reason=partial_target_3
+  2026-06-19T17:54:33  TRX-USD     strat=mean_reversion    pnl=$+18.66  reason=webhook_exit
 
-=== boot log: any errors / tracebacks since restart? ===
+=== current crypto config ===
+crypto.enabled            = True
+crypto.allowed_strategies = ['mean_reversion', 'momentum', 'crypto_runner']
+crypto.symbols            = ['AAVE-USD', 'ADA-USD', 'ALGO-USD', 'APT-USD', 'ARB-USD', 'ATOM-USD', 'AVAX-USD', 'BONK-USD', 'BTC-USD', 'COMP-USD', 'CRV-USD', 'DOGE-USD', 'DOT-USD', 'ETC-USD', 'ETH-USD', 'FET-USD', 'FLOKI-USD', 'GRT-USD', 'HBAR-USD', 'ICP-USD', 'IMX-USD', 'JUP-USD', 'LINK-USD', 'LTC-USD', 'MATIC-USD', 'MKR-USD', 'NEAR-USD', 'OP-USD', 'PEPE-USD', 'RNDR-USD', 'SEI-USD', 'SHIB-USD', 'SNX-USD', 'SOL-USD', 'SUI-USD', 'TIA-USD', 'TON-USD', 'TRX-USD', 'UNI-USD', 'WIF-USD', 'XLM-USD', 'XRP-USD']
+crypto.symbols_suffix     = ['-USD', '-USDT', '-BTC', '-ETH']
+mean_reversion.enabled                  = True
+mean_reversion.crypto_trend_filter_enabled = True
+mean_reversion.crypto_trend_lookback_bars = 864
+mean_reversion.crypto_trend_min_pct       = 0.01
+crypto_runner.enabled    = True
 
-=== safety guards firing? (last hour) ===
+=== crypto scan activity last 6h (verdict counts) ===
+   3803 weak 3d trend
+      4 CRYPTO INJECT
 
-=== runtime invariants ===
-  blocked_symbols count            = 55
-  profit_taking enabled            = True
-  profit_taking tiers              = 10
-  velocity_exits enabled           = True
-  breakeven enabled                = True
-  strategy_daily_dd_pause_pct      = 0.05
-  min_volume                       = 200000
-  falling_knife_pct                = -5.0
-  max_total_trades_per_day         = 25
-  portfolio max single name        = 0.25
-  portfolio max gross expo         = 1.5
-  scanner_location                 = 'STK.US'
+=== last 5 lines mentioning any crypto symbol ===
+2026-06-19 22:02:00 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: MATIC-USD(z=-2.09 rsi=16.7 bb=MIDDLE) | WAIT[38]: AAVE-USD(weak 3d trend (-7.3%)), ADA-USD(weak 3d trend (-6.4%)), ALGO-USD(weak 3d trend (-0.8%)), APT-USD(weak 3d trend (-8.0%)), ARB-USD(weak 3d trend (-5.7%)), ATOM-USD(weak 3d trend (-10.0%)), AVAX-USD(weak 3d trend (-14.4%)), BONK-USD(weak 3d trend (-5.6%)), BTC-USD(weak 3d trend (-3.5%)), COMP-USD(weak 3d trend (+0.9%)), CRV-USD(weak 3d trend (-10.7%)), DOGE-USD(weak 3d trend (-4.9%)), DOT-USD(weak 3d trend (-6.1%)), ETH-USD(weak 3d trend (-4.9%)), FET-USD(weak 3d trend (-8.5%)), FLOKI-USD(weak 3d trend (-4.1%)), GRT-USD(weak 3d trend (-3.5%)), HBAR-USD(weak 3d trend (-1.4%)), ICP-USD(weak 3d trend (-5.7%)), IMX-USD(weak 3d trend (-4.4%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-5.2%)), LTC-USD(weak 3d trend (-3.4%)), NEAR-USD(weak 3d trend (-7.5%)), OP-USD(weak 3d trend (-7.1%)), PEPE-USD(weak 3d trend (-5.0%)), RNDR-USD(weak 3d trend (-0.5%)), SEI-USD(weak 3d trend (-4.2%)), SHIB-USD(weak 3d trend (-5.0%)), SNX-USD(weak 3d trend (-8.8%)), SOL-USD(weak 3d trend (-5.5%)), SUI-USD(weak 3d trend (-12.4%)), TIA-USD(weak 3d trend (-8.6%)), TON-USD(weak 3d trend (-1.7%)), UNI-USD(weak 3d trend (-13.7%)), WIF-USD(weak 3d trend (-5.8%)), XLM-USD(weak 3d trend (-5.2%)), XRP-USD(weak 3d trend (-6.5%)) | neutral=2 | no_data=1
+2026-06-19 22:02:00 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.09, RSI=17, BB=near, Vol=8.2x | MATIC-USD @ $0.08
+2026-06-19 22:02:00 | INFO     | trading_bot.risk.manager | REJECTED: buy MATIC-USD | Cost gate: edge 78bps < 2× cost 50bps (need 100bps)
+2026-06-19 22:02:03 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.09, RSI=17, BB=near, Vol=8.2x | MATIC-USD @ $0.08
+2026-06-19 22:02:03 | INFO     | trading_bot.risk.manager | REJECTED: buy MATIC-USD | Cost gate: edge 78bps < 2× cost 50bps (need 100bps)
+2026-06-19 22:02:06 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.09, RSI=17, BB=near, Vol=8.2x | MATIC-USD @ $0.08
+2026-06-19 22:02:06 | INFO     | trading_bot.risk.manager | REJECTED: buy MATIC-USD | Cost gate: edge 78bps < 2× cost 50bps (need 100bps)
+2026-06-19 22:05:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[39]: AAVE-USD(weak 3d trend (-7.3%)), ADA-USD(weak 3d trend (-6.4%)), ALGO-USD(weak 3d trend (-0.8%)), APT-USD(weak 3d trend (-8.0%)), ARB-USD(weak 3d trend (-6.3%)), ATOM-USD(weak 3d trend (-10.3%)), AVAX-USD(weak 3d trend (-14.4%)), BONK-USD(weak 3d trend (-5.6%)), BTC-USD(weak 3d trend (-3.5%)), COMP-USD(weak 3d trend (+0.9%)), CRV-USD(weak 3d trend (-10.7%)), DOGE-USD(weak 3d trend (-4.9%)), DOT-USD(weak 3d trend (-6.1%)), ETH-USD(weak 3d trend (-4.9%)), FET-USD(weak 3d trend (-8.5%)), FLOKI-USD(weak 3d trend (-4.1%)), GRT-USD(weak 3d trend (-3.0%)), HBAR-USD(weak 3d trend (-1.4%)), ICP-USD(weak 3d trend (-5.7%)), IMX-USD(weak 3d trend (-4.4%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-5.3%)), LTC-USD(weak 3d trend (-3.4%)), MATIC-USD(needs vol>=1.1x), NEAR-USD(weak 3d trend (-7.5%)), OP-USD(weak 3d trend (-7.1%)), PEPE-USD(weak 3d trend (-5.0%)), RNDR-USD(weak 3d trend (-1.5%)), SEI-USD(weak 3d trend (-3.3%)), SHIB-USD(weak 3d trend (-5.0%)), SNX-USD(weak 3d trend (-8.8%)), SOL-USD(weak 3d trend (-5.6%)), SUI-USD(weak 3d trend (-12.4%)), TIA-USD(weak 3d trend (-8.6%)), TON-USD(weak 3d trend (-1.7%)), UNI-USD(weak 3d trend (-13.8%)), WIF-USD(weak 3d trend (-5.8%)), XLM-USD(weak 3d trend (-6.0%)), XRP-USD(weak 3d trend (-6.5%)) | neutral=2 | no_data=1
 
-=== dashboard health (via tailnet) ===
-/health:
-{"mode":"paper","running":true,"status":"ok","uptime":"2026-06-18T22:44:02.717365"}
-
-/api/status quick fields:
-  running=True paused=False mode=paper
-  balance=$21302.85  positions=0  daily_trades=0
-  broker_connected=True execution_broker=IBKR
+=== crypto symbol injection log ===
+2026-06-19 16:38:43 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
+2026-06-19 18:08:47 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
+2026-06-19 19:40:57 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
