@@ -1,63 +1,3 @@
-2026-06-18 15:15:10 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 89 low-priority equity names; max 90)
-2026-06-18 15:15:10 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
-2026-06-18 15:15:11 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-18 15:15:11 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
-2026-06-18 15:18:11 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 48 | bar-fetch backoff: 6
-2026-06-18 15:18:11 | WARNING  | trading_bot.engine   | SLOW CYCLE (185.2s total): update_data=180.6s
-2026-06-18 15:18:14 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-3.1%)), ADA-USD(weak 3d trend (-12.8%)), APT-USD(weak 3d trend (-4.5%)), ARB-USD(weak 3d trend (-5.9%)), ATOM-USD(weak 3d trend (-10.1%)), AVAX-USD(weak 3d trend (-8.8%)), BONK-USD(weak 3d trend (-8.4%)), BTC-USD(weak 3d trend (-5.9%)), COMP-USD(weak 3d trend (-1.6%)), CRV-USD(weak 3d trend (-7.4%)), DOGE-USD(weak 3d trend (-7.3%)), DOT-USD(weak 3d trend (-7.7%)), ETC-USD(weak 3d trend (-8.6%)), ETH-USD(weak 3d trend (-7.3%)), FET-USD(weak 3d trend (-11.6%)), FLOKI-USD(weak 3d trend (-2.0%)), GRT-USD(weak 3d trend (-7.3%)), HBAR-USD(weak 3d trend (-4.3%)), ICP-USD(weak 3d trend (-7.6%)), IMX-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-6.6%)), LTC-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-2.0%)), NEAR-USD(weak 3d trend (-13.2%)), OP-USD(weak 3d trend (-1.8%)), PEPE-USD(weak 3d trend (-6.6%)), RNDR-USD(weak 3d trend (-7.7%)), SEI-USD(weak 3d trend (-3.5%)), SHIB-USD(weak 3d trend (-8.3%)), SNX-USD(weak 3d trend (+0.8%)), SOL-USD(weak 3d trend (-8.4%)), SUI-USD(weak 3d trend (-9.8%)), TIA-USD(weak 3d trend (-1.1%)), TON-USD(weak 3d trend (-3.0%)), TRX-USD(weak 3d trend (-0.1%)), WIF-USD(weak 3d trend (-4.7%)), XRP-USD(weak 3d trend (-10.8%)) | warming=1 | neutral=3 | no_data=1
-2026-06-18 15:18:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-18 15:18:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-18 15:18:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
-2026-06-18 15:18:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-18 15:18:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-18 15:18:25 | INFO     | trading_bot.engine   | IBKR scanner: 121 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
-2026-06-18 15:18:25 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
-2026-06-18 15:18:25 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 90 low-priority equity names; max 90)
-2026-06-18 15:18:25 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 46/95
-2026-06-18 15:18:25 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-18 15:18:25 | INFO     | trading_bot.data.market_data | IBKR streaming active for 47 symbols
-2026-06-18 15:20:41 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-18 15:21:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=70, higher lows, Vol=1.5x | HQ @ $31.25
-2026-06-18 15:21:17 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
-2026-06-18 15:21:17 | INFO     | trading_bot.engine   |   -> momentum: buy HQ @ $31.25 conf=0.80
-2026-06-18 15:21:17 | INFO     | trading_bot.risk.manager | APPROVED: buy HQ | Momentum BUY: pullback entry, ADX=70, higher lows, Vol=1.5x
-2026-06-18 15:21:17 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 833 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 1
-  ✅ HQ: score 80/100 — Momentum BUY: pullback entry, ADX=70, higher lows, Vol=1.5x
-Approved: 1 trades
-2026-06-18 15:21:17 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.9s total): update_data=171.7s
-2026-06-18 15:21:19 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.541% over 18 fills → sizing mult 0.60x
-2026-06-18 15:21:19 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x × Slip 0.60x = 0.25% risk
-2026-06-18 15:21:19 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $53.33 → $50.00 (per-strategy ceiling)
-2026-06-18 15:21:19 | INFO     | trading_bot.risk.position_sizer | Position size: 33 shares @ $31.00 = $1,023.00 | Risk: $49.79 (0.2% of account) [tier: 2-300 shares]
-2026-06-18 15:21:19 | INFO     | trading_bot.engine   | Executing HQ via IBKR...
-2026-06-18 15:21:19 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: HQ → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-18 15:21:19 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: HQ (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: PreSubmitted | Filled: 0.0/33.0
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: PreSubmitted | Filled: 0.0/33.0
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: Submitted | Filled: 0.0/33.0
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: Filled | Filled: 33.0/33.0 | AvgPrice: $31.36
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: PreSubmitted | Filled: 0.0/33.0
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: PreSubmitted | Filled: 0.0/33.0
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | Order update: HQ | Status: Submitted | Filled: 0.0/33.0
-2026-06-18 15:21:20 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 33 HQ @ LIMIT $31.62 | TP: $36.92 | SL: $29.49 | Parent ID: 1106403
-2026-06-18 15:21:21 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 33/33 HQ @ $31.3600 | signal $31.6200 | slippage -0.82% | parent=MARKET
-2026-06-18 15:21:21 | INFO     | trading_bot.engine   | BRACKET ORDER active: HQ | SL: $29.49 | TP: $36.92 (managed by IBKR server-side)
-2026-06-18 15:21:21 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: HQ expected $31.00 but filled @ $31.36
-2026-06-18 15:21:21 | WARNING  | trading_bot.engine   | SLIPPAGE REJECT: HQ chased +1.2% above market (max 0.8%, RTH) — closing position immediately | Signal $31.25 → Live $31.00 → Fill $31.36
-2026-06-18 15:21:21 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Slippage reject: HQ filled $31.36 (signal $31.25, slippage +1.2%). Closing immediately.
-```
-2026-06-18 15:21:21 | INFO     | trading_bot.engine   | ORDER BUY HQ via IBKR | Qty: 33 | Price: $31.36 | Cost: $1,034.88 | Stop: $29.49 (risk $61.67) | Target: $36.92 (reward $183.40) | R:R 3.0:1 | Strategy: momentum
-2026-06-18 15:21:21 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: HQ**
-```
-  Entry: $31.36 x 33 shares = $1,034.88
-  Stop:  $29.49 (-$61.67 | -6.0%)
-  Targets: $36.92
-  Risk/Reward: 3.0
-```
 Strategy: **momentum** | Confidence: **80%**
 Reas
 2026-06-18 15:21:22 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY HQ qty=33 @ $31.36 → primary webhook (200)
@@ -19998,3 +19938,63 @@ Filtered: 1 signals rejected by risk man
 2026-06-20 10:07:05 | INFO     | trading_bot.engine   | IBKR scanner: 129 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
 2026-06-20 10:07:05 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-20 10:07:05 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 83 low-priority equity names; max 90)
+2026-06-20 10:10:04 | INFO     | trading_bot.engine   | BREAK-EVEN: MATIC-USD stop moved to $0.08 (was $0.08, P&L: 2.2%)
+2026-06-20 10:10:04 | INFO     | trading_bot.notifications | [ALERT] Position Update: 🛡️ **BREAKEVEN: MATIC-USD**
+Stop moved to $0.08 (was $0.08) | P&L: 2.2%
+2026-06-20 10:10:04 | INFO     | trading_bot.broker.traderspost | EXIT signal for MATIC-USD - bypassing rate limits
+2026-06-20 10:10:04 | INFO     | trading_bot.broker.traderspost | Routing MATIC-USD to CRYPTO webhook
+2026-06-20 10:10:04 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "MATIC-USD", "action": "exit", "quantity": 400, "price": 0.0828}
+2026-06-20 10:10:04 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"57f10acd-1a83-46b8-adb3-6252aadd3dbb","logId":"57f10acd-1a83-46b8-adb3-6252aadd3dbb","payload":{"ticker":"MATIC-USD","action":"exit","quantity":400,"price":0.0828}}
+2026-06-20 10:10:04 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL MATIC-USD | Strategy: unknown | Qty: 400 @ $0.08 = $33.12 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-20 10:10:04 | INFO     | trading_bot.engine   | PARTIAL CLOSE MATIC-USD: 400 shares at $0.08 (target 1: +0%) | P&L: $+0.72 | Remaining: 4600 shares
+2026-06-20 10:10:04 | INFO     | trading_bot.notifications | [ALERT] Partial Close: 📐 **PARTIAL CLOSE: MATIC-USD**
+```
+  Closed: 400 shares @ $0.08
+  P&L: $+0.72 (target 1: +0%)
+  Remaining: 4600 shares
+```
+Strategy: mean_reversion | 10:10:04 ET
+2026-06-20 10:10:04 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: MATIC-USD +0.72 (357 total in history)
+2026-06-20 10:10:04 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion SELL (mean reached): Z=0.50 | MATIC-USD @ $0.08
+2026-06-20 10:10:04 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 75 | RVOL: 4.0x | Change: +0.5% | R:R 1.8
+2026-06-20 10:11:57 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-20 10:11:57 | INFO     | trading_bot.engine   |   -> mean_reversion: sell MATIC-USD @ $0.08 conf=0.63
+2026-06-20 10:11:57 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $42.73 conf=0.75
+2026-06-20 10:11:57 | INFO     | trading_bot.risk.manager | APPROVED: sell MATIC-USD | Mean reversion SELL (mean reached): Z=0.50
+2026-06-20 10:11:57 | INFO     | trading_bot.risk.manager | APPROVED: buy SNXX | Very high RVOL 4.0x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
+2026-06-20 10:11:57 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — SNXX
+2026-06-20 10:11:57 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 795 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ MATIC-USD: score 63/100 — Mean reversion SELL (mean reached): Z=0.50
+  ✅ SNXX: score 75/100 — Very high RVOL 4.0x | Trendi
+2026-06-20 10:11:58 | WARNING  | trading_bot.engine   | SLOW CYCLE (297.0s total): update_data=178.7s, run_strategies=113.3s
+2026-06-20 10:11:58 | INFO     | trading_bot.engine   | Webhook exit signal: routing SELL MATIC-USD through close path
+2026-06-20 10:11:58 | INFO     | trading_bot.broker.traderspost | EXIT signal for MATIC-USD - bypassing rate limits
+2026-06-20 10:11:58 | INFO     | trading_bot.broker.traderspost | Routing MATIC-USD to CRYPTO webhook
+2026-06-20 10:11:58 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "MATIC-USD", "action": "exit", "quantity": 4600, "price": 0.0828}
+2026-06-20 10:11:58 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"8c3f0518-8188-400f-8b03-5c9b16c709fa","logId":"8c3f0518-8188-400f-8b03-5c9b16c709fa","payload":{"ticker":"MATIC-USD","action":"exit","quantity":4600,"price":0.0828}}
+2026-06-20 10:11:58 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL MATIC-USD | Strategy: unknown | Qty: 4600 @ $0.08 = $380.88 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-20 10:11:58 | INFO     | trading_bot.engine   | CLOSED MATIC-USD via TradersPost | webhook_exit | P&L: $+8.28 | External sell signal from mean_reversion
+2026-06-20 10:11:58 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: MATIC-USD** (webhook_exit)
+```
+  Entry: $0.08 → Exit: $0.08
+  P&L: $+8.28 (+2.22%)
+  Shares: 4600 | Value: $380.88
+  Hold: 12m
+```
+Strategy: **mean_reversion** | External sell signal f
+2026-06-20 10:11:59 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: MATIC-USD +8.28 (358 total in history)
+2026-06-20 10:12:01 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [MATIC-USD]: `BOOST:mean_reversion`
+
+77% win rate on 13 trades, clean +2.2% in 12min via webhook_exit. Pattern is working. Scale position size up 10-15%.
+2026-06-20 10:12:01 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'mean_reversion' (total boosts: 2)
+2026-06-20 10:12:04 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-4.1%)), ADA-USD(weak 3d trend (-4.2%)), ALGO-USD(weak 3d trend (-4.6%)), APT-USD(weak 3d trend (-7.2%)), ARB-USD(weak 3d trend (-2.8%)), ATOM-USD(weak 3d trend (-10.2%)), AVAX-USD(weak 3d trend (-10.9%)), BONK-USD(weak 3d trend (-5.5%)), BTC-USD(weak 3d trend (-3.1%)), CRV-USD(weak 3d trend (-12.4%)), DOGE-USD(weak 3d trend (-3.7%)), DOT-USD(weak 3d trend (-5.4%)), ETC-USD(weak 3d trend (+0.8%)), ETH-USD(weak 3d trend (-2.7%)), FET-USD(weak 3d trend (-9.5%)), FLOKI-USD(weak 3d trend (-2.4%)), GRT-USD(weak 3d trend (-2.5%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (-6.8%)), IMX-USD(weak 3d trend (-4.4%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-3.8%)), LTC-USD(weak 3d trend (-3.2%)), NEAR-USD(weak 3d trend (-8.1%)), OP-USD(weak 3d trend (-7.5%)), PEPE-USD(weak 3d trend (-5.4%)), RNDR-USD(weak 3d trend (-0.8%)), SHIB-USD(weak 3d trend (-6.0%)), SNX-USD(weak 3d trend (+0.0%)), SOL-USD(weak 3d trend (-2.1%)), SUI-USD(weak 3d trend (-10.7%)), TIA-USD(weak 3d trend (-11.8%)), UNI-USD(weak 3d trend (-9.9%)), WIF-USD(weak 3d trend (-9.0%)), XLM-USD(weak 3d trend (-6.2%)), XRP-USD(weak 3d trend (-5.4%)) | neutral=2 | no_data=4
+2026-06-20 10:12:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-20 10:12:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-20 10:12:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-20 10:12:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-20 10:12:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-20 10:12:14 | INFO     | trading_bot.engine   | IBKR scanner: 129 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
+2026-06-20 10:12:14 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-20 10:12:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 83 low-priority equity names; max 90)
