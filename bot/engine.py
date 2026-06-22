@@ -8005,16 +8005,26 @@ class TradingEngine:
         memory. This writes the full position dict (including stop prices,
         trailing stops, targets hit, broker order IDs) to a JSON file.
         Called after every position change (entry, exit, stop update).
+
+        2026-06-22 incident: ARB-USD and JUP-USD lived in memory ~4 hours
+        without ever reaching disk — silent JSON-serialization failures on
+        the in-pos numpy/pandas values were caught and routed to
+        `log.debug`, so the operator never saw the failures. On the next
+        container restart, the bot booted with zero positions. Two fixes:
+        (1) failures now log at WARNING level so they surface; (2) the
+        per-symbol serialization is wrapped — one bad position no longer
+        kills the whole write. `default=str` already on the outer
+        json.dump catches the common cases (Decimal, Path, etc.) but the
+        early-skip hash check builds its own bytes — make that resilient
+        too.
         """
-        try:
-            import json
-            positions_file = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "data", "positions_state.json"
-            )
-            state = {}
-            with self._positions_lock:
-                for symbol, pos in self.positions.items():
-                    # Serialize position — convert datetime objects
+        positions_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "data", "positions_state.json"
+        )
+        state = {}
+        with self._positions_lock:
+            for symbol, pos in self.positions.items():
+                try:
                     serialized = {}
                     for k, v in pos.items():
                         if isinstance(v, datetime):
@@ -8025,11 +8035,26 @@ class TradingEngine:
                             continue  # Skip internal transient state
                         else:
                             serialized[k] = v
+                    # Round-trip validate to JSON BEFORE adding to state — if
+                    # this one position has a non-serializable value (the
+                    # numpy/pandas type that caused the live 06-22 incident),
+                    # drop it and keep going so other clean positions still
+                    # land on disk.
+                    json.dumps(serialized, default=str)
                     state[symbol] = serialized
+                except Exception as inner_e:
+                    log.warning(
+                        f"PERSIST: failed to serialize position {symbol}: "
+                        f"{inner_e} — dropping from this write, other "
+                        f"positions still saved"
+                    )
 
+        try:
             # Skip the disk write if nothing changed since last persist.
             # This matters because _persist_positions runs every 3 seconds
             # while positions are open, and most ticks don't mutate state.
+            # `default=str` lets numpy/pandas/Decimal types through safely
+            # — same coercion as the actual write below.
             serialized_bytes = json.dumps(state, sort_keys=True, default=str).encode()
             state_hash = hash(serialized_bytes)
             if getattr(self, "_last_persisted_hash", None) == state_hash:
@@ -8042,7 +8067,11 @@ class TradingEngine:
             os.replace(tmp_file, positions_file)
             self._last_persisted_hash = state_hash
         except Exception as e:
-            log.debug(f"Position persistence error: {e}")
+            log.warning(
+                f"PERSIST: write to {positions_file} failed: {e} "
+                f"(state had {len(state)} position(s)) — positions in "
+                f"memory only, will be lost on restart"
+            )
 
     def _load_persisted_positions(self):
         """Load position state from disk on startup.
