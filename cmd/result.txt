@@ -1,19 +1,46 @@
-=== executed: a8c884c5250225fbbcf4566d4f17a44f5e963e35
-=== started:  2026-06-22T07:08:16Z
+=== executed: ff99a41e2f2875ed4b70b930f7a3f136a43beb63
+=== started:  2026-06-22T14:46:10Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 11 data/*.json files
-deploy: checked out 0bbea2c9 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
+=== /api/positions — full response ===
+count: 2
 
-=== verify crypto cost-gate ratio is live ===
-global min_edge_cost_ratio        = 2.0  (expect 2.0)
-crypto_min_edge_cost_ratio        = 1.5  (expect 1.5)
-_ratio_for(equity)                 = 2.0  (expect 2.0)
-_ratio_for(crypto)                 = 1.5  (expect 1.5)
-MATIC 78bp simulated → passed=True reason='ok'
+  [CRYPTO]  ARB-USD     qty=5000  entry=$0.0855  now=$0.0851  pnl=$-2.00 (-0.5%)  strat=mean_reversion
+  [CRYPTO]  JUP-USD     qty=5000  entry=$0.2099  now=$0.0002  pnl=$-1048.30 (-99.9%)  strat=mean_reversion
 
-=== bot log: any Cost gate REJECTED lines since restart? ===
+=== /api/status — positions count ===
+  status.positions     = 2
+  status.balance       = $21,176.81
+  status.broker        = IBKR
+  status.broker_connected = True
+  status.position_details keys: ['ARB-USD', 'JUP-USD']
+
+=== engine state — count equity vs crypto in self.positions ===
+bash: line 1: 
+import requests, os
+secret = os.environ.get('DASHBOARD_SECRET_KEY','')
+r = requests.get('http://localhost:5000/api/status', auth=('admin', secret), timeout=10).json()
+pd = r.get('position_details', {}) or {}
+print(f'  count: {len(pd)}')
+for sym, pos in pd.items():
+    is_crypto = any(sfx in sym.upper() for sfx in ('-USD','-USDT','-BTC','-ETH'))
+    print(f'    [{("CRYPTO" if is_crypto else "EQUITY")}]  {sym:10s}  strat={pos.get("strategy")}  qty={pos.get("quantity")}  entry=${pos.get(\"entry_price\",0):.4f}')
+: bad substitution
+
+=== IBKR side — get_positions() directly ===
+  no debug endpoint (status 404)
+
+=== recent SAFETY GATE BLOCK or BLOCKED SYMBOL (equity entries denied?) ===
+
+=== recent equity buy signals fired? (last 4h) ===
+2026-06-22 09:53:10 | INFO     | trading_bot.risk.manager | APPROVED: buy QXL | Momentum BUY: pullback entry, ADX=77, breakout>7.34, Vol=1.3x
+  ✅ WKSP: score 80/100 — Momentum BUY: pullback entry, ADX=33, Vol=2.0x
+  ✅ AXTX: score 75/100 — Momentum BUY: pullback entry
+2026-06-22 09:58:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 75 | RVOL: 3.9x | Change: +0.3% | R:R 1.8
+2026-06-22 10:04:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=27, Vol=3.8x | ICCM @ $6.59
+  ✅ ICCM: score 75/100 — Momentum BUY: pullback entry, ADX=27, Vol=3.8x
+2026-06-22 10:36:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x | ICCM @ $6.92
+2026-06-22 10:36:05 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x
+2026-06-22 10:39:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x | ICCM @ $6.98
+2026-06-22 10:39:03 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x
