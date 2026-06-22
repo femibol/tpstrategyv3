@@ -311,7 +311,15 @@ cost_model:
   equity_spread_bps_default: 5.0
   crypto_spread_bps_default: 10.0
   spread_mult: 2.0              # Multiplier on configured spread to capture cross-spread + slippage
-  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost
+  min_edge_cost_ratio: 2.0      # take_profit edge must be ≥ 2× round-trip cost (equity default)
+  # Crypto-specific ratio. Crypto edges are structurally smaller per trade
+  # than equity momentum runners — 1-2% moves are common on majors. The 2×
+  # equity gate was rejecting cleanly-oversold crypto setups at 66-78 bps
+  # of real edge (live audit 2026-06-22: GRT-USD Z=-2.33 / Vol=12.2x, MATIC
+  # Z=-2.09 / Vol=8.2x — both rejected). Drop to 1.5× so crypto entries
+  # need ≥ 75 bps over a ~50 bp round-trip; the floor still excludes the
+  # 36 bp setups that were the safety margin. Equity stays at 2.0×.
+  crypto_min_edge_cost_ratio: 1.5
 # Everything that was nested here from 2026-06-18 backwards (profit_taking,
 # velocity_exits, breakeven, portfolio_limits, blocked_symbols, etc.) has
 # moved back under `risk:` where the engine actually reads it.
