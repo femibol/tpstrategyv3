@@ -1,46 +1,156 @@
-=== executed: ff99a41e2f2875ed4b70b930f7a3f136a43beb63
-=== started:  2026-06-22T14:46:10Z
+=== executed: 4025c07afb29a360137ff9529db6f33315efd2dd
+=== started:  2026-06-22T14:50:06Z
 === exit:     
 === timeout:  90s
 ===
-=== /api/positions — full response ===
-count: 2
+=== ICCM/QXL — full log timeline today (why APPROVED but no fill?) ===
+--- ICCM (760 log hits in last 12h) ---
+2026-06-22 09:33:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=76, breakout>5.65, Vol=9.6x | ICCM @ $6.78
+2026-06-22 09:33:44 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ICCM | Score: 105 | RVOL: 7.5x | Change: +21.3% | R:R 2.6
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   |   -> momentum: buy ICCM @ $6.78 conf=0.85
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ICCM @ $6.66 conf=1.00
+2026-06-22 09:33:44 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=76, breakout>5.65, Vol=9.6x
+2026-06-22 09:33:44 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Extreme RVOL 7.5x | Strong move +21.3% | EMA trend bullish | MACD histogram positive
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 5 buy signal(s) — ICCM, QXL, WDCX, ICCM, AXTX
+  ✅ ICCM: score 85/100 — Momentum BUY: p
+2026-06-22 09:39:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=79, higher lows, Vol=8.9x | ICCM @ $6.92
+2026-06-22 09:39:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ICCM | Score: 85 | RVOL: 4.6x | Change: +4.5% | R:R 2.6
+2026-06-22 09:39:58 | INFO     | trading_bot.engine   |   -> momentum: buy ICCM @ $6.92 conf=0.85
+2026-06-22 09:39:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ICCM @ $7.20 conf=0.85
+2026-06-22 09:39:58 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=79, higher lows, Vol=8.9x
+2026-06-22 09:39:58 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Very high RVOL 4.6x | Strong move +4.5% | EMA trend bullish | MACD histogram positive
+  ✅ ICCM: score 85/100 — Momentum BUY: pullba
+2026-06-22 09:40:03 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: ICCM — wide spread 3.0% (>2% for $6.92)
+2026-06-22 09:43:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=79, higher lows, Vol=1.8x | ICCM @ $7.16
+2026-06-22 09:43:03 | INFO     | trading_bot.engine   |   -> momentum: buy ICCM @ $7.16 conf=0.80
+2026-06-22 09:43:03 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=79, higher lows, Vol=1.8x
+  ✅ ICCM: score 80/100 — Momentum BUY: p
 
-  [CRYPTO]  ARB-USD     qty=5000  entry=$0.0855  now=$0.0851  pnl=$-2.00 (-0.5%)  strat=mean_reversion
-  [CRYPTO]  JUP-USD     qty=5000  entry=$0.2099  now=$0.0002  pnl=$-1048.30 (-99.9%)  strat=mean_reversion
-
-=== /api/status — positions count ===
-  status.positions     = 2
-  status.balance       = $21,176.81
-  status.broker        = IBKR
-  status.broker_connected = True
-  status.position_details keys: ['ARB-USD', 'JUP-USD']
-
-=== engine state — count equity vs crypto in self.positions ===
-bash: line 1: 
-import requests, os
-secret = os.environ.get('DASHBOARD_SECRET_KEY','')
-r = requests.get('http://localhost:5000/api/status', auth=('admin', secret), timeout=10).json()
-pd = r.get('position_details', {}) or {}
-print(f'  count: {len(pd)}')
-for sym, pos in pd.items():
-    is_crypto = any(sfx in sym.upper() for sfx in ('-USD','-USDT','-BTC','-ETH'))
-    print(f'    [{("CRYPTO" if is_crypto else "EQUITY")}]  {sym:10s}  strat={pos.get("strategy")}  qty={pos.get("quantity")}  entry=${pos.get(\"entry_price\",0):.4f}')
-: bad substitution
-
-=== IBKR side — get_positions() directly ===
-  no debug endpoint (status 404)
-
-=== recent SAFETY GATE BLOCK or BLOCKED SYMBOL (equity entries denied?) ===
-
-=== recent equity buy signals fired? (last 4h) ===
+--- QXL (20 log hits in last 12h) ---
+2026-06-22 09:33:44 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>6.50, Vol=10.1x | QXL @ $7.13
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   |   -> momentum: buy QXL @ $7.13 conf=0.85
+2026-06-22 09:33:44 | INFO     | trading_bot.risk.manager | APPROVED: buy QXL | Momentum BUY: pullback entry, ADX=62, breakout>6.50, Vol=10.1x
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 5 buy signal(s) — ICCM, QXL, WDCX, ICCM, AXTX
+2026-06-22 09:39:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=66, breakout>7.20, higher lows, Vol=3.6x | QXL @ $7.23
+2026-06-22 09:39:58 | INFO     | trading_bot.engine   |   -> momentum: buy QXL @ $7.23 conf=0.90
+2026-06-22 09:39:58 | INFO     | trading_bot.risk.manager | APPROVED: buy QXL | Momentum BUY: pullback entry, ADX=66, breakout>7.20, higher lows, Vol=3.6x
+2026-06-22 09:40:09 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: QXL — bearish spot imbalance -0.52
+2026-06-22 09:43:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=77, Vol=1.3x | QXL @ $7.25
+2026-06-22 09:43:03 | INFO     | trading_bot.engine   |   -> momentum: buy QXL @ $7.25 conf=0.75
+2026-06-22 09:43:03 | INFO     | trading_bot.risk.manager | APPROVED: buy QXL | Momentum BUY: pullback entry, ADX=77, Vol=1.3x
+2026-06-22 09:43:14 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: QXL — wide spread 4.7% (>2% for $7.25)
+2026-06-22 09:47:09 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=77, breakout>7.34, Vol=1.3x | QXL @ $7.40
+2026-06-22 09:47:10 | INFO     | trading_bot.engine   |   -> momentum: buy QXL @ $7.40 conf=0.75
+2026-06-22 09:47:10 | INFO     | trading_bot.risk.manager | APPROVED: buy QXL | Momentum BUY: pullback entry, ADX=77, breakout>7.34, Vol=1.3x
+2026-06-22 09:47:13 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: QXL — wide spread 3.2% (>2% for $7.40)
+2026-06-22 09:53:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=77, breakout>7.34, Vol=1.3x | QXL @ $7.35
+2026-06-22 09:53:10 | INFO     | trading_bot.engine   |   -> momentum: buy QXL @ $7.35 conf=0.75
 2026-06-22 09:53:10 | INFO     | trading_bot.risk.manager | APPROVED: buy QXL | Momentum BUY: pullback entry, ADX=77, breakout>7.34, Vol=1.3x
-  ✅ WKSP: score 80/100 — Momentum BUY: pullback entry, ADX=33, Vol=2.0x
-  ✅ AXTX: score 75/100 — Momentum BUY: pullback entry
-2026-06-22 09:58:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 75 | RVOL: 3.9x | Change: +0.3% | R:R 1.8
-2026-06-22 10:04:17 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=27, Vol=3.8x | ICCM @ $6.59
-  ✅ ICCM: score 75/100 — Momentum BUY: pullback entry, ADX=27, Vol=3.8x
-2026-06-22 10:36:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x | ICCM @ $6.92
-2026-06-22 10:36:05 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x
-2026-06-22 10:39:03 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x | ICCM @ $6.98
-2026-06-22 10:39:03 | INFO     | trading_bot.risk.manager | APPROVED: buy ICCM | Momentum BUY: pullback entry, ADX=50, higher lows, Vol=1.3x
+2026-06-22 09:53:13 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: QXL — wide spread 7.1% (>2% for $7.35)
+
+--- WKSP (61 log hits in last 12h) ---
+2026-06-22 09:39:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=36, higher lows, Vol=2.6x | WKSP @ $1.02
+2026-06-22 09:39:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WKSP | Score: 100 | RVOL: 7.8x | Change: +7.5% | R:R 2.6
+2026-06-22 09:39:58 | INFO     | trading_bot.engine   |   -> momentum: buy WKSP @ $1.02 conf=0.95
+2026-06-22 09:39:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WKSP @ $1.01 conf=1.00
+2026-06-22 09:39:58 | INFO     | trading_bot.risk.manager | APPROVED: buy WKSP | Momentum BUY: EMA cross, ADX=36, higher lows, Vol=2.6x
+2026-06-22 09:39:58 | INFO     | trading_bot.risk.manager | APPROVED: buy WKSP | Extreme RVOL 7.8x | Strong move +7.5% | EMA trend bullish | MACD histogram positive
+  ✅ WKSP: score 95/100 — Momentum BUY: EMA cross, ADX=36, higher lows, Vol=2.6x
+2026-06-22 09:40:00 | INFO     | trading_bot.engine   | VOL REGIME: WKSP short=0.0779 long=0.0377 ratio=2.07x → sizing mult 0.81x
+2026-06-22 09:40:00 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: WKSP live ask $1.02 has drifted 1.0% above signal $1.01 (max 0.8%) — entry R:R already invalid, skipping order.
+2026-06-22 09:43:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=44, higher lows, Vol=1.9x | WKSP @ $0.97
+2026-06-22 09:43:03 | INFO     | trading_bot.engine   |   -> momentum: buy WKSP @ $0.97 conf=0.80
+2026-06-22 09:43:03 | INFO     | trading_bot.risk.manager | APPROVED: buy WKSP | Momentum BUY: pullback entry, ADX=44, higher lows, Vol=1.9x
+  ✅ WKSP: score 80/100 — Momentum BUY: pullback entry, ADX=44, higher lows, Vol=1.9x
+2026-06-22 09:43:05 | INFO     | trading_bot.engine   | VOL REGIME: WKSP short=0.0804 long=0.0383 ratio=2.10x → sizing mult 0.80x
+2026-06-22 09:43:05 | INFO     | trading_bot.engine   | Executing WKSP via IBKR...
+2026-06-22 09:43:05 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: WKSP → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-22 09:43:05 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: WKSP (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-22 09:43:05 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: PreSubmitted | Filled: 0.0/394.0
+2026-06-22 09:43:05 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: PreSubmitted | Filled: 0.0/394.0
+2026-06-22 09:43:05 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: Submitted | Filled: 0.0/394.0
+
+--- AXTX (760 log hits in last 12h) ---
+2026-06-22 04:04:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x | AXTX @ $23.30
+2026-06-22 04:04:43 | INFO     | trading_bot.engine   |   -> momentum: buy AXTX @ $23.30 conf=0.80
+2026-06-22 04:04:43 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x
+2026-06-22 04:04:43 | INFO     | trading_bot.engine   | PREMARKET REJECT: AXTX RVOL=1.4x (need RVOL>=3.0)
+  ✅ AXTX: score 80/100 — Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher
+2026-06-22 04:07:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x | AXTX @ $22.58
+2026-06-22 04:07:37 | INFO     | trading_bot.engine   |   -> momentum: buy AXTX @ $22.58 conf=0.80
+2026-06-22 04:07:37 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x
+2026-06-22 04:07:37 | INFO     | trading_bot.engine   | PREMARKET REJECT: AXTX RVOL=1.4x (need RVOL>=3.0)
+  ✅ AXTX: score 80/100 — Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher
+2026-06-22 04:10:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x | AXTX @ $22.97
+2026-06-22 04:10:31 | INFO     | trading_bot.engine   |   -> momentum: buy AXTX @ $22.97 conf=0.80
+2026-06-22 04:10:31 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x
+2026-06-22 04:10:31 | INFO     | trading_bot.engine   | PREMARKET REJECT: AXTX RVOL=1.4x (need RVOL>=3.0)
+  ✅ AXTX: score 80/100 — Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher
+2026-06-22 04:13:31 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x | AXTX @ $22.97
+2026-06-22 04:13:31 | INFO     | trading_bot.engine   |   -> momentum: buy AXTX @ $22.97 conf=0.80
+2026-06-22 04:13:31 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x
+2026-06-22 04:13:31 | INFO     | trading_bot.engine   | PREMARKET REJECT: AXTX RVOL=1.4x (need RVOL>=3.0)
+  ✅ AXTX: score 80/100 — Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher
+
+--- WDCX (1140 log hits in last 12h) ---
+2026-06-22 09:33:44 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 100 | RVOL: 7.6x | Change: +7.5% | R:R 2.6
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $65.17 conf=1.00
+2026-06-22 09:33:44 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 7.6x | Strong move +7.5% | EMA trend bullish | MACD histogram positive
+2026-06-22 09:33:44 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 5 buy signal(s) — ICCM, QXL, WDCX, ICCM, AXTX
+2026-06-22 09:36:50 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 105 | RVOL: 8.0x | Change: +4.9% | R:R 2.6
+2026-06-22 09:36:50 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $63.59 conf=1.00
+2026-06-22 09:36:50 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 8.0x | Strong move +4.9% | EMA trend bullish | MACD histogram positive
+2026-06-22 09:36:56 | INFO     | trading_bot.engine   | VOL REGIME: WDCX short=0.0175 long=0.0097 ratio=1.82x → sizing mult 0.89x
+2026-06-22 09:36:56 | INFO     | trading_bot.engine   | Executing WDCX via IBKR...
+2026-06-22 09:36:56 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: WDCX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-22 09:36:56 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: WDCX (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: PreSubmitted | Filled: 0.0/21.0
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: PreSubmitted | Filled: 0.0/21.0
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: PreSubmitted | Filled: 0.0/21.0
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: Filled | Filled: 21.0/21.0 | AvgPrice: $63.60
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: PreSubmitted | Filled: 0.0/21.0
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: PreSubmitted | Filled: 0.0/21.0
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: Submitted | Filled: 0.0/21.0
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 21 WDCX @ LIMIT $64.60 | TP: $70.27 | SL: $61.05 | Parent ID: 1112030
+2026-06-22 09:36:57 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 21/21 WDCX @ $63.6000 | signal $64.6000 | slippage -1.55% | parent=MARKET
+
+=== JUP-USD — what happened? full timeline today ===
+2026-06-22 10:36:06 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: JUP-USD entry=$0.2099 stop=$0.2095 (0.20% gap). Setting 5% minimum stop.
+2026-06-22 10:36:06 | INFO     | trading_bot.engine   | VOL REGIME: JUP-USD short=0.0041 long=0.0018 ratio=2.32x → sizing mult 0.73x
+2026-06-22 10:36:06 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 9528.34683 JUP-USD @ $0.21 = $2,000.00 | Risk: $100.00 (0.5% of account)
+2026-06-22 10:36:06 | WARNING  | trading_bot.engine   | TIER CAP: JUP-USD signal qty=9528.34683 exceeds tier max=5000 for $0.21 stock. Capping to 5000.
+2026-06-22 10:36:06 | INFO     | trading_bot.engine   | R/R STRETCH: JUP-USD entry=$0.2099 stop=$0.1994 (risk=$0.0105) target=$0.2127 (reward=$0.0028, R/R=0.26) — stretching target to $0.2309 for 2:1 minimum.
+2026-06-22 10:36:06 | INFO     | trading_bot.engine   | Executing JUP-USD via TradersPost (CRYPTO)...
+2026-06-22 10:36:06 | INFO     | trading_bot.broker.traderspost | Routing JUP-USD to CRYPTO webhook
+2026-06-22 10:36:06 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "JUP-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 0.2099, "stopLoss": {"type": "stop", "stopPrice": 0.2}, "takeProfit": {"type": "limit", "limitPrice": 0.23}}
+2026-06-22 10:36:06 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"86adcdd1-deb0-42da-b722-96da8d52a57e","logId":"86adcdd1-deb0-42da-b722-96da8d52a57e","payload":{"ticker":"JUP-USD","action":"buy","sentiment":"bullish","quantity":5000,"price":0.2099,"stopLoss":{"type":"stop","stopPrice":0.2},"takeProfit":{"type":"limit","limitPrice":0.23}}}
+2026-06-22 10:36:06 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY JUP-USD | Strategy: unknown | Qty: 5000 @ $0.21 = $1,049.50 | Risk: $52.48 | Reward: $104.95 | R:R 2.0:1 | Response: 200
+2026-06-22 10:36:06 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: JUP-USD qty=5000. SL $0.20 / TP $0.23 managed by bot (no broker-side bracket).
+2026-06-22 10:36:06 | INFO     | trading_bot.engine   | ORDER BUY JUP-USD via TradersPost | Qty: 5000 | Price: $0.21 | Cost: $1,049.50 | Stop: $0.20 (risk $52.48) | Target: $0.23 (reward $104.95) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-22 10:36:06 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: JUP-USD**
+2026-06-22 10:39:03 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | JUP-USD @ $0.21
+2026-06-22 10:39:03 | INFO     | trading_bot.engine   |   -> mean_reversion: buy JUP-USD @ $0.21 conf=1.00
+2026-06-22 10:39:03 | INFO     | trading_bot.risk.manager | REJECTED: buy JUP-USD | Already in position: JUP-USD
+  ✅ JUP-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-22 10:42:03 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.74, RSI=0, BB=lower, Vol=10.0x | JUP-USD @ $0.21
+2026-06-22 10:42:03 | INFO     | trading_bot.engine   |   -> mean_reversion: buy JUP-USD @ $0.21 conf=1.00
+2026-06-22 10:42:03 | INFO     | trading_bot.risk.manager | REJECTED: buy JUP-USD | Already in position: JUP-USD
+  ✅ JUP-USD: score 100/100 — Mean reversion BUY: Z=-3.74, RSI=0, BB=lower, Vol=10.0x
+2026-06-22 10:44:51 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-3.74, RSI=0, BB=lower, Vol=10.0x | JUP-USD @ $0.21
+2026-06-22 10:44:51 | INFO     | trading_bot.engine   |   -> mean_reversion: buy JUP-USD @ $0.21 conf=1.00
+2026-06-22 10:44:51 | INFO     | trading_bot.risk.manager | REJECTED: buy JUP-USD | Already in position: JUP-USD
+  ✅ JUP-USD: score 100/100 — Mean reversion BUY: Z=-3.74, RSI=0, BB=lower, Vol=10.0x
+
+=== JUP-USD live price right now ===
+{"data":{"amount":"0.0002398999769","base":"JUP","currency":"USD"}}
+=== JUP entry context (from trade_history.json) ===
+total JUP-USD historical trades: 6
+  2026-06-14T16:46:12  entry=$0.1651  exit=$0.1651  qty=5000  pnl=$+0.00  reason=time_exit
+  2026-06-20T22:43:10  entry=$0.2190  exit=$0.2190  qty=2283.10502  pnl=$+0.00  reason=webhook_exit
+  2026-06-20T23:33:26  entry=$0.2223  exit=$0.2223  qty=2249.21278  pnl=$+0.00  reason=webhook_exit
+  2026-06-21T15:25:10  entry=$0.2196  exit=$0.2196  qty=5000  pnl=$+0.00  reason=time_exit
+  2026-06-22T01:38:30  entry=$0.2091  exit=$0.2106  qty=400  pnl=$+0.60  reason=partial_target_1
+  2026-06-22T01:54:43  entry=$0.2091  exit=$0.2106  qty=4600  pnl=$+6.90  reason=webhook_exit
+
+=== open positions file (data/open_positions.json) — what's stored? ===
+Expecting value: line 1 column 1 (char 0)
