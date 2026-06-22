@@ -57,6 +57,17 @@ class CostModel:
         # twice the round-trip friction. Conservative; tune downward for
         # high-frequency, upward for low-frequency.
         self.min_edge_cost_ratio = float(cfg.get("min_edge_cost_ratio", 2.0))
+        # Crypto-specific override. Crypto edges are structurally smaller
+        # per trade (1-2% moves on majors are common; equity momentum
+        # runners go 10%+). Holding equity to 2× and crypto to 1.5× lets
+        # the cost gate keep biting on marginal equity setups while
+        # admitting cleanly-oversold crypto mean-reversion entries that
+        # the live-trade audit (06-22 GRT, MATIC) showed were getting
+        # rejected at 66-78 bps of edge — real edges, just under the 2×
+        # threshold. Falls back to `min_edge_cost_ratio` if unset.
+        self.crypto_min_edge_cost_ratio = float(
+            cfg.get("crypto_min_edge_cost_ratio", self.min_edge_cost_ratio)
+        )
 
     def round_trip_cost_bps(self, asset_class, live_spread_bps=None):
         """Total round-trip cost in bps (entry + exit, fee + spread×mult)."""
@@ -95,16 +106,24 @@ class CostModel:
         sl_edge_bps = (abs(price - sl) / price * 10000.0 * 2.0) if sl > 0 else 0.0
         return max(tp_edge_bps, sl_edge_bps)
 
+    def _ratio_for(self, asset_class):
+        """Per-asset ratio. Crypto uses `crypto_min_edge_cost_ratio` (falls
+        back to the global ratio if unset)."""
+        if asset_class == "crypto":
+            return self.crypto_min_edge_cost_ratio
+        return self.min_edge_cost_ratio
+
     def passes(self, signal, asset_class, live_spread_bps=None):
         """Return (passed, reason). Edge must clear ratio × cost."""
         if not self.enabled:
             return True, "cost model disabled"
         edge = self.expected_edge_bps(signal)
         cost = self.round_trip_cost_bps(asset_class, live_spread_bps)
-        threshold = self.min_edge_cost_ratio * cost
+        ratio = self._ratio_for(asset_class)
+        threshold = ratio * cost
         if edge < threshold:
             return False, (
-                f"Cost gate: edge {edge:.0f}bps < {self.min_edge_cost_ratio:g}× "
+                f"Cost gate: edge {edge:.0f}bps < {ratio:g}× "
                 f"cost {cost:.0f}bps (need {threshold:.0f}bps)"
             )
         return True, "ok"
