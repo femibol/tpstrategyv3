@@ -1,17 +1,23 @@
 #!/bin/bash
 set +e
 cd /opt/trading-bot
-bash scripts/deploy-vps.sh main 2>&1 | tail -25
+
+echo "=== positions_state.json — does it exist? ==="
+docker exec trading-bot-trading-bot-1 ls -la /app/data/positions_state.json 2>&1
 echo
-echo "=== verify anti-collision guard is live ==="
+echo "=== contents (truncated) ==="
+docker exec trading-bot-trading-bot-1 head -c 3000 /app/data/positions_state.json 2>&1
+echo
+echo "=== all files in /app/data/ ==="
+docker exec trading-bot-trading-bot-1 ls -la /app/data/ 2>&1 | head -30
+echo
+echo "=== check if data/ is bind-mounted (survives container restart)? ==="
+docker inspect trading-bot-trading-bot-1 --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' 2>&1
+echo
+echo "=== boot log: did the engine try to load persisted positions? ==="
+docker logs --tail 500 trading-bot-trading-bot-1 2>&1 | grep -iE "Load persisted|persisted position|loaded.*positions|Synced.*positions|positions_state|state load" | head -10
+echo
+echo "=== current bot positions in memory ==="
 set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
 HOST="https://trading-bot-vps.tail5db65d.ts.net"
-curl -s -m 10 -u "admin:$DASHBOARD_SECRET_KEY" "$HOST/api/positions" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(f'positions count: {len(d)}')
-for p in d:
-    print(f'  {p.get(\"symbol\"):10s}  entry=\${p.get(\"entry_price\",0):.4f}  now=\${p.get(\"current_price\",0):.6f}  pnl=\${p.get(\"pnl_dollars\",0):+.2f} ({p.get(\"pnl_pct\",0):+.2f}%)  source={p.get(\"price_source\")}')
-" 2>&1
-echo
-echo "=== expect JUP-USD source = engine_anti_collision (was coinbase_live) ==="
+curl -s -m 8 -u "admin:$DASHBOARD_SECRET_KEY" "$HOST/api/positions" | python3 -m json.tool 2>&1 | head -20
