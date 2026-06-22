@@ -1,67 +1,19 @@
-=== executed: fe13f173f47c8584943cb91112f2768f9fcc074e
-=== started:  2026-06-22T06:49:01Z
+=== executed: a8c884c5250225fbbcf4566d4f17a44f5e963e35
+=== started:  2026-06-22T07:08:16Z
 === exit:     
 === timeout:  90s
 ===
-Now (ET): 2026-06-22 02:49:01 Monday
+deploy: backed up 11 data/*.json files
+deploy: checked out 0bbea2c9 on main
+deploy: container trading-bot-trading-bot-1 restarted
+deploy: dashboard ready after 6s
+deploy: ok
 
-=== TODAY (Mon 06-22 ET) — crypto only ===
-today crypto: 2 trades, $+7.50, 2W/0L/0F, wr 100%
-  by symbol:
-    JUP-USD     2t  $  +7.50
-  timeline:
-    01:38  JUP-USD     strat=mean_reversion    +$   0.60  reason=partial_target_1         (partial)
-    01:54  JUP-USD     strat=mean_reversion    +$   6.90  reason=webhook_exit             
+=== verify crypto cost-gate ratio is live ===
+global min_edge_cost_ratio        = 2.0  (expect 2.0)
+crypto_min_edge_cost_ratio        = 1.5  (expect 1.5)
+_ratio_for(equity)                 = 2.0  (expect 2.0)
+_ratio_for(crypto)                 = 1.5  (expect 1.5)
+MATIC 78bp simulated → passed=True reason='ok'
 
-=== YESTERDAY (Sun 06-21 ET) — crypto only for context ===
-yesterday crypto: 10 trades, $-33.09, 7W/2L/1F, wr 70%
-  by symbol:
-    JUP-USD     1t  $  +0.00
-    MATIC-USD   2t  $  +4.50
-    NEAR-USD    1t  $ -59.01
-    TRX-USD     6t  $ +21.42
-  timeline:
-    08:56  NEAR-USD    strat=mean_reversion    $ -59.01  reason=time_exit                
-    15:25  JUP-USD     strat=mean_reversion    +$   0.00  reason=time_exit                
-    18:10  TRX-USD     strat=mean_reversion    +$   1.52  reason=partial_target_1         (partial)
-    18:12  TRX-USD     strat=mean_reversion    +$   1.40  reason=partial_target_2         (partial)
-    18:15  TRX-USD     strat=mean_reversion    $  -0.42  reason=stop_loss                
-    18:40  MATIC-USD   strat=mean_reversion    +$   0.36  reason=partial_target_1         (partial)
-    18:40  MATIC-USD   strat=mean_reversion    +$   4.14  reason=webhook_exit             
-    20:54  TRX-USD     strat=mean_reversion    +$   1.48  reason=partial_target_1         (partial)
-    20:54  TRX-USD     strat=mean_reversion    +$   1.36  reason=partial_target_2         (partial)
-    21:05  TRX-USD     strat=mean_reversion    +$  16.08  reason=webhook_exit             
-
-=== open crypto positions right now ===
-  none
-
-=== last 8 crypto signals + verdicts (last 4h) ===
-2026-06-22 02:44:50 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.33, RSI=0, BB=near, Vol=12.2x | GRT-USD @ $0.02
-2026-06-22 02:44:50 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-2026-06-22 02:44:53 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.33, RSI=0, BB=near, Vol=12.2x | GRT-USD @ $0.02
-2026-06-22 02:44:53 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-2026-06-22 02:47:48 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.33, RSI=0, BB=near, Vol=12.2x | GRT-USD @ $0.02
-2026-06-22 02:47:48 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-2026-06-22 02:47:52 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.33, RSI=0, BB=near, Vol=12.2x | GRT-USD @ $0.02
-2026-06-22 02:47:52 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-2026-06-22 02:47:55 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.33, RSI=0, BB=near, Vol=12.2x | GRT-USD @ $0.02
-2026-06-22 02:47:55 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-2026-06-22 02:47:58 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.33, RSI=0, BB=near, Vol=12.2x | GRT-USD @ $0.02
-2026-06-22 02:47:58 | INFO     | trading_bot.risk.manager | REJECTED: buy GRT-USD | Cost gate: edge 66bps < 2× cost 50bps (need 100bps)
-
-=== crypto-runner activity last 12h ===
-
-=== top of the WAIT/BUY heartbeat right now (3d trend leaders) ===
-BUY[1]: GRT-USD(z=-2.33 rsi=0.0 bb=MIDDLE) 
-WAIT[28]
-neutral=7
-no_data=3
-  (BUY count / neutral / no_data + universe size)
-
-  symbols with +trend right now:
-HBAR-USD(weak 3d trend (+0.3%)
-LINK-USD(weak 3d trend (+0.7%)
-NEAR-USD(weak 3d trend (+0.6%)
-OP-USD(weak 3d trend (+0.0%)
-UNI-USD(weak 3d trend (+0.5%)
-XRP-USD(weak 3d trend (+0.4%)
+=== bot log: any Cost gate REJECTED lines since restart? ===
