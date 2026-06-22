@@ -171,8 +171,27 @@ class Dashboard:
                 if symbol.upper().endswith("-USD"):
                     live = _coinbase_spot_price(symbol.upper())
                     if live is not None:
-                        current = live
-                        price_source = "coinbase_live"
+                        # Sanity check: Coinbase's ticker namespace overlaps
+                        # with other venues. JUP-USD is the canonical example
+                        # — Coinbase lists a delisted/relaunched token at that
+                        # ticker (~$0.0002) while the real Jupiter on Solana
+                        # trades around $0.21 on the venue TradersPost routes
+                        # to. If Coinbase's "live" price disagrees with the
+                        # bot's last-known mark by more than 50%, almost
+                        # certainly a ticker collision or stale-listing edge
+                        # case — fall back to engine-tracked price to avoid
+                        # painting a fake -99% loss on the dashboard
+                        # (2026-06-22 incident: JUP-USD shown at -$1,048 /
+                        # -99.9% despite a flat real position).
+                        engine_mark = pos.get("current_price", entry) or entry
+                        if engine_mark > 0:
+                            deviation = abs(live - engine_mark) / engine_mark
+                            if deviation > 0.50:
+                                live = None
+                                price_source = "engine_anti_collision"
+                        if live is not None:
+                            current = live
+                            price_source = "coinbase_live"
                 if direction == "long":
                     pnl_dollars = (current - entry) * qty
                 else:
