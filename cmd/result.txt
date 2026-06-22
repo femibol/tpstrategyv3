@@ -1,15 +1,45 @@
-=== executed: 6bfb1c1bfaf938bfc8cdf571df172ac069b0109c
-=== started:  2026-06-22T14:58:15Z
+=== executed: 2fe5a71a3bda462de07ccad0cfd769f59a16f419
+=== started:  2026-06-22T15:10:02Z
 === exit:     
 === timeout:  90s
 ===
-deploy: backed up 11 data/*.json files
-deploy: checked out a720dde4 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
+=== positions_state.json — does it exist? ===
+-rw-r--r-- 1 root root 2 Jun 22 11:02 /app/data/positions_state.json
 
-=== verify anti-collision guard is live ===
-positions count: 0
+=== contents (truncated) ===
+{}
+=== all files in /app/data/ ===
+total 804
+drwxr-xr-x 3 root root   4096 Jun 22 11:02 .
+drwxr-xr-x 1 root root   4096 Jun 22 11:00 ..
+-rw-r--r-- 1 root root     81 Jun 19 16:05 auto-tuner-overrides.yaml
+-rw-r--r-- 1 root root     64 Jun  4 22:16 auto_recovery_state.json
+-rw-r--r-- 1 root root 149942 Jun 19 16:05 auto_tune_changelog.json
+-rw-r--r-- 1 root root   1280 Jun 22 01:46 crypto_scanner_cache.json
+-rw-r--r-- 1 root root    861 Jun 17 17:30 finviz_float_cache.json
+-rw-r--r-- 1 root root    134 Jun 22 11:02 learning_adjustments.json
+-rw-r--r-- 1 root root   9175 Jun 22 04:00 learning_state.json
+-rw-r--r-- 1 root root   2485 Jun  4 09:20 politician_seen_trades.json
+-rw-r--r-- 1 root root      2 Jun 22 11:02 positions_state.json
+-rw-r--r-- 1 root root   3936 May 18 06:27 positions_state.json.bak.20260518_102746
+-rw-r--r-- 1 root root 294769 Jun 22 11:02 signal_log.json
+-rw-r--r-- 1 root root    458 Jun 22 10:36 slippage_tracker.json
+-rw-r--r-- 1 root root    862 Jun 19 16:05 strategy-tuner-overrides.yaml
+-rw-r--r-- 1 root root 248660 Jun 22 11:02 trade_history.json
+-rw-r--r-- 1 root root  59793 May 18 05:05 trade_history.json.bak.20260518_090525
+drwxr-xr-x 2 root root   4096 Jun 21 18:00 weekly-reviews
 
-=== expect JUP-USD source = engine_anti_collision (was coinbase_live) ===
+=== check if data/ is bind-mounted (survives container restart)? ===
+/opt/trading-bot/bot -> /app/bot
+/var/run/docker.sock -> /var/run/docker.sock
+/opt/trading-bot/data -> /app/data
+/opt/trading-bot/logs -> /app/logs
+/opt/trading-bot/config -> /app/config
+
+
+=== boot log: did the engine try to load persisted positions? ===
+2026-06-22 11:00:18 | WARNING  | trading_bot.engine   | AUTO-RECOVERY state load failed (will treat as fresh): 'TradingEngine' object has no attribute 'tz'
+2026-06-22 11:02:28 | INFO     | trading_bot.engine   | Loaded 1 persisted positions from disk
+
+=== current bot positions in memory ===
+[]
