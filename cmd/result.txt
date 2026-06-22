@@ -1,79 +1,15 @@
-=== executed: 245c45dd1956a1c331c9dfa1e2fed167021e73ce
-=== started:  2026-06-22T14:53:02Z
+=== executed: 6bfb1c1bfaf938bfc8cdf571df172ac069b0109c
+=== started:  2026-06-22T14:58:15Z
 === exit:     
 === timeout:  90s
 ===
-=== WDCX full timeline today — was it closed? ===
-2026-06-22 09:39:45 | ERROR    | trading_bot.engine   | CLOSE FAILED for WDCX — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 09:39:46 | INFO     | trading_bot.engine   | Cancelled broker stop order for WDCX
-2026-06-22 09:39:46 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for WDCX: This event loop is already running
-2026-06-22 09:39:46 | ERROR    | trading_bot.engine   | IBKR close order FAILED for WDCX
-2026-06-22 09:39:46 | ERROR    | trading_bot.engine   | CLOSE FAILED for WDCX — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 09:39:48 | INFO     | trading_bot.engine   | Cancelled broker stop order for WDCX
-2026-06-22 09:39:48 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for WDCX: This event loop is already running
-2026-06-22 09:39:48 | ERROR    | trading_bot.engine   | IBKR close order FAILED for WDCX
-2026-06-22 09:39:48 | ERROR    | trading_bot.engine   | CLOSE FAILED for WDCX — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 09:39:50 | INFO     | trading_bot.engine   | Cancelled broker stop order for WDCX
-2026-06-22 09:39:50 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for WDCX: This event loop is already running
-2026-06-22 09:39:50 | ERROR    | trading_bot.engine   | IBKR close order FAILED for WDCX
-2026-06-22 09:39:50 | ERROR    | trading_bot.engine   | CLOSE FAILED for WDCX — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 09:39:50 | INFO     | trading_bot.engine   | Cancelled broker stop order for WDCX
-2026-06-22 09:39:50 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for WDCX: This event loop is already running
-2026-06-22 09:39:50 | ERROR    | trading_bot.engine   | IBKR close order FAILED for WDCX
-2026-06-22 09:39:50 | ERROR    | trading_bot.engine   | CLOSE FAILED for WDCX — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 09:39:50 | INFO     | trading_bot.engine   | Cancelled broker stop order for WDCX
-2026-06-22 09:39:50 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: WDCX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-22 09:39:50 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: PreSubmitted | Filled: 0.0/21.0
-2026-06-22 09:39:50 | INFO     | trading_bot.broker.ibkr | Order update: WDCX | Status: Filled | Filled: 21.0/21.0 | AvgPrice: $63.13
-2026-06-22 09:39:51 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 21 WDCX @ MARKET MKT | Order ID: 1112344
-2026-06-22 09:39:52 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 21/21 WDCX @ $63.13 | Order ID: 1112344
-2026-06-22 09:39:52 | INFO     | trading_bot.engine   | CLOSED WDCX via IBKR | trailing_stop | P&L: $-9.87 | Trailing stop at $63.47 (trail 3.2%)
-2026-06-22 09:39:52 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT WDCX qty=21 @ $63.13 → primary webhook (200)
-2026-06-22 09:39:52 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: WDCX** (trailing_stop)
-2026-06-22 09:39:53 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: WDCX -9.87 (380 total in history)
-2026-06-22 09:39:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 80 | RVOL: 5.7x | Change: +2.1% | R:R 1.8
-2026-06-22 09:39:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $63.82 conf=0.80
-2026-06-22 09:39:58 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 5.7x | Moving up +2.1% | EMA trend bullish | MACD histogram positive
-2026-06-22 09:40:12 | INFO     | trading_bot.engine   | EQUITY RE-ENTRY COOLDOWN: WDCX closed at a loss ($-9.87) 14s ago (cooldown 1800s) — skipping new entry
-2026-06-22 09:53:10 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 80 | RVOL: 4.5x | Change: +1.4% | R:R 1.8
-2026-06-22 09:53:10 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $61.39 conf=0.80
-2026-06-22 09:53:10 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Very high RVOL 4.5x | Moving up +1.4% | EMA trend bullish | MACD histogram positive
-2026-06-22 09:53:16 | INFO     | trading_bot.engine   | EQUITY RE-ENTRY COOLDOWN: WDCX closed at a loss ($-9.87) 798s ago (cooldown 1800s) — skipping new entry
-2026-06-22 09:58:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 75 | RVOL: 3.9x | Change: +0.3% | R:R 1.8
-2026-06-22 09:58:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $61.61 conf=0.75
-2026-06-22 09:58:18 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Very high RVOL 3.9x | Trending up +0.3% | EMA trend bullish | MACD histogram positive
-  ✅ WDCX: score 75/100 — Very high RVOL 3.9x | Trending up +0.3% | EMA trend bullish 
-2026-06-22 09:58:21 | INFO     | trading_bot.engine   | EQUITY RE-ENTRY COOLDOWN: WDCX closed at a loss ($-9.87) 1103s ago (cooldown 1800s) — skipping new entry
+deploy: backed up 11 data/*.json files
+deploy: checked out a720dde4 on main
+deploy: container trading-bot-trading-bot-1 restarted
+deploy: dashboard ready after 6s
+deploy: ok
 
-=== WDCX in trade_history? ===
-WDCX trades: 1
-  2026-06-22T09:39:53  entry=$63.6000  exit=$63.1300  qty=21  pnl=$-9.87  reason=trailing_stop
+=== verify anti-collision guard is live ===
+positions count: 0
 
-=== open_positions.json contents ===
-ls: cannot access '/app/data/open_positions.json': No such file or directory
-head: cannot open '/app/data/open_positions.json' for reading: No such file or directory
-cannot read file
-
-=== JUP-USD live price (multiple sources) ===
-Coinbase JUP-USD:
-{"data":{"amount":"0.0002398999769","base":"JUP","currency":"USD"}}
-Coinbase JUP-USDT:
-{"data":{"amount":"0.00024018339330409884425112139","base":"JUP","currency":"USDT"}}
-CoinGecko JUP (Jupiter):
-{"jupiter-exchange-solana":{"usd":0.207035}}
-=== bot internal price for JUP-USD ===
-  bot.current_price = $0.0002398999769
-  bot.entry_price   = $0.2099
-  bot.pnl_dollars   = $-1048.3
-  bot.pnl_pct       = -99.8857074907575%
-  bot.price_source  = coinbase_live
-
-=== count of QUALITY GATE SKIP today ===
-20
-  (lines blocked by quality gates today)
-
-=== top quality-gate-skip symbols today ===
-     14 SKIP: EHGO
-      4 SKIP: QXL
-      1 SKIP: RGNX
-      1 SKIP: ICCM
+=== expect JUP-USD source = engine_anti_collision (was coinbase_live) ===
