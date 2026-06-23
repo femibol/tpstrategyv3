@@ -1,26 +1,3 @@
-2026-06-22 10:01:17 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: Cancelled | Filled: 0.0/394.0
-2026-06-22 10:01:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-22 10:01:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10148: OrderId 1112422 that needs to be cancelled cannot be cancelled, state: Cancelled.
-2026-06-22 10:01:18 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: WKSP → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-22 10:01:18 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: PreSubmitted | Filled: 0.0/394.0
-2026-06-22 10:01:18 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: PreSubmitted | Filled: 303.0/394.0 | AvgPrice: $0.88
-2026-06-22 10:01:18 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: Submitted | Filled: 303.0/394.0 | AvgPrice: $0.88
-2026-06-22 10:01:19 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 394 WKSP @ MARKET MKT | Order ID: 1112894
-2026-06-22 10:01:19 | INFO     | trading_bot.broker.ibkr | Order update: WKSP | Status: Filled | Filled: 394.0/394.0 | AvgPrice: $0.88
-2026-06-22 10:01:19 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 394/394 WKSP @ $0.88 | Order ID: 1112894
-2026-06-22 10:01:19 | INFO     | trading_bot.engine   | CLOSED WKSP via IBKR | portfolio_risk | P&L: $-35.50 | MAX LOSS BREACH: WKSP long down 9.3% from entry $0.97 (current $0.88, max loss 8%)
-2026-06-22 10:01:19 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT WKSP qty=394 @ $0.88 → primary webhook (200)
-2026-06-22 10:01:19 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: WKSP** (portfolio_risk)
-```
-  Entry: $0.97 → Exit: $0.88
-  P&L: $-35.50 (-9.29%)
-  Shares: 394 | Value: $346.68
-  Hold: 18m
-```
-Strategy: **momentum** | MAX LOSS BREACH: WKSP long down
-2026-06-22 10:01:20 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: WKSP -35.50 (388 total in history)
-2026-06-22 10:01:23 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [WKSP]: **TIGHTEN_STOP:6%**
-
 WKSP momentum hit -9.3% before portfolio_risk triggered exit. With 71% win rate, strategy is solid — but losers are too large. Cap single-trade drawdown at 6% to protect edge.
 2026-06-22 10:01:23 | INFO     | trading_bot.engine   | LEARNING: Stop distance tightened from 5.0% → 4.5%
 2026-06-22 10:01:23 | WARNING  | trading_bot.engine   | PORTFOLIO RISK: Force-closed 1 positions: WKSP
@@ -19998,3 +19975,26 @@ Via: IBKR | 1
 2026-06-23 19:47:25 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 45 gainers, 9 gaps, 18 losers
 2026-06-23 19:47:26 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-23 19:47:26 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 72 low-priority equity names; max 90)
+2026-06-23 19:50:25 | INFO     | trading_bot.engine   | DATA COVERAGE: 77/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 1
+2026-06-23 19:50:25 | WARNING  | trading_bot.engine   | SLOW CYCLE (182.9s total): update_data=178.9s
+2026-06-23 19:50:28 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-1.5%)), ADA-USD(weak 3d trend (-7.4%)), ALGO-USD(weak 3d trend (+0.6%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-4.8%)), ATOM-USD(weak 3d trend (-4.5%)), BONK-USD(weak 3d trend (-4.5%)), BTC-USD(weak 3d trend (-2.4%)), COMP-USD(weak 3d trend (-8.1%)), CRV-USD(weak 3d trend (-4.4%)), DOGE-USD(weak 3d trend (-5.6%)), DOT-USD(weak 3d trend (-6.8%)), ETC-USD(weak 3d trend (-19.6%)), ETH-USD(weak 3d trend (-4.5%)), FET-USD(weak 3d trend (-7.9%)), FLOKI-USD(weak 3d trend (-7.2%)), GRT-USD(weak 3d trend (-4.0%)), HBAR-USD(weak 3d trend (-3.8%)), ICP-USD(weak 3d trend (-2.8%)), LINK-USD(weak 3d trend (-4.8%)), LTC-USD(weak 3d trend (-5.2%)), MATIC-USD(weak 3d trend (-0.9%)), NEAR-USD(weak 3d trend (-9.6%)), OP-USD(weak 3d trend (-2.9%)), PEPE-USD(weak 3d trend (-4.9%)), RNDR-USD(weak 3d trend (-9.1%)), SEI-USD(weak 3d trend (-2.5%)), SHIB-USD(weak 3d trend (-4.2%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-4.8%)), SUI-USD(weak 3d trend (-1.1%)), TON-USD(weak 3d trend (-20.6%)), TRX-USD(weak 3d trend (+0.8%)), UNI-USD(weak 3d trend (-2.7%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-9.7%)), XRP-USD(weak 3d trend (-3.5%)) | neutral=4 | no_data=1
+2026-06-23 19:50:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 45 results
+2026-06-23 19:50:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-23 19:50:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-23 19:50:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-23 19:50:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 18 results
+2026-06-23 19:50:38 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 45 gainers, 9 gaps, 18 losers
+2026-06-23 19:50:38 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-23 19:50:38 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 72 low-priority equity names; max 90)
+2026-06-23 19:50:59 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-23 19:54:01 | WARNING  | trading_bot.engine   | SLOW CYCLE (206.9s total): update_data=202.3s
+2026-06-23 19:54:01 | INFO     | trading_bot.engine   | CYCLE #355: regime=sideways | signals=0->approved=0 | positions=0/15 | bars_warm=240/241 | equity_open=True | pm=False pwr_hr=False
+2026-06-23 19:54:04 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-1.5%)), ADA-USD(weak 3d trend (-7.4%)), ALGO-USD(weak 3d trend (+0.6%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-4.8%)), ATOM-USD(weak 3d trend (-4.5%)), BONK-USD(weak 3d trend (-4.5%)), BTC-USD(weak 3d trend (-2.5%)), COMP-USD(weak 3d trend (-8.1%)), CRV-USD(weak 3d trend (-4.4%)), DOGE-USD(weak 3d trend (-5.6%)), DOT-USD(weak 3d trend (-6.8%)), ETC-USD(weak 3d trend (-19.6%)), ETH-USD(weak 3d trend (-4.2%)), FET-USD(weak 3d trend (-7.9%)), FLOKI-USD(weak 3d trend (-7.2%)), GRT-USD(weak 3d trend (-4.0%)), HBAR-USD(weak 3d trend (-3.9%)), ICP-USD(weak 3d trend (-2.8%)), LINK-USD(weak 3d trend (-4.9%)), LTC-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-0.9%)), NEAR-USD(weak 3d trend (-9.7%)), OP-USD(weak 3d trend (-2.9%)), PEPE-USD(weak 3d trend (-4.9%)), RNDR-USD(weak 3d trend (-9.1%)), SEI-USD(weak 3d trend (-2.5%)), SHIB-USD(weak 3d trend (-4.2%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-4.8%)), SUI-USD(weak 3d trend (-1.0%)), TON-USD(weak 3d trend (-20.6%)), TRX-USD(weak 3d trend (+0.8%)), UNI-USD(weak 3d trend (-2.7%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-9.7%)), XRP-USD(weak 3d trend (-3.5%)) | neutral=4 | no_data=1
+2026-06-23 19:54:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 45 results
+2026-06-23 19:54:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-23 19:54:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-23 19:54:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-23 19:54:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 18 results
+2026-06-23 19:54:14 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 45 gainers, 9 gaps, 18 losers
+2026-06-23 19:54:14 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-23 19:54:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 72 low-priority equity names; max 90)
