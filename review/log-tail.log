@@ -1,70 +1,3 @@
-2026-06-22 09:08:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-22 09:08:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-22 09:08:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-22 09:08:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-22 09:08:59 | INFO     | trading_bot.engine   | IBKR scanner: 127 unique symbols discovered | 50 gainers, 26 gaps, 20 losers
-2026-06-22 09:08:59 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-22 09:08:59 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
-2026-06-22 09:08:59 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 112 low-priority equity names; max 90)
-2026-06-22 09:09:00 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-22 09:09:00 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-22 09:09:00 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-22 09:11:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x | AXTX @ $25.27
-2026-06-22 09:11:49 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: EHGO | Score: 75 | RVOL: 7.1x | Change: +1.1% | R:R 1.8
-2026-06-22 09:11:49 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
-2026-06-22 09:11:49 | INFO     | trading_bot.engine   |   -> momentum: buy AXTX @ $25.27 conf=0.80
-2026-06-22 09:11:49 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy EHGO @ $1.90 conf=0.75
-2026-06-22 09:11:49 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x
-2026-06-22 09:11:49 | INFO     | trading_bot.risk.manager | APPROVED: buy EHGO | Extreme RVOL 7.1x | Moving up +1.1% | MACD histogram positive | RSI healthy (48)
-2026-06-22 09:11:49 | INFO     | trading_bot.engine   | PREMARKET REJECT: AXTX RVOL=1.4x (need RVOL>=3.0)
-2026-06-22 09:11:49 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 940 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 2
-  ✅ AXTX: score 80/100 — Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher
-  ✅ EHGO: score 75/100 — Extreme RVOL 7.
-2026-06-22 09:11:50 | WARNING  | trading_bot.engine   | SLOW CYCLE (174.4s total): update_data=169.5s
-2026-06-22 09:11:52 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: EHGO EMA imbalance +0.58 ramping → score 75 → 85
-2026-06-22 09:11:52 | WARNING  | trading_bot.engine   | STALE PRICE REJECT: EHGO signal @ $1.90 but live price $2.80 (47.8% deviation > 5% max) — stops/targets would be invalid
-2026-06-22 09:11:55 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[18]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (+0.4%)), ALGO-USD(weak 3d trend (-2.1%)), ATOM-USD(weak 3d trend (-0.6%)), CRV-USD(weak 3d trend (+0.7%)), FET-USD(weak 3d trend (-3.6%)), FLOKI-USD(weak 3d trend (-1.4%)), HBAR-USD(weak 3d trend (+0.7%)), IMX-USD(weak 3d trend (-1.0%)), MATIC-USD(needs vol>=1.1x), OP-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (+0.0%)), SHIB-USD(weak 3d trend (+0.2%)), TIA-USD(weak 3d trend (-0.5%)), TON-USD(weak 3d trend (-13.5%)), UNI-USD(weak 3d trend (+0.6%)), WIF-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-2.8%)) | warming=2 | neutral=21 | no_data=1
-2026-06-22 09:12:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: AMEX; CHX; IBEOS; PSX; T24X; LTSE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; PEARL; NYSENAT; MEMX; EDGEA; OVERNIGHT; ISE; 
-2026-06-22 09:12:00 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-22 09:12:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-22 09:12:02 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-22 09:12:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-22 09:12:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-22 09:12:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
-2026-06-22 09:12:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-22 09:12:05 | INFO     | trading_bot.engine   | IBKR scanner: 128 unique symbols discovered | 50 gainers, 27 gaps, 20 losers
-2026-06-22 09:12:05 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-22 09:12:05 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 15 stale symbols across strategies
-2026-06-22 09:12:05 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 115 low-priority equity names; max 90)
-2026-06-22 09:12:05 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
-2026-06-22 09:12:06 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
-2026-06-22 09:12:06 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-22 09:12:08 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-22 09:14:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-22 09:14:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-22 09:14:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x | AXTX @ $25.23
-2026-06-22 09:14:55 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: EHGO | Score: 75 | RVOL: 7.1x | Change: +1.1% | R:R 1.8
-2026-06-22 09:14:55 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
-2026-06-22 09:14:55 | INFO     | trading_bot.engine   |   -> momentum: buy AXTX @ $25.23 conf=0.80
-2026-06-22 09:14:55 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy EHGO @ $1.90 conf=0.75
-2026-06-22 09:14:55 | INFO     | trading_bot.risk.manager | APPROVED: buy AXTX | Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher lows, Vol=1.4x
-2026-06-22 09:14:55 | INFO     | trading_bot.risk.manager | APPROVED: buy EHGO | Extreme RVOL 7.1x | Moving up +1.1% | MACD histogram positive | RSI healthy (48)
-2026-06-22 09:14:55 | INFO     | trading_bot.engine   | PREMARKET REJECT: AXTX RVOL=1.4x (need RVOL>=3.0)
-2026-06-22 09:14:55 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 955 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 2
-  ✅ AXTX: score 80/100 — Momentum BUY: pullback entry, ADX=62, breakout>21.98, higher
-  ✅ EHGO: score 75/100 — Extreme RVOL 7.
-2026-06-22 09:14:56 | WARNING  | trading_bot.engine   | SLOW CYCLE (174.4s total): update_data=169.7s
-2026-06-22 09:14:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-22 09:14:58 | WARNING  | trading_bot.engine   | STALE PRICE REJECT: EHGO signal @ $1.90 but live price $2.82 (48.8% deviation > 5% max) — stops/targets would be invalid
-2026-06-22 09:15:01 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[18]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (+0.4%)), ALGO-USD(weak 3d trend (-2.1%)), ATOM-USD(weak 3d trend (-0.6%)), CRV-USD(weak 3d trend (+0.7%)), FET-USD(weak 3d trend (-3.6%)), FLOKI-USD(weak 3d trend (-1.4%)), HBAR-USD(weak 3d trend (+0.9%)), IMX-USD(weak 3d trend (-1.0%)), MATIC-USD(needs vol>=1.1x), OP-USD(weak 3d trend (+0.0%)), RNDR-USD(weak 3d trend (+0.0%)), SHIB-USD(weak 3d trend (+0.2%)), TIA-USD(weak 3d trend (-0.5%)), TON-USD(weak 3d trend (-13.5%)), UNI-USD(weak 3d trend (+0.6%)), WIF-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-2.5%)) | warming=2 | neutral=21 | no_data=1
-2026-06-22 09:15:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
-2026-06-22 09:15:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-22 09:15:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-22 09:15:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
 2026-06-22 09:15:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
 2026-06-22 09:15:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
 2026-06-22 09:15:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
@@ -19998,3 +19931,70 @@ Approved: 1 trades
 2026-06-23 11:52:04 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 88 low-priority equity names; max 90)
 2026-06-23 11:54:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (175.6s total): update_data=171.1s
 2026-06-23 11:54:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[37]: AAVE-USD(weak 3d trend (-1.5%)), ADA-USD(weak 3d trend (-7.3%)), ALGO-USD(weak 3d trend (-0.9%)), APT-USD(weak 3d trend (-0.6%)), ARB-USD(weak 3d trend (-3.8%)), ATOM-USD(weak 3d trend (-2.6%)), BONK-USD(weak 3d trend (-4.8%)), BTC-USD(weak 3d trend (-2.9%)), COMP-USD(weak 3d trend (-8.1%)), CRV-USD(weak 3d trend (-5.1%)), DOGE-USD(weak 3d trend (-6.4%)), DOT-USD(weak 3d trend (-8.7%)), ETC-USD(weak 3d trend (-19.6%)), ETH-USD(weak 3d trend (-4.9%)), FET-USD(weak 3d trend (-8.2%)), FLOKI-USD(weak 3d trend (-7.5%)), GRT-USD(weak 3d trend (-3.6%)), HBAR-USD(weak 3d trend (-3.3%)), ICP-USD(weak 3d trend (-7.6%)), IMX-USD(weak 3d trend (+0.7%)), LINK-USD(weak 3d trend (-5.0%)), LTC-USD(weak 3d trend (-5.2%)), MATIC-USD(weak 3d trend (-4.1%)), NEAR-USD(weak 3d trend (-8.8%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-4.2%)), RNDR-USD(weak 3d trend (-10.3%)), SEI-USD(weak 3d trend (-0.4%)), SHIB-USD(weak 3d trend (-3.0%)), SNX-USD(weak 3d trend (+0.0%)), SOL-USD(weak 3d trend (-4.8%)), SUI-USD(weak 3d trend (-1.3%)), TON-USD(weak 3d trend (-17.8%)), UNI-USD(weak 3d trend (-4.4%)), WIF-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-10.9%)), XRP-USD(weak 3d trend (-5.0%)) | warming=1 | neutral=2 | no_data=1
+2026-06-23 11:55:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-23 11:55:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-23 11:55:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-23 11:55:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-23 11:55:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-23 11:55:09 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 49 gainers, 9 gaps, 20 losers
+2026-06-23 11:55:09 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-23 11:55:09 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 15 stale symbols across strategies
+2026-06-23 11:55:09 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 86 low-priority equity names; max 90)
+2026-06-23 11:58:31 | INFO     | trading_bot.engine   | BREAK-EVEN: TRX-USD stop moved to $0.33 (was $0.31, P&L: 1.4%)
+2026-06-23 11:58:31 | INFO     | trading_bot.notifications | [ALERT] Position Update: 🛡️ **BREAKEVEN: TRX-USD**
+Stop moved to $0.33 (was $0.31) | P&L: 1.4%
+2026-06-23 11:58:31 | INFO     | trading_bot.broker.traderspost | EXIT signal for TRX-USD - bypassing rate limits
+2026-06-23 11:58:31 | INFO     | trading_bot.broker.traderspost | Routing TRX-USD to CRYPTO webhook
+2026-06-23 11:58:31 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "TRX-USD", "action": "exit", "quantity": 268, "price": 0.3316}
+2026-06-23 11:58:31 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"a268cbf0-8fd0-4a4a-8189-62e455b9e702","logId":"a268cbf0-8fd0-4a4a-8189-62e455b9e702","payload":{"ticker":"TRX-USD","action":"exit","quantity":268,"price":0.3316}}
+2026-06-23 11:58:31 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL TRX-USD | Strategy: unknown | Qty: 268 @ $0.33 = $88.87 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-23 11:58:31 | INFO     | trading_bot.engine   | PARTIAL CLOSE TRX-USD: 268 shares at $0.33 (target 1: +0%) | P&L: $+1.21 | Remaining: 3093.70577 shares
+2026-06-23 11:58:31 | INFO     | trading_bot.notifications | [ALERT] Partial Close: 📐 **PARTIAL CLOSE: TRX-USD**
+```
+  Closed: 268 shares @ $0.33
+  P&L: $+1.21 (target 1: +0%)
+  Remaining: 3093.70577 shares
+```
+Strategy: mean_reversion | 11:58:31 ET
+2026-06-23 11:58:32 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: TRX-USD +1.21 (406 total in history)
+2026-06-23 11:58:32 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion SELL (mean reached): Z=0.68 | TRX-USD @ $0.33
+2026-06-23 11:58:32 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-23 11:58:32 | INFO     | trading_bot.engine   |   -> mean_reversion: sell TRX-USD @ $0.33 conf=0.67
+2026-06-23 11:58:32 | INFO     | trading_bot.risk.manager | APPROVED: sell TRX-USD | Mean reversion SELL (mean reached): Z=0.68
+2026-06-23 11:58:32 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 814 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ TRX-USD: score 67/100 — Mean reversion SELL (mean reached): Z=0.68
+Approved: 1 trades
+2026-06-23 11:58:32 | WARNING  | trading_bot.engine   | SLOW CYCLE (207.9s total): update_data=201.8s, discover=5.0s
+2026-06-23 11:58:32 | INFO     | trading_bot.engine   | Webhook exit signal: routing SELL TRX-USD through close path
+2026-06-23 11:58:32 | INFO     | trading_bot.broker.traderspost | EXIT signal for TRX-USD - bypassing rate limits
+2026-06-23 11:58:32 | INFO     | trading_bot.broker.traderspost | Routing TRX-USD to CRYPTO webhook
+2026-06-23 11:58:32 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "TRX-USD", "action": "exit", "quantity": 3093.70577, "price": 0.3316}
+2026-06-23 11:58:32 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"c9d6ee71-bdad-4874-9834-a16751c0321e","logId":"c9d6ee71-bdad-4874-9834-a16751c0321e","payload":{"ticker":"TRX-USD","action":"exit","quantity":3093.70577,"price":0.3316}}
+2026-06-23 11:58:32 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL TRX-USD | Strategy: unknown | Qty: 3093.70577 @ $0.33 = $1,025.87 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-23 11:58:32 | INFO     | trading_bot.engine   | CLOSED TRX-USD via TradersPost | webhook_exit | P&L: $+13.92 | External sell signal from mean_reversion
+2026-06-23 11:58:32 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💰 **<<< CLOSED: TRX-USD** (webhook_exit)
+```
+  Entry: $0.33 → Exit: $0.33
+  P&L: $+13.92 (+1.38%)
+  Shares: 3093.70577 | Value: $1,025.87
+  Hold: 26m
+```
+Strategy: **mean_reversion** | External sell s
+2026-06-23 11:58:32 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: TRX-USD +13.92 (407 total in history)
+2026-06-23 11:58:35 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [TRX-USD]: `BOOST:mean_reversion` — 70% win rate + clean +1.4% gain in 26min on TRX-USD confirms strategy is dialed in. Keep running it.
+2026-06-23 11:58:35 | INFO     | trading_bot.engine   | LEARNING: Boosting strategy 'mean_reversion' (total boosts: 2)
+2026-06-23 11:58:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-1.5%)), ADA-USD(weak 3d trend (-6.9%)), ALGO-USD(weak 3d trend (-0.9%)), APT-USD(weak 3d trend (-0.6%)), ARB-USD(weak 3d trend (-3.8%)), ATOM-USD(weak 3d trend (-2.6%)), BONK-USD(weak 3d trend (-4.8%)), BTC-USD(weak 3d trend (-2.7%)), COMP-USD(weak 3d trend (-8.1%)), CRV-USD(weak 3d trend (-5.1%)), DOGE-USD(weak 3d trend (-6.4%)), DOT-USD(weak 3d trend (-7.7%)), ETC-USD(weak 3d trend (-19.6%)), ETH-USD(weak 3d trend (-4.7%)), FET-USD(weak 3d trend (-8.2%)), FLOKI-USD(weak 3d trend (-7.5%)), GRT-USD(weak 3d trend (-3.1%)), HBAR-USD(weak 3d trend (-3.3%)), ICP-USD(weak 3d trend (-6.5%)), IMX-USD(weak 3d trend (+0.7%)), LINK-USD(weak 3d trend (-4.8%)), LTC-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-4.1%)), NEAR-USD(weak 3d trend (-8.9%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-4.2%)), RNDR-USD(weak 3d trend (-10.3%)), SEI-USD(weak 3d trend (-0.4%)), SHIB-USD(weak 3d trend (-3.0%)), SNX-USD(weak 3d trend (+0.0%)), SOL-USD(weak 3d trend (-4.3%)), SUI-USD(weak 3d trend (-1.0%)), TON-USD(weak 3d trend (-17.8%)), UNI-USD(weak 3d trend (-4.4%)), WIF-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-10.7%)), XRP-USD(weak 3d trend (-4.7%)) | warming=1 | neutral=3 | no_data=1
+2026-06-23 11:58:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-23 11:58:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-23 11:58:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-23 11:58:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-23 11:58:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-23 11:58:49 | INFO     | trading_bot.engine   | IBKR scanner: 120 unique symbols discovered | 49 gainers, 9 gaps, 20 losers
+2026-06-23 11:58:49 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-23 11:58:49 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-23 11:58:49 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 92 low-priority equity names; max 90)
+2026-06-23 11:58:49 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
+2026-06-23 11:58:49 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
+2026-06-23 11:58:49 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
