@@ -1,26 +1,3 @@
-2026-06-22 09:53:58 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: ValidationError | Filled: 0.0/72.0
-2026-06-22 09:53:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2161: SELL 72 ICCM NASDAQ.SCM  In accordance with our regulatory obligations as a broker, we will initially cap (or limit) the price of your Limit Order to 6.36 or a more aggressive price still within your specified limit price.  If your order is not immediately executable, our systems may, depending on market conditions, cap your order to a limit price that is no more than the allowed amount away from the reference price at that time. If this happens, you will not receive a fill. This is a control designed to ensure that we comply with our regulatory obligations to avoid submitting disruptive orders to the marketplace. Please note that in some circumstances this may result in you receiving a less favorable fill or not receiving a fill.  In the future, please submit your order using a limit price that is closer to the current market price or submit an algorithmic Market Order (IBALGO).  If you would like to cancel your order, please use cancel order action.
-2026-06-22 09:53:58 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Submitted | Filled: 0.0/72.0
-2026-06-22 09:53:59 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 72 ICCM @ MARKET MKT | Order ID: 1112764
-2026-06-22 09:54:14 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Submitted | Filled: 0.0/72.0
-2026-06-22 09:54:25 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Submitted | Filled: 0.0/72.0
-2026-06-22 09:54:25 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Submitted | Filled: 0.0/72.0
-2026-06-22 09:54:25 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Submitted | Filled: 0.0/72.0
-2026-06-22 09:54:25 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Submitted | Filled: 0.0/72.0
-2026-06-22 09:54:29 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 30s: SELL 72 ICCM (status=Submitted). Cancelling unfilled order.
-2026-06-22 09:54:29 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: PendingCancel | Filled: 0.0/72.0
-2026-06-22 09:54:29 | INFO     | trading_bot.broker.ibkr | Order update: ICCM | Status: Cancelled | Filled: 0.0/72.0
-2026-06-22 09:54:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-22 09:54:30 | ERROR    | trading_bot.engine   | IBKR close order FAILED for ICCM
-2026-06-22 09:54:30 | ERROR    | trading_bot.engine   | CLOSE FAILED for ICCM — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 09:54:33 | INFO     | trading_bot.engine   | TRAIL TIGHTENED: AXTX now 1.2% at +2.7%
-2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | Order update: AXTX | Status: PendingCancel | Filled: 0.0/22.0
-2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | Order 1112366 cancelled
-2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | Order update: AXTX | Status: PendingCancel | Filled: 0.0/22.0
-2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | Order update: AXTX | Status: Cancelled | Filled: 0.0/22.0
-2026-06-22 09:54:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AXTX → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | Order update: AXTX | Status: Cancelled | Filled: 0.0/18
 2026-06-22 09:54:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
 2026-06-22 09:54:33 | INFO     | trading_bot.broker.ibkr | Order update: AXTX | Status: Cancelled | Filled: 0.0/22.0
 2026-06-22 09:54:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
@@ -19998,3 +19975,26 @@ Via: IBKR | 1
 2026-06-23 17:47:46 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 45 gainers, 9 gaps, 18 losers
 2026-06-23 17:47:47 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-23 17:47:47 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
+2026-06-23 17:50:45 | INFO     | trading_bot.engine   | DATA COVERAGE: 78/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 1
+2026-06-23 17:50:45 | WARNING  | trading_bot.engine   | SLOW CYCLE (182.9s total): update_data=178.7s
+2026-06-23 17:50:45 | INFO     | trading_bot.engine   | CYCLE #319: regime=sideways | signals=0->approved=0 | positions=0/15 | bars_warm=240/241 | equity_open=True | pm=False pwr_hr=False
+2026-06-23 17:50:48 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-1.5%)), ADA-USD(weak 3d trend (-6.8%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-4.2%)), ATOM-USD(weak 3d trend (-4.2%)), BONK-USD(weak 3d trend (-4.2%)), BTC-USD(weak 3d trend (-2.2%)), COMP-USD(weak 3d trend (-8.1%)), CRV-USD(weak 3d trend (-3.9%)), DOGE-USD(weak 3d trend (-5.8%)), DOT-USD(weak 3d trend (-5.3%)), ETC-USD(weak 3d trend (-19.6%)), ETH-USD(weak 3d trend (-4.1%)), FET-USD(weak 3d trend (-7.2%)), FLOKI-USD(weak 3d trend (-6.9%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-3.1%)), ICP-USD(weak 3d trend (-3.6%)), IMX-USD(weak 3d trend (+0.7%)), LINK-USD(weak 3d trend (-3.9%)), LTC-USD(weak 3d trend (-5.3%)), MATIC-USD(weak 3d trend (-3.6%)), NEAR-USD(weak 3d trend (-8.2%)), OP-USD(weak 3d trend (-2.0%)), PEPE-USD(weak 3d trend (-4.9%)), RNDR-USD(weak 3d trend (-9.1%)), SEI-USD(weak 3d trend (-2.5%)), SHIB-USD(weak 3d trend (-3.8%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-4.3%)), SUI-USD(weak 3d trend (-0.8%)), TON-USD(weak 3d trend (-20.6%)), UNI-USD(weak 3d trend (-2.7%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-8.5%)), XRP-USD(weak 3d trend (-3.7%)) | neutral=5 | no_data=1
+2026-06-23 17:50:55 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-23 17:50:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 45 results
+2026-06-23 17:50:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-23 17:50:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-23 17:50:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-23 17:50:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 18 results
+2026-06-23 17:50:59 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 45 gainers, 9 gaps, 18 losers
+2026-06-23 17:50:59 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-23 17:50:59 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
+2026-06-23 17:54:21 | WARNING  | trading_bot.engine   | SLOW CYCLE (207.0s total): update_data=202.5s
+2026-06-23 17:54:24 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: AAVE-USD(weak 3d trend (-1.5%)), ADA-USD(weak 3d trend (-6.8%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-4.2%)), ATOM-USD(weak 3d trend (-4.2%)), BONK-USD(weak 3d trend (-4.2%)), BTC-USD(weak 3d trend (-2.2%)), COMP-USD(weak 3d trend (-8.1%)), CRV-USD(weak 3d trend (-3.9%)), DOGE-USD(weak 3d trend (-5.8%)), DOT-USD(weak 3d trend (-5.3%)), ETC-USD(weak 3d trend (-19.6%)), ETH-USD(weak 3d trend (-3.8%)), FET-USD(weak 3d trend (-7.2%)), FLOKI-USD(weak 3d trend (-6.9%)), GRT-USD(weak 3d trend (-2.6%)), HBAR-USD(weak 3d trend (-3.1%)), ICP-USD(weak 3d trend (-3.6%)), IMX-USD(weak 3d trend (+0.7%)), LINK-USD(weak 3d trend (-3.9%)), LTC-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-3.6%)), NEAR-USD(weak 3d trend (-8.2%)), OP-USD(weak 3d trend (-2.0%)), PEPE-USD(weak 3d trend (-4.9%)), RNDR-USD(weak 3d trend (-9.1%)), SEI-USD(weak 3d trend (-2.5%)), SHIB-USD(weak 3d trend (-3.6%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-4.3%)), SUI-USD(weak 3d trend (-0.8%)), TON-USD(weak 3d trend (-20.6%)), UNI-USD(weak 3d trend (-2.7%)), WIF-USD(weak 3d trend (-3.1%)), XLM-USD(weak 3d trend (-8.6%)), XRP-USD(weak 3d trend (-3.6%)) | neutral=5 | no_data=1
+2026-06-23 17:54:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 45 results
+2026-06-23 17:54:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-23 17:54:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-23 17:54:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-23 17:54:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 18 results
+2026-06-23 17:54:35 | INFO     | trading_bot.engine   | IBKR scanner: 119 unique symbols discovered | 45 gainers, 9 gaps, 18 losers
+2026-06-23 17:54:35 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-23 17:54:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 74 low-priority equity names; max 90)
