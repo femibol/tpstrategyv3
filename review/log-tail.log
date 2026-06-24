@@ -1,56 +1,3 @@
-2026-06-22 11:02:29 | INFO     | trading_bot.learning.ai_insights | Claude AI Insights enabled (API key configured)
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Claude AI Insights ENABLED
-2026-06-22 11:02:29 | INFO     | trading_bot.learning.auto_tuner | Auto-Tuner enabled (Claude API configured)
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Auto-Tuner ENABLED - bot will self-optimize parameters
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Weekly Review ENABLED — Saturday 10am ET to Discord
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | TRADE HISTORY: Restored 390 trades | 190W/200L | Net P&L: $-376.05 | Strategies: crypto_runner, crypto_test, momentum, rvol_momentum, rvol_scalp, mean_reversion, synced_from_ibkr
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | PERF STATS: rebuilt from history — total=390 W=190 L=148 net=$-376.05
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Market regime detector enabled
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Hedging system enabled (auto_hedge=False)
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | All components initialized successfully
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Engine state set to RUNNING
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Scheduler started
-2026-06-22 11:02:29 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-22 11:02:29 | INFO     | trading_bot.signals.politician_tracker | Politician trade tracker started (61 trades already seen)
-2026-06-22 11:02:29 | INFO     | trading_bot.engine   | Trading engine started - entering main loop
-2026-06-22 11:02:29 | INFO     | trading_bot.notifications | [ALERT] System: ✅ **System**: Trading engine started
-2026-06-22 11:02:30 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(42 dyn), momentum(42 dyn), crypto_runner(42 dyn)
-2026-06-22 11:02:30 | INFO     | trading_bot.engine   | Injected 3 runners into all strategies
-2026-06-22 11:02:42 | WARNING  | trading_bot.engine   | SIGNALS SUPPRESSED: IBKR not live. Skipping strategy evaluation until reconnect — refusing to generate buy signals on stale fallback data.
-2026-06-22 11:02:42 | INFO     | trading_bot.engine   | Scanner cycle complete - 0 symbols scanned
-2026-06-22 11:02:42 | INFO     | trading_bot.engine   | Initial scan complete - main loop starting
-2026-06-22 11:02:42 | INFO     | trading_bot.broker.traderspost | EXIT signal for JUP-USD - bypassing rate limits
-2026-06-22 11:02:42 | INFO     | trading_bot.broker.traderspost | Routing JUP-USD to CRYPTO webhook
-2026-06-22 11:02:42 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "JUP-USD", "action": "exit", "quantity": 5000, "price": 1.29409e-05}
-2026-06-22 11:02:42 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"41993d74-a3d3-4c9e-b8e5-616cc17aee5f","logId":"41993d74-a3d3-4c9e-b8e5-616cc17aee5f","payload":{"ticker":"JUP-USD","action":"exit","quantity":5000,"price":1.29409e-5}}
-2026-06-22 11:02:42 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL JUP-USD | Strategy: unknown | Qty: 5000 @ $0.00 = $0.06 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
-2026-06-22 11:02:42 | INFO     | trading_bot.engine   | CLOSED JUP-USD via TradersPost | stop_loss | P&L: $-1049.44 | Stop hit at $0.00
-2026-06-22 11:02:42 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: JUP-USD** (stop_loss)
-```
-  Entry: $0.21 → Exit: $0.00
-  P&L: $-1049.44 (-99.99%)
-  Shares: 5000 | Value: $0.06
-  Hold: 27m
-```
-Strategy: **mean_reversion** | Stop hit at $0.00
-Via: Tr
-2026-06-22 11:02:43 | WARNING  | trading_bot.engine   | DAILY SOFT STOP: Down -4.2% today. No new entries for 1 hour. Existing positions still monitored.
-2026-06-22 11:02:43 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Daily soft-stop triggered: Down -4.2%. Pausing new entries for 1 hour to prevent revenge trading.
-```
-2026-06-22 11:02:43 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: JUP-USD -1049.44 (391 total in history)
-2026-06-22 11:02:46 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [JUP-USD]: **Red Flag: Exit price $0.00 on a $0.21 entry is not a normal stop-loss — this looks like a liquidity collapse, delisting, or data error, not a strategy failure.**
-
-`AVOID:mean_reversion_low_liquidity
-2026-06-22 11:02:46 | WARNING  | trading_bot.engine   | LEARNING: Avoiding strategy 'mean_reversion_low_liquidity_microcap' (total avoids: 1)
-2026-06-22 11:02:46 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | no_data=42
-2026-06-22 11:02:49 | WARNING  | trading_bot.engine   | Daily loss limit hit - pausing trading
-2026-06-22 11:02:49 | INFO     | trading_bot.notifications | [ALERT] Risk Alert: 🚨 **RISK ALERT**
-```
-Daily loss limit reached. Day P&L: $-1049.44
-```
-2026-06-22 11:02:58 | INFO     | trading_bot.engine   | BACKGROUND RECONNECT: attempt #1...
 2026-06-22 11:03:18 | ERROR    | trading_bot.broker.ibkr | IBKR connection failed: 
 2026-06-22 11:03:48 | INFO     | trading_bot.engine   | BACKGROUND RECONNECT: attempt #2...
 2026-06-22 11:04:08 | ERROR    | trading_bot.broker.ibkr | IBKR connection failed: 
@@ -19998,3 +19945,56 @@ Signals found: 2
 2026-06-24 00:18:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10197: No market data during competing live session
 2026-06-24 00:18:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10197: No market data during competing live session
 2026-06-24 00:18:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 10197: No market data during competing live session
+2026-06-24 00:20:39 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-24 00:20:55 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
+2026-06-24 00:20:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=92, higher lows, Vol=1.8x | HSCS @ $2.75
+2026-06-24 00:20:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>4.21, Vol=5.0x | BLDP @ $4.31
+2026-06-24 00:20:55 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-24 00:20:55 | INFO     | trading_bot.engine   |   -> momentum: buy HSCS @ $2.75 conf=0.80
+2026-06-24 00:20:55 | INFO     | trading_bot.engine   |   -> momentum: buy BLDP @ $4.31 conf=0.80
+2026-06-24 00:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy HSCS | Momentum BUY: pullback entry, ADX=92, higher lows, Vol=1.8x
+2026-06-24 00:20:55 | INFO     | trading_bot.risk.manager | APPROVED: buy BLDP | Momentum BUY: pullback entry, breakout>4.21, Vol=5.0x
+2026-06-24 00:20:55 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — HSCS, BLDP
+2026-06-24 00:20:55 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1584 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ HSCS: score 80/100 — Momentum BUY: pullback entry, ADX=92, higher lows, Vol=1.8x
+  ✅ BLDP: score 80/100 — Momentum BUY: p
+2026-06-24 00:20:56 | WARNING  | trading_bot.engine   | SLOW CYCLE (182.9s total): update_data=178.7s
+2026-06-24 00:20:59 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-3.5%)), ADA-USD(weak 3d trend (-6.1%)), ALGO-USD(weak 3d trend (-0.2%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-4.5%)), ATOM-USD(weak 3d trend (-3.7%)), BONK-USD(weak 3d trend (-5.4%)), BTC-USD(weak 3d trend (-2.8%)), COMP-USD(weak 3d trend (-6.4%)), CRV-USD(weak 3d trend (-7.9%)), DOGE-USD(weak 3d trend (-5.6%)), DOT-USD(weak 3d trend (-6.4%)), ETH-USD(weak 3d trend (-4.2%)), FLOKI-USD(weak 3d trend (-7.5%)), GRT-USD(weak 3d trend (-4.0%)), HBAR-USD(weak 3d trend (-4.1%)), ICP-USD(weak 3d trend (-4.2%)), JUP-USD(weak 3d trend (-4.4%)), LINK-USD(weak 3d trend (-4.9%)), LTC-USD(weak 3d trend (-6.3%)), MATIC-USD(weak 3d trend (-2.6%)), NEAR-USD(weak 3d trend (-11.7%)), OP-USD(weak 3d trend (-2.9%)), PEPE-USD(weak 3d trend (-4.9%)), RNDR-USD(weak 3d trend (-6.8%)), SHIB-USD(weak 3d trend (-2.3%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-5.7%)), SUI-USD(weak 3d trend (-1.7%)), TIA-USD(weak 3d trend (+0.8%)), TON-USD(weak 3d trend (-21.6%)), TRX-USD(weak 3d trend (+0.8%)), UNI-USD(weak 3d trend (-0.8%)), XLM-USD(weak 3d trend (-10.5%)), XRP-USD(weak 3d trend (-4.2%)) | neutral=1 | no_data=6
+2026-06-24 00:20:59 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
+2026-06-24 00:21:02 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
+2026-06-24 00:21:05 | INFO     | trading_bot.strategy.mean_reversion | EDGE BLOCK: AVAX-USD skipped — 4 trades, 25% WR, $-2.39/trade
+2026-06-24 00:21:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-24 00:21:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-24 00:21:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-24 00:21:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-24 00:21:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-24 00:21:09 | INFO     | trading_bot.engine   | IBKR scanner: 129 unique symbols discovered | 50 gainers, 23 gaps, 20 losers
+2026-06-24 00:21:09 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-24 00:21:09 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-24 00:21:09 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 239 low-priority equity names; max 90)
+2026-06-24 00:24:25 | INFO     | trading_bot.engine   | DATA COVERAGE: 62/90 symbols have bars, 82/90 have prices | IBKR blacklisted: 42
+2026-06-24 00:24:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=92, higher lows, Vol=1.8x | HSCS @ $2.75
+2026-06-24 00:24:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>4.21, Vol=5.0x | BLDP @ $4.31
+2026-06-24 00:24:25 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-24 00:24:25 | INFO     | trading_bot.engine   |   -> momentum: buy HSCS @ $2.75 conf=0.80
+2026-06-24 00:24:25 | INFO     | trading_bot.engine   |   -> momentum: buy BLDP @ $4.31 conf=0.80
+2026-06-24 00:24:25 | INFO     | trading_bot.risk.manager | APPROVED: buy HSCS | Momentum BUY: pullback entry, ADX=92, higher lows, Vol=1.8x
+2026-06-24 00:24:25 | INFO     | trading_bot.risk.manager | APPROVED: buy BLDP | Momentum BUY: pullback entry, breakout>4.21, Vol=5.0x
+2026-06-24 00:24:25 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — HSCS, BLDP
+2026-06-24 00:24:25 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1579 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ HSCS: score 80/100 — Momentum BUY: pullback entry, ADX=92, higher lows, Vol=1.8x
+  ✅ BLDP: score 80/100 — Momentum BUY: p
+2026-06-24 00:24:26 | WARNING  | trading_bot.engine   | SLOW CYCLE (201.0s total): update_data=196.4s
+2026-06-24 00:24:29 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(weak 3d trend (-3.5%)), ADA-USD(weak 3d trend (-6.4%)), ALGO-USD(weak 3d trend (-1.5%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-4.5%)), ATOM-USD(weak 3d trend (-3.7%)), AVAX-USD(needs green bar), BONK-USD(weak 3d trend (-5.4%)), BTC-USD(weak 3d trend (-3.0%)), COMP-USD(weak 3d trend (-6.4%)), CRV-USD(weak 3d trend (-7.9%)), DOGE-USD(weak 3d trend (-5.8%)), DOT-USD(weak 3d trend (-6.4%)), ETH-USD(weak 3d trend (-4.5%)), FET-USD(weak 3d trend (-7.4%)), FLOKI-USD(weak 3d trend (-7.5%)), GRT-USD(weak 3d trend (-4.0%)), HBAR-USD(weak 3d trend (-4.1%)), ICP-USD(weak 3d trend (-4.2%)), JUP-USD(weak 3d trend (-4.4%)), LINK-USD(weak 3d trend (-4.9%)), LTC-USD(weak 3d trend (-6.4%)), MATIC-USD(weak 3d trend (-2.6%)), NEAR-USD(weak 3d trend (-12.2%)), OP-USD(weak 3d trend (-2.9%)), PEPE-USD(weak 3d trend (-5.7%)), RNDR-USD(weak 3d trend (-6.8%)), SHIB-USD(weak 3d trend (-2.3%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-6.0%)), SUI-USD(weak 3d trend (-1.7%)), TIA-USD(weak 3d trend (+0.8%)), TON-USD(weak 3d trend (-21.6%)), TRX-USD(weak 3d trend (+0.8%)), UNI-USD(weak 3d trend (-0.8%)), XLM-USD(weak 3d trend (-11.6%)), XRP-USD(weak 3d trend (-4.2%)) | no_data=5
+2026-06-24 00:24:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-24 00:24:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-24 00:24:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-24 00:24:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-24 00:24:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-24 00:24:39 | INFO     | trading_bot.engine   | IBKR scanner: 131 unique symbols discovered | 50 gainers, 24 gaps, 20 losers
+2026-06-24 00:24:39 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-24 00:24:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 239 low-priority equity names; max 90)
