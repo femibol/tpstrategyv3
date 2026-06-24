@@ -1,14 +1,3 @@
-2026-06-22 12:26:12 | ERROR    | trading_bot.engine   | CLOSE FAILED for KEEL — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 12:26:15 | WARNING  | trading_bot.broker.ibkr | Order 1107342 not found
-2026-06-22 12:26:15 | INFO     | trading_bot.engine   | Cancelled broker stop order for KEEL
-2026-06-22 12:26:15 | WARNING  | trading_bot.broker.ibkr | Order 1107342 not found
-2026-06-22 12:26:15 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for KEEL: This event loop is already running
-2026-06-22 12:26:15 | ERROR    | trading_bot.engine   | IBKR close order FAILED for KEEL
-2026-06-22 12:26:15 | ERROR    | trading_bot.engine   | CLOSE FAILED for KEEL — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-22 12:26:15 | WARNING  | trading_bot.broker.ibkr | Order 1107342 not found
-2026-06-22 12:26:15 | INFO     | trading_bot.engine   | Cancelled broker stop order for KEEL
-2026-06-22 12:26:15 | WARNING  | trading_bot.broker.ibkr | Order 1107342 not found
-2026-06-22 12:26:15 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for KEEL: This event loop is already running
 2026-06-22 12:26:15 | ERROR    | trading_bot.engine   | IBKR close order FAILED for KEEL
 2026-06-22 12:26:15 | ERROR    | trading_bot.engine   | CLOSE FAILED for KEEL — position stays tracked for retry next cycle. original_broker=IBKR
 2026-06-22 12:26:15 | WARNING  | trading_bot.broker.ibkr | Order 1107342 not found
@@ -19998,3 +19987,14 @@ Filtered: 1 signals rejected by risk man
 2026-06-24 01:55:00 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-24 01:55:00 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
 2026-06-24 01:55:00 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 90 low-priority equity names; max 90)
+2026-06-24 01:57:46 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SSPC | Score: 95 | RVOL: 340.2x | Change: +3.8% | R:R 3.8
+2026-06-24 01:59:59 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-24 01:59:59 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SSPC @ $12.58 conf=0.95
+2026-06-24 01:59:59 | INFO     | trading_bot.risk.manager | APPROVED: buy SSPC | Extreme RVOL 340.2x | Strong move +3.8% | EMA trend bullish | MACD histogram positive
+2026-06-24 01:59:59 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — SSPC
+2026-06-24 01:59:59 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 830 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ SSPC: score 95/100 — Extreme RVOL 340.2x | Strong move +3.8% | EMA trend bullish 
+Filtered: 1 signals rejected by risk man
+2026-06-24 01:59:59 | WARNING  | trading_bot.engine   | SLOW CYCLE (302.8s total): update_data=166.3s, run_strategies=132.2s
