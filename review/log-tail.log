@@ -1,28 +1,3 @@
-2026-06-22 12:27:23 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: KEEL → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-22 12:27:23 | INFO     | trading_bot.broker.ibkr | Order update: KEEL | Status: PreSubmitted | Filled: 0.0/145.0
-2026-06-22 12:27:23 | INFO     | trading_bot.broker.ibkr | Order update: KEEL | Status: Filled | Filled: 145.0/145.0 | AvgPrice: $7.06
-2026-06-22 12:27:24 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 145 KEEL @ MARKET MKT | Order ID: 1107890
-2026-06-22 12:27:25 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 145/145 KEEL @ $7.06 | Order ID: 1107890
-2026-06-22 12:27:25 | INFO     | trading_bot.engine   | CLOSED KEEL via IBKR | stop_loss | P&L: $-33.35 | Stop hit at $7.06
-2026-06-22 12:27:25 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT KEEL qty=145 @ $7.06 → primary webhook (200)
-2026-06-22 12:27:25 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: KEEL** (stop_loss)
-```
-  Entry: $7.29 → Exit: $7.06
-  P&L: $-33.35 (-3.16%)
-  Shares: 145 | Value: $1,023.70
-  Hold: 36m
-```
-Strategy: **momentum** | Stop hit at $7.06
-Via: IBKR | 12:2
-2026-06-22 12:27:26 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: KEEL -33.35 (392 total in history)
-2026-06-22 12:27:28 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [KEEL]: **AVOID:momentum_low_float_sub10**
-
-KEEL at $7.29 is sub-$10 low-float — high spread noise causes premature stops. 3.2% loss in 36min on stop_loss with 56% win rate signals this price tier underperfor
-2026-06-22 12:27:28 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[29]: ADA-USD(weak 3d trend (-1.8%)), ALGO-USD(weak 3d trend (-6.4%)), ARB-USD(weak 3d trend (+0.7%)), ATOM-USD(weak 3d trend (-1.2%)), BONK-USD(needs vol>=1.1x), BTC-USD(needs vol>=1.1x), CRV-USD(weak 3d trend (-3.8%)), DOGE-USD(weak 3d trend (+0.4%)), DOT-USD(weak 3d trend (-0.6%)), ETH-USD(needs vol>=1.1x), FET-USD(weak 3d trend (-7.0%)), FLOKI-USD(weak 3d trend (-3.4%)), GRT-USD(weak 3d trend (+0.5%)), HBAR-USD(weak 3d trend (-2.1%)), IMX-USD(weak 3d trend (-1.0%)), LINK-USD(weak 3d trend (+0.6%)), LTC-USD(needs vol>=1.1x), NEAR-USD(weak 3d trend (-2.6%)), OP-USD(weak 3d trend (-1.9%)), RNDR-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (-1.5%)), SOL-USD(needs green bar), SUI-USD(weak 3d trend (+0.5%)), TIA-USD(weak 3d trend (-0.8%)), TON-USD(weak 3d trend (-13.3%)), UNI-USD(weak 3d trend (+0.7%)), WIF-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-7.6%)), XRP-USD(weak 3d trend (+0.3%)) | warming=3 | neutral=6 | no_data=4
-2026-06-22 12:27:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-22 12:27:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-22 12:27:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-22 12:27:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
 2026-06-22 12:27:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-22 12:27:39 | INFO     | trading_bot.engine   | IBKR scanner: 118 unique symbols discovered | 50 gainers, 10 gaps, 20 losers
 2026-06-22 12:27:39 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
@@ -19998,3 +19973,28 @@ Filtered: 1 signals rejected by risk man
 2026-06-24 02:54:15 | INFO     | trading_bot.engine   | IBKR scanner: 109 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
 2026-06-24 02:54:16 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-24 02:54:16 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 73 low-priority equity names; max 90)
+2026-06-24 02:56:56 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SSPC | Score: 95 | RVOL: 340.2x | Change: +3.8% | R:R 3.8
+2026-06-24 02:56:56 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-24 02:56:56 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SSPC @ $12.58 conf=0.95
+2026-06-24 02:56:56 | INFO     | trading_bot.risk.manager | APPROVED: buy SSPC | Extreme RVOL 340.2x | Strong move +3.8% | EMA trend bullish | MACD histogram positive
+2026-06-24 02:56:56 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — SSPC
+2026-06-24 02:56:56 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 745 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ SSPC: score 95/100 — Extreme RVOL 340.2x | Strong move +3.8% | EMA trend bullish 
+Filtered: 1 signals rejected by risk man
+2026-06-24 02:56:57 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.3s total): update_data=160.4s
+2026-06-24 02:57:00 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[35]: AAVE-USD(weak 3d trend (-5.5%)), ADA-USD(weak 3d trend (-6.3%)), ALGO-USD(weak 3d trend (-0.3%)), APT-USD(weak 3d trend (-1.1%)), ARB-USD(weak 3d trend (-6.6%)), ATOM-USD(weak 3d trend (-4.6%)), BONK-USD(weak 3d trend (-4.8%)), BTC-USD(weak 3d trend (-2.4%)), COMP-USD(weak 3d trend (-6.4%)), CRV-USD(weak 3d trend (-8.5%)), DOGE-USD(weak 3d trend (-5.2%)), DOT-USD(weak 3d trend (-6.6%)), ETH-USD(weak 3d trend (-3.6%)), FET-USD(weak 3d trend (-4.0%)), FLOKI-USD(weak 3d trend (-6.2%)), GRT-USD(weak 3d trend (-5.0%)), HBAR-USD(weak 3d trend (-3.0%)), ICP-USD(weak 3d trend (-4.9%)), JUP-USD(weak 3d trend (-4.0%)), LINK-USD(weak 3d trend (-3.6%)), LTC-USD(weak 3d trend (-5.9%)), MATIC-USD(weak 3d trend (-2.9%)), NEAR-USD(weak 3d trend (-10.9%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-4.9%)), RNDR-USD(weak 3d trend (-7.5%)), SHIB-USD(weak 3d trend (-3.2%)), SNX-USD(weak 3d trend (-13.0%)), SOL-USD(weak 3d trend (-4.7%)), SUI-USD(weak 3d trend (-0.4%)), TIA-USD(weak 3d trend (+0.8%)), TON-USD(weak 3d trend (-20.8%)), UNI-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-9.8%)), XRP-USD(weak 3d trend (-3.8%)) | neutral=2 | no_data=5
+2026-06-24 02:57:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-24 02:57:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-24 02:57:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-24 02:57:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-24 02:57:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-24 02:57:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-24 02:57:09 | INFO     | trading_bot.engine   | IBKR scanner: 109 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-24 02:57:10 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-24 02:57:10 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 75 low-priority equity names; max 90)
+2026-06-24 02:57:10 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-24 02:57:10 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-24 02:57:10 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-24 02:59:50 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SSPC | Score: 95 | RVOL: 340.2x | Change: +3.8% | R:R 3.8
