@@ -1,211 +1,3 @@
-Signals found: 2
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x | Trending up +0.5% | EMA trend bullish 
-  ✅ SNDU: score 80/100 — Extreme RVOL 23
-2026-06-26 02:10:08 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.9s total): update_data=172.1s
-2026-06-26 02:10:11 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[37]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-9.0%)), ALGO-USD(weak 3d trend (-9.0%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-12.5%)), ATOM-USD(weak 3d trend (-10.5%)), AVAX-USD(weak 3d trend (-1.6%)), BONK-USD(weak 3d trend (-11.4%)), BTC-USD(weak 3d trend (-5.3%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-7.1%)), DOGE-USD(weak 3d trend (-8.2%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-9.2%)), FET-USD(weak 3d trend (-5.5%)), FLOKI-USD(weak 3d trend (-11.0%)), GRT-USD(weak 3d trend (-8.3%)), HBAR-USD(weak 3d trend (-6.7%)), ICP-USD(weak 3d trend (-2.9%)), LINK-USD(weak 3d trend (-7.9%)), LTC-USD(weak 3d trend (-6.5%)), MATIC-USD(weak 3d trend (-7.3%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-5.1%)), SEI-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-3.9%)), SUI-USD(weak 3d trend (-2.9%)), TIA-USD(weak 3d trend (-8.8%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-4.3%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-10.4%)), XRP-USD(weak 3d trend (-7.6%)) | neutral=2 | no_data=3
-2026-06-26 02:10:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:10:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:10:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:10:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:10:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:10:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:10:21 | INFO     | trading_bot.engine   | IBKR scanner: 103 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:10:21 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:10:21 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
-2026-06-26 02:10:21 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-26 02:10:21 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-26 02:10:21 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-26 02:10:21 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-26 02:13:07 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:13:07 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:13:07 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:13:08 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:13:08 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:13:08 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:13:08 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:13:08 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:13:08 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $40.40 (-11.7%, max -3%)
-2026-06-26 02:13:08 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $64.60 (-12.3%, max -3%)
-2026-06-26 02:13:08 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:13:08 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 850 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:13:08 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.8s total): update_data=166.7s
-2026-06-26 02:13:11 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-8.3%)), ALGO-USD(weak 3d trend (-9.0%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-12.5%)), ATOM-USD(weak 3d trend (-10.5%)), AVAX-USD(weak 3d trend (-1.2%)), BONK-USD(weak 3d trend (-11.4%)), BTC-USD(weak 3d trend (-5.2%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-7.1%)), DOGE-USD(weak 3d trend (-8.0%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-9.3%)), FET-USD(weak 3d trend (-5.5%)), FLOKI-USD(weak 3d trend (-10.2%)), GRT-USD(weak 3d trend (-8.3%)), HBAR-USD(weak 3d trend (-6.8%)), ICP-USD(weak 3d trend (-2.9%)), LINK-USD(weak 3d trend (-7.5%)), LTC-USD(weak 3d trend (-6.2%)), MATIC-USD(weak 3d trend (-6.9%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-5.1%)), SEI-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-3.4%)), SUI-USD(weak 3d trend (-2.0%)), TIA-USD(weak 3d trend (-8.8%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-4.3%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-10.4%)), XRP-USD(weak 3d trend (-7.5%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:13:18 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:13:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:13:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:13:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:13:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:13:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:13:21 | INFO     | trading_bot.engine   | IBKR scanner: 103 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:13:21 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:13:21 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
-2026-06-26 02:13:21 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
-2026-06-26 02:16:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:16:13 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:16:13 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:16:14 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:16:14 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:16:14 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:16:14 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:16:14 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:16:14 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $40.20 (-12.1%, max -3%)
-2026-06-26 02:16:14 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $65.82 (-10.7%, max -3%)
-2026-06-26 02:16:14 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:16:14 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 845 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:16:14 | WARNING  | trading_bot.engine   | SLOW CYCLE (177.1s total): update_data=172.4s
-2026-06-26 02:16:17 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-8.3%)), ALGO-USD(weak 3d trend (-9.0%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-12.5%)), ATOM-USD(weak 3d trend (-10.5%)), AVAX-USD(weak 3d trend (-1.2%)), BONK-USD(weak 3d trend (-11.4%)), BTC-USD(weak 3d trend (-5.2%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-7.1%)), DOGE-USD(weak 3d trend (-8.0%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-9.2%)), FET-USD(weak 3d trend (-5.5%)), FLOKI-USD(weak 3d trend (-10.2%)), GRT-USD(weak 3d trend (-8.3%)), HBAR-USD(weak 3d trend (-6.8%)), ICP-USD(weak 3d trend (-2.9%)), LINK-USD(weak 3d trend (-7.5%)), LTC-USD(weak 3d trend (-6.2%)), MATIC-USD(weak 3d trend (-7.1%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-5.1%)), SEI-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-3.2%)), SUI-USD(weak 3d trend (-2.0%)), TIA-USD(weak 3d trend (-8.8%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-4.3%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-10.4%)), XRP-USD(weak 3d trend (-7.5%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:16:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:16:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:16:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:16:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:16:26 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:16:27 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:16:27 | INFO     | trading_bot.engine   | IBKR scanner: 103 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:16:27 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:16:27 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-26 02:19:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:19:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:19:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:19:20 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:19:20 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:19:20 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:19:20 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:19:20 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:19:20 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $40.50 (-11.5%, max -3%)
-2026-06-26 02:19:20 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $66.00 (-10.4%, max -3%)
-2026-06-26 02:19:20 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:19:20 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 850 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:19:20 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.8s total): update_data=172.6s
-2026-06-26 02:19:23 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-7.2%)), ALGO-USD(weak 3d trend (-7.0%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-11.5%)), ATOM-USD(weak 3d trend (-7.6%)), AVAX-USD(weak 3d trend (-0.6%)), BONK-USD(weak 3d trend (-11.4%)), BTC-USD(weak 3d trend (-4.6%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-4.5%)), DOGE-USD(weak 3d trend (-7.4%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-8.2%)), FET-USD(weak 3d trend (-3.9%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-5.8%)), ICP-USD(weak 3d trend (-0.6%)), LINK-USD(weak 3d trend (-6.1%)), LTC-USD(weak 3d trend (-5.7%)), MATIC-USD(weak 3d trend (-6.5%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-3.6%)), SEI-USD(weak 3d trend (-1.0%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-2.2%)), SUI-USD(weak 3d trend (-0.3%)), TIA-USD(weak 3d trend (-8.7%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-2.4%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-9.9%)), XRP-USD(weak 3d trend (-7.1%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:19:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:19:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:19:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:19:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:19:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:19:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:19:33 | INFO     | trading_bot.engine   | IBKR scanner: 103 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:19:33 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:19:33 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-26 02:20:34 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-26 02:20:34 | INFO     | trading_bot.signals.politician_tracker | No new trades found
-2026-06-26 02:22:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:22:25 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:22:26 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:22:26 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:22:26 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:22:26 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:22:26 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:22:26 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:22:26 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $41.60 (-9.1%, max -3%)
-2026-06-26 02:22:26 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $66.61 (-9.6%, max -3%)
-2026-06-26 02:22:26 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:22:26 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 850 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:22:26 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.9s total): update_data=172.5s
-2026-06-26 02:22:26 | INFO     | trading_bot.engine   | CYCLE #43: regime=sideways | signals=3->approved=0 | positions=0/15 | bars_warm=104/104 | equity_open=False | pm=False pwr_hr=False
-2026-06-26 02:22:29 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-7.2%)), ALGO-USD(weak 3d trend (-7.0%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-11.5%)), ATOM-USD(weak 3d trend (-7.6%)), AVAX-USD(weak 3d trend (-0.6%)), BONK-USD(weak 3d trend (-11.4%)), BTC-USD(weak 3d trend (-4.6%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-5.8%)), DOGE-USD(weak 3d trend (-7.3%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-8.1%)), FET-USD(weak 3d trend (-3.9%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-5.8%)), ICP-USD(weak 3d trend (-0.6%)), LINK-USD(weak 3d trend (-6.1%)), LTC-USD(weak 3d trend (-5.7%)), MATIC-USD(weak 3d trend (-6.5%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-3.6%)), SEI-USD(weak 3d trend (-3.3%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-1.7%)), SUI-USD(weak 3d trend (-0.3%)), TIA-USD(weak 3d trend (-8.7%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-2.4%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-9.9%)), XRP-USD(weak 3d trend (-7.1%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:22:36 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:22:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:22:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:22:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:22:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:22:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:22:39 | INFO     | trading_bot.engine   | IBKR scanner: 105 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:22:39 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:22:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-26 02:25:43 | INFO     | trading_bot.engine   | DATA COVERAGE: 76/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 3
-2026-06-26 02:25:43 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:25:43 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:25:43 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:25:44 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:25:44 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:25:44 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:25:44 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:25:44 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:25:44 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $41.50 (-9.3%, max -3%)
-2026-06-26 02:25:44 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $67.20 (-8.8%, max -3%)
-2026-06-26 02:25:44 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:25:44 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 850 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:25:44 | WARNING  | trading_bot.engine   | SLOW CYCLE (189.0s total): update_data=184.7s
-2026-06-26 02:25:47 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-6.8%)), ALGO-USD(weak 3d trend (-7.1%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-11.5%)), ATOM-USD(weak 3d trend (-7.6%)), AVAX-USD(weak 3d trend (+0.9%)), BONK-USD(weak 3d trend (-7.3%)), BTC-USD(weak 3d trend (-4.8%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-5.8%)), DOGE-USD(weak 3d trend (-6.8%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-7.5%)), FET-USD(weak 3d trend (-3.9%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (-6.3%)), HBAR-USD(weak 3d trend (-5.4%)), ICP-USD(weak 3d trend (-0.6%)), LINK-USD(weak 3d trend (-6.1%)), LTC-USD(weak 3d trend (-5.5%)), MATIC-USD(weak 3d trend (-6.5%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-3.6%)), SEI-USD(weak 3d trend (-3.3%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-0.9%)), SUI-USD(weak 3d trend (+0.8%)), TIA-USD(weak 3d trend (-8.7%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-2.4%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-9.4%)), XRP-USD(weak 3d trend (-6.7%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:25:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:25:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:25:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:25:55 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:25:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:25:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:25:57 | INFO     | trading_bot.engine   | IBKR scanner: 106 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:25:57 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:25:57 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
-2026-06-26 02:25:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-26 02:25:57 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-26 02:25:57 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-26 02:25:57 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-26 02:29:09 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:29:09 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:29:09 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:29:09 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:29:09 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:29:09 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:29:09 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:29:09 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:29:09 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $41.50 (-9.3%, max -3%)
-2026-06-26 02:29:09 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $66.41 (-9.9%, max -3%)
-2026-06-26 02:29:09 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:29:09 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 850 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:29:10 | WARNING  | trading_bot.engine   | SLOW CYCLE (196.6s total): update_data=192.2s
-2026-06-26 02:29:13 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-7.2%)), ALGO-USD(weak 3d trend (-7.1%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-11.5%)), ATOM-USD(weak 3d trend (-7.6%)), AVAX-USD(weak 3d trend (+0.1%)), BONK-USD(weak 3d trend (-6.8%)), BTC-USD(weak 3d trend (-5.0%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-5.8%)), DOGE-USD(weak 3d trend (-7.0%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-7.7%)), FET-USD(weak 3d trend (-3.9%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (-6.3%)), HBAR-USD(weak 3d trend (-5.5%)), ICP-USD(weak 3d trend (-0.6%)), LINK-USD(weak 3d trend (-6.5%)), LTC-USD(weak 3d trend (-5.5%)), MATIC-USD(weak 3d trend (-6.5%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-4.2%)), SEI-USD(weak 3d trend (-3.3%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-1.4%)), SUI-USD(weak 3d trend (-0.1%)), TIA-USD(weak 3d trend (-8.7%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-2.4%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-9.4%)), XRP-USD(weak 3d trend (-6.6%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:29:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-26 02:29:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-26 02:29:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-26 02:29:21 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-26 02:29:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-26 02:29:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-26 02:29:22 | INFO     | trading_bot.engine   | IBKR scanner: 106 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-26 02:29:22 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-26 02:29:22 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-26 02:32:09 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x | FCXG @ $12.80
-2026-06-26 02:32:09 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNXX | Score: 80 | RVOL: 301.4x | Change: +0.5% | R:R 2.5
-2026-06-26 02:32:09 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SNDU | Score: 80 | RVOL: 230.1x | Change: +0.9% | R:R 2.5
-2026-06-26 02:32:09 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
-2026-06-26 02:32:09 | INFO     | trading_bot.engine   |   -> momentum: buy FCXG @ $12.80 conf=0.95
-2026-06-26 02:32:09 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNXX @ $45.75 conf=0.80
-2026-06-26 02:32:09 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SNDU @ $73.69 conf=0.80
-2026-06-26 02:32:09 | INFO     | trading_bot.risk.manager | APPROVED: buy FCXG | Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-2026-06-26 02:32:09 | INFO     | trading_bot.risk.manager | REJECTED: buy SNXX | Setup broke: signal $45.75 → market $41.90 (-8.4%, max -3%)
-2026-06-26 02:32:09 | INFO     | trading_bot.risk.manager | REJECTED: buy SNDU | Setup broke: signal $73.69 → market $66.41 (-9.9%, max -3%)
-2026-06-26 02:32:09 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — FCXG
-2026-06-26 02:32:09 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 850 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 3
-  ✅ FCXG: score 95/100 — Momentum BUY: EMA cross, ADX=100, higher lows, Vol=4.2x
-  ✅ SNXX: score 80/100 — Extreme RVOL 301.4x 
-2026-06-26 02:32:10 | WARNING  | trading_bot.engine   | SLOW CYCLE (171.1s total): update_data=166.8s
-2026-06-26 02:32:13 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[36]: ADA-USD(weak 3d trend (-7.2%)), ALGO-USD(weak 3d trend (-7.1%)), APT-USD(weak 3d trend (-10.8%)), ARB-USD(weak 3d trend (-11.5%)), ATOM-USD(weak 3d trend (-7.6%)), AVAX-USD(weak 3d trend (+0.1%)), BONK-USD(weak 3d trend (-6.8%)), BTC-USD(weak 3d trend (-5.0%)), COMP-USD(weak 3d trend (-13.7%)), CRV-USD(weak 3d trend (-5.8%)), DOGE-USD(weak 3d trend (-7.2%)), DOT-USD(weak 3d trend (-10.6%)), ETC-USD(weak 3d trend (-5.4%)), ETH-USD(weak 3d trend (-7.7%)), FET-USD(weak 3d trend (-3.9%)), FLOKI-USD(weak 3d trend (-9.1%)), GRT-USD(weak 3d trend (-5.8%)), HBAR-USD(weak 3d trend (-5.6%)), ICP-USD(weak 3d trend (-0.6%)), LINK-USD(weak 3d trend (-6.5%)), LTC-USD(weak 3d trend (-5.5%)), MATIC-USD(weak 3d trend (-6.5%)), NEAR-USD(weak 3d trend (-10.2%)), PEPE-USD(weak 3d trend (-16.8%)), RNDR-USD(weak 3d trend (-4.2%)), SEI-USD(weak 3d trend (-3.3%)), SHIB-USD(weak 3d trend (-9.5%)), SOL-USD(weak 3d trend (-1.4%)), SUI-USD(weak 3d trend (-0.1%)), TIA-USD(weak 3d trend (-8.7%)), TON-USD(weak 3d trend (-7.2%)), TRX-USD(weak 3d trend (-4.1%)), UNI-USD(weak 3d trend (-2.4%)), WIF-USD(weak 3d trend (-11.1%)), XLM-USD(weak 3d trend (-9.4%)), XRP-USD(weak 3d trend (-6.8%)) | warming=1 | neutral=2 | no_data=3
-2026-06-26 02:32:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
 2026-06-26 02:32:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
 2026-06-26 02:32:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
 2026-06-26 02:32:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
@@ -19998,3 +19790,211 @@ Signals found: 3
 2026-06-27 12:22:19 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-27 12:22:19 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-27 12:22:19 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   | DATA COVERAGE: 81/90 symbols have bars, 65/90 have prices | IBKR blacklisted: 42
+2026-06-27 12:25:25 | WARNING  | trading_bot.engine   | STOP WATCHDOG: AAPG has NO broker-side stop! Placing emergency stop @ $15.99 for 99 shares
+2026-06-27 12:25:25 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | JUP-USD @ $0.22
+2026-06-27 12:25:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=63, Vol=4.9x | KUST @ $0.95
+2026-06-27 12:25:25 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=37, breakout>2.29, higher lows, Vol=4.9x | ZDAI @ $2.38
+2026-06-27 12:25:25 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SHPH | Score: 95 | RVOL: 5.7x | Change: +7.2% | R:R 3.5
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   |   -> mean_reversion: buy JUP-USD @ $0.22 conf=1.00
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   |   -> momentum: buy KUST @ $0.95 conf=0.80
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   |   -> momentum: buy ZDAI @ $2.38 conf=0.90
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SHPH @ $4.03 conf=0.95
+2026-06-27 12:25:25 | INFO     | trading_bot.risk.manager | APPROVED: buy JUP-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:25:25 | INFO     | trading_bot.risk.manager | APPROVED: buy KUST | Momentum BUY: pullback entry, ADX=63, Vol=4.9x
+2026-06-27 12:25:25 | INFO     | trading_bot.risk.manager | APPROVED: buy ZDAI | Momentum BUY: pullback entry, ADX=37, breakout>2.29, higher lows, Vol=4.9x
+2026-06-27 12:25:25 | INFO     | trading_bot.risk.manager | REJECTED: buy SHPH | Setup broke: signal $4.03 → market $3.53 (-12.4%, max -3%)
+2026-06-27 12:25:25 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — KUST, ZDAI
+2026-06-27 12:25:25 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ JUP-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+  ✅ KUST: score 80/100 — Momentum BUY: pu
+2026-06-27 12:25:26 | WARNING  | trading_bot.engine   | SLOW CYCLE (190.4s total): update_data=186.2s
+2026-06-27 12:25:26 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: JUP-USD — symbol history bad: 2/7 wins (29%), avg P&L $-148.85
+2026-06-27 12:25:29 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 849s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:25:29 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 12:25:29 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 12:25:29 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 12:25:29 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 12:25:40 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 99.0 AAPG
+2026-06-27 12:25:40 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 12:25:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-27 12:25:40 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 12:25:40 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 12:25:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 99 AAPG NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
+2026-06-27 12:25:40 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 12:25:40 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-27 12:25:41 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1162528
+2026-06-27 12:27:42 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 99.0 AAPG (status=Submitted). Cancelling unfilled order.
+2026-06-27 12:27:42 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PendingCancel | Filled: 0.0/99.0
+2026-06-27 12:27:42 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Cancelled | Filled: 0.0/99.0
+2026-06-27 12:27:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-27 12:27:43 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 12:27:43 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:27:43 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: JUP-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[25]: AAVE-USD(needs vol>=1.1x), ALGO-USD(weak 3d trend (-4.7%)), APT-USD(weak 3d trend (-3.9%)), ATOM-USD(weak 3d trend (-1.6%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.3%)), COMP-USD(weak 3d trend (-3.3%)), CRV-USD(weak 3d trend (-1.2%)), DOGE-USD(weak 3d trend (+0.9%)), DOT-USD(weak 3d trend (-3.0%)), ETH-USD(weak 3d trend (-1.8%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-2.9%)), GRT-USD(weak 3d trend (-1.6%)), HBAR-USD(weak 3d trend (-1.6%)), LINK-USD(weak 3d trend (+0.1%)), MATIC-USD(weak 3d trend (-3.4%)), NEAR-USD(weak 3d trend (-0.2%)), PEPE-USD(weak 3d trend (-3.5%)), RNDR-USD(needs vol>=1.1x), SHIB-USD(weak 3d trend (+0.2%)), SOL-USD(needs green bar), TRX-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-4.4%)), XRP-USD(weak 3d trend (+0.5%)) | warming=2 | neutral=10 | no_data=4
+2026-06-27 12:27:43 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | JUP-USD @ $0.22
+2026-06-27 12:27:43 | INFO     | trading_bot.risk.manager | APPROVED: buy JUP-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:27:43 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy JUP-USD from mean_reversion conf=1.00 price=0.2245 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:27:43 | WARNING  | trading_bot.engine   | LEARNING BLOCK: JUP-USD avoided — consistent loser (score: -1736.6)
+2026-06-27 12:27:46 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 852s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:27:46 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 12:27:46 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 12:27:46 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 12:27:46 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 12:27:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2105: HMDS data farm connection is broken:ushmds
+2026-06-27 12:27:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-27 12:27:53 | WARNING  | trading_bot.broker.ibkr | IBKR Error 1100: Connectivity between IBKR and Trader Workstation has been lost.
+2026-06-27 12:27:53 | WARNING  | trading_bot.broker.ibkr | IBKR disconnected
+2026-06-27 12:27:53 | WARNING  | trading_bot.broker.ibkr | OUTSIDE RTH: No snap price for AAPG — using MARKET without outsideRth flag
+2026-06-27 12:27:53 | ERROR    | trading_bot.broker.ibkr | Order placement failed for AAPG: Not connected
+2026-06-27 12:27:53 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 12:27:53 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:27:53 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | JUP-USD @ $0.22
+2026-06-27 12:27:53 | INFO     | trading_bot.risk.manager | APPROVED: buy JUP-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:27:53 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy JUP-USD from mean_reversion conf=1.00 price=0.2245 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:27:53 | WARNING  | trading_bot.engine   | LEARNING BLOCK: JUP-USD avoided — consistent loser (score: -1736.6)
+2026-06-27 12:27:56 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 855s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:27:56 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:27:56 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:27:56 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | JUP-USD @ $0.22
+2026-06-27 12:27:56 | INFO     | trading_bot.risk.manager | APPROVED: buy JUP-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:27:56 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy JUP-USD from mean_reversion conf=1.00 price=0.2245 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-27 12:27:56 | WARNING  | trading_bot.engine   | LEARNING BLOCK: JUP-USD avoided — consistent loser (score: -1736.6)
+2026-06-27 12:27:57 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:27:57 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:28:13 | WARNING  | trading_bot.engine   | SIGNALS SUPPRESSED: IBKR not live. Skipping strategy evaluation until reconnect — refusing to generate buy signals on stale fallback data.
+2026-06-27 12:28:13 | WARNING  | trading_bot.engine   | SLOW CYCLE (16.7s total): update_data=16.5s
+2026-06-27 12:28:16 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 858s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:16 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:16 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:19 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 861s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:19 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:19 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:22 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 864s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:22 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:22 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:22 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:28:22 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:28:29 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 867s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:29 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:29 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:32 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 870s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:32 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:32 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:35 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 873s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:35 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:35 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:35 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:28:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:28:36 | INFO     | trading_bot.engine   | CYCLE #97: regime=sideways | signals=0->approved=0 | positions=1/15 | bars_warm=84/91 | equity_open=False | pm=False pwr_hr=False
+2026-06-27 12:28:39 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 876s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:39 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:39 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:42 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 879s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:42 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:42 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:45 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 882s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:45 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:45 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:45 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[25]: AAVE-USD(needs vol>=1.1x), ALGO-USD(weak 3d trend (-4.7%)), APT-USD(weak 3d trend (-3.9%)), ATOM-USD(weak 3d trend (-1.6%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.4%)), COMP-USD(weak 3d trend (-3.3%)), CRV-USD(weak 3d trend (-1.2%)), DOGE-USD(weak 3d trend (+0.7%)), DOT-USD(weak 3d trend (-3.0%)), ETH-USD(weak 3d trend (-1.6%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-2.9%)), GRT-USD(weak 3d trend (-1.6%)), HBAR-USD(weak 3d trend (-2.0%)), JUP-USD(needs green bar), LINK-USD(weak 3d trend (+0.5%)), MATIC-USD(weak 3d trend (-3.4%)), NEAR-USD(weak 3d trend (+0.6%)), PEPE-USD(weak 3d trend (-3.5%)), RNDR-USD(needs vol>=1.1x), SOL-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-4.4%)), XRP-USD(weak 3d trend (+0.6%)) | warming=1 | neutral=12 | no_data=4
+2026-06-27 12:28:46 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:28:46 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:28:49 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 885s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:49 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:49 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:52 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 888s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:52 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:52 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:55 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 891s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:55 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:55 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:28:55 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:28:55 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:28:55 | INFO     | trading_bot.engine   | DATA COVERAGE: 90/90 symbols have bars, 65/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 2
+2026-06-27 12:28:58 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 894s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:28:58 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:28:58 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:01 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 897s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:01 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:01 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:04 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 900s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:04 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:04 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:04 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
+2026-06-27 12:29:04 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:04 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:29:07 | WARNING  | trading_bot.engine   | NO PRICE for AAPG — stops NOT monitored! (301 consecutive misses)
+2026-06-27 12:29:07 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 903s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:07 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:07 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:10 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 906s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:10 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:10 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:13 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 909s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:13 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:13 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:13 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:13 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:29:16 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 912s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:16 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:16 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:19 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 915s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:19 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:19 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:22 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 918s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:22 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:22 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:22 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:22 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:29:25 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 921s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:25 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:25 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:28 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 924s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:28 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:28 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:31 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 927s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:31 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:31 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:32 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:29:32 | INFO     | trading_bot.engine   | CYCLE #103: regime=sideways | signals=0->approved=0 | positions=1/15 | bars_warm=84/91 | equity_open=False | pm=False pwr_hr=False
+2026-06-27 12:29:35 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 930s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:35 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:35 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:38 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 933s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:38 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:38 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:41 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 936s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:41 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:41 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:41 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:41 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:29:41 | INFO     | trading_bot.engine   | DATA COVERAGE: 90/90 symbols have bars, 65/90 have prices | IBKR blacklisted: 42 | bar-fetch backoff: 2
+2026-06-27 12:29:44 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 939s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:44 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:44 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:47 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 942s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:47 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:47 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:47 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[25]: AAVE-USD(needs vol>=1.1x), ALGO-USD(weak 3d trend (-4.7%)), APT-USD(weak 3d trend (-3.9%)), ATOM-USD(weak 3d trend (-1.6%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.4%)), COMP-USD(weak 3d trend (-3.3%)), CRV-USD(weak 3d trend (-1.2%)), DOGE-USD(weak 3d trend (+0.7%)), DOT-USD(weak 3d trend (-3.0%)), ETH-USD(weak 3d trend (-1.6%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-2.9%)), GRT-USD(weak 3d trend (-1.6%)), HBAR-USD(weak 3d trend (-2.0%)), JUP-USD(needs green bar), LINK-USD(weak 3d trend (+0.5%)), MATIC-USD(weak 3d trend (-3.4%)), NEAR-USD(weak 3d trend (+0.6%)), PEPE-USD(weak 3d trend (-3.5%)), RNDR-USD(needs vol>=1.1x), SOL-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (-1.8%)), XLM-USD(weak 3d trend (-4.4%)), XRP-USD(weak 3d trend (+0.6%)) | warming=1 | neutral=12 | no_data=4
+2026-06-27 12:29:50 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 945s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:50 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:50 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:50 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:50 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:29:53 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 948s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:53 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:53 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:56 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 951s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:56 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:56 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:59 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 954s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:29:59 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:29:59 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 12:29:59 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 12:29:59 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 12:30:02 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 957s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 12:30:02 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
+2026-06-27 12:30:02 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
