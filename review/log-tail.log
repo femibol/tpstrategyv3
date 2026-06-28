@@ -644,3 +644,46 @@ Signals found: 2
 2026-06-27 21:18:59 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
 2026-06-27 21:18:59 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
 2026-06-27 21:19:00 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1165611
+2026-06-27 21:20:51 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-27 21:21:01 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 99.0 AAPG (status=Submitted). Cancelling unfilled order.
+2026-06-27 21:21:01 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PendingCancel | Filled: 0.0/99.0
+2026-06-27 21:21:01 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Cancelled | Filled: 0.0/99.0
+2026-06-27 21:21:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-27 21:21:02 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 21:21:02 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 21:21:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[33]: ADA-USD(weak 3d trend (-1.4%)), ALGO-USD(weak 3d trend (-3.5%)), APT-USD(weak 3d trend (-5.7%)), ARB-USD(weak 3d trend (-2.3%)), ATOM-USD(weak 3d trend (-3.6%)), AVAX-USD(weak 3d trend (-0.3%)), BONK-USD(weak 3d trend (-2.6%)), BTC-USD(weak 3d trend (-1.3%)), COMP-USD(weak 3d trend (-5.8%)), CRV-USD(weak 3d trend (-1.4%)), DOGE-USD(weak 3d trend (-2.1%)), DOT-USD(weak 3d trend (-8.7%)), ETC-USD(weak 3d trend (+1.0%)), ETH-USD(weak 3d trend (-3.0%)), FET-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (-6.0%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-4.9%)), ICP-USD(weak 3d trend (-2.0%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.4%)), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-3.1%)), NEAR-USD(weak 3d trend (-1.2%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-6.7%)), RNDR-USD(weak 3d trend (-1.1%)), SEI-USD(weak 3d trend (-10.1%)), SHIB-USD(weak 3d trend (-3.4%)), TON-USD(weak 3d trend (+0.5%)), TRX-USD(weak 3d trend (-2.8%)), XLM-USD(weak 3d trend (-6.6%)), XRP-USD(weak 3d trend (-2.9%)) | warming=2 | neutral=5 | no_data=2
+2026-06-27 21:21:05 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1491s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 21:21:05 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 21:21:05 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 21:21:05 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 21:21:05 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 21:21:16 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 99.0 AAPG
+2026-06-27 21:21:16 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 21:21:16 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-27 21:21:16 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 21:21:16 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 21:21:16 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 99 AAPG NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
+2026-06-27 21:21:16 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 21:21:16 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-27 21:21:17 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1165614
+2026-06-27 21:23:17 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 99.0 AAPG (status=Submitted). Cancelling unfilled order.
+2026-06-27 21:23:17 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PendingCancel | Filled: 0.0/99.0
+2026-06-27 21:23:17 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Cancelled | Filled: 0.0/99.0
+2026-06-27 21:23:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-27 21:23:18 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 21:23:18 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 21:23:18 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[33]: ADA-USD(weak 3d trend (-1.4%)), ALGO-USD(weak 3d trend (-3.5%)), APT-USD(weak 3d trend (-5.7%)), ARB-USD(weak 3d trend (-2.3%)), ATOM-USD(weak 3d trend (-3.6%)), AVAX-USD(weak 3d trend (-0.3%)), BONK-USD(weak 3d trend (-2.6%)), BTC-USD(weak 3d trend (-1.3%)), COMP-USD(weak 3d trend (-5.8%)), CRV-USD(weak 3d trend (-1.4%)), DOGE-USD(weak 3d trend (-2.1%)), DOT-USD(weak 3d trend (-8.7%)), ETC-USD(weak 3d trend (+1.0%)), ETH-USD(weak 3d trend (-3.0%)), FET-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (-6.0%)), GRT-USD(weak 3d trend (-5.9%)), HBAR-USD(weak 3d trend (-4.9%)), ICP-USD(weak 3d trend (-2.0%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.4%)), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-3.1%)), NEAR-USD(weak 3d trend (-1.2%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-6.7%)), RNDR-USD(weak 3d trend (-1.1%)), SEI-USD(weak 3d trend (-10.1%)), SHIB-USD(weak 3d trend (-3.4%)), TON-USD(weak 3d trend (+0.5%)), TRX-USD(weak 3d trend (-2.8%)), XLM-USD(weak 3d trend (-6.6%)), XRP-USD(weak 3d trend (-2.9%)) | warming=2 | neutral=5 | no_data=2
+2026-06-27 21:23:21 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1494s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 21:23:21 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 21:23:21 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 21:23:21 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 21:23:21 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 21:23:32 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 99.0 AAPG
+2026-06-27 21:23:32 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 21:23:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-27 21:23:32 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 21:23:32 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 21:23:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 99 AAPG NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
+2026-06-27 21:23:32 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 21:23:32 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-27 21:23:33 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1165617
