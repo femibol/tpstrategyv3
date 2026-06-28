@@ -6,91 +6,57 @@ import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 et = ZoneInfo('America/New_York')
-now_et = datetime.now(et)
-print(f'Review generated: {now_et.strftime("%Y-%m-%d %H:%M ET %A")}')
 
 with open('data/trade_history.json') as f:
     trades = json.load(f)
-print(f'total trades in history: {len(trades)}')
 
 def to_et(ts):
     if not ts: return None
     try: return datetime.fromisoformat(ts.replace('Z','+00:00')).astimezone(et)
     except Exception: return None
 
-def is_crypto(t):
-    sym = (t.get('symbol') or '').upper()
-    return any(sfx in sym for sfx in ('-USD','-USDT','-BTC','-ETH'))
-
-# Attach dt
-rows = []
+CUT = datetime(2026,6,18,0,0,tzinfo=et)
+post = []
 for t in trades:
     dt = to_et(t.get('exit_time') or t.get('entry_time'))
-    if dt is None: continue
-    rows.append((dt, t))
-rows.sort(key=lambda x: x[0])
-if rows:
-    print(f'date range: {rows[0][0].strftime("%Y-%m-%d")} → {rows[-1][0].strftime("%Y-%m-%d")}')
+    if dt and dt >= CUT:
+        post.append((dt, t))
+post.sort(key=lambda x: x[0])
 
-def block(items, label):
-    n = len(items)
-    if n == 0:
-        print(f'  {label:28s}: 0 trades'); return
-    wins = [t for _,t in items if (t.get('pnl') or 0)>0]
-    losses = [t for _,t in items if (t.get('pnl') or 0)<0]
-    total = sum((t.get('pnl') or 0) for _,t in items)
-    gw = sum((t.get('pnl') or 0) for t in wins)
-    gl = abs(sum((t.get('pnl') or 0) for t in losses))
-    pf = gw/gl if gl>0 else 99.9
-    avg = total/n
-    print(f'  {label:28s}: {n:4d}t  ${total:+9.2f}  wr {len(wins)/n*100:>3.0f}%  PF {pf:4.2f}  avg ${avg:+6.2f}')
+print('=== 15 WORST losers in POST-fix period (≥06-18) ===')
+worst = sorted(post, key=lambda x: (x[1].get('pnl') or 0))[:15]
+for dt, t in worst:
+    print(f'  {dt.strftime("%m-%d %H:%M")}  {t.get("symbol"):10s}  ${t.get("pnl",0):+9.2f}  qty={t.get("quantity")}  entry=${t.get("entry_price",0):.4f} exit=${t.get("exit_price",0):.4f}  {t.get("reason")}  [{t.get("strategy")}]')
 
-# === WEEKLY (Mon-Sun) ===
 print()
-print('=== WEEKLY P&L (all assets) ===')
-def week_start(dt):
-    return (dt - timedelta(days=dt.weekday())).date()
-weeks = {}
-for dt, t in rows:
-    weeks.setdefault(week_start(dt), []).append((dt,t))
-for wk in sorted(weeks):
-    block(weeks[wk], f'wk {wk}')
+print('=== Is the big crypto loss the JUP-USD phantom? ===')
+jup = [(dt,t) for dt,t in post if (t.get('symbol') or '').upper()=='JUP-USD']
+print(f'JUP-USD trades in POST period: {len(jup)}')
+for dt, t in jup:
+    print(f'  {dt.strftime("%m-%d %H:%M")}  ${t.get("pnl",0):+9.2f}  qty={t.get("quantity")}  entry=${t.get("entry_price",0):.4f} exit=${t.get("exit_price",0):.6f}  {t.get("reason")}')
 
-# === WEEKLY split equity vs crypto ===
 print()
-print('=== WEEKLY — EQUITY only ===')
-for wk in sorted(weeks):
-    eq = [(dt,t) for dt,t in weeks[wk] if not is_crypto(t)]
-    block(eq, f'wk {wk} equity')
-print()
-print('=== WEEKLY — CRYPTO only ===')
-for wk in sorted(weeks):
-    cr = [(dt,t) for dt,t in weeks[wk] if is_crypto(t)]
-    block(cr, f'wk {wk} crypto')
+print('=== POST losers by exit-price-near-zero (phantom collision detector) ===')
+phantom = [(dt,t) for dt,t in post if (t.get("exit_price") or 0) > 0 and (t.get("exit_price") or 0) < 0.01 and abs(t.get("pnl") or 0) > 50]
+print(f'trades with exit < $0.01 AND |pnl| > $50 (likely ticker-collision phantoms): {len(phantom)}')
+tot_phantom = 0
+for dt, t in phantom:
+    tot_phantom += (t.get("pnl") or 0)
+    print(f'  {dt.strftime("%m-%d %H:%M")}  {t.get("symbol"):10s}  ${t.get("pnl",0):+9.2f}  exit=${t.get("exit_price",0):.6f}  entry=${t.get("entry_price",0):.4f}  {t.get("reason")}')
+print(f'  TOTAL phantom P&L: ${tot_phantom:+.2f}')
 
-# === PRE vs POST config fixes (fixes shipped 2026-06-17 → 06-22) ===
 print()
-print('=== PRE vs POST config-fix inflection (cutoff 2026-06-18 00:00 ET) ===')
-CUT = datetime(2026,6,18,0,0,tzinfo=et)
-pre = [(dt,t) for dt,t in rows if dt < CUT]
-post = [(dt,t) for dt,t in rows if dt >= CUT]
-block(pre, 'PRE  (≤06-17)')
-block(post, 'POST (≥06-18)')
-print('  -- equity split --')
-block([(dt,t) for dt,t in pre if not is_crypto(t)], 'PRE equity')
-block([(dt,t) for dt,t in post if not is_crypto(t)], 'POST equity')
-print('  -- crypto split --')
-block([(dt,t) for dt,t in pre if is_crypto(t)], 'PRE crypto')
-block([(dt,t) for dt,t in post if is_crypto(t)], 'POST crypto')
+print('=== POST P&L with phantoms EXCLUDED ===')
+real = [(dt,t) for dt,t in post if not ((t.get("exit_price") or 0) > 0 and (t.get("exit_price") or 0) < 0.01 and abs(t.get("pnl") or 0) > 50)]
+def is_crypto(t):
+    return any(s in (t.get('symbol') or '').upper() for s in ('-USD','-USDT','-BTC','-ETH'))
+def stat(items, label):
+    n=len(items)
+    if not n: print(f'  {label}: 0'); return
+    tot=sum((t.get("pnl") or 0) for _,t in items)
+    w=sum(1 for _,t in items if (t.get("pnl") or 0)>0)
+    print(f'  {label:22s}: {n}t  ${tot:+.2f}  wr {w/n*100:.0f}%')
+stat(real, 'POST all (real)')
+stat([x for x in real if not is_crypto(x[1])], 'POST equity (real)')
+stat([x for x in real if is_crypto(x[1])], 'POST crypto (real)')
 PYEOF
-
-echo
-echo "=== current account state ==="
-set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
-HOST="https://trading-bot-vps.tail5db65d.ts.net"
-curl -s -m 8 -u "admin:$DASHBOARD_SECRET_KEY" "$HOST/api/status" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(f'  balance=\${d.get(\"balance\"):,.2f}  start=\${d.get(\"starting_balance\"):,.2f}  total_return={d.get(\"total_return_pct\"):+.2f}%')
-print(f'  peak=\${d.get(\"peak_balance\"):,.2f}  drawdown={d.get(\"drawdown_pct\"):.2f}%  positions={d.get(\"positions\")}')
-" 2>&1
