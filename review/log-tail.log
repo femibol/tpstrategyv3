@@ -6169,3 +6169,100 @@ Signals found: 6
 2026-06-28 03:42:50 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-28 03:42:50 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 03:42:50 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.22
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AAL | Score: 85 | RVOL: 313.6x | Change: +0.5% | R:R 2.4
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WSHP | Score: 80 | RVOL: 177.6x | Change: +1.7% | R:R 2.4
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: PYXS | Score: 90 | RVOL: 560.1x | Change: +2.2% | R:R 2.4
+2026-06-28 03:45:49 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: T | Score: 75 | RVOL: 269.7x | Change: +0.6% | R:R 2.4
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> mean_reversion: buy SNX-USD @ $0.22 conf=1.00
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WSHP @ $7.85 conf=0.80
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy PYXS @ $2.76 conf=0.90
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy T @ $22.70 conf=0.75
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Extreme RVOL 313.6x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy WSHP | Extreme RVOL 177.6x | Moving up +1.7% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy PYXS | Extreme RVOL 560.1x | Moving up +2.2% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:45:49 | INFO     | trading_bot.risk.manager | APPROVED: buy T | Extreme RVOL 269.7x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:45:49 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — AAL, OPEN, AAL, WSHP, PYXS, T
+2026-06-28 03:45:49 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 7
+  ✅ SNX-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+  ✅ AAL: score 85/100 — Momentum BUY: pul
+2026-06-28 03:45:50 | WARNING  | trading_bot.engine   | SLOW CYCLE (183.2s total): update_data=178.9s
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: SNX-USD entry=$0.2240 stop=$0.2224 (0.70% gap). Setting 5% minimum stop.
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | VOL REGIME: SNX-USD short=0.0144 long=0.0088 ratio=1.63x → sizing mult 0.96x
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | Slippage tracker loaded (34 samples across 2 strategies)
+2026-06-28 03:45:51 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 0.96x × Slip 1.00x = 0.36% risk
+2026-06-28 03:45:51 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 6603.95857 SNX-USD @ $0.22 = $1,479.29 | Risk: $73.96 (0.4% of account)
+2026-06-28 03:45:51 | WARNING  | trading_bot.engine   | TIER CAP: SNX-USD signal qty=6603.95857 exceeds tier max=5000 for $0.22 stock. Capping to 5000.
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | R/R STRETCH: SNX-USD entry=$0.2240 stop=$0.2128 (risk=$0.0112) target=$0.2344 (reward=$0.0104, R/R=0.93) — stretching target to $0.2464 for 2:1 minimum.
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-28 03:45:51 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
+2026-06-28 03:45:51 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 0.224, "stopLoss": {"type": "stop", "stopPrice": 0.21}, "takeProfit": {"type": "limit", "limitPrice": 0.25}}
+2026-06-28 03:45:51 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"309caf02-9701-442c-99ec-8be13adbe47a","logId":"309caf02-9701-442c-99ec-8be13adbe47a","payload":{"ticker":"SNX-USD","action":"buy","sentiment":"bullish","quantity":5000,"price":0.224,"stopLoss":{"type":"stop","stopPrice":0.21},"takeProfit":{"type":"limit","limitPrice":0.25}}}
+2026-06-28 03:45:51 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY SNX-USD | Strategy: unknown | Qty: 5000 @ $0.22 = $1,120.00 | Risk: $56.00 | Reward: $112.00 | R:R 2.0:1 | Response: 200
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: SNX-USD qty=5000. SL $0.21 / TP $0.25 managed by bot (no broker-side bracket).
+2026-06-28 03:45:51 | INFO     | trading_bot.engine   | ORDER BUY SNX-USD via TradersPost | Qty: 5000 | Price: $0.22 | Cost: $1,120.00 | Stop: $0.21 (risk $56.00) | Target: $0.25 (reward $112.00) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-28 03:45:51 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: SNX-USD**
+```
+  Entry: $0.22 x 5000 shares = $1,120.00
+  Stop:  $0.21 (-$56.00 | -5.0%)
+  Targets: $0.25
+  Risk/Reward: 2.0
+```
+Strategy: **mean_reversion** | Confidence: **
+2026-06-28 03:45:56 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[30]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-3.8%)), ALGO-USD(weak 3d trend (-2.2%)), APT-USD(weak 3d trend (-8.8%)), ARB-USD(weak 3d trend (-4.4%)), ATOM-USD(weak 3d trend (-3.1%)), AVAX-USD(weak 3d trend (-3.2%)), BONK-USD(weak 3d trend (-5.3%)), BTC-USD(weak 3d trend (-2.6%)), CRV-USD(weak 3d trend (-2.8%)), DOGE-USD(weak 3d trend (-4.7%)), DOT-USD(weak 3d trend (-9.0%)), ETH-USD(weak 3d trend (-5.0%)), FET-USD(weak 3d trend (-3.1%)), FLOKI-USD(weak 3d trend (-8.4%)), GRT-USD(weak 3d trend (-5.4%)), HBAR-USD(weak 3d trend (-4.1%)), ICP-USD(weak 3d trend (-3.9%)), IMX-USD(weak 3d trend (-7.3%)), LINK-USD(weak 3d trend (-3.1%)), MATIC-USD(weak 3d trend (-4.2%)), NEAR-USD(weak 3d trend (-5.9%)), RNDR-USD(weak 3d trend (-2.7%)), SEI-USD(weak 3d trend (-16.5%)), SHIB-USD(weak 3d trend (-5.0%)), SUI-USD(weak 3d trend (-2.3%)), TRX-USD(weak 3d trend (-2.6%)), UNI-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-8.2%)), XRP-USD(weak 3d trend (-3.3%)) | neutral=4 | no_data=7
+2026-06-28 03:46:03 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 03:46:04 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 03:46:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 03:46:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 03:46:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 03:46:06 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 03:46:06 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 03:46:06 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 03:49:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 03:49:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 03:49:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AAL | Score: 85 | RVOL: 313.6x | Change: +0.5% | R:R 2.4
+2026-06-28 03:49:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WSHP | Score: 80 | RVOL: 177.6x | Change: +1.7% | R:R 2.4
+2026-06-28 03:49:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: PYXS | Score: 90 | RVOL: 560.1x | Change: +2.2% | R:R 2.4
+2026-06-28 03:49:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: T | Score: 75 | RVOL: 269.7x | Change: +0.6% | R:R 2.4
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WSHP @ $7.85 conf=0.80
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy PYXS @ $2.76 conf=0.90
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy T @ $22.70 conf=0.75
+2026-06-28 03:49:19 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 03:49:19 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 03:49:19 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Extreme RVOL 313.6x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:49:19 | INFO     | trading_bot.risk.manager | APPROVED: buy WSHP | Extreme RVOL 177.6x | Moving up +1.7% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:49:19 | INFO     | trading_bot.risk.manager | APPROVED: buy PYXS | Extreme RVOL 560.1x | Moving up +2.2% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:49:19 | INFO     | trading_bot.risk.manager | APPROVED: buy T | Extreme RVOL 269.7x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — AAL, OPEN, AAL, WSHP, PYXS, T
+2026-06-28 03:49:19 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 6
+  ✅ AAL: score 85/100 — Momentum BUY: pullback entry, breakout>17.85, higher lows, V
+  ✅ OPEN: score 85/100 — Momentum BUY: pu
+2026-06-28 03:49:19 | WARNING  | trading_bot.engine   | SLOW CYCLE (196.7s total): update_data=192.5s
+2026-06-28 03:49:19 | INFO     | trading_bot.engine   | CYCLE #67: regime=sideways | signals=6->approved=0 | positions=1/15 | bars_warm=82/82 | equity_open=False | pm=False pwr_hr=False
+2026-06-28 03:49:22 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[30]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-3.6%)), ALGO-USD(weak 3d trend (-2.2%)), APT-USD(weak 3d trend (-8.8%)), ARB-USD(weak 3d trend (-4.4%)), ATOM-USD(weak 3d trend (-3.1%)), AVAX-USD(weak 3d trend (-3.0%)), BONK-USD(weak 3d trend (-5.3%)), BTC-USD(weak 3d trend (-2.6%)), CRV-USD(weak 3d trend (-2.8%)), DOGE-USD(weak 3d trend (-4.7%)), DOT-USD(weak 3d trend (-9.0%)), ETH-USD(weak 3d trend (-5.0%)), FET-USD(weak 3d trend (-3.1%)), FLOKI-USD(weak 3d trend (-8.4%)), GRT-USD(weak 3d trend (-5.4%)), HBAR-USD(weak 3d trend (-4.0%)), ICP-USD(weak 3d trend (-3.9%)), IMX-USD(weak 3d trend (-7.3%)), LINK-USD(weak 3d trend (-3.1%)), MATIC-USD(weak 3d trend (-4.2%)), NEAR-USD(weak 3d trend (-5.9%)), RNDR-USD(weak 3d trend (-2.7%)), SEI-USD(weak 3d trend (-16.5%)), SHIB-USD(weak 3d trend (-5.0%)), SUI-USD(weak 3d trend (-2.4%)), TRX-USD(weak 3d trend (-2.6%)), UNI-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-8.2%)), XRP-USD(weak 3d trend (-3.3%)) | neutral=4 | no_data=7
+2026-06-28 03:49:29 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 03:49:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 03:49:30 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 03:49:31 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 03:49:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 03:49:32 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 03:49:32 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 03:49:32 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
