@@ -1593,3 +1593,53 @@ Signals found: 2
 2026-06-27 22:59:45 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-27 22:59:45 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-27 22:59:45 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
+2026-06-27 23:02:05 | WARNING  | trading_bot.engine   | STOP WATCHDOG: AAPG has NO broker-side stop! Placing emergency stop @ $15.99 for 99 shares
+2026-06-27 23:02:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=63, Vol=4.9x | KUST @ $0.95
+2026-06-27 23:02:05 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=37, breakout>2.29, higher lows, Vol=4.9x | ZDAI @ $2.38
+2026-06-27 23:02:05 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-27 23:02:05 | INFO     | trading_bot.engine   |   -> momentum: buy KUST @ $0.95 conf=0.80
+2026-06-27 23:02:05 | INFO     | trading_bot.engine   |   -> momentum: buy ZDAI @ $2.38 conf=0.90
+2026-06-27 23:02:05 | INFO     | trading_bot.risk.manager | APPROVED: buy KUST | Momentum BUY: pullback entry, ADX=63, Vol=4.9x
+2026-06-27 23:02:05 | INFO     | trading_bot.risk.manager | APPROVED: buy ZDAI | Momentum BUY: pullback entry, ADX=37, breakout>2.29, higher lows, Vol=4.9x
+2026-06-27 23:02:05 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — KUST, ZDAI
+2026-06-27 23:02:05 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ KUST: score 80/100 — Momentum BUY: pullback entry, ADX=63, Vol=4.9x
+  ✅ ZDAI: score 90/100 — Momentum BUY: pullback entry,
+2026-06-27 23:02:05 | WARNING  | trading_bot.engine   | SLOW CYCLE (144.2s total): update_data=139.5s
+2026-06-27 23:02:08 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1587s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 23:02:08 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 23:02:08 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 23:02:08 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 23:02:08 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 23:02:19 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 99.0 AAPG
+2026-06-27 23:02:19 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 23:02:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-27 23:02:19 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 23:02:19 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 23:02:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 99 AAPG NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
+2026-06-27 23:02:19 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 23:02:19 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-27 23:02:20 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1166125
+2026-06-27 23:04:20 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 99.0 AAPG (status=Submitted). Cancelling unfilled order.
+2026-06-27 23:04:20 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PendingCancel | Filled: 0.0/99.0
+2026-06-27 23:04:20 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Cancelled | Filled: 0.0/99.0
+2026-06-27 23:04:20 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-27 23:04:21 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 23:04:21 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 23:04:21 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[32]: ADA-USD(weak 3d trend (-2.3%)), ALGO-USD(weak 3d trend (-2.5%)), APT-USD(weak 3d trend (-6.3%)), ARB-USD(weak 3d trend (-2.3%)), ATOM-USD(weak 3d trend (-3.6%)), AVAX-USD(weak 3d trend (-0.4%)), BONK-USD(weak 3d trend (-2.6%)), BTC-USD(weak 3d trend (-1.1%)), COMP-USD(weak 3d trend (-5.8%)), CRV-USD(weak 3d trend (-2.1%)), DOGE-USD(weak 3d trend (-2.8%)), DOT-USD(weak 3d trend (-8.7%)), ETC-USD(weak 3d trend (+1.0%)), ETH-USD(weak 3d trend (-3.1%)), FET-USD(weak 3d trend (-0.3%)), FLOKI-USD(weak 3d trend (-5.4%)), GRT-USD(weak 3d trend (-3.8%)), HBAR-USD(weak 3d trend (-4.4%)), ICP-USD(weak 3d trend (-1.1%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.6%)), MATIC-USD(weak 3d trend (-2.9%)), NEAR-USD(weak 3d trend (-1.1%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-6.3%)), RNDR-USD(weak 3d trend (-1.1%)), SEI-USD(weak 3d trend (-10.1%)), SHIB-USD(weak 3d trend (-3.4%)), SUI-USD(weak 3d trend (+0.5%)), TRX-USD(weak 3d trend (-2.9%)), XLM-USD(weak 3d trend (-6.7%)), XRP-USD(weak 3d trend (-2.4%)) | warming=2 | neutral=6 | no_data=2
+2026-06-27 23:04:24 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1590s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 23:04:24 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 23:04:24 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 23:04:24 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 23:04:24 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 23:04:35 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 99.0 AAPG
+2026-06-27 23:04:35 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 23:04:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-27 23:04:35 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 23:04:35 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 23:04:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 99 AAPG NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
+2026-06-27 23:04:35 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 23:04:35 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-27 23:04:36 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1166128
