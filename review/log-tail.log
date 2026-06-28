@@ -6978,3 +6978,60 @@ Signals found: 6
 2026-06-28 04:58:50 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-28 04:58:50 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 04:58:50 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 05:01:49 | INFO     | trading_bot.broker.traderspost | EXIT signal for SNX-USD - bypassing rate limits
+2026-06-28 05:01:49 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
+2026-06-28 05:01:49 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "exit", "quantity": 5000, "price": 0.224}
+2026-06-28 05:01:49 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"48ac7a4e-772e-4472-bc69-640e08dd9fa0","logId":"48ac7a4e-772e-4472-bc69-640e08dd9fa0","payload":{"ticker":"SNX-USD","action":"exit","quantity":5000,"price":0.224}}
+2026-06-28 05:01:49 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL SNX-USD | Strategy: unknown | Qty: 5000 @ $0.22 = $1,120.00 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-28 05:01:49 | INFO     | trading_bot.engine   | CLOSED SNX-USD via TradersPost | time_exit | P&L: $+0.00 | Max holding period exceeded
+2026-06-28 05:01:49 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: SNX-USD** (time_exit)
+```
+  Entry: $0.22 → Exit: $0.22
+  P&L: $+0.00 (+0.00%)
+  Shares: 5000 | Value: $1,120.00
+  Hold: 1.3h
+```
+Strategy: **mean_reversion** | Max holding period excee
+2026-06-28 05:01:49 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SNX-USD +0.00 (450 total in history)
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   | AI INSIGHT: ## Key Issue: Winners Aren't Paying Enough
+
+With a **70% win rate but negative P&L (-$25.39)**, your losses are significantly larger than your wins — this is a classic reward/risk inversion problem. *
+2026-06-28 05:01:54 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: AI Quick Insight (after 450 trades):
+## Key Issue: Winners Aren't Paying Enough
+
+With a **70% win rate but negative P&L (-$25.39)**, your losses are significantly larger than your wins 
+2026-06-28 05:01:54 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 05:01:54 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 05:01:54 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AAL | Score: 85 | RVOL: 62.7x | Change: +0.5% | R:R 2.4
+2026-06-28 05:01:54 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WSHP | Score: 80 | RVOL: 35.5x | Change: +1.7% | R:R 2.4
+2026-06-28 05:01:54 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: PYXS | Score: 90 | RVOL: 112.0x | Change: +2.2% | R:R 2.4
+2026-06-28 05:01:54 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: T | Score: 75 | RVOL: 53.9x | Change: +0.6% | R:R 2.4
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WSHP @ $7.85 conf=0.80
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy PYXS @ $2.76 conf=0.90
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy T @ $22.70 conf=0.75
+2026-06-28 05:01:54 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 05:01:54 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 05:01:54 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Extreme RVOL 62.7x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
+2026-06-28 05:01:54 | INFO     | trading_bot.risk.manager | APPROVED: buy WSHP | Extreme RVOL 35.5x | Moving up +1.7% | EMA trend bullish | MACD histogram positive
+2026-06-28 05:01:54 | INFO     | trading_bot.risk.manager | APPROVED: buy PYXS | Extreme RVOL 112.0x | Moving up +2.2% | EMA trend bullish | MACD histogram positive
+2026-06-28 05:01:54 | INFO     | trading_bot.risk.manager | APPROVED: buy T | Extreme RVOL 53.9x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
+2026-06-28 05:01:54 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — AAL, OPEN, AAL, WSHP, PYXS, T
+2026-06-28 05:01:54 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 6
+  ✅ AAL: score 85/100 — Momentum BUY: pullback entry, breakout>17.85, higher lows, V
+  ✅ OPEN: score 85/100 — Momentum BUY: pu
+2026-06-28 05:01:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (188.4s total): update_data=178.7s, monitor_positions=5.7s
+2026-06-28 05:01:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[28]: ADA-USD(weak 3d trend (-2.2%)), ALGO-USD(weak 3d trend (-1.7%)), APT-USD(weak 3d trend (-8.8%)), ARB-USD(weak 3d trend (-3.5%)), ATOM-USD(weak 3d trend (-5.9%)), AVAX-USD(weak 3d trend (-2.2%)), BONK-USD(weak 3d trend (-3.3%)), BTC-USD(weak 3d trend (-2.0%)), CRV-USD(weak 3d trend (-3.7%)), DOGE-USD(weak 3d trend (-4.0%)), DOT-USD(weak 3d trend (-8.4%)), ETH-USD(weak 3d trend (-4.2%)), FET-USD(weak 3d trend (-4.0%)), FLOKI-USD(weak 3d trend (-7.2%)), GRT-USD(weak 3d trend (-4.3%)), HBAR-USD(weak 3d trend (-3.6%)), ICP-USD(weak 3d trend (-6.6%)), IMX-USD(weak 3d trend (-7.3%)), LINK-USD(weak 3d trend (-2.3%)), MATIC-USD(weak 3d trend (-4.0%)), NEAR-USD(weak 3d trend (-3.3%)), RNDR-USD(weak 3d trend (-0.1%)), SEI-USD(weak 3d trend (-16.5%)), SHIB-USD(weak 3d trend (-5.0%)), SUI-USD(weak 3d trend (-1.2%)), TRX-USD(weak 3d trend (-1.4%)), XLM-USD(weak 3d trend (-6.9%)), XRP-USD(weak 3d trend (-2.5%)) | neutral=7 | no_data=7
+2026-06-28 05:02:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 05:02:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 05:02:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 05:02:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 05:02:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 05:02:08 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 05:02:08 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 05:02:08 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
