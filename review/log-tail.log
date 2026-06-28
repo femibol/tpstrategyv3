@@ -12375,3 +12375,68 @@ Signals found: 2
 2026-06-28 14:17:14 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-28 14:17:14 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 14:17:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 14:20:27 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 45/90 have prices | IBKR blacklisted: 42
+2026-06-28 14:20:27 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | WIF-USD @ $0.17
+2026-06-28 14:20:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 14:20:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 14:20:27 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 3 signals from strategies
+2026-06-28 14:20:27 | INFO     | trading_bot.engine   |   -> mean_reversion: buy WIF-USD @ $0.17 conf=1.00
+2026-06-28 14:20:27 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 14:20:27 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 14:20:27 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:27 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 14:20:27 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 14:20:27 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — AAL, OPEN
+2026-06-28 14:20:27 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 3
+  ✅ WIF-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+  ✅ AAL: score 85/100 — Momentum BUY: pul
+2026-06-28 14:20:27 | WARNING  | trading_bot.engine   | SLOW CYCLE (196.8s total): update_data=192.4s
+2026-06-28 14:20:28 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: WIF-USD — symbol history bad: 1/3 wins (33%), avg P&L $-1.67
+2026-06-28 14:20:31 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: WIF-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[29]: ADA-USD(weak 3d trend (+0.1%)), ALGO-USD(weak 3d trend (+0.3%)), APT-USD(weak 3d trend (-3.5%)), ARB-USD(weak 3d trend (-3.5%)), ATOM-USD(weak 3d trend (-3.4%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (+0.1%)), CRV-USD(weak 3d trend (-2.4%)), DOGE-USD(weak 3d trend (-1.0%)), DOT-USD(weak 3d trend (-5.6%)), ETC-USD(weak 3d trend (+0.1%)), ETH-USD(weak 3d trend (+0.2%)), FLOKI-USD(weak 3d trend (-4.5%)), GRT-USD(weak 3d trend (-2.2%)), HBAR-USD(weak 3d trend (-3.4%)), ICP-USD(weak 3d trend (-0.5%)), IMX-USD(weak 3d trend (-7.3%)), JUP-USD(weak 3d trend (-3.9%)), LINK-USD(weak 3d trend (+0.3%)), MATIC-USD(weak 3d trend (+0.1%)), NEAR-USD(weak 3d trend (-1.2%)), OP-USD(weak 3d trend (-2.9%)), RNDR-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-16.1%)), SHIB-USD(weak 3d trend (-3.0%)), SUI-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-0.0%)), XLM-USD(weak 3d trend (-4.1%)), XRP-USD(weak 3d trend (+0.8%)) | warming=2 | neutral=7 | no_data=3
+2026-06-28 14:20:31 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | WIF-USD @ $0.17
+2026-06-28 14:20:31 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:31 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy WIF-USD from mean_reversion conf=1.00 price=0.171 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:31 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WIF-USD avoided — consistent loser (score: -100.0)
+2026-06-28 14:20:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | WIF-USD @ $0.17
+2026-06-28 14:20:34 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:34 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy WIF-USD from mean_reversion conf=1.00 price=0.171 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:34 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WIF-USD avoided — consistent loser (score: -100.0)
+2026-06-28 14:20:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | WIF-USD @ $0.17
+2026-06-28 14:20:37 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:37 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy WIF-USD from mean_reversion conf=1.00 price=0.171 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 14:20:37 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WIF-USD avoided — consistent loser (score: -100.0)
+2026-06-28 14:20:37 | INFO     | trading_bot.engine   | CRYPTO INJECT: 42 symbols (AAVE-USD, ADA-USD, ALGO-USD, APT-USD, ARB-USD, ATOM-USD, AVAX-USD, BONK-USD, BTC-USD, COMP-USD, CRV-USD, DOGE-USD, DOT-USD, ETC-USD, ETH-USD, FET-USD, FLOKI-USD, GRT-USD, HBAR-USD, ICP-USD, IMX-USD, JUP-USD, LINK-USD, LTC-USD, MATIC-USD, MKR-USD, NEAR-USD, OP-USD, PEPE-USD, RNDR-USD, SEI-USD, SHIB-USD, SNX-USD, SOL-USD, SUI-USD, TIA-USD, TON-USD, TRX-USD, UNI-USD, WIF-USD, XLM-USD, XRP-USD) → mean_reversion(50 dyn), momentum(50 dyn), crypto_runner(42 dyn)
+2026-06-28 14:20:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 14:20:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 14:20:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 14:20:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 14:20:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 14:20:41 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 14:20:41 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 14:20:41 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 14:20:47 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-28 14:23:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 14:23:38 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 14:23:39 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-28 14:23:39 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 14:23:39 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 14:23:39 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 14:23:39 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 14:23:39 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — AAL, OPEN
+2026-06-28 14:23:39 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ AAL: score 85/100 — Momentum BUY: pullback entry, breakout>17.85, higher lows, V
+  ✅ OPEN: score 85/100 — Momentum BUY: pu
+2026-06-28 14:23:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (181.7s total): update_data=177.3s
+2026-06-28 14:23:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[31]: ADA-USD(weak 3d trend (+0.1%)), ALGO-USD(weak 3d trend (-0.1%)), APT-USD(weak 3d trend (-3.5%)), ARB-USD(weak 3d trend (-3.5%)), ATOM-USD(weak 3d trend (-3.4%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (-0.1%)), CRV-USD(weak 3d trend (-2.4%)), DOGE-USD(weak 3d trend (-1.1%)), DOT-USD(weak 3d trend (-5.6%)), ETC-USD(weak 3d trend (+0.1%)), ETH-USD(weak 3d trend (-0.1%)), FLOKI-USD(weak 3d trend (-4.5%)), GRT-USD(weak 3d trend (-2.2%)), HBAR-USD(weak 3d trend (-2.9%)), ICP-USD(weak 3d trend (-0.5%)), IMX-USD(weak 3d trend (-7.3%)), JUP-USD(weak 3d trend (-3.9%)), LINK-USD(weak 3d trend (+0.3%)), MATIC-USD(weak 3d trend (+0.6%)), NEAR-USD(weak 3d trend (-1.2%)), OP-USD(weak 3d trend (-2.9%)), RNDR-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-16.1%)), SHIB-USD(weak 3d trend (-3.0%)), SOL-USD(needs green bar), SUI-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-1.5%)), WIF-USD(needs vol>1.3x), XLM-USD(weak 3d trend (-4.1%)), XRP-USD(weak 3d trend (+0.2%)) | warming=1 | neutral=7 | no_data=3
+2026-06-28 14:23:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 14:23:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 14:23:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 14:23:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 14:23:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 14:23:52 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 14:23:52 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 14:23:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
