@@ -14112,3 +14112,58 @@ Signals found: 2
 2026-06-28 18:23:34 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-28 18:23:35 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 18:23:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 18:26:33 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x | LTC-USD @ $42.29
+2026-06-28 18:26:33 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x | ALGO-USD @ $0.09
+2026-06-28 18:26:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 18:26:33 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 18:26:33 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 4 signals from strategies
+2026-06-28 18:26:33 | INFO     | trading_bot.engine   |   -> mean_reversion: buy LTC-USD @ $42.29 conf=0.71
+2026-06-28 18:26:33 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ALGO-USD @ $0.09 conf=0.97
+2026-06-28 18:26:33 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 18:26:33 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 18:26:33 | INFO     | trading_bot.risk.manager | APPROVED: buy LTC-USD | Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:33 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:33 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 18:26:33 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 18:26:33 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — AAL, OPEN
+2026-06-28 18:26:33 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 4
+  ✅ LTC-USD: score 71/100 — Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+  ✅ ALGO-USD: score 97/100 — Mean reversion
+2026-06-28 18:26:33 | WARNING  | trading_bot.engine   | SLOW CYCLE (182.8s total): update_data=178.4s
+2026-06-28 18:26:34 | WARNING  | trading_bot.engine   | LEARNING BLOCK: LTC-USD avoided — consistent loser (score: -200.1)
+2026-06-28 18:26:35 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
+2026-06-28 18:26:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[2]: ALGO-USD(z=-2.22 rsi=0.0 bb=MIDDLE), LTC-USD(z=-1.47 rsi=36.8 bb=MIDDLE) | WAIT[30]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (-0.1%)), APT-USD(weak 3d trend (-5.0%)), ARB-USD(weak 3d trend (-3.5%)), ATOM-USD(weak 3d trend (-2.5%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (-0.6%)), CRV-USD(weak 3d trend (-2.2%)), DOGE-USD(weak 3d trend (-2.5%)), DOT-USD(weak 3d trend (-5.0%)), ETC-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (+0.1%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-3.5%)), GRT-USD(weak 3d trend (-2.2%)), HBAR-USD(weak 3d trend (-3.9%)), ICP-USD(weak 3d trend (+0.4%)), IMX-USD(weak 3d trend (-7.3%)), JUP-USD(weak 3d trend (-4.9%)), LINK-USD(weak 3d trend (-0.6%)), MATIC-USD(weak 3d trend (-1.8%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-5.7%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(weak 3d trend (-0.5%)), SEI-USD(weak 3d trend (-16.1%)), SHIB-USD(weak 3d trend (-2.4%)), SUI-USD(weak 3d trend (+0.0%)), XLM-USD(weak 3d trend (-3.2%)), XRP-USD(weak 3d trend (+0.5%)) | warming=2 | neutral=6 | no_data=2
+2026-06-28 18:26:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x | LTC-USD @ $42.29
+2026-06-28 18:26:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x | ALGO-USD @ $0.09
+2026-06-28 18:26:39 | INFO     | trading_bot.risk.manager | APPROVED: buy LTC-USD | Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:39 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:39 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy LTC-USD from mean_reversion conf=0.71 price=42.29 reason=Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:39 | WARNING  | trading_bot.engine   | LEARNING BLOCK: LTC-USD avoided — consistent loser (score: -200.1)
+2026-06-28 18:26:39 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.97 price=0.08681 reason=Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:39 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
+2026-06-28 18:26:42 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x | LTC-USD @ $42.29
+2026-06-28 18:26:42 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x | ALGO-USD @ $0.09
+2026-06-28 18:26:42 | INFO     | trading_bot.risk.manager | APPROVED: buy LTC-USD | Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:42 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy LTC-USD from mean_reversion conf=0.71 price=42.29 reason=Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:42 | WARNING  | trading_bot.engine   | LEARNING BLOCK: LTC-USD avoided — consistent loser (score: -200.1)
+2026-06-28 18:26:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.97 price=0.08681 reason=Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:42 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
+2026-06-28 18:26:45 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x | LTC-USD @ $42.29
+2026-06-28 18:26:45 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x | ALGO-USD @ $0.09
+2026-06-28 18:26:45 | INFO     | trading_bot.risk.manager | APPROVED: buy LTC-USD | Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:45 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:45 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy LTC-USD from mean_reversion conf=0.71 price=42.29 reason=Mean reversion BUY: Z=-1.47, RSI=37, BB=near, Vol=3.6x
+2026-06-28 18:26:45 | WARNING  | trading_bot.engine   | LEARNING BLOCK: LTC-USD avoided — consistent loser (score: -200.1)
+2026-06-28 18:26:45 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.97 price=0.08681 reason=Mean reversion BUY: Z=-2.22, RSI=0, BB=near, Vol=7.5x
+2026-06-28 18:26:45 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
+2026-06-28 18:26:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 18:26:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 18:26:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 18:26:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 18:26:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 18:26:48 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 18:26:48 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 18:26:48 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
