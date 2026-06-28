@@ -11092,3 +11092,47 @@ Signals found: 3
 2026-06-28 11:38:39 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-28 11:38:39 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 11:38:39 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 11:41:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.43, RSI=27, BB=near, Vol=3.9x | BTC-USD @ $59922.62
+2026-06-28 11:41:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.85, RSI=7, BB=near, Vol=4.7x | LTC-USD @ $42.91
+2026-06-28 11:41:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 11:41:37 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 11:41:37 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: PYXS | Score: 85 | RVOL: 4.4x | Change: +2.2% | R:R 2.4
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 5 signals from strategies
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   |   -> mean_reversion: buy BTC-USD @ $59922.62 conf=0.87
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   |   -> mean_reversion: buy LTC-USD @ $42.91 conf=0.87
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy PYXS @ $2.76 conf=0.85
+2026-06-28 11:41:37 | INFO     | trading_bot.risk.manager | REJECTED: buy BTC-USD | Cost gate: edge 40bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:37 | INFO     | trading_bot.risk.manager | REJECTED: buy LTC-USD | Cost gate: edge 48bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:37 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 11:41:37 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 11:41:37 | INFO     | trading_bot.risk.manager | APPROVED: buy PYXS | Very high RVOL 4.4x | Moving up +2.2% | EMA trend bullish | MACD histogram positive
+2026-06-28 11:41:37 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 3 buy signal(s) — AAL, OPEN, PYXS
+2026-06-28 11:41:37 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 5
+  ✅ BTC-USD: score 87/100 — Mean reversion BUY: Z=-2.43, RSI=27, BB=near, Vol=3.9x
+  ✅ LTC-USD: score 87/100 — Mean reversion 
+2026-06-28 11:41:38 | WARNING  | trading_bot.engine   | SLOW CYCLE (182.7s total): update_data=178.4s
+2026-06-28 11:41:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[2]: BTC-USD(z=-2.43 rsi=26.9 bb=MIDDLE), LTC-USD(z=-1.85 rsi=6.7 bb=MIDDLE) | WAIT[15]: APT-USD(weak 3d trend (+0.5%)), ARB-USD(weak 3d trend (-3.5%)), DOT-USD(weak 3d trend (-3.4%)), ETC-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (+0.6%)), HBAR-USD(weak 3d trend (-2.1%)), ICP-USD(weak 3d trend (-0.0%)), IMX-USD(weak 3d trend (-7.3%)), JUP-USD(weak 3d trend (-2.7%)), NEAR-USD(weak 3d trend (+0.4%)), OP-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-16.1%)), TRX-USD(weak 3d trend (+0.3%)), XLM-USD(weak 3d trend (-3.4%)) | warming=4 | neutral=18 | no_data=3
+2026-06-28 11:41:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.43, RSI=27, BB=near, Vol=3.9x | BTC-USD @ $59922.62
+2026-06-28 11:41:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.85, RSI=7, BB=near, Vol=4.7x | LTC-USD @ $42.91
+2026-06-28 11:41:41 | INFO     | trading_bot.risk.manager | REJECTED: buy BTC-USD | Cost gate: edge 40bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:41 | INFO     | trading_bot.risk.manager | REJECTED: buy LTC-USD | Cost gate: edge 48bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.43, RSI=27, BB=near, Vol=3.9x | BTC-USD @ $59922.62
+2026-06-28 11:41:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.85, RSI=7, BB=near, Vol=4.7x | LTC-USD @ $42.91
+2026-06-28 11:41:44 | INFO     | trading_bot.risk.manager | REJECTED: buy BTC-USD | Cost gate: edge 40bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:44 | INFO     | trading_bot.risk.manager | REJECTED: buy LTC-USD | Cost gate: edge 48bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:47 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.43, RSI=27, BB=near, Vol=3.9x | BTC-USD @ $59922.62
+2026-06-28 11:41:47 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.85, RSI=7, BB=near, Vol=4.7x | LTC-USD @ $42.91
+2026-06-28 11:41:47 | INFO     | trading_bot.risk.manager | REJECTED: buy BTC-USD | Cost gate: edge 40bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:47 | INFO     | trading_bot.risk.manager | REJECTED: buy LTC-USD | Cost gate: edge 48bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 11:41:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 11:41:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 11:41:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 11:41:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 11:41:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 11:41:51 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 11:41:51 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 11:41:51 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
