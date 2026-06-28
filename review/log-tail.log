@@ -1193,3 +1193,41 @@ Signals found: 2
 2026-06-27 22:18:29 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
 2026-06-27 22:18:29 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
 2026-06-27 22:18:30 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1165958
+2026-06-27 22:20:31 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 99.0 AAPG (status=Submitted). Cancelling unfilled order.
+2026-06-27 22:20:31 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PendingCancel | Filled: 0.0/99.0
+2026-06-27 22:20:31 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Cancelled | Filled: 0.0/99.0
+2026-06-27 22:20:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-27 22:20:32 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 22:20:32 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 22:20:32 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[32]: ADA-USD(weak 3d trend (-1.7%)), ALGO-USD(weak 3d trend (-3.5%)), APT-USD(weak 3d trend (-5.7%)), ARB-USD(weak 3d trend (-2.3%)), ATOM-USD(weak 3d trend (-3.6%)), AVAX-USD(weak 3d trend (-0.2%)), BONK-USD(weak 3d trend (-2.6%)), BTC-USD(weak 3d trend (-0.9%)), COMP-USD(weak 3d trend (-5.8%)), CRV-USD(weak 3d trend (-1.4%)), DOGE-USD(weak 3d trend (-2.4%)), DOT-USD(weak 3d trend (-7.8%)), ETC-USD(weak 3d trend (+1.0%)), ETH-USD(weak 3d trend (-2.4%)), FET-USD(weak 3d trend (-1.6%)), FLOKI-USD(weak 3d trend (-6.0%)), GRT-USD(weak 3d trend (-4.9%)), HBAR-USD(weak 3d trend (-4.7%)), ICP-USD(weak 3d trend (-2.0%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.5%)), MATIC-USD(weak 3d trend (-3.0%)), NEAR-USD(weak 3d trend (-1.1%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-6.3%)), RNDR-USD(weak 3d trend (-1.1%)), SEI-USD(weak 3d trend (-10.1%)), SHIB-USD(weak 3d trend (-3.4%)), SUI-USD(weak 3d trend (+0.9%)), TRX-USD(weak 3d trend (-1.7%)), XLM-USD(weak 3d trend (-6.7%)), XRP-USD(weak 3d trend (-2.1%)) | warming=1 | neutral=7 | no_data=2
+2026-06-27 22:20:35 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1548s (~5 min). Force-closing to prevent unmonitored risk.
+2026-06-27 22:20:35 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 22:20:35 | INFO     | trading_bot.engine   | Cancelled broker stop order for AAPG
+2026-06-27 22:20:35 | WARNING  | trading_bot.broker.ibkr | Order 1152315 not found
+2026-06-27 22:20:35 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: AAPG → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-27 22:20:46 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $16.88 for SELL 99.0 AAPG
+2026-06-27 22:20:46 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 22:20:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-27 22:20:46 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 22:20:46 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: ValidationError | Filled: 0.0/99.0
+2026-06-27 22:20:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 99 AAPG NASDAQ.NMS Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
+2026-06-27 22:20:46 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PreSubmitted | Filled: 0.0/99.0
+2026-06-27 22:20:46 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-27 22:20:47 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 99.0 AAPG @ MARKET MKT [OUTSIDE RTH] | Order ID: 1165961
+2026-06-27 22:20:52 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-27 22:22:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2107: HMDS data farm connection is inactive but should be available upon demand.ushmds
+2026-06-27 22:22:47 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 99.0 AAPG (status=Submitted). Cancelling unfilled order.
+2026-06-27 22:22:47 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: PendingCancel | Filled: 0.0/99.0
+2026-06-27 22:22:47 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Cancelled | Filled: 0.0/99.0
+2026-06-27 22:22:47 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
+2026-06-27 22:22:48 | ERROR    | trading_bot.engine   | IBKR close order FAILED for AAPG
+2026-06-27 22:22:48 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
+2026-06-27 22:22:48 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[32]: ADA-USD(weak 3d trend (-1.7%)), ALGO-USD(weak 3d trend (-3.5%)), APT-USD(weak 3d trend (-5.7%)), ARB-USD(weak 3d trend (-2.3%)), ATOM-USD(weak 3d trend (-3.6%)), AVAX-USD(weak 3d trend (-0.2%)), BONK-USD(weak 3d trend (-2.6%)), BTC-USD(weak 3d trend (-0.9%)), COMP-USD(weak 3d trend (-5.8%)), CRV-USD(weak 3d trend (-1.4%)), DOGE-USD(weak 3d trend (-2.4%)), DOT-USD(weak 3d trend (-7.8%)), ETC-USD(weak 3d trend (+1.0%)), ETH-USD(weak 3d trend (-2.4%)), FET-USD(weak 3d trend (-1.6%)), FLOKI-USD(weak 3d trend (-6.0%)), GRT-USD(weak 3d trend (-4.9%)), HBAR-USD(weak 3d trend (-4.7%)), ICP-USD(weak 3d trend (-2.0%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.5%)), MATIC-USD(weak 3d trend (-3.0%)), NEAR-USD(weak 3d trend (-1.1%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-6.3%)), RNDR-USD(weak 3d trend (-1.1%)), SEI-USD(weak 3d trend (-10.1%)), SHIB-USD(weak 3d trend (-3.4%)), SUI-USD(weak 3d trend (+0.9%)), TRX-USD(weak 3d trend (-1.7%)), XLM-USD(weak 3d trend (-6.7%)), XRP-USD(weak 3d trend (-2.1%)) | warming=1 | neutral=7 | no_data=2
+2026-06-27 22:22:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-27 22:22:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-27 22:22:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-27 22:22:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-27 22:22:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-27 22:22:52 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-27 22:22:52 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-27 22:22:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
