@@ -5996,3 +5996,70 @@ Signals found: 7
 2026-06-28 03:29:18 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
 2026-06-28 03:29:19 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 03:29:19 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | UNI-USD @ $2.90
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x | AAVE-USD @ $91.11
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x | AAL @ $17.87
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x | OPEN @ $4.35
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: AAL | Score: 85 | RVOL: 313.6x | Change: +0.5% | R:R 2.4
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WSHP | Score: 80 | RVOL: 177.6x | Change: +1.7% | R:R 2.4
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: PYXS | Score: 90 | RVOL: 560.1x | Change: +2.2% | R:R 2.4
+2026-06-28 03:32:30 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: T | Score: 75 | RVOL: 269.7x | Change: +0.6% | R:R 2.4
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> mean_reversion: buy UNI-USD @ $2.90 conf=1.00
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> mean_reversion: buy AAVE-USD @ $91.11 conf=1.00
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> momentum: buy OPEN @ $4.35 conf=0.85
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy AAL @ $17.87 conf=0.85
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WSHP @ $7.85 conf=0.80
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy PYXS @ $2.76 conf=0.90
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy T @ $22.70 conf=0.75
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy AAVE-USD | Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Momentum BUY: pullback entry, breakout>17.85, higher lows, Vol=2.4x
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy OPEN | Momentum BUY: pullback entry, ADX=73, higher lows, Vol=5.9x
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy AAL | Extreme RVOL 313.6x | Trending up +0.5% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy WSHP | Extreme RVOL 177.6x | Moving up +1.7% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy PYXS | Extreme RVOL 560.1x | Moving up +2.2% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:32:30 | INFO     | trading_bot.risk.manager | APPROVED: buy T | Extreme RVOL 269.7x | Trending up +0.6% | EMA trend bullish | MACD histogram positive
+2026-06-28 03:32:30 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — AAL, OPEN, AAL, WSHP, PYXS, T
+2026-06-28 03:32:30 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 847 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 8
+  ✅ UNI-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+  ✅ AAVE-USD: score 100/100 — Mean revers
+2026-06-28 03:32:30 | WARNING  | trading_bot.engine   | SLOW CYCLE (195.4s total): update_data=191.4s
+2026-06-28 03:32:31 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: UNI-USD — symbol history bad: 1/3 wins (33%), avg P&L $-1.33
+2026-06-28 03:32:32 | WARNING  | trading_bot.engine   | LEARNING BLOCK: AAVE-USD avoided — consistent loser (score: -352.5)
+2026-06-28 03:32:35 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[2]: AAVE-USD(z=-4.06 rsi=0.0 bb=LOWER), UNI-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[28]: ADA-USD(weak 3d trend (-3.5%)), ALGO-USD(weak 3d trend (-2.2%)), APT-USD(weak 3d trend (-8.8%)), ARB-USD(weak 3d trend (-4.4%)), ATOM-USD(weak 3d trend (-3.1%)), AVAX-USD(weak 3d trend (-3.5%)), BONK-USD(weak 3d trend (-5.3%)), BTC-USD(weak 3d trend (-2.7%)), CRV-USD(weak 3d trend (-2.8%)), DOGE-USD(weak 3d trend (-4.8%)), DOT-USD(weak 3d trend (-9.0%)), ETH-USD(weak 3d trend (-5.1%)), FET-USD(weak 3d trend (-3.1%)), FLOKI-USD(weak 3d trend (-8.4%)), GRT-USD(weak 3d trend (-5.4%)), HBAR-USD(weak 3d trend (-3.9%)), ICP-USD(weak 3d trend (-3.9%)), IMX-USD(weak 3d trend (-7.3%)), LINK-USD(weak 3d trend (-3.5%)), MATIC-USD(weak 3d trend (-4.2%)), NEAR-USD(weak 3d trend (-5.9%)), RNDR-USD(weak 3d trend (-2.7%)), SEI-USD(weak 3d trend (-16.3%)), SHIB-USD(weak 3d trend (-5.0%)), SUI-USD(weak 3d trend (-1.9%)), TRX-USD(weak 3d trend (-2.6%)), XLM-USD(weak 3d trend (-8.3%)), XRP-USD(weak 3d trend (-3.4%)) | warming=1 | neutral=4 | no_data=7
+2026-06-28 03:32:35 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | UNI-USD @ $2.90
+2026-06-28 03:32:35 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x | AAVE-USD @ $91.11
+2026-06-28 03:32:35 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:35 | INFO     | trading_bot.risk.manager | APPROVED: buy AAVE-USD | Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:35 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy UNI-USD from mean_reversion conf=1.00 price=2.899 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:35 | WARNING  | trading_bot.engine   | LEARNING BLOCK: UNI-USD avoided — consistent loser (score: -117.4)
+2026-06-28 03:32:35 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy AAVE-USD from mean_reversion conf=1.00 price=91.11 reason=Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:35 | WARNING  | trading_bot.engine   | LEARNING BLOCK: AAVE-USD avoided — consistent loser (score: -352.5)
+2026-06-28 03:32:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | UNI-USD @ $2.90
+2026-06-28 03:32:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x | AAVE-USD @ $91.11
+2026-06-28 03:32:38 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:38 | INFO     | trading_bot.risk.manager | APPROVED: buy AAVE-USD | Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy UNI-USD from mean_reversion conf=1.00 price=2.899 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:38 | WARNING  | trading_bot.engine   | LEARNING BLOCK: UNI-USD avoided — consistent loser (score: -117.4)
+2026-06-28 03:32:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy AAVE-USD from mean_reversion conf=1.00 price=91.11 reason=Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:38 | WARNING  | trading_bot.engine   | LEARNING BLOCK: AAVE-USD avoided — consistent loser (score: -352.5)
+2026-06-28 03:32:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | UNI-USD @ $2.90
+2026-06-28 03:32:41 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x | AAVE-USD @ $91.11
+2026-06-28 03:32:41 | INFO     | trading_bot.risk.manager | APPROVED: buy UNI-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:41 | INFO     | trading_bot.risk.manager | APPROVED: buy AAVE-USD | Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy UNI-USD from mean_reversion conf=1.00 price=2.899 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
+2026-06-28 03:32:41 | WARNING  | trading_bot.engine   | LEARNING BLOCK: UNI-USD avoided — consistent loser (score: -117.4)
+2026-06-28 03:32:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy AAVE-USD from mean_reversion conf=1.00 price=91.11 reason=Mean reversion BUY: Z=-4.06, RSI=0, BB=lower, Vol=12.7x
+2026-06-28 03:32:41 | WARNING  | trading_bot.engine   | LEARNING BLOCK: AAVE-USD avoided — consistent loser (score: -352.5)
+2026-06-28 03:32:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 03:32:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 03:32:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 03:32:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-28 03:32:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 03:32:45 | INFO     | trading_bot.engine   | IBKR scanner: 140 unique symbols discovered | 50 gainers, 16 gaps, 20 losers
+2026-06-28 03:32:45 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 03:32:45 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
