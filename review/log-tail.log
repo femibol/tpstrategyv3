@@ -15604,3 +15604,33 @@ Filtered: 1 signals rejected by risk manage
 2026-06-28 22:24:52 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
 2026-06-28 22:24:52 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 22:24:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 22:28:27 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.55, RSI=36, BB=near, Vol=9.7x | ICP-USD @ $2.16
+2026-06-28 22:28:27 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ADYEY | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 61.0x | Change: +1.6% | R:R 3.0 | Size: 50%
+2026-06-28 22:28:27 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-28 22:28:27 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ICP-USD @ $2.16 conf=0.73
+2026-06-28 22:28:27 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ADYEY @ $9.48 conf=0.60
+2026-06-28 22:28:27 | INFO     | trading_bot.risk.manager | REJECTED: buy ICP-USD | Cost gate: edge 69bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 22:28:27 | INFO     | trading_bot.risk.manager | APPROVED: buy ADYEY | [BREAKOUT] Score:6/12 RVOL:61.0x | Confirmed | Chg:+1.6%
+2026-06-28 22:28:27 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — ADYEY
+2026-06-28 22:28:27 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 845 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ICP-USD: score 73/100 — Mean reversion BUY: Z=-1.55, RSI=36, BB=near, Vol=9.7x
+  ✅ ADYEY: score 60/100 — [BREAKOUT] Score:
+2026-06-28 22:28:27 | WARNING  | trading_bot.engine   | SLOW CYCLE (219.0s total): update_data=214.6s
+2026-06-28 22:28:27 | INFO     | trading_bot.engine   | CYCLE #385: regime=sideways | signals=2->approved=0 | positions=0/15 | bars_warm=97/97 | equity_open=False | pm=False pwr_hr=False
+2026-06-28 22:28:31 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: ICP-USD(z=-1.55 rsi=36.4 bb=MIDDLE) | WAIT[22]: ADA-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-4.8%)), ARB-USD(weak 3d trend (-3.5%)), ATOM-USD(weak 3d trend (-2.5%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.7%)), CRV-USD(weak 3d trend (+0.4%)), DOGE-USD(weak 3d trend (-1.2%)), DOT-USD(weak 3d trend (+0.4%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-0.6%)), HBAR-USD(weak 3d trend (-1.2%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-2.4%)), LINK-USD(needs vol>=1.1x), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (+0.8%)), OP-USD(weak 3d trend (-2.0%)), SEI-USD(weak 3d trend (-9.2%)), SHIB-USD(weak 3d trend (+1.0%)), TRX-USD(weak 3d trend (+0.8%)), XLM-USD(weak 3d trend (-0.4%)) | warming=6 | neutral=12 | no_data=1
+2026-06-28 22:28:31 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.55, RSI=36, BB=near, Vol=9.7x | ICP-USD @ $2.16
+2026-06-28 22:28:31 | INFO     | trading_bot.risk.manager | REJECTED: buy ICP-USD | Cost gate: edge 69bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 22:28:34 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.55, RSI=36, BB=near, Vol=9.7x | ICP-USD @ $2.16
+2026-06-28 22:28:34 | INFO     | trading_bot.risk.manager | REJECTED: buy ICP-USD | Cost gate: edge 69bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 22:28:37 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.55, RSI=36, BB=near, Vol=9.7x | ICP-USD @ $2.16
+2026-06-28 22:28:37 | INFO     | trading_bot.risk.manager | REJECTED: buy ICP-USD | Cost gate: edge 69bps < 1.5× cost 50bps (need 75bps)
+2026-06-28 22:28:37 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 22:28:38 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 22:28:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 22:28:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-28 22:28:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 22:28:40 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
+2026-06-28 22:28:40 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 22:28:40 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
