@@ -1,19 +1,20 @@
-=== executed: 944830744b5ee25d5529310f062ad72976c2a031
-=== started:  2026-06-29T12:49:02Z
+=== executed: b57ecf538759333a20e2c8a9bbb9f9a631795d4f
+=== started:  2026-06-29T12:53:16Z
 === exit:     
 === timeout:  90s
 ===
-=== CORRECT the JUP-USD phantom record in trade_history.json ===
-backup written: data/trade_history.json.bak.pre-jup-correction
-  corrected: JUP-USD  was pnl=$-1049.44 exit=$0.000013 -> pnl=$0.00 exit=$0.2099
+deploy: backed up 11 data/*.json files
+deploy: checked out dbc0ee4d6 on main
+deploy: container trading-bot-trading-bot-1 restarted
+deploy: dashboard ready after 6s
+deploy: ok
 
-wrote 465 trades, corrected 1 phantom(s)
-remaining JUP-USD records with pnl < -$50: 0 (expect 0)
+=== verify close-path guard is live ===
+5
+(expect >= 3: 1 def + 2 call sites)
 
-=== recompute POST-fix totals after correction ===
-  POST all (corrected)  : 134t  $-542.70  wr 69%
-  POST equity           : 87t  $-583.20  wr 66%
-  POST crypto           : 47t  $+40.50  wr 77%
+=== JUP-USD record still corrected after deploy (data is bind-mounted)? ===
+JUP-USD records with pnl < -50: 0 (expect 0)
 
-=== rebuild performance stats so dashboard/drawdown reflect correction ===
-(restart picks up corrected history on next _rebuild_performance_stats_from_history)
+=== account state after restart (drawdown should reflect correction) ===
+  balance=$25,000.00  total_return=+0.00%  drawdown=0.00%  positions=0
