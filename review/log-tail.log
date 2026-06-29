@@ -19135,3 +19135,44 @@ Signals found: 7
 2026-06-29 03:19:59 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
 2026-06-29 03:19:59 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-29 03:19:59 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 79 low-priority equity names; max 90)
+2026-06-29 03:20:34 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.43
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LVWR | Score: 90 | RVOL: 120.6x | Change: +3.8% | R:R 3.5
+2026-06-29 03:23:11 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.43 conf=0.90
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LVWR @ $1.38 conf=0.90
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $4.02 (-5.2%, max -3%)
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Extreme RVOL 395.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | REJECTED: buy LVWR | Setup broke: signal $1.38 → market $1.23 (-10.9%, max -3%)
+2026-06-29 03:23:11 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
+2026-06-29 03:23:11 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 5 buy signal(s) — QH, NOWL, SPCE, ILLR, ABCL
+2026-06-29 03:23:11 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 775 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 7
+  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+  ✅ NOWL: score 90/100 — Momentum BUY: pullba
+2026-06-29 03:23:12 | WARNING  | trading_bot.engine   | SLOW CYCLE (195.9s total): update_data=191.6s
+2026-06-29 03:23:15 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[27]: ADA-USD(weak 3d trend (-1.2%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (-1.8%)), AVAX-USD(needs vol>=1.1x), BONK-USD(weak 3d trend (+1.0%)), BTC-USD(weak 3d trend (-1.0%)), CRV-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-2.8%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (+0.1%)), FLOKI-USD(weak 3d trend (-2.4%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-3.0%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-6.4%)), LINK-USD(weak 3d trend (+0.1%)), MATIC-USD(weak 3d trend (-3.0%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-5.6%)), PEPE-USD(weak 3d trend (+0.4%)), SEI-USD(weak 3d trend (-7.1%)), SUI-USD(weak 3d trend (-1.1%)), UNI-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-2.7%)), XRP-USD(weak 3d trend (+0.2%)) | warming=4 | neutral=9 | no_data=2
+2026-06-29 03:23:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-29 03:23:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 03:23:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 03:23:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-29 03:23:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-29 03:23:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 03:23:24 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-29 03:23:25 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 03:23:25 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-29 03:23:25 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
