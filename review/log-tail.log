@@ -1,103 +1,3 @@
-2026-06-27 23:45:56 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SNX-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-27 23:45:59 | WARNING  | trading_bot.engine   | NO PRICE for AAPG — stops NOT monitored! (561 consecutive misses)
-2026-06-27 23:45:59 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1683s (~5 min). Force-closing to prevent unmonitored risk.
-2026-06-27 23:45:59 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
-2026-06-27 23:45:59 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-27 23:45:59 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.23
-2026-06-27 23:45:59 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SNX-USD from mean_reversion conf=1.00 price=0.235 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: SNX-USD score 100 overrides cooldown (3s ago) — strong signal
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: SNX-USD entry=$0.2350 stop=$0.2333 (0.73% gap). Setting 5% minimum stop.
-2026-06-27 23:45:59 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
-2026-06-27 23:45:59 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 6570.46277 SNX-USD @ $0.23 = $1,544.06 | Risk: $77.20 (0.4% of account)
-2026-06-27 23:45:59 | WARNING  | trading_bot.engine   | TIER CAP: SNX-USD signal qty=6570.46277 exceeds tier max=5000 for $0.23 stock. Capping to 5000.
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | R/R STRETCH: SNX-USD entry=$0.2350 stop=$0.2232 (risk=$0.0118) target=$0.2464 (reward=$0.0114, R/R=0.97) — stretching target to $0.2585 for 2:1 minimum.
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-27 23:45:59 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
-2026-06-27 23:45:59 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 0.235, "stopLoss": {"type": "stop", "stopPrice": 0.22}, "takeProfit": {"type": "limit", "limitPrice": 0.26}}
-2026-06-27 23:45:59 | ERROR    | trading_bot.broker.traderspost | TradersPost error: HTTPSConnectionPool(host='webhooks.traderspost.io', port=443): Max retries exceeded with url: /trading/webhook/988d55a8-7a25-4826-9077-d3c6fa986131/c389a87c10d471f8458620eda1d432ba (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x75a6910b6a40>: Failed to establish a new connection: [Errno -3] Temporary failure in name resolution'))
-2026-06-27 23:45:59 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for SNX-USD — no execution.
-2026-06-27 23:45:59 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SNX-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-27 23:45:59 | INFO     | trading_bot.engine   | CYCLE #187: regime=sideways | signals=0->approved=0 | positions=1/15 | bars_warm=87/91 | equity_open=False | pm=False pwr_hr=False
-2026-06-27 23:46:02 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1686s (~5 min). Force-closing to prevent unmonitored risk.
-2026-06-27 23:46:02 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
-2026-06-27 23:46:02 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: SNX-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[32]: ADA-USD(weak 3d trend (-1.9%)), ALGO-USD(weak 3d trend (-1.1%)), APT-USD(weak 3d trend (-6.3%)), ARB-USD(weak 3d trend (-2.3%)), ATOM-USD(weak 3d trend (-3.6%)), AVAX-USD(weak 3d trend (+0.0%)), BONK-USD(weak 3d trend (-1.4%)), BTC-USD(weak 3d trend (-0.9%)), COMP-USD(weak 3d trend (-5.8%)), CRV-USD(weak 3d trend (-2.1%)), DOGE-USD(weak 3d trend (-2.4%)), DOT-USD(weak 3d trend (-8.5%)), ETC-USD(weak 3d trend (+1.0%)), ETH-USD(weak 3d trend (-2.6%)), FET-USD(weak 3d trend (-0.3%)), FLOKI-USD(weak 3d trend (-6.0%)), GRT-USD(weak 3d trend (-3.8%)), HBAR-USD(weak 3d trend (-4.0%)), ICP-USD(weak 3d trend (-1.1%)), JUP-USD(weak 3d trend (+0.0%)), LINK-USD(weak 3d trend (-1.4%)), MATIC-USD(weak 3d trend (-3.1%)), NEAR-USD(weak 3d trend (-0.5%)), OP-USD(weak 3d trend (-1.0%)), PEPE-USD(weak 3d trend (-6.3%)), RNDR-USD(weak 3d trend (-1.1%)), SEI-USD(weak 3d trend (-10.1%)), SHIB-USD(weak 3d trend (-3.4%)), SUI-USD(weak 3d trend (+0.5%)), TRX-USD(weak 3d trend (-1.6%)), XLM-USD(weak 3d trend (-6.5%)), XRP-USD(weak 3d trend (-2.0%)) | warming=1 | neutral=6 | no_data=2
-2026-06-27 23:46:02 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.23
-2026-06-27 23:46:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SNX-USD from mean_reversion conf=1.00 price=0.235 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: SNX-USD score 100 overrides cooldown (3s ago) — strong signal
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: SNX-USD entry=$0.2350 stop=$0.2333 (0.73% gap). Setting 5% minimum stop.
-2026-06-27 23:46:02 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
-2026-06-27 23:46:02 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 6570.46277 SNX-USD @ $0.23 = $1,544.06 | Risk: $77.20 (0.4% of account)
-2026-06-27 23:46:02 | WARNING  | trading_bot.engine   | TIER CAP: SNX-USD signal qty=6570.46277 exceeds tier max=5000 for $0.23 stock. Capping to 5000.
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | R/R STRETCH: SNX-USD entry=$0.2350 stop=$0.2232 (risk=$0.0118) target=$0.2464 (reward=$0.0114, R/R=0.97) — stretching target to $0.2585 for 2:1 minimum.
-2026-06-27 23:46:02 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-27 23:46:02 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
-2026-06-27 23:46:02 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 0.235, "stopLoss": {"type": "stop", "stopPrice": 0.22}, "takeProfit": {"type": "limit", "limitPrice": 0.26}}
-2026-06-27 23:46:02 | ERROR    | trading_bot.broker.traderspost | TradersPost error: HTTPSConnectionPool(host='webhooks.traderspost.io', port=443): Max retries exceeded with url: /trading/webhook/988d55a8-7a25-4826-9077-d3c6fa986131/c389a87c10d471f8458620eda1d432ba (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x75a6910b7610>: Failed to establish a new connection: [Errno -3] Temporary failure in name resolution'))
-2026-06-27 23:46:02 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for SNX-USD — no execution.
-2026-06-27 23:46:02 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SNX-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-27 23:46:04 | ERROR    | trading_bot.broker.ibkr | IBKR connection failed: [Errno 111] Connect call failed ('127.0.0.1', 4002)
-2026-06-27 23:46:04 | WARNING  | trading_bot.broker.ibkr | Reconnect attempt 5/10 failed, waiting 30s
-2026-06-27 23:46:05 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1689s (~5 min). Force-closing to prevent unmonitored risk.
-2026-06-27 23:46:05 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
-2026-06-27 23:46:05 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-27 23:46:05 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.23
-2026-06-27 23:46:05 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:05 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SNX-USD from mean_reversion conf=1.00 price=0.235 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:05 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-27 23:46:05 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: SNX-USD score 100 overrides cooldown (3s ago) — strong signal
-2026-06-27 23:46:05 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: SNX-USD entry=$0.2350 stop=$0.2333 (0.73% gap). Setting 5% minimum stop.
-2026-06-27 23:46:05 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
-2026-06-27 23:46:05 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 6570.46277 SNX-USD @ $0.23 = $1,544.06 | Risk: $77.20 (0.4% of account)
-2026-06-27 23:46:05 | WARNING  | trading_bot.engine   | TIER CAP: SNX-USD signal qty=6570.46277 exceeds tier max=5000 for $0.23 stock. Capping to 5000.
-2026-06-27 23:46:05 | INFO     | trading_bot.engine   | R/R STRETCH: SNX-USD entry=$0.2350 stop=$0.2232 (risk=$0.0118) target=$0.2464 (reward=$0.0114, R/R=0.97) — stretching target to $0.2585 for 2:1 minimum.
-2026-06-27 23:46:05 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-27 23:46:05 | WARNING  | trading_bot.broker.traderspost | RATE LIMIT: SNX-USD has 3 signals in last 60s (max 3). Blocking.
-2026-06-27 23:46:05 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for SNX-USD — no execution.
-2026-06-27 23:46:05 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SNX-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-27 23:46:08 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1692s (~5 min). Force-closing to prevent unmonitored risk.
-2026-06-27 23:46:08 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
-2026-06-27 23:46:08 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-27 23:46:08 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.23
-2026-06-27 23:46:08 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SNX-USD from mean_reversion conf=1.00 price=0.235 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: SNX-USD score 100 overrides cooldown (3s ago) — strong signal
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: SNX-USD entry=$0.2350 stop=$0.2333 (0.73% gap). Setting 5% minimum stop.
-2026-06-27 23:46:08 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
-2026-06-27 23:46:08 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 6570.46277 SNX-USD @ $0.23 = $1,544.06 | Risk: $77.20 (0.4% of account)
-2026-06-27 23:46:08 | WARNING  | trading_bot.engine   | TIER CAP: SNX-USD signal qty=6570.46277 exceeds tier max=5000 for $0.23 stock. Capping to 5000.
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | R/R STRETCH: SNX-USD entry=$0.2350 stop=$0.2232 (risk=$0.0118) target=$0.2464 (reward=$0.0114, R/R=0.97) — stretching target to $0.2585 for 2:1 minimum.
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-27 23:46:08 | WARNING  | trading_bot.broker.traderspost | RATE LIMIT: SNX-USD has 3 signals in last 60s (max 3). Blocking.
-2026-06-27 23:46:08 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for SNX-USD — no execution.
-2026-06-27 23:46:08 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SNX-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-27 23:46:08 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 94 low-priority equity names; max 90)
-2026-06-27 23:46:11 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1695s (~5 min). Force-closing to prevent unmonitored risk.
-2026-06-27 23:46:11 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
-2026-06-27 23:46:11 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-27 23:46:11 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.23
-2026-06-27 23:46:11 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:11 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SNX-USD from mean_reversion conf=1.00 price=0.235 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-2026-06-27 23:46:11 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
-2026-06-27 23:46:11 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: SNX-USD score 100 overrides cooldown (3s ago) — strong signal
-2026-06-27 23:46:11 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: SNX-USD entry=$0.2350 stop=$0.2333 (0.73% gap). Setting 5% minimum stop.
-2026-06-27 23:46:11 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
-2026-06-27 23:46:11 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 6570.46277 SNX-USD @ $0.23 = $1,544.06 | Risk: $77.20 (0.4% of account)
-2026-06-27 23:46:11 | WARNING  | trading_bot.engine   | TIER CAP: SNX-USD signal qty=6570.46277 exceeds tier max=5000 for $0.23 stock. Capping to 5000.
-2026-06-27 23:46:11 | INFO     | trading_bot.engine   | R/R STRETCH: SNX-USD entry=$0.2350 stop=$0.2232 (risk=$0.0118) target=$0.2464 (reward=$0.0114, R/R=0.97) — stretching target to $0.2585 for 2:1 minimum.
-2026-06-27 23:46:11 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
-2026-06-27 23:46:11 | WARNING  | trading_bot.broker.traderspost | RATE LIMIT: SNX-USD has 3 signals in last 60s (max 3). Blocking.
-2026-06-27 23:46:11 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for SNX-USD — no execution.
-2026-06-27 23:46:11 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SNX-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-27 23:46:14 | ERROR    | trading_bot.engine   | STALE PRICE WATCHDOG: AAPG has had NO price data for 1698s (~5 min). Force-closing to prevent unmonitored risk.
-2026-06-27 23:46:14 | ERROR    | trading_bot.engine   | NO EXECUTION PATH for close of AAPG — TradersPost webhook not configured and IBKR not connected. Position stays tracked for retry next cycle.
-2026-06-27 23:46:14 | ERROR    | trading_bot.engine   | CLOSE FAILED for AAPG — position stays tracked for retry next cycle. original_broker=IBKR
 2026-06-27 23:46:14 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | SNX-USD @ $0.23
 2026-06-27 23:46:14 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
 2026-06-27 23:46:14 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy SNX-USD from mean_reversion conf=1.00 price=0.235 reason=Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
@@ -19998,3 +19898,103 @@ Signals found: 6
 2026-06-29 06:02:39 | INFO     | trading_bot.data.market_data | Pruned 3 stale IBKR streams — now 45/95
 2026-06-29 06:02:40 | INFO     | trading_bot.broker.ibkr | Subscribed to 3 live market data streams
 2026-06-29 06:02:40 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 06:05:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.67
+2026-06-29 06:05:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.23
+2026-06-29 06:05:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 33.2x | Change: +3.1% | R:R 3.5
+2026-06-29 06:05:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 32.9x | Change: +0.7% | R:R 2.4
+2026-06-29 06:05:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SMCX | Score: 65 | RVOL: 35.4x | Change: +0.8% | R:R 2.4
+2026-06-29 06:05:19 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 47.5x | Change: +1.6% | R:R 2.4
+2026-06-29 06:06:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 06:06:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.67 conf=0.95
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.23 conf=0.95
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SMCX @ $9.86 conf=0.65
+2026-06-29 06:07:26 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
+2026-06-29 06:07:26 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+2026-06-29 06:07:26 | INFO     | trading_bot.risk.manager | APPROVED: buy SNOA | Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x
+2026-06-29 06:07:26 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 33.2x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-29 06:07:26 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $4.00 (-5.7%, max -5%)
+2026-06-29 06:07:26 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCX | Extreme RVOL 35.4x | Trending up +0.8% | MACD histogram positive | RSI healthy (57)
+2026-06-29 06:07:26 | INFO     | trading_bot.risk.manager | REJECTED: buy ILLR | Setup broke: signal $4.47 → market $3.51 (-21.5%, max -5%)
+2026-06-29 06:07:26 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 775 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 6
+  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+  ✅ SNOA: score 95/100 — Momentum BUY: EMA cr
+2026-06-29 06:07:26 | WARNING  | trading_bot.engine   | SLOW CYCLE (291.9s total): update_data=160.0s, run_strategies=126.9s
+2026-06-29 06:07:27 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-29 06:07:29 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: QH entry=$6.5500 stop=$6.6643 (-1.74% gap). Setting 3% minimum stop.
+2026-06-29 06:07:29 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.481% over 20 fills → sizing mult 0.70x
+2026-06-29 06:07:29 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 0.70x = 0.26% risk
+2026-06-29 06:07:29 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $54.06 → $50.00 (per-strategy ceiling)
+2026-06-29 06:07:29 | INFO     | trading_bot.risk.position_sizer | Position size: 157 shares @ $6.55 = $1,028.35 | Risk: $30.85 (0.1% of account) [tier: 5-1000 shares]
+2026-06-29 06:07:29 | WARNING  | trading_bot.engine   | R/R STRETCH: QH entry=$6.5500 stop=$6.3535 (risk=$0.1965) target=$6.6871 (reward=$0.1371, R/R=0.70) — stretching target to $6.9430 for 2:1 minimum.
+2026-06-29 06:07:29 | INFO     | trading_bot.engine   | Executing QH via IBKR  [OUTSIDE RTH]...
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: QH → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: QH (Error 2152 bypass — will fill at live ask, not LIMIT validation)
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: ValidationError | Filled: 0.0/157
+2026-06-29 06:07:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: ValidationError | Filled: 0.0/157
+2026-06-29 06:07:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: ValidationError | Filled: 0.0/157
+2026-06-29 06:07:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: ValidationError | Filled: 0.0/157
+2026-06-29 06:07:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 157 QH NASDAQ.SCM Warning: Your order will not be placed at the exchange until 2026-06-29 09:30:00 US/Eastern.
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: PreSubmitted | Filled: 0.0/157.0
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: PreSubmitted | Filled: 0.0/157.0
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: PreSubmitted | Filled: 0.0/157.0
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: Submitted | Filled: 0.0/157.0
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: Filled | Filled: 157.0/157.0 | AvgPrice: $6.61
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: PreSubmitted | Filled: 0.0/157.0
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: PreSubmitted | Filled: 0.0/157.0
+2026-06-29 06:07:29 | INFO     | trading_bot.broker.ibkr | Order update: QH | Status: Submitted | Filled: 0.0/157.0
+2026-06-29 06:07:30 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 157 QH @ LIMIT $6.68 | TP: $6.94 | SL: $6.35 | Parent ID: 1171395
+2026-06-29 06:07:31 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 157/157 QH @ $6.6100 | signal $6.6800 | slippage -1.05% | parent=MARKET
+2026-06-29 06:07:31 | INFO     | trading_bot.engine   | BRACKET ORDER active: QH | SL: $6.35 | TP: $6.94 (managed by IBKR server-side)
+2026-06-29 06:07:31 | INFO     | trading_bot.engine   | FILL PRICE ADJUSTED: QH expected $6.55 but filled @ $6.61
+2026-06-29 06:07:31 | WARNING  | trading_bot.engine   | SLIPPAGE WARNING: QH slippage +0.9% (threshold 1.5%, EXT) | Signal $6.67 → Fill $6.61
+2026-06-29 06:07:31 | INFO     | trading_bot.engine   | ORDER BUY QH via IBKR | Qty: 157 | Price: $6.61 | Cost: $1,037.77 | Stop: $6.35 (risk $40.27) | Target: $6.94 (reward $52.28) | R:R 1.3:1 | Strategy: momentum
+2026-06-29 06:07:31 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: QH**
+```
+  Entry: $6.61 x 157 shares = $1,037.77
+  Stop:  $6.35 (-$40.27 | -3.9%)
+  Targets: $6.94
+  Risk/Reward: 1.3
+```
+Strategy: **momentum** | Confidence: **95%**
+Reason
+2026-06-29 06:07:31 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY QH qty=157 @ $6.61 → primary webhook (200)
+2026-06-29 06:07:31 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
+2026-06-29 06:07:31 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
+2026-06-29 06:07:34 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SNOA — wide spread 5.7% (>5% for $1.23)
+2026-06-29 06:07:34 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-29 06:07:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Top: IBEOS; OVERNIGHT; 
+2026-06-29 06:07:37 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SPCE — bearish EMA imbalance -0.52
+2026-06-29 06:07:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; OVERNIGHT; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-29 06:07:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; 
+2026-06-29 06:07:39 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-29 06:07:40 | WARNING  | trading_bot.engine   | LEARNING BLOCK: SMCX avoided — consistent loser (score: -416.0)
+2026-06-29 06:07:41 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-29 06:07:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-29 06:07:43 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[23]: ADA-USD(weak 3d trend (+0.3%)), APT-USD(weak 3d trend (-1.9%)), ATOM-USD(weak 3d trend (-1.8%)), BTC-USD(weak 3d trend (+0.6%)), CRV-USD(weak 3d trend (-1.3%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-2.6%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-0.5%)), HBAR-USD(weak 3d trend (-2.2%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-7.9%)), LINK-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-1.6%)), NEAR-USD(weak 3d trend (-1.3%)), OP-USD(weak 3d trend (-2.9%)), PEPE-USD(weak 3d trend (-0.4%)), SEI-USD(weak 3d trend (-7.1%)), SHIB-USD(weak 3d trend (-2.3%)), TRX-USD(weak 3d trend (-0.0%)), UNI-USD(weak 3d trend (-2.7%)), XLM-USD(weak 3d trend (-2.1%)) | warming=4 | neutral=14 | no_data=1
+2026-06-29 06:07:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: IEX; 
+2026-06-29 06:07:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-29 06:07:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-29 06:07:48 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-29 06:07:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
+2026-06-29 06:07:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-29 06:07:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 06:07:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 06:07:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-29 06:07:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-29 06:07:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 06:07:52 | INFO     | trading_bot.engine   | IBKR scanner: 109 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-29 06:07:52 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 06:07:52 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 15 stale symbols across strategies
+2026-06-29 06:07:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
+2026-06-29 06:07:52 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 06:07:53 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 06:07:53 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
