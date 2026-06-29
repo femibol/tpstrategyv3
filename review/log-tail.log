@@ -1,23 +1,3 @@
-2026-06-29 04:44:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.16
-2026-06-29 04:44:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 103.6x | Change: +3.1% | R:R 3.5
-2026-06-29 04:44:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 102.9x | Change: +0.7% | R:R 2.4
-2026-06-29 04:44:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 148.3x | Change: +1.6% | R:R 2.4
-2026-06-29 04:44:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LVWR | Score: 90 | RVOL: 45.2x | Change: +3.8% | R:R 3.5
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.50 conf=0.95
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.41 conf=0.90
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.16 conf=0.95
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 04:44:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LVWR @ $1.38 conf=0.90
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | REJECTED: buy NOWL | Already in position: NOWL
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | REJECTED: buy SNOA | Already in position: SNOA
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 103.6x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $3.98 (-6.1%, max -5%)
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | REJECTED: buy ILLR | Setup broke: signal $4.47 → market $3.91 (-12.5%, max -5%)
-2026-06-29 04:44:15 | INFO     | trading_bot.risk.manager | REJECTED: buy LVWR | Setup broke: signal $1.38 → market $1.23 (-10.9%, max -5%)
 2026-06-29 04:44:15 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 910 symbols
 Market: 🟡 SIDEWAYS 
 Signals found: 7
@@ -19998,3 +19978,23 @@ Filtered: 1 signals rejected by risk manager
 2026-06-29 16:09:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-29 16:09:47 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
 2026-06-29 16:09:47 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 91 low-priority equity names; max 90)
+2026-06-29 16:12:39 | INFO     | trading_bot.engine   | DATA COVERAGE: 87/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-29 16:12:39 | INFO     | trading_bot.broker.traderspost | EXIT signal for SNX-USD - bypassing rate limits
+2026-06-29 16:12:39 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
+2026-06-29 16:12:39 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "exit", "quantity": 5000, "price": 0.213}
+2026-06-29 16:12:39 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"0451f28b-76e5-48b4-91f9-96e72093c023","logId":"0451f28b-76e5-48b4-91f9-96e72093c023","payload":{"ticker":"SNX-USD","action":"exit","quantity":5000,"price":0.213}}
+2026-06-29 16:12:39 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: SELL SNX-USD | Strategy: unknown | Qty: 5000 @ $0.21 = $1,065.00 | Risk: $0.00 | Reward: $0.00 | R:R 0:1 | Response: 200
+2026-06-29 16:12:39 | INFO     | trading_bot.engine   | CLOSED SNX-USD via TradersPost | time_exit | P&L: $+0.00 | Max holding period exceeded
+2026-06-29 16:12:39 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: SNX-USD** (time_exit)
+```
+  Entry: $0.21 → Exit: $0.21
+  P&L: $+0.00 (+0.00%)
+  Shares: 5000 | Value: $1,065.00
+  Hold: 1.3h
+```
+Strategy: **mean_reversion** | Max holding period excee
+2026-06-29 16:12:39 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SNX-USD +0.00 (488 total in history)
+2026-06-29 16:12:42 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [SNX-USD]: **NO_CHANGE**
+
+Zero P&L time_exit on mean_reversion with 75% win rate = normal timeout on flat price. No stop issue, no pattern problem. Single neutral trade doesn't warrant adjustment.
+2026-06-29 16:12:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, Vol=2.8x | LABX @ $193.16
