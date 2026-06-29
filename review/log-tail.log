@@ -1,73 +1,3 @@
-2026-06-29 05:37:55 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:37:55 | ERROR    | trading_bot.broker.ibkr | Contract qualification failed for SNOA: This event loop is already running
-2026-06-29 05:37:55 | ERROR    | trading_bot.engine   | IBKR close order FAILED for SNOA
-2026-06-29 05:37:55 | ERROR    | trading_bot.engine   | CLOSE FAILED for SNOA — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-29 05:38:12 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:38:12 | INFO     | trading_bot.engine   | Cancelled broker stop order for SNOA
-2026-06-29 05:38:12 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:38:12 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SNOA → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-29 05:38:23 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $1.23 for SELL 477 SNOA
-2026-06-29 05:38:23 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: ValidationError | Filled: 0.0/477
-2026-06-29 05:38:23 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-29 05:38:24 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PreSubmitted | Filled: 0.0/477.0
-2026-06-29 05:38:24 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: ValidationError | Filled: 0.0/477.0
-2026-06-29 05:38:24 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 477 SNOA NASDAQ.SCM Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
-2026-06-29 05:38:24 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PreSubmitted | Filled: 0.0/477.0
-2026-06-29 05:38:24 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Submitted | Filled: 0.0/477.0
-2026-06-29 05:38:24 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 477 SNOA @ MARKET MKT [OUTSIDE RTH] | Order ID: 1171011
-2026-06-29 05:40:25 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 477 SNOA (status=Submitted). Cancelling unfilled order.
-2026-06-29 05:40:25 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PendingCancel | Filled: 0.0/477.0
-2026-06-29 05:40:25 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Cancelled | Filled: 0.0/477.0
-2026-06-29 05:40:25 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-29 05:40:26 | ERROR    | trading_bot.engine   | IBKR close order FAILED for SNOA
-2026-06-29 05:40:26 | ERROR    | trading_bot.engine   | CLOSE FAILED for SNOA — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-29 05:40:26 | WARNING  | trading_bot.engine   | STOP WATCHDOG: SNOA has NO broker-side stop! Placing emergency stop @ $1.25 for 477 shares
-2026-06-29 05:40:26 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:40:26 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SNOA → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-29 05:40:26 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Cancelled | Filled: 0.0/477
-2026-06-29 05:40:26 | WARNING  | trading_bot.broker.ibkr | IBKR Error 110: The price does not conform to the minimum price variation for this contract.
-2026-06-29 05:40:27 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 477 SNOA @ STOP 1.2461999999999998 [OUTSIDE RTH] | Order ID: 1171013
-2026-06-29 05:40:27 | WARNING  | trading_bot.broker.ibkr | Order Cancelled: SNOA | Order ID: 1171013
-2026-06-29 05:40:27 | WARNING  | trading_bot.engine   | BROKER STOP UPDATE FAILED: SNOA — IBKR returned None
-2026-06-29 05:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $7.11
-2026-06-29 05:40:27 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.24
-2026-06-29 05:40:27 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 55.3x | Change: +3.1% | R:R 3.5
-2026-06-29 05:40:27 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 54.9x | Change: +0.7% | R:R 2.4
-2026-06-29 05:40:27 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SMCX | Score: 65 | RVOL: 59.0x | Change: +0.8% | R:R 2.4
-2026-06-29 05:40:27 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 79.1x | Change: +1.6% | R:R 2.4
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $7.11 conf=0.95
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.24 conf=0.95
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SMCX @ $9.86 conf=0.65
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 05:40:27 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-2026-06-29 05:40:27 | INFO     | trading_bot.risk.manager | REJECTED: buy SNOA | Already in position: SNOA
-2026-06-29 05:40:27 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 55.3x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 05:40:27 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $4.02 (-5.2%, max -5%)
-2026-06-29 05:40:27 | INFO     | trading_bot.risk.manager | APPROVED: buy SMCX | Extreme RVOL 59.0x | Trending up +0.8% | MACD histogram positive | RSI healthy (57)
-2026-06-29 05:40:27 | INFO     | trading_bot.risk.manager | REJECTED: buy ILLR | Setup broke: signal $4.47 → market $3.48 (-22.1%, max -5%)
-2026-06-29 05:40:27 | INFO     | trading_bot.engine   | DEAD HOUR BLOCK (05:00 ET): dropped 3 equity buy signal(s) — QH, SPCE, SMCX
-2026-06-29 05:40:27 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 855 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-  ✅ SNOA: score 95/100 — Momentum BUY: EMA cr
-2026-06-29 05:40:28 | WARNING  | trading_bot.engine   | SLOW CYCLE (320.0s total): update_data=180.4s, monitor_positions=133.3s
-2026-06-29 05:40:31 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:40:31 | INFO     | trading_bot.engine   | Cancelled broker stop order for SNOA
-2026-06-29 05:40:31 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:40:31 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SNOA → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-29 05:40:42 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $1.23 for SELL 477 SNOA
-2026-06-29 05:40:42 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: ValidationError | Filled: 0.0/477
-2026-06-29 05:40:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-29 05:40:42 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PreSubmitted | Filled: 0.0/477.0
-2026-06-29 05:40:42 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: ValidationError | Filled: 0.0/477.0
-2026-06-29 05:40:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 477 SNOA NASDAQ.SCM Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
-2026-06-29 05:40:42 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PreSubmitted | Filled: 0.0/477.0
-2026-06-29 05:40:42 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Submitted | Filled: 0.0/477.0
-2026-06-29 05:40:43 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 477 SNOA @ MARKET MKT [OUTSIDE RTH] | Order ID: 1171016
 2026-06-29 05:42:43 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 477 SNOA (status=Submitted). Cancelling unfilled order.
 2026-06-29 05:42:43 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PendingCancel | Filled: 0.0/477.0
 2026-06-29 05:42:43 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Cancelled | Filled: 0.0/477.0
@@ -19998,3 +19928,73 @@ Signals found: 2
 2026-06-29 17:57:08 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
 2026-06-29 17:57:09 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 80 low-priority equity names; max 90)
 2026-06-29 17:57:09 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-29 18:00:13 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x | BONK-USD @ $0.00
+2026-06-29 18:00:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, Vol=2.8x | LABX @ $193.11
+2026-06-29 18:00:13 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-29 18:00:13 | INFO     | trading_bot.engine   |   -> mean_reversion: buy BONK-USD @ $0.00 conf=0.79
+2026-06-29 18:00:13 | INFO     | trading_bot.engine   |   -> momentum: buy LABX @ $193.11 conf=0.75
+2026-06-29 18:00:13 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:13 | INFO     | trading_bot.risk.manager | APPROVED: buy LABX | Momentum BUY: pullback entry, Vol=2.8x
+2026-06-29 18:00:13 | INFO     | trading_bot.engine   | POSTMARKET REJECT: LABX RVOL=2.81x (need RVOL>=3.00)
+2026-06-29 18:00:13 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 782 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ BONK-USD: score 79/100 — Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+  ✅ LABX: score 75/100 — Momentum BUY: pul
+2026-06-29 18:00:13 | WARNING  | trading_bot.engine   | SLOW CYCLE (188.7s total): update_data=184.2s
+2026-06-29 18:00:16 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: BONK-USD(z=-1.13 rsi=0.0 bb=MIDDLE) | WAIT[23]: AAVE-USD(weak 3d trend (-2.2%)), ADA-USD(weak 3d trend (-0.3%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-1.8%)), BTC-USD(weak 3d trend (+1.0%)), CRV-USD(weak 3d trend (-0.2%)), DOGE-USD(weak 3d trend (-1.9%)), DOT-USD(weak 3d trend (-2.5%)), ETC-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (+0.9%)), GRT-USD(weak 3d trend (-1.1%)), HBAR-USD(weak 3d trend (+0.8%)), ICP-USD(weak 3d trend (-1.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-4.6%)), MATIC-USD(weak 3d trend (+0.1%)), OP-USD(weak 3d trend (-3.8%)), PEPE-USD(weak 3d trend (+0.4%)), RNDR-USD(weak 3d trend (+0.6%)), SEI-USD(weak 3d trend (-1.3%)), SUI-USD(weak 3d trend (+0.8%)), TIA-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-1.7%)) | warming=4 | neutral=13 | no_data=1
+2026-06-29 18:00:16 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x | BONK-USD @ $0.00
+2026-06-29 18:00:16 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:16 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy BONK-USD from mean_reversion conf=0.79 price=4.29e-06 reason=Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:16 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 18:00:16 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: BONK-USD entry=$0.0000 stop=$0.0000 (0.30% gap). Setting 5% minimum stop.
+2026-06-29 18:00:16 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.30% risk
+2026-06-29 18:00:16 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 286679440.55944 BONK-USD @ $0.00 = $1,229.85 | Risk: $61.49 (0.3% of account)
+2026-06-29 18:00:16 | WARNING  | trading_bot.engine   | TIER CAP: BONK-USD signal qty=286679440.55944 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-29 18:00:16 | INFO     | trading_bot.engine   | R/R STRETCH: BONK-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.21) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-29 18:00:16 | INFO     | trading_bot.engine   | Executing BONK-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-29 18:00:16 | INFO     | trading_bot.broker.traderspost | Routing BONK-USD to CRYPTO webhook
+2026-06-29 18:00:16 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "BONK-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 4.29e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-29 18:00:17 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"46dddcd4-cb4e-41c1-be07-2bf30ea8332e","logId":"46dddcd4-cb4e-41c1-b
+2026-06-29 18:00:17 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-29 18:00:17 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for BONK-USD — no execution.
+2026-06-29 18:00:17 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY BONK-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-29 18:00:20 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x | BONK-USD @ $0.00
+2026-06-29 18:00:20 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:20 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy BONK-USD from mean_reversion conf=0.79 price=4.29e-06 reason=Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:20 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 18:00:20 | WARNING  | trading_bot.engine   | COOLDOWN BLOCKED: BONK-USD signal rejected - last signal 3s ago (min 30s)
+2026-06-29 18:00:23 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x | BONK-USD @ $0.00
+2026-06-29 18:00:23 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:23 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy BONK-USD from mean_reversion conf=0.79 price=4.29e-06 reason=Mean reversion BUY: Z=-1.13, RSI=0, BB=near, Vol=19.5x
+2026-06-29 18:00:23 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 18:00:23 | WARNING  | trading_bot.engine   | COOLDOWN BLOCKED: BONK-USD signal rejected - last signal 6s ago (min 30s)
+2026-06-29 18:00:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 18:00:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 18:00:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 18:00:26 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 18:00:27 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 18:00:27 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-29 18:00:27 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-29 18:00:27 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 80 low-priority equity names; max 90)
+2026-06-29 18:02:55 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-29 18:02:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, Vol=2.8x | LABX @ $193.11
+2026-06-29 18:02:55 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-29 18:02:55 | INFO     | trading_bot.engine   |   -> momentum: buy LABX @ $193.11 conf=0.75
+2026-06-29 18:02:55 | INFO     | trading_bot.risk.manager | APPROVED: buy LABX | Momentum BUY: pullback entry, Vol=2.8x
+2026-06-29 18:02:55 | INFO     | trading_bot.engine   | POSTMARKET REJECT: LABX RVOL=2.81x (need RVOL>=3.00)
+2026-06-29 18:02:55 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 782 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ LABX: score 75/100 — Momentum BUY: pullback entry, Vol=2.8x
+Filtered: 1 signals rejected by risk manager
+2026-06-29 18:02:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (152.8s total): update_data=147.6s
+2026-06-29 18:02:55 | INFO     | trading_bot.engine   | CYCLE #169: regime=sideways | signals=1->approved=0 | positions=0/15 | bars_warm=159/160 | equity_open=True | pm=False pwr_hr=False
+2026-06-29 18:02:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[21]: AAVE-USD(weak 3d trend (-0.2%)), ADA-USD(weak 3d trend (-0.3%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-1.8%)), CRV-USD(weak 3d trend (-0.2%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-1.9%)), ETC-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (+0.9%)), GRT-USD(weak 3d trend (-1.1%)), HBAR-USD(weak 3d trend (+0.8%)), ICP-USD(weak 3d trend (-1.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-26.0%)), MATIC-USD(weak 3d trend (-0.6%)), OP-USD(weak 3d trend (-3.8%)), PEPE-USD(weak 3d trend (+0.4%)), RNDR-USD(weak 3d trend (+0.6%)), SEI-USD(weak 3d trend (-1.3%)), TIA-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-0.8%)) | warming=5 | neutral=15 | no_data=1
+2026-06-29 18:03:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 18:03:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 18:03:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 18:03:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 18:03:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 18:03:08 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-29 18:03:08 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 80 low-priority equity names; max 90)
