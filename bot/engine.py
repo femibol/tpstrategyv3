@@ -7077,6 +7077,41 @@ class TradingEngine:
                 self._close_position(close_sym, "slippage_reject",
                                      "Excessive slippage on entry — R:R invalid")
 
+    def _sane_exit_price(self, symbol, candidate, pos):
+        """Anti-collision guard for the crypto close/record path.
+
+        2026-06-22 incident: JUP-USD closed during a container restart and
+        booked a -$1,049 stop_loss at exit=$0.000013 — Coinbase's ticker
+        namespace collides (a delisted JUP token squats the symbol while the
+        real Jupiter trades ~$0.21, the asset TradersPost routes to). PR #245
+        guarded the DASHBOARD display but NOT this close/record path, so the
+        phantom price became a permanent fake loss in trade_history and the
+        drawdown stats.
+
+        Guard: if the fetched price for a crypto symbol deviates > 80% from
+        the entry price, it's almost certainly a collision / stale-listing
+        artifact — return the entry price (→ flat P&L) instead of booking a
+        fictional ~100% loss. 80% (vs the dashboard's 50%) so a legitimate
+        crypto runner/dumper isn't clipped; only egregious collision cases
+        trip it. Non-crypto symbols pass through untouched.
+        """
+        if not self._is_crypto_symbol(symbol):
+            return candidate
+        entry_ref = pos.get("entry_price", 0) or 0
+        if entry_ref <= 0 or candidate is None:
+            return candidate
+        deviation = abs(candidate - entry_ref) / entry_ref
+        if deviation > 0.80:
+            log.warning(
+                f"CLOSE ANTI-COLLISION: {symbol} fetched price "
+                f"${candidate:.6f} deviates {deviation*100:.0f}% from entry "
+                f"${entry_ref:.6f} — almost certainly a Coinbase ticker "
+                f"collision. Using entry price for exit (flat P&L) instead "
+                f"of booking a phantom loss."
+            )
+            return entry_ref
+        return candidate
+
     def _close_position(self, symbol, reason_type, reason_msg):
         """Close a position through IBKR. Thread-safe with double-close guard."""
         # Exit cooldown: skip if this symbol was recently closed
@@ -7131,6 +7166,9 @@ class TradingEngine:
         current_price = self.market_data.get_price(symbol)
         if current_price is None:
             current_price = pos.get("current_price", pos["entry_price"])
+        # Reject ticker-collision / stale-listing prices before they reach
+        # the P&L record (see _sane_exit_price — JUP-USD 2026-06-22 phantom).
+        current_price = self._sane_exit_price(symbol, current_price, pos)
 
         # LONG-ONLY: Only sell to close long positions
         if pos["direction"] != "long":
@@ -7488,6 +7526,9 @@ class TradingEngine:
         current_price = self.market_data.get_price(symbol)
         if current_price is None:
             current_price = pos.get("current_price", pos["entry_price"])
+        # Reject ticker-collision / stale-listing prices before they reach
+        # the P&L record (see _sane_exit_price — JUP-USD 2026-06-22 phantom).
+        current_price = self._sane_exit_price(symbol, current_price, pos)
 
         # LONG-ONLY: Only sell to close long positions
         if pos["direction"] != "long":
