@@ -1,75 +1,3 @@
-2026-06-29 04:11:24 | INFO     | trading_bot.broker.ibkr | Order update: NOWL | Status: PreSubmitted | Filled: 0.0/191.0
-2026-06-29 04:11:24 | INFO     | trading_bot.broker.ibkr | Order update: NOWL | Status: PreSubmitted | Filled: 0.0/191.0
-2026-06-29 04:11:24 | INFO     | trading_bot.broker.ibkr | Order update: NOWL | Status: Filled | Filled: 191.0/191.0 | AvgPrice: $4.35
-2026-06-29 04:11:24 | INFO     | trading_bot.broker.ibkr | Order update: NOWL | Status: PreSubmitted | Filled: 0.0/191.0
-2026-06-29 04:11:24 | INFO     | trading_bot.broker.ibkr | Order update: NOWL | Status: PreSubmitted | Filled: 0.0/191.0
-2026-06-29 04:11:24 | INFO     | trading_bot.broker.ibkr | Order update: NOWL | Status: Submitted | Filled: 0.0/191.0
-2026-06-29 04:11:25 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 191 NOWL @ LIMIT $4.44 | TP: $4.87 | SL: $4.09 | Parent ID: 1169735
-2026-06-29 04:11:25 | INFO     | trading_bot.broker.ibkr | BRACKET FILLED: BUY 191/191 NOWL @ $4.3500 | signal $4.4400 | slippage -2.03% | parent=MARKET
-2026-06-29 04:11:25 | INFO     | trading_bot.engine   | BRACKET ORDER active: NOWL | SL: $4.09 | TP: $4.87 (managed by IBKR server-side)
-2026-06-29 04:11:25 | INFO     | trading_bot.engine   | ORDER BUY NOWL via IBKR | Qty: 191 | Price: $4.35 | Cost: $830.85 | Stop: $4.09 (risk $49.85) | Target: $4.87 (reward $99.70) | R:R 2.0:1 | Strategy: momentum
-2026-06-29 04:11:25 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: NOWL**
-```
-  Entry: $4.35 x 191 shares = $830.85
-  Stop:  $4.09 (-$49.85 | -6.0%)
-  Targets: $4.87
-  Risk/Reward: 2.0
-```
-Strategy: **momentum** | Confidence: **90%**
-Reason
-2026-06-29 04:11:26 | INFO     | trading_bot.broker.traderspost | TP MIRROR: BUY NOWL qty=191 @ $4.35 → primary webhook (200)
-2026-06-29 04:11:26 | INFO     | trading_bot.broker.ibkr | Tick-by-tick active for 1 symbols (every trade print)
-2026-06-29 04:11:26 | INFO     | trading_bot.broker.ibkr | 5-sec real-time bars active for 1 symbols
-2026-06-29 04:11:28 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: SNOA spread 3.3% (price $1.20, tier max 5%) → size 1.00 × 0.79 = 0.79
-2026-06-29 04:11:28 | INFO     | trading_bot.engine   | ORDER FLOW BOOST: SNOA EMA imbalance +0.60 ramping → score 95 → 105
-2026-06-29 04:11:28 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: SNOA entry=$1.2000 stop=$1.1971 (0.24% gap). Setting 6% minimum stop.
-2026-06-29 04:11:28 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.476% over 20 fills → sizing mult 0.71x
-2026-06-29 04:11:28 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 0.71x = 0.26% risk
-2026-06-29 04:11:28 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $54.64 → $50.00 (per-strategy ceiling)
-2026-06-29 04:11:28 | INFO     | trading_bot.risk.position_sizer | Position size: 694 shares @ $1.20 = $832.80 | Risk: $49.97 (0.2% of account) [tier: 10-5000 shares]
-2026-06-29 04:11:28 | INFO     | trading_bot.engine   | RUNNER SIZING: SNOA size_mult=79% — reduced from 694 to 546 shares (entry_type=n/a)
-2026-06-29 04:11:28 | WARNING  | trading_bot.engine   | R/R STRETCH: SNOA entry=$1.2000 stop=$1.1280 (risk=$0.0720) target=$1.2086 (reward=$0.0086, R/R=0.12) — stretching target to $1.3440 for 2:1 minimum.
-2026-06-29 04:11:28 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: SNOA live ask $1.23 has drifted 2.5% above signal $1.20 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-29 04:11:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; Unknown market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Top: IBEOS; OVERNIGHT; 
-2026-06-29 04:11:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-29 04:11:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; IEX; 
-2026-06-29 04:11:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; IEX; 
-2026-06-29 04:11:31 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: SPCE entry=$2.9600 stop=$2.8600 (3.38% gap). Setting 6% minimum stop.
-2026-06-29 04:11:31 | INFO     | trading_bot.engine   | VOL REGIME: SPCE short=0.0095 long=0.0063 ratio=1.51x → sizing mult 1.00x
-2026-06-29 04:11:31 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: rvol_momentum avg=0.305% over 14 fills → sizing mult 0.99x
-2026-06-29 04:11:31 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[rvol_momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 0.99x = 0.37% risk
-2026-06-29 04:11:31 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: rvol_momentum risk $76.61 → $50.00 (per-strategy ceiling)
-2026-06-29 04:11:31 | INFO     | trading_bot.risk.position_sizer | Position size: 281 shares @ $2.96 = $831.76 | Risk: $49.91 (0.2% of account) [tier: 10-2000 shares]
-2026-06-29 04:11:31 | INFO     | trading_bot.engine   | Executing SPCE via IBKR  [OUTSIDE RTH]...
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SPCE → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | BRACKET PARENT → MARKET: SPCE (Error 2152 bypass — will fill at live ask, not LIMIT validation)
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: ValidationError | Filled: 0.0/281
-2026-06-29 04:11:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: ValidationError | Filled: 0.0/281
-2026-06-29 04:11:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: ValidationError | Filled: 0.0/281
-2026-06-29 04:11:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: ValidationError | Filled: 0.0/281
-2026-06-29 04:11:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: BUY 281 SPCE NYSE Warning: Your order will not be placed at the exchange until 2026-06-29 09:30:00 US/Eastern.
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: PreSubmitted | Filled: 0.0/281.0
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: PreSubmitted | Filled: 0.0/281.0
-2026-06-29 04:11:32 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: PreSubmitted | Filled: 0.0/281.0
-2026-06-29 04:11:32 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-29 04:11:33 | INFO     | trading_bot.broker.ibkr | BRACKET ORDER placed: BUY 281 SPCE @ LIMIT $3.02 | TP: $3.37 | SL: $2.78 | Parent ID: 1169755
-2026-06-29 04:11:33 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
-2026-06-29 04:11:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: PendingCancel | Filled: 0.0/281.0
-2026-06-29 04:11:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: Cancelled | Filled: 0.0/281.0
-2026-06-29 04:11:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:No market data on major exchange for market order.
-2026-06-29 04:11:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: Cancelled | Filled: 0.0/281.0
-2026-06-29 04:11:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-29 04:11:35 | INFO     | trading_bot.broker.ibkr | Order update: SPCE | Status: Cancelled | Filled: 0.0/281.0
-2026-06-29 04:11:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-29 04:11:35 | WARNING  | trading_bot.broker.ibkr | Bracket order Cancelled: SPCE
-2026-06-29 04:11:35 | WARNING  | trading_bot.engine   | IBKR order failed for SPCE.
-2026-06-29 04:11:35 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY SPCE. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
-2026-06-29 04:11:35 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-29 04:11:36 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: PEARL; T24X; MEMX; OVERNIGHT; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; CHX; NYSENAT; IBEOS; PSX; EDGEA; LTSE; ISE; DRCTEDGE; 
-2026-06-29 04:11:37 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
 2026-06-29 04:11:38 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WDCX avoided — consistent loser (score: -98.7)
 2026-06-29 04:11:38 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; IEX; 
 2026-06-29 04:11:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
@@ -19998,3 +19926,75 @@ Approved: 1 trades
 2026-06-29 13:32:58 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
 2026-06-29 13:33:01 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
 2026-06-29 13:33:01 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 13:35:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:35:38 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WSHP | Score: 95 | RVOL: 3.4x | Change: +6.2% | R:R 3.5
+2026-06-29 13:35:38 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-29 13:35:38 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ALGO-USD @ $0.09 conf=0.77
+2026-06-29 13:35:38 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WSHP @ $10.00 conf=0.95
+2026-06-29 13:35:38 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:35:38 | INFO     | trading_bot.risk.manager | APPROVED: buy WSHP | Very high RVOL 3.4x | Strong move +6.2% | EMA trend bullish | MACD histogram positive
+2026-06-29 13:35:38 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 838 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ALGO-USD: score 77/100 — Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x
+  ✅ WSHP: score 95/100 — Very high RVOL 3.
+2026-06-29 13:35:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.4s total): update_data=160.3s
+2026-06-29 13:35:40 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-29 13:35:41 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: WSHP via rvol_momentum — Global daily equity trade cap reached (29/25)
+2026-06-29 13:35:44 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: ALGO-USD(z=-1.03 rsi=0.0 bb=MIDDLE) | WAIT[19]: AAVE-USD(weak 3d trend (-6.6%)), ADA-USD(weak 3d trend (-0.1%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.3%)), BTC-USD(weak 3d trend (+1.0%)), CRV-USD(weak 3d trend (+0.7%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-2.8%)), ETC-USD(weak 3d trend (-1.3%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-1.0%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-6.2%)), XLM-USD(weak 3d trend (-1.6%)) | neutral=21 | no_data=1
+2026-06-29 13:35:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:35:44 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:35:47 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:35:47 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:35:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: NYSENAT; EDGEA; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; Unknown market data permissions - Depth: NYSE; Top: BYX; PEARL; AMEX; CHX; IBEOS; T24X; PSX; MEMX; OVERNIGHT; LTSE; ISE; DRCTEDGE; 
+2026-06-29 13:35:50 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: EDGEA; Need additional market data permissions - Depth: NYSE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; 
+2026-06-29 13:35:50 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:35:50 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:35:51 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NYSE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; IEX; 
+2026-06-29 13:35:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-29 13:35:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 13:35:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 13:35:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 13:35:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 13:35:55 | INFO     | trading_bot.engine   | IBKR scanner: 124 unique symbols discovered | 48 gainers, 10 gaps, 20 losers
+2026-06-29 13:35:56 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-29 13:35:56 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 15 stale symbols across strategies
+2026-06-29 13:35:56 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 88 low-priority equity names; max 90)
+2026-06-29 13:38:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 13:38:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 13:38:44 | INFO     | trading_bot.engine   | DATA COVERAGE: 84/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-29 13:38:44 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:38:44 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WSHP | Score: 95 | RVOL: 3.4x | Change: +6.2% | R:R 3.5
+2026-06-29 13:38:45 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-29 13:38:45 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ALGO-USD @ $0.09 conf=0.77
+2026-06-29 13:38:45 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WSHP @ $10.00 conf=0.95
+2026-06-29 13:38:45 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:38:45 | INFO     | trading_bot.risk.manager | APPROVED: buy WSHP | Very high RVOL 3.4x | Strong move +6.2% | EMA trend bullish | MACD histogram positive
+2026-06-29 13:38:45 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 823 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ALGO-USD: score 77/100 — Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x
+  ✅ WSHP: score 95/100 — Very high RVOL 3.
+2026-06-29 13:38:45 | WARNING  | trading_bot.engine   | SLOW CYCLE (174.6s total): update_data=168.8s, discover=5.1s
+2026-06-29 13:38:45 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-29 13:38:47 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: WSHP via rvol_momentum — Global daily equity trade cap reached (29/25)
+2026-06-29 13:38:50 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: ALGO-USD(z=-1.03 rsi=0.0 bb=MIDDLE) | WAIT[19]: AAVE-USD(weak 3d trend (-6.6%)), ADA-USD(weak 3d trend (-0.1%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.3%)), BTC-USD(weak 3d trend (+1.0%)), CRV-USD(weak 3d trend (+0.7%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-2.8%)), ETC-USD(weak 3d trend (-1.3%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-1.0%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-6.2%)), XLM-USD(weak 3d trend (-1.6%)) | neutral=21 | no_data=1
+2026-06-29 13:38:50 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:38:50 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:38:53 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:38:53 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:38:55 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BEX; NYSE; Unknown market data permissions - Depth: NASDAQ; BATS; ARCA; IEX; Top: IBEOS; OVERNIGHT; 
+2026-06-29 13:38:56 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: IBEOS; OVERNIGHT; EDGEA; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; NYSE; Unknown market data permissions - Depth: BEX; Top: BYX; PEARL; AMEX; CHX; NYSENAT; T24X; PSX; MEMX; LTSE; ISE; DRCTEDGE; 
+2026-06-29 13:38:56 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.03, RSI=0, BB=near, Vol=18.6x | ALGO-USD @ $0.09
+2026-06-29 13:38:56 | INFO     | trading_bot.risk.manager | REJECTED: buy ALGO-USD | Cost gate: edge 37bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 13:38:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-29 13:38:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; OVERNIGHT; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; NYSE; Unknown market data permissions - Depth: BEX; 
+2026-06-29 13:38:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 13:38:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 13:38:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 13:39:00 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 13:39:00 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 48 gainers, 10 gaps, 20 losers
+2026-06-29 13:39:01 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 91 low-priority equity names; max 90)
+2026-06-29 13:39:01 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 13:39:01 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 13:39:01 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
