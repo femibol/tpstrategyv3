@@ -16393,3 +16393,61 @@ Signals found: 8
 2026-06-29 00:04:55 | INFO     | trading_bot.broker.ibkr | Order update: PYXS | Status: PreSubmitted | Filled: 0.0/301.0
 2026-06-29 00:04:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (187.1s total): update_data=182.3s
 2026-06-29 00:04:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[17]: APT-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (-2.7%)), BTC-USD(weak 3d trend (+0.2%)), COMP-USD(needs vol>=1.1x), CRV-USD(weak 3d trend (-1.3%)), DOGE-USD(weak 3d trend (-1.9%)), DOT-USD(weak 3d trend (-4.0%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-0.6%)), HBAR-USD(weak 3d trend (-1.0%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-2.1%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.9%)), SEI-USD(weak 3d trend (-9.2%)), TRX-USD(weak 3d trend (+0.2%)), XLM-USD(weak 3d trend (-1.0%)) | neutral=22 | no_data=3
+2026-06-29 00:05:03 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Submitted | Filled: 0.0/99.0
+2026-06-29 00:05:04 | INFO     | trading_bot.broker.ibkr | Order update: PYXS | Status: Submitted | Filled: 0.0/301.0
+2026-06-29 00:05:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-29 00:05:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 00:05:06 | INFO     | trading_bot.broker.ibkr | Order update: CANF | Status: Submitted | Filled: 0.0/128.0
+2026-06-29 00:05:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 00:05:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-29 00:05:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-29 00:05:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 00:05:08 | INFO     | trading_bot.engine   | IBKR scanner: 104 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-29 00:05:08 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 00:05:08 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 206 low-priority equity names; max 90)
+2026-06-29 00:05:08 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 00:05:08 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 00:05:08 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   | DATA COVERAGE: 82/90 symbols have bars, 72/90 have prices | IBKR blacklisted: 42
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=50, breakout>8.58, Vol=6.0x | KC @ $8.96
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.52
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: FNMA | Score: 75 | RVOL: 300.3x | Change: +1.2% | R:R 2.4
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPXS | Score: 80 | RVOL: 282.8x | Change: +2.0% | R:R 2.4
+2026-06-29 00:09:34 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [SPIKE]: SPXS | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 16.0x | Change: +2.0% | R:R 3.0 | Size: 50%
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> momentum: buy KC @ $8.96 conf=0.85
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.52 conf=0.90
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy FNMA @ $6.88 conf=0.75
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPXS @ $28.51 conf=0.80
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   |   -> momentum_runner: buy SPXS @ $28.51 conf=0.60
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy KC | Momentum BUY: pullback entry, ADX=50, breakout>8.58, Vol=6.0x
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXS | Extreme RVOL 274.4x | Trending up +0.7% | EMA trend bullish | MACD histogram positive
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy FNMA | Extreme RVOL 300.3x | Moving up +1.2% | EMA trend bullish | MACD histogram positive
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy SPXS | Extreme RVOL 282.8x | Moving up +2.0% | EMA trend bullish | MACD histogram positive
+2026-06-29 00:09:34 | INFO     | trading_bot.risk.manager | APPROVED: buy SPXS | [SPIKE] Score:6/12 RVOL:16.0x | Confirmed | Chg:+2.0%
+2026-06-29 00:09:34 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 8 buy signal(s) — QH, KC, NOWL, SPCE, SOXS, FNMA, SPXS, SPXS
+2026-06-29 00:09:34 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1410 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 8
+  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+  ✅ KC: score 85/100 — Momentum BUY: pullbac
+2026-06-29 00:09:35 | WARNING  | trading_bot.engine   | SLOW CYCLE (270.7s total): update_data=266.5s
+2026-06-29 00:09:38 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[18]: APT-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (-2.7%)), BTC-USD(weak 3d trend (+0.1%)), COMP-USD(needs vol>=1.1x), CRV-USD(weak 3d trend (-1.3%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-4.0%)), FLOKI-USD(weak 3d trend (-0.9%)), GRT-USD(weak 3d trend (-0.6%)), HBAR-USD(weak 3d trend (-0.9%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-3.6%)), MATIC-USD(weak 3d trend (+0.8%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.9%)), SEI-USD(weak 3d trend (-9.2%)), TRX-USD(weak 3d trend (+0.2%)), XLM-USD(weak 3d trend (-0.9%)) | neutral=21 | no_data=3
+2026-06-29 00:09:44 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-29 00:09:45 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 00:09:46 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 00:09:46 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-29 00:09:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-29 00:09:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 00:09:48 | INFO     | trading_bot.engine   | IBKR scanner: 105 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-29 00:09:48 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 00:09:48 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 209 low-priority equity names; max 90)
