@@ -1,32 +1,3 @@
-
-With a **80% win rate but only $5.44 net profit across 10 trades**, your winners are
-2026-06-29 06:17:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.50
-2026-06-29 06:17:58 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.27
-2026-06-29 06:17:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 33.2x | Change: +3.1% | R:R 3.5
-2026-06-29 06:17:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 32.9x | Change: +0.7% | R:R 2.4
-2026-06-29 06:17:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 47.5x | Change: +1.6% | R:R 2.4
-2026-06-29 06:17:58 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 65 | RVOL: 31.0x | Change: +0.6% | R:R 2.4
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.50 conf=0.95
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.27 conf=0.95
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 06:17:58 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $36.01 conf=0.65
-2026-06-29 06:17:58 | INFO     | trading_bot.risk.manager | REJECTED: buy QH | Already in position: QH
-2026-06-29 06:17:58 | INFO     | trading_bot.risk.manager | APPROVED: buy SNOA | Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x
-2026-06-29 06:17:58 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 33.2x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 06:17:58 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $4.01 (-5.4%, max -5%)
-2026-06-29 06:17:58 | INFO     | trading_bot.risk.manager | REJECTED: buy ILLR | Setup broke: signal $4.47 → market $3.63 (-18.8%, max -5%)
-2026-06-29 06:17:58 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 31.0x | Trending up +0.6% | MACD histogram positive | RSI healthy (50)
-2026-06-29 06:17:58 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 770 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 6
-  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-  ✅ SNOA: score 95/100 — Momentum BUY: EMA cr
-2026-06-29 06:17:58 | WARNING  | trading_bot.engine   | SLOW CYCLE (231.0s total): update_data=181.7s, monitor_positions=44.7s
-2026-06-29 06:17:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
-2026-06-29 06:18:01 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: SNOA spread 4.8% (price $1.27, tier max 5%) → size 1.00 × 0.53 = 0.53
 2026-06-29 06:18:01 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: SNOA entry=$1.2500 stop=$1.2671 (-1.37% gap). Setting 6% minimum stop.
 2026-06-29 06:18:01 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.520% over 20 fills → sizing mult 0.63x
 2026-06-29 06:18:01 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 0.63x = 0.25% risk
@@ -19998,3 +19969,32 @@ Signals found: 3
 2026-06-29 19:19:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-29 19:19:43 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
 2026-06-29 19:19:43 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
+2026-06-29 19:22:28 | INFO     | trading_bot.engine   | DATA COVERAGE: 86/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-29 19:22:28 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.59, RSI=13, BB=near, Vol=1.7x | ETH-USD @ $1611.38
+2026-06-29 19:22:28 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, breakout>193.96, Vol=2.8x | LABX @ $194.72
+2026-06-29 19:22:28 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-29 19:22:28 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ETH-USD @ $1611.38 conf=0.80
+2026-06-29 19:22:28 | INFO     | trading_bot.engine   |   -> momentum: buy LABX @ $194.72 conf=0.75
+2026-06-29 19:22:28 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 35bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 19:22:28 | INFO     | trading_bot.risk.manager | APPROVED: buy LABX | Momentum BUY: pullback entry, breakout>193.96, Vol=2.8x
+2026-06-29 19:22:28 | INFO     | trading_bot.engine   | POSTMARKET REJECT: LABX RVOL=2.81x (need RVOL>=3.00)
+2026-06-29 19:22:28 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 772 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ETH-USD: score 80/100 — Mean reversion BUY: Z=-1.59, RSI=13, BB=near, Vol=1.7x
+  ✅ LABX: score 75/100 — Momentum BUY: pull
+2026-06-29 19:22:29 | WARNING  | trading_bot.engine   | SLOW CYCLE (169.8s total): update_data=165.0s
+2026-06-29 19:22:32 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: ETH-USD(z=-1.59 rsi=12.6 bb=MIDDLE) | WAIT[28]: AAVE-USD(weak 3d trend (-5.6%)), ADA-USD(weak 3d trend (-1.9%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.0%)), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.5%)), DOGE-USD(weak 3d trend (-3.0%)), DOT-USD(weak 3d trend (-1.3%)), ETC-USD(weak 3d trend (-0.8%)), FET-USD(weak 3d trend (+0.2%)), ICP-USD(weak 3d trend (-0.8%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-26.0%)), LINK-USD(weak 3d trend (+0.8%)), LTC-USD(needs green bar), MATIC-USD(weak 3d trend (-1.0%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-4.7%)), PEPE-USD(weak 3d trend (-2.1%)), RNDR-USD(weak 3d trend (+0.1%)), SEI-USD(weak 3d trend (-5.6%)), SHIB-USD(weak 3d trend (+0.7%)), SOL-USD(needs vol>=1.1x), SUI-USD(weak 3d trend (+0.4%)), UNI-USD(needs green bar), XLM-USD(weak 3d trend (-2.1%)), XRP-USD(weak 3d trend (+0.9%)) | warming=4 | neutral=8 | no_data=1
+2026-06-29 19:22:32 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.59, RSI=13, BB=near, Vol=1.7x | ETH-USD @ $1611.38
+2026-06-29 19:22:32 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 35bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 19:22:35 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.59, RSI=13, BB=near, Vol=1.7x | ETH-USD @ $1611.38
+2026-06-29 19:22:35 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 35bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 19:22:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.59, RSI=13, BB=near, Vol=1.7x | ETH-USD @ $1611.38
+2026-06-29 19:22:38 | INFO     | trading_bot.risk.manager | REJECTED: buy ETH-USD | Cost gate: edge 35bps < 1.5× cost 50bps (need 75bps)
+2026-06-29 19:22:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 19:22:39 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 19:22:40 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 19:22:41 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 19:22:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 19:22:42 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-29 19:22:42 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
