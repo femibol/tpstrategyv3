@@ -1,60 +1,3 @@
-2026-06-29 05:42:43 | WARNING  | trading_bot.broker.ibkr | Order NOT FILLED after 120s: SELL 477 SNOA (status=Submitted). Cancelling unfilled order.
-2026-06-29 05:42:43 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PendingCancel | Filled: 0.0/477.0
-2026-06-29 05:42:43 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Cancelled | Filled: 0.0/477.0
-2026-06-29 05:42:43 | WARNING  | trading_bot.broker.ibkr | IBKR Error 202: Order Canceled - reason:
-2026-06-29 05:42:44 | ERROR    | trading_bot.engine   | IBKR close order FAILED for SNOA
-2026-06-29 05:42:44 | ERROR    | trading_bot.engine   | CLOSE FAILED for SNOA — position stays tracked for retry next cycle. original_broker=IBKR
-2026-06-29 05:42:44 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[27]: AAVE-USD(needs vol>=1.1x), ADA-USD(weak 3d trend (+0.1%)), APT-USD(weak 3d trend (-1.9%)), ATOM-USD(weak 3d trend (-1.8%)), BONK-USD(weak 3d trend (+0.5%)), BTC-USD(weak 3d trend (-0.0%)), CRV-USD(weak 3d trend (-1.3%)), DOGE-USD(weak 3d trend (-2.4%)), DOT-USD(weak 3d trend (-2.7%)), ETH-USD(weak 3d trend (+0.9%)), FET-USD(needs vol>1.3x), FLOKI-USD(weak 3d trend (-0.7%)), HBAR-USD(weak 3d trend (-2.7%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-7.9%)), LINK-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-2.3%)), NEAR-USD(weak 3d trend (-1.3%)), OP-USD(weak 3d trend (-4.7%)), PEPE-USD(weak 3d trend (-0.4%)), SEI-USD(weak 3d trend (-7.1%)), SHIB-USD(weak 3d trend (-2.3%)), SUI-USD(weak 3d trend (-0.3%)), TRX-USD(weak 3d trend (-0.0%)), UNI-USD(weak 3d trend (-2.7%)), XLM-USD(weak 3d trend (-2.4%)) | warming=2 | neutral=12 | no_data=1
-2026-06-29 05:42:47 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:42:47 | INFO     | trading_bot.engine   | Cancelled broker stop order for SNOA
-2026-06-29 05:42:47 | WARNING  | trading_bot.broker.ibkr | Order 1170085 not found
-2026-06-29 05:42:47 | INFO     | trading_bot.broker.ibkr | ORDER ROUTING: SNOA → IEX (SMART bypass for Error 2152 / PendingSubmit lock)
-2026-06-29 05:42:58 | INFO     | trading_bot.broker.ibkr | OUTSIDE RTH: Converted MARKET → aggressive LIMIT $1.20 for SELL 477 SNOA
-2026-06-29 05:42:58 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: ValidationError | Filled: 0.0/477
-2026-06-29 05:42:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2109: Order Event Warning:Attribute 'Outside Regular Trading Hours' is ignored based on the order type and destination. PlaceOrder is now being processed.
-2026-06-29 05:42:58 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PreSubmitted | Filled: 0.0/477.0
-2026-06-29 05:42:58 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: ValidationError | Filled: 0.0/477.0
-2026-06-29 05:42:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 399: Order Message: SELL 477 SNOA NASDAQ.SCM Warning: Your order will not be placed at the exchange until 2026-06-29 08:00:00 US/Eastern.
-2026-06-29 05:42:58 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: PreSubmitted | Filled: 0.0/477.0
-2026-06-29 05:42:58 | INFO     | trading_bot.broker.ibkr | Order update: SNOA | Status: Filled | Filled: 477.0/477.0 | AvgPrice: $1.22
-2026-06-29 05:42:59 | INFO     | trading_bot.broker.ibkr | Order placed: SELL 477 SNOA @ MARKET MKT [OUTSIDE RTH] | Order ID: 1171019
-2026-06-29 05:43:00 | INFO     | trading_bot.broker.ibkr | Order FILLED: SELL 477/477 SNOA @ $1.22 | Order ID: 1171019
-2026-06-29 05:43:00 | INFO     | trading_bot.engine   | CLOSED SNOA via IBKR | stop_loss | P&L: $-9.54 | Stop hit at $1.21
-2026-06-29 05:43:00 | INFO     | trading_bot.broker.traderspost | TP MIRROR: EXIT SNOA qty=477 @ $1.22 → primary webhook (200)
-2026-06-29 05:43:00 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: SNOA** (stop_loss)
-```
-  Entry: $1.24 → Exit: $1.22
-  P&L: $-9.54 (-1.61%)
-  Shares: 477 | Value: $581.94
-  Hold: 1.2h
-```
-Strategy: **momentum** | Stop hit at $1.21
-Via: IBKR | 05:43:
-2026-06-29 05:43:00 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: SNOA -9.54 (458 total in history)
-2026-06-29 05:43:03 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [SNOA]: **WIDEN_STOP:2.5%**
-
-SNOA momentum with 76% win rate suggests strategy is solid. $1.24→$1.22 (-1.6%) over 72min looks like normal noise stop-out, not trend failure. Give momentum room to breathe on lo
-2026-06-29 05:43:03 | INFO     | trading_bot.engine   | LEARNING: Stop distance widened from 4.8% → 5.0%
-2026-06-29 05:43:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-29 05:43:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-29 05:43:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-29 05:43:09 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-29 05:43:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-29 05:43:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-29 05:43:11 | INFO     | trading_bot.engine   | IBKR scanner: 110 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-29 05:43:11 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-29 05:43:11 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 35 stale symbols across strategies
-2026-06-29 05:43:11 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 90 low-priority equity names; max 90)
-2026-06-29 05:43:11 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
-2026-06-29 05:43:11 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
-2026-06-29 05:43:11 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-29 05:46:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $7.20
-2026-06-29 05:46:12 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.25
-2026-06-29 05:46:12 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 55.3x | Change: +3.1% | R:R 3.5
-2026-06-29 05:46:12 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 54.9x | Change: +0.7% | R:R 2.4
-2026-06-29 05:46:12 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SMCX | Score: 65 | RVOL: 59.0x | Change: +0.8% | R:R 2.4
-2026-06-29 05:46:12 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 79.1x | Change: +1.6% | R:R 2.4
-2026-06-29 05:46:12 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 6 signals from strategies
 2026-06-29 05:46:12 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $7.20 conf=0.95
 2026-06-29 05:46:12 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.25 conf=0.95
 2026-06-29 05:46:12 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
@@ -19998,3 +19941,60 @@ Filtered: 1 signals rejected by risk manager
 2026-06-29 18:03:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-29 18:03:08 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
 2026-06-29 18:03:08 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 80 low-priority equity names; max 90)
+2026-06-29 18:06:13 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, Vol=2.8x | LABX @ $193.11
+2026-06-29 18:06:13 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-29 18:06:13 | INFO     | trading_bot.engine   |   -> momentum: buy LABX @ $193.11 conf=0.75
+2026-06-29 18:06:13 | INFO     | trading_bot.risk.manager | APPROVED: buy LABX | Momentum BUY: pullback entry, Vol=2.8x
+2026-06-29 18:06:13 | INFO     | trading_bot.engine   | POSTMARKET REJECT: LABX RVOL=2.81x (need RVOL>=3.00)
+2026-06-29 18:06:13 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 782 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ LABX: score 75/100 — Momentum BUY: pullback entry, Vol=2.8x
+Filtered: 1 signals rejected by risk manager
+2026-06-29 18:06:13 | WARNING  | trading_bot.engine   | SLOW CYCLE (188.9s total): update_data=184.4s
+2026-06-29 18:06:16 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[21]: AAVE-USD(weak 3d trend (-0.2%)), ADA-USD(weak 3d trend (-0.3%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-1.8%)), CRV-USD(weak 3d trend (-0.2%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-1.9%)), ETC-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (+0.9%)), GRT-USD(weak 3d trend (-1.1%)), HBAR-USD(weak 3d trend (+0.8%)), ICP-USD(weak 3d trend (-1.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-26.0%)), MATIC-USD(weak 3d trend (-0.6%)), OP-USD(weak 3d trend (-3.8%)), PEPE-USD(weak 3d trend (+0.4%)), RNDR-USD(weak 3d trend (+0.6%)), SEI-USD(weak 3d trend (-1.3%)), TIA-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-0.8%)) | warming=5 | neutral=15 | no_data=1
+2026-06-29 18:06:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 18:06:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 18:06:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 18:06:25 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 18:06:26 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 18:06:26 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-29 18:06:26 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-29 18:06:26 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 79 low-priority equity names; max 90)
+2026-06-29 18:06:26 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 18:06:26 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 18:06:26 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 18:08:55 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x | WIF-USD @ $0.18
+2026-06-29 18:08:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, Vol=2.8x | LABX @ $193.11
+2026-06-29 18:08:55 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-29 18:08:55 | INFO     | trading_bot.engine   |   -> mean_reversion: buy WIF-USD @ $0.18 conf=0.89
+2026-06-29 18:08:55 | INFO     | trading_bot.engine   |   -> momentum: buy LABX @ $193.11 conf=0.75
+2026-06-29 18:08:55 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:08:55 | INFO     | trading_bot.risk.manager | APPROVED: buy LABX | Momentum BUY: pullback entry, Vol=2.8x
+2026-06-29 18:08:55 | INFO     | trading_bot.engine   | POSTMARKET REJECT: LABX RVOL=2.81x (need RVOL>=3.00)
+2026-06-29 18:08:55 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 777 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ WIF-USD: score 89/100 — Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+  ✅ LABX: score 75/100 — Momentum BUY: pullb
+2026-06-29 18:08:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (152.9s total): update_data=148.5s
+2026-06-29 18:08:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: WIF-USD(z=-1.75 rsi=0.0 bb=MIDDLE) | WAIT[22]: AAVE-USD(weak 3d trend (-0.2%)), ADA-USD(weak 3d trend (+0.1%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-1.8%)), BTC-USD(weak 3d trend (+0.9%)), CRV-USD(weak 3d trend (-0.2%)), DOGE-USD(weak 3d trend (-2.0%)), DOT-USD(weak 3d trend (-1.2%)), ETC-USD(weak 3d trend (-0.8%)), FLOKI-USD(weak 3d trend (+0.4%)), GRT-USD(weak 3d trend (-1.1%)), ICP-USD(weak 3d trend (-1.0%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-26.0%)), MATIC-USD(weak 3d trend (-0.6%)), OP-USD(weak 3d trend (-3.8%)), PEPE-USD(weak 3d trend (+0.4%)), RNDR-USD(weak 3d trend (+0.6%)), SEI-USD(weak 3d trend (-1.3%)), TIA-USD(needs vol>=1.1x), TRX-USD(weak 3d trend (+0.3%)), XLM-USD(weak 3d trend (-0.8%)) | warming=4 | neutral=14 | no_data=1
+2026-06-29 18:08:58 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x | WIF-USD @ $0.18
+2026-06-29 18:08:58 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:08:58 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy WIF-USD from mean_reversion conf=0.89 price=0.179 reason=Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:08:59 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WIF-USD avoided — consistent loser (score: -100.0)
+2026-06-29 18:09:02 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x | WIF-USD @ $0.18
+2026-06-29 18:09:02 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:09:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy WIF-USD from mean_reversion conf=0.89 price=0.179 reason=Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:09:02 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WIF-USD avoided — consistent loser (score: -100.0)
+2026-06-29 18:09:05 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x | WIF-USD @ $0.18
+2026-06-29 18:09:05 | INFO     | trading_bot.risk.manager | APPROVED: buy WIF-USD | Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:09:05 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy WIF-USD from mean_reversion conf=0.89 price=0.179 reason=Mean reversion BUY: Z=-1.75, RSI=0, BB=near, Vol=6.7x
+2026-06-29 18:09:05 | WARNING  | trading_bot.engine   | LEARNING BLOCK: WIF-USD avoided — consistent loser (score: -100.0)
+2026-06-29 18:09:05 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 18:09:06 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 18:09:07 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 18:09:08 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 18:09:09 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 18:09:09 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-29 18:09:09 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 79 low-priority equity names; max 90)
