@@ -1,16 +1,3 @@
-2026-06-29 04:14:58 | INFO     | trading_bot.engine   | SPREAD SIZE-DOWN: SNOA spread 3.3% (price $1.20, tier max 5%) → size 1.00 × 0.79 = 0.79
-2026-06-29 04:14:58 | WARNING  | trading_bot.engine   | STOP FLOOR APPLIED: SNOA entry=$1.2000 stop=$1.1971 (0.24% gap). Setting 6% minimum stop.
-2026-06-29 04:14:58 | INFO     | trading_bot.engine   | SLIPPAGE DAMPENER: momentum avg=0.476% over 20 fills → sizing mult 0.71x
-2026-06-29 04:14:58 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[momentum] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 0.71x = 0.26% risk
-2026-06-29 04:14:58 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: momentum risk $54.64 → $50.00 (per-strategy ceiling)
-2026-06-29 04:14:58 | INFO     | trading_bot.risk.position_sizer | Position size: 694 shares @ $1.20 = $832.80 | Risk: $49.97 (0.2% of account) [tier: 10-5000 shares]
-2026-06-29 04:14:58 | INFO     | trading_bot.engine   | RUNNER SIZING: SNOA size_mult=79% — reduced from 694 to 546 shares (entry_type=n/a)
-2026-06-29 04:14:58 | WARNING  | trading_bot.engine   | R/R STRETCH: SNOA entry=$1.2000 stop=$1.1280 (risk=$0.0720) target=$1.2086 (reward=$0.0086, R/R=0.12) — stretching target to $1.3440 for 2:1 minimum.
-2026-06-29 04:14:58 | WARNING  | trading_bot.engine   | STALE SIGNAL SKIP: SNOA live ask $1.23 has drifted 2.5% above signal $1.20 (max 1.6%) — entry R:R already invalid, skipping order.
-2026-06-29 04:14:58 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-29 04:15:00 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: SPCE — bearish EMA imbalance -0.76
-2026-06-29 04:15:01 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; IBEOS; NYSENAT; PSX; LTSE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
-2026-06-29 04:15:02 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; BATS; ARCA; BEX; NYSE; Unknown market data permissions - Top: IBEOS; OVERNIGHT; 
 2026-06-29 04:15:03 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; IEX; 
 2026-06-29 04:15:03 | INFO     | trading_bot.engine   | QUALITY GATE SKIP: WDCX — bearish EMA imbalance -0.41
 2026-06-29 04:15:04 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; IEX; 
@@ -19998,3 +19985,16 @@ Approved: 1 trades
 2026-06-29 13:45:01 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-29 13:45:01 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-29 13:45:01 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 13:47:44 | WARNING  | trading_bot.engine   | SLOW CYCLE (168.0s total): update_data=163.3s
+2026-06-29 13:47:47 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[20]: AAVE-USD(weak 3d trend (-5.0%)), ADA-USD(weak 3d trend (-0.1%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.3%)), BTC-USD(weak 3d trend (+0.9%)), DOGE-USD(weak 3d trend (-2.0%)), DOT-USD(weak 3d trend (-3.5%)), ETC-USD(weak 3d trend (-1.3%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-1.6%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.1%)), MATIC-USD(weak 3d trend (-1.8%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.4%)), SEI-USD(weak 3d trend (-6.2%)), SUI-USD(weak 3d trend (+0.9%)), TIA-USD(weak 3d trend (-0.9%)), XLM-USD(weak 3d trend (-1.8%)) | warming=1 | neutral=20 | no_data=1
+2026-06-29 13:47:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-29 13:47:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 13:47:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 13:47:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 13:47:59 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 13:47:59 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 48 gainers, 11 gaps, 20 losers
+2026-06-29 13:48:00 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-29 13:48:00 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
+2026-06-29 13:48:00 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 92 low-priority equity names; max 90)
+2026-06-29 13:48:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 13:48:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
