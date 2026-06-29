@@ -1,27 +1,3 @@
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.03
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.40
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.24
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 103.6x | Change: +3.1% | R:R 3.5
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 102.9x | Change: +0.7% | R:R 2.4
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 148.3x | Change: +1.6% | R:R 2.4
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 65 | RVOL: 97.0x | Change: +0.6% | R:R 2.4
-2026-06-29 04:31:15 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.03 conf=0.95
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.40 conf=0.90
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.24 conf=0.95
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $36.01 conf=0.65
-2026-06-29 04:31:15 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | REJECTED: buy NOWL | Already in position: NOWL
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | APPROVED: buy SNOA | Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 103.6x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $3.97 (-6.4%, max -5%)
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | REJECTED: buy ILLR | Setup broke: signal $4.47 → market $4.08 (-8.7%, max -5%)
-2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 97.0x | Trending up +0.6% | MACD histogram positive | RSI healthy (50)
 2026-06-29 04:31:15 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
 2026-06-29 04:31:15 | INFO     | trading_bot.engine   | PREMARKET REJECT: ABCL score=6 (need score>=60)
 2026-06-29 04:31:15 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 1070 symbols
@@ -19998,3 +19974,27 @@ Filtered: 1 signals rejected by risk manag
 2026-06-29 15:18:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
 2026-06-29 15:18:53 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 10 gaps, 20 losers
 2026-06-29 15:18:53 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 87 low-priority equity names; max 90)
+2026-06-29 15:21:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.5s total): update_data=165.8s
+2026-06-29 15:21:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[22]: AAVE-USD(weak 3d trend (-6.9%)), ADA-USD(weak 3d trend (-0.6%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-2.9%)), AVAX-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.6%)), DOGE-USD(weak 3d trend (-2.5%)), DOT-USD(weak 3d trend (-3.1%)), ETC-USD(weak 3d trend (-2.9%)), ETH-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (+0.5%)), HBAR-USD(weak 3d trend (-1.2%)), ICP-USD(weak 3d trend (-1.7%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-4.6%)), LINK-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (+0.1%)), OP-USD(weak 3d trend (-3.7%)), PEPE-USD(weak 3d trend (+0.4%)), SEI-USD(weak 3d trend (-6.2%)), SUI-USD(weak 3d trend (+0.4%)), XLM-USD(weak 3d trend (-1.1%)) | warming=2 | neutral=16 | no_data=1
+2026-06-29 15:21:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 15:21:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 15:21:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 15:21:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 15:21:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 15:21:52 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 10 gaps, 20 losers
+2026-06-29 15:21:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 89 low-priority equity names; max 90)
+2026-06-29 15:21:52 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 15:21:52 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 15:21:52 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 15:24:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (171.0s total): update_data=166.6s
+2026-06-29 15:24:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[22]: AAVE-USD(weak 3d trend (-6.9%)), ADA-USD(weak 3d trend (-0.6%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-2.9%)), AVAX-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (+0.6%)), DOGE-USD(weak 3d trend (-2.5%)), DOT-USD(weak 3d trend (-3.1%)), ETC-USD(weak 3d trend (-2.9%)), ETH-USD(needs vol>=1.1x), GRT-USD(weak 3d trend (+0.5%)), HBAR-USD(weak 3d trend (-1.2%)), ICP-USD(weak 3d trend (-1.7%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-4.6%)), LINK-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (+0.1%)), OP-USD(weak 3d trend (-3.7%)), PEPE-USD(weak 3d trend (+0.4%)), SEI-USD(weak 3d trend (-6.2%)), SUI-USD(weak 3d trend (+0.4%)), XLM-USD(weak 3d trend (-1.1%)) | warming=2 | neutral=16 | no_data=1
+2026-06-29 15:24:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 15:24:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 15:24:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 29 results
+2026-06-29 15:24:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 15:24:53 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 15:24:53 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 10 gaps, 20 losers
+2026-06-29 15:24:53 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 90 low-priority equity names; max 90)
+2026-06-29 15:24:53 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 15:24:53 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 15:24:53 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
