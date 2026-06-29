@@ -17403,3 +17403,158 @@ Signals found: 12
 2026-06-29 01:12:48 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-29 01:12:48 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-29 01:12:48 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x | BONK-USD @ $0.00
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.50
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, breakout>4.46, Vol=2.2x | ILLR @ $4.81
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LVWR | Score: 90 | RVOL: 120.6x | Change: +3.8% | R:R 3.5
+2026-06-29 01:16:02 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 9 signals from strategies
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> mean_reversion: buy BONK-USD @ $0.00 conf=0.98
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.50 conf=0.90
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> momentum: buy ILLR @ $4.81 conf=0.85
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LVWR @ $1.38 conf=0.90
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Momentum BUY: pullback entry, ADX=41, breakout>4.46, Vol=2.2x
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXS | Extreme RVOL 274.4x | Trending up +0.7% | EMA trend bullish | MACD histogram positive
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Extreme RVOL 395.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | REJECTED: buy LVWR | Setup broke: signal $1.38 → market $1.24 (-10.2%, max -3%)
+2026-06-29 01:16:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
+2026-06-29 01:16:02 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 7 buy signal(s) — QH, NOWL, ILLR, SPCE, SOXS, ILLR, ABCL
+2026-06-29 01:16:02 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 750 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 9
+  ✅ BONK-USD: score 98/100 — Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+  ✅ QH: score 95/100 — Momentum BUY: EMA cr
+2026-06-29 01:16:02 | WARNING  | trading_bot.engine   | SLOW CYCLE (198.3s total): update_data=193.7s
+2026-06-29 01:16:03 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 01:16:03 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: BONK-USD entry=$0.0000 stop=$0.0000 (0.28% gap). Setting 5% minimum stop.
+2026-06-29 01:16:03 | INFO     | trading_bot.engine   | Slippage tracker loaded (34 samples across 2 strategies)
+2026-06-29 01:16:03 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
+2026-06-29 01:16:03 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 372961050.72464 BONK-USD @ $0.00 = $1,544.06 | Risk: $77.20 (0.4% of account)
+2026-06-29 01:16:03 | WARNING  | trading_bot.engine   | TIER CAP: BONK-USD signal qty=372961050.72464 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-29 01:16:03 | INFO     | trading_bot.engine   | R/R STRETCH: BONK-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.30) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-29 01:16:03 | INFO     | trading_bot.engine   | Executing BONK-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-29 01:16:03 | INFO     | trading_bot.broker.traderspost | Routing BONK-USD to CRYPTO webhook
+2026-06-29 01:16:03 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "BONK-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 4.14e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-29 01:16:03 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"50d4fd67-6be1-4a13-80f8-169bbde09941","logId":"50d4fd67-6be1-4a13-8
+2026-06-29 01:16:03 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-29 01:16:03 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for BONK-USD — no execution.
+2026-06-29 01:16:03 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY BONK-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: BONK-USD(z=-2.25 rsi=0.0 bb=MIDDLE) | WAIT[29]: ADA-USD(weak 3d trend (+1.0%)), ALGO-USD(needs green bar), APT-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (-2.9%)), AVAX-USD(needs green bar), BTC-USD(weak 3d trend (-1.0%)), CRV-USD(weak 3d trend (-2.7%)), DOGE-USD(weak 3d trend (-2.8%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (+0.7%)), FET-USD(needs green bar), FLOKI-USD(weak 3d trend (-2.3%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-2.7%)), ICP-USD(weak 3d trend (-1.0%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-3.8%)), LINK-USD(weak 3d trend (+0.6%)), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-0.3%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.9%)), SEI-USD(weak 3d trend (-9.2%)), SOL-USD(needs green bar), SUI-USD(weak 3d trend (+0.1%)), TRX-USD(weak 3d trend (+0.2%)), UNI-USD(needs green bar), XLM-USD(weak 3d trend (-2.0%)), XRP-USD(weak 3d trend (+0.6%)) | warming=2 | neutral=7 | no_data=3
+2026-06-29 01:16:06 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x | BONK-USD @ $0.00
+2026-06-29 01:16:06 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy BONK-USD from mean_reversion conf=0.98 price=4.14e-06 reason=Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: BONK-USD score 98 overrides cooldown (3s ago) — strong signal
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: BONK-USD entry=$0.0000 stop=$0.0000 (0.28% gap). Setting 5% minimum stop.
+2026-06-29 01:16:06 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
+2026-06-29 01:16:06 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 372961050.72464 BONK-USD @ $0.00 = $1,544.06 | Risk: $77.20 (0.4% of account)
+2026-06-29 01:16:06 | WARNING  | trading_bot.engine   | TIER CAP: BONK-USD signal qty=372961050.72464 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | R/R STRETCH: BONK-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.30) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-29 01:16:06 | INFO     | trading_bot.engine   | Executing BONK-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-29 01:16:06 | INFO     | trading_bot.broker.traderspost | Routing BONK-USD to CRYPTO webhook
+2026-06-29 01:16:06 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "BONK-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 4.14e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-29 01:16:06 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"e5cf33ed-816f-4a51-a8b2-1bdc9e41bb39","logId":"e5cf33ed-816f-4a51-a
+2026-06-29 01:16:06 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-29 01:16:06 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for BONK-USD — no execution.
+2026-06-29 01:16:06 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY BONK-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-29 01:16:09 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x | BONK-USD @ $0.00
+2026-06-29 01:16:09 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:09 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy BONK-USD from mean_reversion conf=0.98 price=4.14e-06 reason=Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:09 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 01:16:09 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: BONK-USD score 98 overrides cooldown (3s ago) — strong signal
+2026-06-29 01:16:09 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: BONK-USD entry=$0.0000 stop=$0.0000 (0.28% gap). Setting 5% minimum stop.
+2026-06-29 01:16:09 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
+2026-06-29 01:16:09 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 372961050.72464 BONK-USD @ $0.00 = $1,544.06 | Risk: $77.20 (0.4% of account)
+2026-06-29 01:16:09 | WARNING  | trading_bot.engine   | TIER CAP: BONK-USD signal qty=372961050.72464 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-29 01:16:09 | INFO     | trading_bot.engine   | R/R STRETCH: BONK-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.30) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-29 01:16:09 | INFO     | trading_bot.engine   | Executing BONK-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-29 01:16:09 | INFO     | trading_bot.broker.traderspost | Routing BONK-USD to CRYPTO webhook
+2026-06-29 01:16:09 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "BONK-USD", "action": "buy", "sentiment": "bullish", "quantity": 5000, "price": 4.14e-06, "stopLoss": {"type": "stop", "stopPrice": 0.0}, "takeProfit": {"type": "limit", "limitPrice": 0.0}}
+2026-06-29 01:16:09 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 400 | Body={"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.limitPrice is invalid. The takeProfit.limitPrice field must be a positive numeric value representing an absolute limit price.","id":"9c113af8-ac73-4ae1-a08b-e9597ad8d6fd","logId":"9c113af8-ac73-4ae1-a
+2026-06-29 01:16:09 | ERROR    | trading_bot.broker.traderspost | TradersPost signal failed: 400 | {"success":false,"messageCode":"invalid-take-profit-limit-price","message":"The provided takeProfit.
+2026-06-29 01:16:09 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for BONK-USD — no execution.
+2026-06-29 01:16:09 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY BONK-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-29 01:16:12 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x | BONK-USD @ $0.00
+2026-06-29 01:16:12 | INFO     | trading_bot.risk.manager | APPROVED: buy BONK-USD | Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:12 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy BONK-USD from mean_reversion conf=0.98 price=4.14e-06 reason=Mean reversion BUY: Z=-2.25, RSI=0, BB=near, Vol=3.1x
+2026-06-29 01:16:12 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: BONK-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 01:16:13 | INFO     | trading_bot.engine   | COOLDOWN BYPASSED: BONK-USD score 98 overrides cooldown (3s ago) — strong signal
+2026-06-29 01:16:13 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: BONK-USD entry=$0.0000 stop=$0.0000 (0.28% gap). Setting 5% minimum stop.
+2026-06-29 01:16:13 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.50x × Regime 1.00x × Vol 1.00x × Slip 1.00x = 0.38% risk
+2026-06-29 01:16:13 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 372961050.72464 BONK-USD @ $0.00 = $1,544.06 | Risk: $77.20 (0.4% of account)
+2026-06-29 01:16:13 | WARNING  | trading_bot.engine   | TIER CAP: BONK-USD signal qty=372961050.72464 exceeds tier max=5000 for $0.00 stock. Capping to 5000.
+2026-06-29 01:16:13 | INFO     | trading_bot.engine   | R/R STRETCH: BONK-USD entry=$0.0000 stop=$0.0000 (risk=$0.0000) target=$0.0000 (reward=$0.0000, R/R=0.30) — stretching target to $0.0000 for 2:1 minimum.
+2026-06-29 01:16:13 | INFO     | trading_bot.engine   | Executing BONK-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-29 01:16:13 | WARNING  | trading_bot.broker.traderspost | RATE LIMIT: BONK-USD has 3 signals in last 60s (max 3). Blocking.
+2026-06-29 01:16:13 | ERROR    | trading_bot.engine   | TradersPost webhook FAILED for BONK-USD — no execution.
+2026-06-29 01:16:13 | ERROR    | trading_bot.engine   | NO EXECUTION PATH AVAILABLE — cannot execute BUY BONK-USD. Set TRADERSPOST_WEBHOOK_URL in .env (primary execution path), or ensure IBKR is connected (legacy fallback).
+2026-06-29 01:16:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-29 01:16:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 01:16:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 01:16:15 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-29 01:16:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-29 01:16:16 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 01:16:16 | INFO     | trading_bot.engine   | IBKR scanner: 109 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-29 01:16:16 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 01:16:16 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 76 low-priority equity names; max 90)
+2026-06-29 01:16:16 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 01:16:16 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 01:16:16 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.50
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=41, breakout>4.46, Vol=2.2x | ILLR @ $4.80
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LVWR | Score: 90 | RVOL: 120.6x | Change: +3.8% | R:R 3.5
+2026-06-29 01:19:02 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.50 conf=0.90
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> momentum: buy ILLR @ $4.80 conf=0.85
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LVWR @ $1.38 conf=0.90
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Momentum BUY: pullback entry, ADX=41, breakout>4.46, Vol=2.2x
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy SOXS | Extreme RVOL 274.4x | Trending up +0.7% | EMA trend bullish | MACD histogram positive
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Extreme RVOL 395.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | REJECTED: buy LVWR | Setup broke: signal $1.38 → market $1.24 (-10.2%, max -3%)
+2026-06-29 01:19:02 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
+2026-06-29 01:19:02 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 7 buy signal(s) — QH, NOWL, ILLR, SPCE, SOXS, ILLR, ABCL
+2026-06-29 01:19:02 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 760 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 8
+  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
+  ✅ NOWL: score 90/100 — Momentum BUY: pullba
+2026-06-29 01:19:02 | WARNING  | trading_bot.engine   | SLOW CYCLE (169.7s total): update_data=165.5s
+2026-06-29 01:19:05 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[29]: ADA-USD(needs vol>=1.1x), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (-2.9%)), AVAX-USD(needs green bar), BONK-USD(needs vol>=1.1x), BTC-USD(weak 3d trend (-0.4%)), CRV-USD(weak 3d trend (-2.7%)), DOGE-USD(weak 3d trend (-2.3%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (+0.9%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-2.3%)), GRT-USD(weak 3d trend (-0.6%)), HBAR-USD(weak 3d trend (-2.7%)), ICP-USD(weak 3d trend (-0.9%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-3.8%)), LINK-USD(weak 3d trend (+0.6%)), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-0.3%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.9%)), SEI-USD(weak 3d trend (-9.2%)), SOL-USD(needs green bar), SUI-USD(weak 3d trend (+0.1%)), TRX-USD(weak 3d trend (+0.2%)), XLM-USD(weak 3d trend (-2.0%)), XRP-USD(needs vol>=1.1x) | warming=3 | neutral=7 | no_data=3
+2026-06-29 01:19:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-29 01:19:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 01:19:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 01:19:14 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
+2026-06-29 01:19:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
+2026-06-29 01:19:15 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 01:19:15 | INFO     | trading_bot.engine   | IBKR scanner: 109 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
+2026-06-29 01:19:15 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 01:19:15 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
+2026-06-29 01:19:15 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 01:19:15 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 01:19:15 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
