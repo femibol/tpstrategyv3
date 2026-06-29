@@ -1,69 +1,3 @@
-2026-06-29 03:07:18 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-29 03:07:18 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
-2026-06-29 03:07:18 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 77 low-priority equity names; max 90)
-2026-06-29 03:07:18 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-29 03:07:19 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-29 03:07:19 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | NEAR-USD @ $1.87
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.46
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LVWR | Score: 90 | RVOL: 120.6x | Change: +3.8% | R:R 3.5
-2026-06-29 03:10:10 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> mean_reversion: buy NEAR-USD @ $1.87 conf=1.00
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.46 conf=0.90
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy LVWR @ $1.38 conf=0.90
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | REJECTED: buy NEAR-USD | Cost gate: edge 46bps < 1.5× cost 50bps (need 75bps)
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $4.05 (-4.5%, max -3%)
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Extreme RVOL 395.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | REJECTED: buy LVWR | Setup broke: signal $1.38 → market $1.24 (-10.2%, max -3%)
-2026-06-29 03:10:10 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
-2026-06-29 03:10:10 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 5 buy signal(s) — QH, NOWL, SPCE, ILLR, ABCL
-2026-06-29 03:10:10 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 765 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ NEAR-USD: score 100/100 — Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x
-  ✅ QH: score 95/100 — Momentum BUY: EMA
-2026-06-29 03:10:11 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.0s total): update_data=171.6s
-2026-06-29 03:10:14 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: NEAR-USD(z=-4.36 rsi=0.0 bb=LOWER) | WAIT[27]: ADA-USD(weak 3d trend (-1.0%)), APT-USD(weak 3d trend (-1.2%)), ATOM-USD(weak 3d trend (-1.8%)), AVAX-USD(needs green bar), BONK-USD(weak 3d trend (+1.0%)), BTC-USD(weak 3d trend (-0.8%)), CRV-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-2.7%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (+0.1%)), FLOKI-USD(weak 3d trend (-1.4%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-2.9%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.3%)), LINK-USD(weak 3d trend (+0.8%)), LTC-USD(needs vol>=1.1x), MATIC-USD(weak 3d trend (-2.8%)), OP-USD(weak 3d trend (-5.6%)), PEPE-USD(weak 3d trend (+0.4%)), SEI-USD(weak 3d trend (-7.1%)), SUI-USD(weak 3d trend (-0.4%)), TRX-USD(needs vol>=1.1x), UNI-USD(needs green bar), XLM-USD(weak 3d trend (-2.4%)), XRP-USD(weak 3d trend (-0.2%)) | warming=2 | neutral=10 | no_data=2
-2026-06-29 03:10:14 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | NEAR-USD @ $1.87
-2026-06-29 03:10:14 | INFO     | trading_bot.risk.manager | REJECTED: buy NEAR-USD | Cost gate: edge 46bps < 1.5× cost 50bps (need 75bps)
-2026-06-29 03:10:17 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | NEAR-USD @ $1.87
-2026-06-29 03:10:17 | INFO     | trading_bot.risk.manager | REJECTED: buy NEAR-USD | Cost gate: edge 46bps < 1.5× cost 50bps (need 75bps)
-2026-06-29 03:10:20 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-4.36, RSI=0, BB=lower, Vol=20.0x | NEAR-USD @ $1.87
-2026-06-29 03:10:20 | INFO     | trading_bot.risk.manager | REJECTED: buy NEAR-USD | Cost gate: edge 46bps < 1.5× cost 50bps (need 75bps)
-2026-06-29 03:10:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-29 03:10:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-29 03:10:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-29 03:10:22 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-29 03:10:23 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-29 03:10:24 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-29 03:10:24 | INFO     | trading_bot.engine   | IBKR scanner: 115 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-29 03:10:24 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-29 03:10:24 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 78 low-priority equity names; max 90)
-2026-06-29 03:10:24 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-29 03:10:24 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-29 03:10:24 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.43
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: LVWR | Score: 90 | RVOL: 120.6x | Change: +3.8% | R:R 3.5
-2026-06-29 03:13:16 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
-2026-06-29 03:13:16 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-29 03:13:16 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
 2026-06-29 03:13:16 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.43 conf=0.90
 2026-06-29 03:13:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
 2026-06-29 03:13:16 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
@@ -19998,3 +19932,69 @@ Approved: 1 trades
 2026-06-29 10:53:18 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-29 10:53:18 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-29 10:53:18 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 10:55:55 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=32, Vol=1.4x | SLS @ $14.79
+2026-06-29 10:55:55 | INFO     | trading_bot.strategy.low_float_catalyst | LOW-FLOAT SIGNAL: NNBR @ $3.86 | RVOL 21.7x | +39.9% | float 46.5M | conf 0.95
+2026-06-29 10:55:55 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-29 10:55:55 | INFO     | trading_bot.engine   |   -> momentum: buy SLS @ $14.79 conf=0.75
+2026-06-29 10:55:55 | INFO     | trading_bot.engine   |   -> low_float_catalyst: buy NNBR @ $3.86 conf=0.95
+2026-06-29 10:55:55 | INFO     | trading_bot.risk.manager | APPROVED: buy SLS | Momentum BUY: pullback entry, ADX=32, Vol=1.4x
+2026-06-29 10:55:55 | INFO     | trading_bot.risk.manager | APPROVED: buy NNBR | RVOL 21.7x | change +39.9% | float 46.5M | spread 0.26%
+2026-06-29 10:55:55 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 895 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ SLS: score 75/100 — Momentum BUY: pullback entry, ADX=32, Vol=1.4x
+  ✅ NNBR: score 95/100 — RVOL 21.7x | change +39.9% | f
+2026-06-29 10:55:55 | WARNING  | trading_bot.engine   | SLOW CYCLE (162.5s total): update_data=157.0s, discover=5.2s
+2026-06-29 10:55:57 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SLS via momentum — Global daily equity trade cap reached (29/25)
+2026-06-29 10:55:57 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; 
+2026-06-29 10:55:59 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: NNBR via low_float_catalyst — Global daily equity trade cap reached (29/25)
+2026-06-29 10:56:02 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[24]: AAVE-USD(weak 3d trend (-0.3%)), ADA-USD(weak 3d trend (-0.8%)), APT-USD(weak 3d trend (-2.0%)), ATOM-USD(weak 3d trend (-3.7%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (-0.6%)), CRV-USD(weak 3d trend (-1.4%)), DOGE-USD(weak 3d trend (-2.1%)), DOT-USD(weak 3d trend (-3.3%)), ETH-USD(weak 3d trend (+0.7%)), FLOKI-USD(weak 3d trend (-1.8%)), HBAR-USD(weak 3d trend (-2.4%)), ICP-USD(weak 3d trend (-1.9%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.6%)), LINK-USD(weak 3d trend (-0.1%)), MATIC-USD(weak 3d trend (-2.6%)), OP-USD(weak 3d trend (-5.7%)), PEPE-USD(weak 3d trend (-0.4%)), SEI-USD(weak 3d trend (-4.8%)), SHIB-USD(weak 3d trend (+0.7%)), SUI-USD(weak 3d trend (+0.6%)), XLM-USD(weak 3d trend (-2.3%)), XRP-USD(weak 3d trend (+0.8%)) | neutral=16 | no_data=2
+2026-06-29 10:56:05 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: CHX; IBEOS; OVERNIGHT; Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Top: BYX; AMEX; PEARL; NYSENAT; T24X; PSX; MEMX; EDGEA; LTSE; ISE; DRCTEDGE; 
+2026-06-29 10:56:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-29 10:56:06 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; NYSENAT; IBEOS; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-29 10:56:08 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-29 10:56:09 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; PEARL; AMEX; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Unknown market data permissions - Depth: BATS; NASDAQ; ARCA; BEX; NYSE; IEX; 
+2026-06-29 10:56:10 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 10:56:11 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 10:56:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 10:56:13 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 10:56:14 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 10:56:14 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 49 gainers, 8 gaps, 20 losers
+2026-06-29 10:56:14 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-29 10:56:14 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 16 stale symbols across strategies
+2026-06-29 10:56:14 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
+2026-06-29 10:56:14 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 10:56:14 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 10:56:14 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 10:57:03 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-29 10:58:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 10:58:18 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
+2026-06-29 10:59:19 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-29 10:59:19 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=32, Vol=1.4x | SLS @ $14.63
+2026-06-29 10:59:19 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-29 10:59:19 | INFO     | trading_bot.engine   |   -> momentum: buy SLS @ $14.63 conf=0.75
+2026-06-29 10:59:19 | INFO     | trading_bot.risk.manager | APPROVED: buy SLS | Momentum BUY: pullback entry, ADX=32, Vol=1.4x
+2026-06-29 10:59:19 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 894 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ SLS: score 75/100 — Momentum BUY: pullback entry, ADX=32, Vol=1.4x
+Approved: 1 trades
+2026-06-29 10:59:19 | WARNING  | trading_bot.engine   | SLOW CYCLE (190.3s total): update_data=184.8s, discover=5.1s
+2026-06-29 10:59:19 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2119: Market data farm is connecting:usfarm.nj
+2026-06-29 10:59:21 | INFO     | trading_bot.engine   | SAFETY GATE BLOCK: SLS via momentum — Global daily equity trade cap reached (29/25)
+2026-06-29 10:59:24 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[24]: AAVE-USD(weak 3d trend (-0.3%)), ADA-USD(weak 3d trend (-0.8%)), APT-USD(weak 3d trend (-2.0%)), ATOM-USD(weak 3d trend (-3.7%)), BONK-USD(weak 3d trend (+0.7%)), BTC-USD(weak 3d trend (-0.6%)), CRV-USD(weak 3d trend (-1.4%)), DOGE-USD(weak 3d trend (-2.1%)), DOT-USD(weak 3d trend (-3.3%)), ETH-USD(weak 3d trend (+0.7%)), FLOKI-USD(weak 3d trend (-1.8%)), HBAR-USD(weak 3d trend (-2.4%)), ICP-USD(weak 3d trend (-1.9%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.6%)), LINK-USD(weak 3d trend (-0.1%)), MATIC-USD(weak 3d trend (-2.6%)), OP-USD(weak 3d trend (-5.7%)), PEPE-USD(weak 3d trend (-0.4%)), SEI-USD(weak 3d trend (-4.8%)), SHIB-USD(weak 3d trend (+0.7%)), SUI-USD(weak 3d trend (+0.6%)), XLM-USD(weak 3d trend (-2.3%)), XRP-USD(weak 3d trend (+0.8%)) | neutral=16 | no_data=2
+2026-06-29 10:59:29 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Depth: IEX; Top: BYX; AMEX; PEARL; T24X; MEMX; EDGEA; CHX; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: BATS; Unknown market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Top: IBEOS; OVERNIGHT; 
+2026-06-29 10:59:30 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; IEX; 
+2026-06-29 10:59:31 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2152: Exchanges - Top: BYX; AMEX; PEARL; T24X; MEMX; OVERNIGHT; EDGEA; CHX; IBEOS; NYSENAT; PSX; LTSE; ISE; DRCTEDGE; Need additional market data permissions - Depth: NASDAQ; ARCA; BEX; NYSE; Unknown market data permissions - Depth: BATS; IEX; 
+2026-06-29 10:59:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 10:59:32 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 10:59:33 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 10:59:34 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 10:59:35 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 10:59:35 | INFO     | trading_bot.engine   | IBKR scanner: 123 unique symbols discovered | 49 gainers, 9 gaps, 20 losers
+2026-06-29 10:59:35 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-29 10:59:35 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
+2026-06-29 10:59:35 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 102 low-priority equity names; max 90)
+2026-06-29 10:59:36 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 10:59:36 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 10:59:36 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
