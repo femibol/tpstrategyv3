@@ -15178,3 +15178,48 @@ Filtered: 1 signals rejected by risk manage
 2026-06-28 21:18:33 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
 2026-06-28 21:18:33 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
 2026-06-28 21:18:33 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 93 low-priority equity names; max 90)
+2026-06-28 21:20:53 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
+2026-06-28 21:22:07 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ADYEY | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 61.0x | Change: +1.6% | R:R 3.0 | Size: 50%
+2026-06-28 21:22:07 | INFO     | trading_bot.strategy.crypto_runner | CRYPTO-RUNNER SIGNAL: SNX-USD @ $0.247 | 1h +11.8% | RVOL 9.7x | static univ | conf 0.81
+2026-06-28 21:22:07 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 2 signals from strategies
+2026-06-28 21:22:07 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ADYEY @ $9.48 conf=0.60
+2026-06-28 21:22:07 | INFO     | trading_bot.engine   |   -> crypto_runner: buy SNX-USD @ $0.25 conf=0.81
+2026-06-28 21:22:07 | INFO     | trading_bot.risk.manager | APPROVED: buy ADYEY | [BREAKOUT] Score:6/12 RVOL:61.0x | Confirmed | Chg:+1.6%
+2026-06-28 21:22:07 | INFO     | trading_bot.risk.manager | APPROVED: buy SNX-USD | 1h +11.8% | RVOL 9.7x
+2026-06-28 21:22:07 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 1 buy signal(s) — ADYEY
+2026-06-28 21:22:07 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 845 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 2
+  ✅ ADYEY: score 60/100 — [BREAKOUT] Score:6/12 RVOL:61.0x | Confirmed | Chg:+1.6%
+  ✅ SNX-USD: score 81/100 — 1h +11.8% | RVO
+2026-06-28 21:22:08 | WARNING  | trading_bot.engine   | SLOW CYCLE (218.7s total): update_data=214.5s
+2026-06-28 21:22:09 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: SNX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: crypto_runner
+2026-06-28 21:22:09 | INFO     | trading_bot.engine   | VOL REGIME: SNX-USD short=0.0244 long=0.0111 ratio=2.21x → sizing mult 0.76x
+2026-06-28 21:22:09 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[crypto_runner] 1.00x × DD 1.00x × Session 1.00x × Conf 1.20x × Regime 1.00x × Vol 0.76x × Slip 1.00x = 0.92% risk
+2026-06-28 21:22:09 | INFO     | trading_bot.risk.position_sizer | STRATEGY RISK CAP: crypto_runner risk $188.75 → $30.00 (per-strategy ceiling)
+2026-06-28 21:22:09 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 2024.2915 SNX-USD @ $0.25 = $500.00 | Risk: $30.00 (0.1% of account)
+2026-06-28 21:22:09 | INFO     | trading_bot.engine   | Executing SNX-USD via TradersPost (CRYPTO)  [OUTSIDE RTH]...
+2026-06-28 21:22:09 | INFO     | trading_bot.broker.traderspost | Routing SNX-USD to CRYPTO webhook
+2026-06-28 21:22:09 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "SNX-USD", "action": "buy", "sentiment": "bullish", "quantity": 2024.2915, "price": 0.247, "stopLoss": {"type": "stop", "stopPrice": 0.23}, "takeProfit": {"type": "limit", "limitPrice": 0.28}}
+2026-06-28 21:22:09 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"438b649a-52e9-4c47-9d24-d0e29ed5d432","logId":"438b649a-52e9-4c47-9d24-d0e29ed5d432","payload":{"ticker":"SNX-USD","action":"buy","sentiment":"bullish","quantity":2024.2915,"price":0.247,"stopLoss":{"type":"stop","stopPrice":0.23},"takeProfit":{"type":"limit","limitPrice":0.28}
+2026-06-28 21:22:09 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY SNX-USD | Strategy: unknown | Qty: 2024.2915 @ $0.25 = $500.00 | Risk: $30.00 | Reward: $75.00 | R:R 2.5:1 | Response: 200
+2026-06-28 21:22:09 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: SNX-USD qty=2024.2915. SL $0.23 / TP $0.28 managed by bot (no broker-side bracket).
+2026-06-28 21:22:09 | INFO     | trading_bot.engine   | ORDER BUY SNX-USD via TradersPost | Qty: 2024.2915 | Price: $0.25 | Cost: $500.00 | Stop: $0.23 (risk $30.00) | Target: $0.28 (reward $75.00) | R:R 2.5:1 | Strategy: crypto_runner
+2026-06-28 21:22:09 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: SNX-USD**
+```
+  Entry: $0.25 x 2024.2915 shares = $500.00
+  Stop:  $0.23 (-$30.00 | -6.0%)
+  Targets: $0.28
+  Risk/Reward: 2.5
+```
+Strategy: **crypto_runner** | Confidence: 
+2026-06-28 21:22:12 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[26]: ADA-USD(weak 3d trend (+0.3%)), APT-USD(weak 3d trend (-4.8%)), ARB-USD(weak 3d trend (-3.5%)), ATOM-USD(weak 3d trend (-4.0%)), BTC-USD(weak 3d trend (-0.4%)), CRV-USD(weak 3d trend (-2.0%)), DOGE-USD(weak 3d trend (-1.6%)), DOT-USD(weak 3d trend (-2.0%)), ETH-USD(weak 3d trend (-0.0%)), FLOKI-USD(weak 3d trend (-2.6%)), GRT-USD(weak 3d trend (-1.7%)), HBAR-USD(weak 3d trend (-2.5%)), ICP-USD(weak 3d trend (+0.4%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-5.4%)), LINK-USD(weak 3d trend (+0.2%)), MATIC-USD(weak 3d trend (-1.4%)), OP-USD(weak 3d trend (-5.7%)), PEPE-USD(weak 3d trend (-0.4%)), RNDR-USD(needs vol>=1.1x), SEI-USD(weak 3d trend (-9.2%)), SHIB-USD(weak 3d trend (-1.4%)), SUI-USD(weak 3d trend (+0.0%)), TRX-USD(weak 3d trend (-0.6%)), XLM-USD(weak 3d trend (-2.1%)), XRP-USD(weak 3d trend (+1.0%)) | warming=4 | neutral=10 | no_data=1
+2026-06-28 21:22:19 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
+2026-06-28 21:22:20 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-28 21:22:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-28 21:22:21 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 30 results
+2026-06-28 21:22:22 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-28 21:22:22 | INFO     | trading_bot.engine   | IBKR scanner: 133 unique symbols discovered | 50 gainers, 9 gaps, 20 losers
+2026-06-28 21:22:22 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-28 21:22:22 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
+2026-06-28 21:22:22 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 92 low-priority equity names; max 90)
