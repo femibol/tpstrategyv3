@@ -1,29 +1,3 @@
-2026-06-29 04:08:11 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-29 04:08:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-29 04:08:12 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-29 04:08:12 | INFO     | trading_bot.engine   | IBKR scanner: 113 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-29 04:08:13 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-29 04:08:13 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 114 low-priority equity names; max 90)
-2026-06-29 04:08:13 | INFO     | trading_bot.data.market_data | Pruned 5 stale IBKR streams — now 43/95
-2026-06-29 04:08:14 | INFO     | trading_bot.broker.ibkr | Subscribed to 5 live market data streams
-2026-06-29 04:08:14 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-29 04:09:47 | INFO     | trading_bot.broker.ibkr | Order update: AAPG | Status: Filled | Filled: 99.0/99.0 | AvgPrice: $16.88
-2026-06-29 04:10:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-29 04:10:17 | WARNING  | trading_bot.broker.ibkr | IBKR Error 2108: Market data farm connection is inactive but should be available upon demand.usfarm.nj
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $5.93
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.34
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>1.10, Vol=18.8x | SNOA @ $1.20
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 103.6x | Change: +3.1% | R:R 3.5
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 102.9x | Change: +0.7% | R:R 2.4
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 148.3x | Change: +1.6% | R:R 2.4
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 65 | RVOL: 97.0x | Change: +0.6% | R:R 2.4
-2026-06-29 04:11:18 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
-2026-06-29 04:11:18 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $5.93 conf=0.95
-2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.34 conf=0.90
-2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> momentum: buy SNOA @ $1.20 conf=0.95
-2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
 2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
 2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $36.01 conf=0.65
 2026-06-29 04:11:18 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
@@ -19998,3 +19972,29 @@ Approved: 1 trades
 2026-06-29 13:17:58 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
 2026-06-29 13:17:58 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
 2026-06-29 13:17:58 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
+2026-06-29 13:20:44 | WARNING  | trading_bot.engine   | SLOW CYCLE (170.8s total): update_data=166.2s
+2026-06-29 13:20:47 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[20]: AAVE-USD(weak 3d trend (-6.0%)), ADA-USD(weak 3d trend (-0.2%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.3%)), BTC-USD(weak 3d trend (+0.7%)), CRV-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-1.8%)), DOT-USD(weak 3d trend (-3.8%)), ETC-USD(weak 3d trend (-1.5%)), FET-USD(weak 3d trend (-2.1%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-4.4%)), MATIC-USD(weak 3d trend (-1.4%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-6.2%)), XLM-USD(weak 3d trend (-1.4%)) | neutral=21 | no_data=1
+2026-06-29 13:20:54 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-29 13:20:55 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 13:20:56 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 13:20:57 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 13:20:58 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 13:20:58 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 48 gainers, 11 gaps, 20 losers
+2026-06-29 13:20:58 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
+2026-06-29 13:20:58 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
+2026-06-29 13:23:38 | INFO     | trading_bot.engine   | DATA COVERAGE: 85/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
+2026-06-29 13:23:38 | WARNING  | trading_bot.engine   | SLOW CYCLE (164.9s total): update_data=160.0s
+2026-06-29 13:23:38 | INFO     | trading_bot.engine   | CYCLE #79: regime=sideways | signals=0->approved=0 | positions=0/15 | bars_warm=144/145 | equity_open=True | pm=False pwr_hr=False
+2026-06-29 13:23:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[19]: AAVE-USD(weak 3d trend (-6.2%)), ADA-USD(weak 3d trend (-0.3%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-3.3%)), BTC-USD(weak 3d trend (+0.7%)), CRV-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-2.2%)), DOT-USD(weak 3d trend (-3.8%)), ETC-USD(weak 3d trend (-1.5%)), HBAR-USD(weak 3d trend (-1.8%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-4.4%)), MATIC-USD(weak 3d trend (-1.9%)), OP-USD(weak 3d trend (-1.9%)), PEPE-USD(weak 3d trend (+0.0%)), SEI-USD(weak 3d trend (-6.2%)), XLM-USD(weak 3d trend (-1.4%)) | neutral=22 | no_data=1
+2026-06-29 13:23:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 48 results
+2026-06-29 13:23:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 13:23:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 13:23:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 13:23:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 13:23:52 | INFO     | trading_bot.engine   | IBKR scanner: 125 unique symbols discovered | 48 gainers, 11 gaps, 20 losers
+2026-06-29 13:23:52 | INFO     | trading_bot.engine   | Injected 1 runners into all strategies
+2026-06-29 13:23:52 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 20 stale symbols across strategies
+2026-06-29 13:23:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 92 low-priority equity names; max 90)
+2026-06-29 13:23:52 | INFO     | trading_bot.data.market_data | Pruned 2 stale IBKR streams — now 46/95
+2026-06-29 13:23:52 | INFO     | trading_bot.broker.ibkr | Subscribed to 2 live market data streams
+2026-06-29 13:23:52 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
