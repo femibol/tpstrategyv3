@@ -1,40 +1,19 @@
-=== executed: cd4d892c8320f82b5b9048f36b22df689ee8d79d
-=== started:  2026-06-28T14:51:01Z
+=== executed: 944830744b5ee25d5529310f062ad72976c2a031
+=== started:  2026-06-29T12:49:02Z
 === exit:     
 === timeout:  90s
 ===
-=== 15 WORST losers in POST-fix period (≥06-18) ===
-  06-22 11:02  JUP-USD     $ -1049.44  qty=5000  entry=$0.2099 exit=$0.0000  stop_loss  [mean_reversion]
-  06-22 15:36  WYFL        $  -147.42  qty=39  entry=$45.1300 exit=$41.3500  stop_loss  [momentum]
-  06-25 09:44  RAM         $   -63.75  qty=51  entry=$30.0500 exit=$28.8000  stop_loss  [momentum]
-  06-18 02:30  AAVE-USD    $   -63.22  qty=27.36727  entry=$73.0800 exit=$70.7700  time_exit  [mean_reversion]
-  06-22 09:55  ICCM        $   -61.92  qty=72  entry=$7.0100 exit=$6.1500  stop_loss  [momentum]
-  06-18 11:38  SOXL        $   -61.83  qty=9  entry=$279.4200 exit=$272.5500  stop_loss  [momentum]
-  06-21 08:56  NEAR-USD    $   -59.01  qty=894.05454  entry=$2.2370 exit=$2.1710  time_exit  [mean_reversion]
-  06-23 16:17  LITZ        $   -56.40  qty=94  entry=$17.6200 exit=$17.0200  stop_loss  [momentum]
-  06-18 09:56  WPRT        $   -55.16  qty=394  entry=$2.1200 exit=$1.9800  stop_loss  [momentum]
-  06-25 09:47  AMA         $   -51.46  qty=31  entry=$46.3600 exit=$44.7000  stop_loss  [momentum]
-  06-26 10:04  CANF        $   -38.12  qty=128.0  entry=$3.4278 exit=$3.1300  portfolio_risk  [synced_from_ibkr]
-  06-22 10:01  WKSP        $   -35.50  qty=394  entry=$0.9700 exit=$0.8799  portfolio_risk  [momentum]
-  06-22 12:27  KEEL        $   -33.35  qty=145  entry=$7.2900 exit=$7.0600  stop_loss  [momentum]
-  06-23 06:14  TRX-USD     $   -18.09  qty=4760.15342  entry=$0.3308 exit=$0.3270  time_exit  [mean_reversion]
-  06-24 13:16  JACK        $   -13.86  qty=77  entry=$13.6100 exit=$13.4300  time_exit  [momentum]
+=== CORRECT the JUP-USD phantom record in trade_history.json ===
+backup written: data/trade_history.json.bak.pre-jup-correction
+  corrected: JUP-USD  was pnl=$-1049.44 exit=$0.000013 -> pnl=$0.00 exit=$0.2099
 
-=== Is the big crypto loss the JUP-USD phantom? ===
-JUP-USD trades in POST period: 6
-  06-20 22:43  $    +0.00  qty=2283.10502  entry=$0.2190 exit=$0.219000  webhook_exit
-  06-20 23:33  $    +0.00  qty=2249.21278  entry=$0.2223 exit=$0.222300  webhook_exit
-  06-21 15:25  $    +0.00  qty=5000  entry=$0.2196 exit=$0.219600  time_exit
-  06-22 01:38  $    +0.60  qty=400  entry=$0.2091 exit=$0.210600  partial_target_1
-  06-22 01:54  $    +6.90  qty=4600  entry=$0.2091 exit=$0.210600  webhook_exit
-  06-22 11:02  $ -1049.44  qty=5000  entry=$0.2099 exit=$0.000013  stop_loss
+wrote 465 trades, corrected 1 phantom(s)
+remaining JUP-USD records with pnl < -$50: 0 (expect 0)
 
-=== POST losers by exit-price-near-zero (phantom collision detector) ===
-trades with exit < $0.01 AND |pnl| > $50 (likely ticker-collision phantoms): 1
-  06-22 11:02  JUP-USD     $ -1049.44  exit=$0.000013  entry=$0.2099  stop_loss
-  TOTAL phantom P&L: $-1049.44
+=== recompute POST-fix totals after correction ===
+  POST all (corrected)  : 134t  $-542.70  wr 69%
+  POST equity           : 87t  $-583.20  wr 66%
+  POST crypto           : 47t  $+40.50  wr 77%
 
-=== POST P&L with phantoms EXCLUDED ===
-  POST all (real)       : 118t  $-488.36  wr 69%
-  POST equity (real)    : 76t  $-520.53  wr 64%
-  POST crypto (real)    : 42t  $+32.17  wr 79%
+=== rebuild performance stats so dashboard/drawdown reflect correction ===
+(restart picks up corrected history on next _rebuild_performance_stats_from_history)
