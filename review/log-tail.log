@@ -1,97 +1,3 @@
-2026-06-29 03:48:42 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-29 03:48:42 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-29 03:48:43 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-29 03:48:43 | INFO     | trading_bot.engine   | IBKR scanner: 112 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-29 03:48:43 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-29 03:48:43 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 5 stale symbols across strategies
-2026-06-29 03:48:43 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 81 low-priority equity names; max 90)
-2026-06-29 03:48:43 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
-2026-06-29 03:48:43 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
-2026-06-29 03:48:43 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
-2026-06-29 03:50:35 | INFO     | trading_bot.signals.politician_tracker | Checking for new politician trade disclosures...
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   | DATA COVERAGE: 84/90 symbols have bars, 90/90 have prices | IBKR blacklisted: 42
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x | ALGO-USD @ $0.09
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.40
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 65 | RVOL: 258.6x | Change: +0.6% | R:R 2.4
-2026-06-29 03:51:36 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 8 signals from strategies
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> mean_reversion: buy ALGO-USD @ $0.09 conf=0.78
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.40 conf=0.90
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $36.01 conf=0.65
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $3.99 (-5.9%, max -3%)
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Extreme RVOL 395.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 258.6x | Trending up +0.6% | MACD histogram positive | RSI healthy (50)
-2026-06-29 03:51:36 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
-2026-06-29 03:51:36 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — QH, NOWL, SPCE, ILLR, WDCX, ABCL
-2026-06-29 03:51:36 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 785 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 8
-  ✅ ALGO-USD: score 78/100 — Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-  ✅ QH: score 95/100 — Momentum BUY: EMA c
-2026-06-29 03:51:36 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.9s total): update_data=172.6s
-2026-06-29 03:51:37 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
-2026-06-29 03:51:40 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | BUY[1]: ALGO-USD(z=-1.35 rsi=9.8 bb=MIDDLE) | WAIT[25]: ADA-USD(weak 3d trend (-0.8%)), APT-USD(weak 3d trend (-1.9%)), ATOM-USD(weak 3d trend (-1.8%)), BONK-USD(weak 3d trend (+0.5%)), BTC-USD(weak 3d trend (-0.7%)), CRV-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-2.5%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (-0.0%)), FLOKI-USD(weak 3d trend (-2.4%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-3.3%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-7.1%)), LINK-USD(weak 3d trend (-0.0%)), MATIC-USD(weak 3d trend (-3.0%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-5.6%)), PEPE-USD(weak 3d trend (-0.4%)), SEI-USD(weak 3d trend (-7.1%)), SUI-USD(weak 3d trend (-0.3%)), UNI-USD(weak 3d trend (-2.7%)), XLM-USD(weak 3d trend (-3.1%)), XRP-USD(weak 3d trend (+0.1%)) | warming=5 | neutral=9 | no_data=2
-2026-06-29 03:51:40 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x | ALGO-USD @ $0.09
-2026-06-29 03:51:40 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:40 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.78 price=0.08669 reason=Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:40 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
-2026-06-29 03:51:43 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x | ALGO-USD @ $0.09
-2026-06-29 03:51:43 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:43 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.78 price=0.08669 reason=Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:43 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
-2026-06-29 03:51:46 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x | ALGO-USD @ $0.09
-2026-06-29 03:51:46 | INFO     | trading_bot.risk.manager | APPROVED: buy ALGO-USD | Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:46 | INFO     | trading_bot.engine   | CRYPTO FAST LANE: approved buy ALGO-USD from mean_reversion conf=0.78 price=0.08669 reason=Mean reversion BUY: Z=-1.35, RSI=10, BB=near, Vol=2.4x
-2026-06-29 03:51:46 | WARNING  | trading_bot.engine   | LEARNING BLOCK: ALGO-USD avoided — consistent loser (score: -38.6)
-2026-06-29 03:51:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 50 results
-2026-06-29 03:51:47 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
-2026-06-29 03:51:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
-2026-06-29 03:51:49 | WARNING  | trading_bot.broker.ibkr | IBKR Error 165: Historical Market Data Service query message:no items retrieved
-2026-06-29 03:51:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 0 results
-2026-06-29 03:51:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
-2026-06-29 03:51:50 | INFO     | trading_bot.engine   | IBKR scanner: 111 unique symbols discovered | 50 gainers, 0 gaps, 20 losers
-2026-06-29 03:51:50 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
-2026-06-29 03:51:50 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 81 low-priority equity names; max 90)
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x | QH @ $6.21
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.momentum | SIGNAL: Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x | NOWL @ $4.40
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SPCE | Score: 90 | RVOL: 276.4x | Change: +3.1% | R:R 3.5
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: SOXS | Score: 80 | RVOL: 274.4x | Change: +0.7% | R:R 2.4
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: ILLR | Score: 85 | RVOL: 395.6x | Change: +1.6% | R:R 2.4
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.rvol_momentum | RVOL SIGNAL: WDCX | Score: 65 | RVOL: 258.6x | Change: +0.6% | R:R 2.4
-2026-06-29 03:54:42 | INFO     | trading_bot.strategy.momentum_runner | RUNNER SIGNAL [BREAKOUT]: ABCL | Score: 6/12 ({'rvol': 3, 'float': 0, 'catalyst': 0, 'technical': 3}) | RVOL: 11.3x | Change: +1.8% | R:R 3.0 | Size: 100%
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 7 signals from strategies
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> momentum: buy QH @ $6.21 conf=0.95
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> momentum: buy NOWL @ $4.40 conf=0.90
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SPCE @ $2.97 conf=0.90
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy SOXS @ $4.24 conf=0.80
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy ILLR @ $4.47 conf=0.85
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> rvol_momentum: buy WDCX @ $36.01 conf=0.65
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   |   -> momentum_runner: buy ABCL @ $7.38 conf=0.60
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | APPROVED: buy QH | Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | APPROVED: buy NOWL | Momentum BUY: pullback entry, ADX=89, breakout>4.32, higher lows, Vol=3.2x
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | APPROVED: buy SPCE | Extreme RVOL 276.4x | Strong move +3.1% | EMA trend bullish | MACD histogram positive
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | REJECTED: buy SOXS | Setup broke: signal $4.24 → market $3.99 (-5.9%, max -3%)
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | APPROVED: buy ILLR | Extreme RVOL 395.6x | Moving up +1.6% | EMA trend bullish | MACD histogram positive
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | APPROVED: buy WDCX | Extreme RVOL 258.6x | Trending up +0.6% | MACD histogram positive | RSI healthy (50)
-2026-06-29 03:54:42 | INFO     | trading_bot.risk.manager | APPROVED: buy ABCL | [BREAKOUT] Score:6/12 RVOL:11.3x | Confirmed | Chg:+1.8%
-2026-06-29 03:54:42 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 6 buy signal(s) — QH, NOWL, SPCE, ILLR, WDCX, ABCL
-2026-06-29 03:54:42 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 785 symbols
-Market: 🟡 SIDEWAYS 
-Signals found: 7
-  ✅ QH: score 95/100 — Momentum BUY: EMA cross, ADX=100, breakout>5.50, Vol=6.7x
   ✅ NOWL: score 90/100 — Momentum BUY: pullba
 2026-06-29 03:54:42 | WARNING  | trading_bot.engine   | SLOW CYCLE (176.0s total): update_data=171.6s
 2026-06-29 03:54:45 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=42 | WAIT[27]: ADA-USD(weak 3d trend (-0.8%)), ALGO-USD(needs vol>=1.1x), APT-USD(weak 3d trend (-1.9%)), ATOM-USD(weak 3d trend (-1.8%)), BONK-USD(weak 3d trend (+0.5%)), BTC-USD(weak 3d trend (-0.7%)), CRV-USD(weak 3d trend (+0.1%)), DOGE-USD(weak 3d trend (-2.4%)), DOT-USD(weak 3d trend (-2.2%)), ETH-USD(weak 3d trend (-0.0%)), FET-USD(needs vol>=1.1x), FLOKI-USD(weak 3d trend (-2.4%)), GRT-USD(weak 3d trend (+0.0%)), HBAR-USD(weak 3d trend (-3.5%)), ICP-USD(weak 3d trend (+0.3%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-7.1%)), LINK-USD(weak 3d trend (+0.1%)), MATIC-USD(weak 3d trend (-3.0%)), NEAR-USD(needs vol>=1.1x), OP-USD(weak 3d trend (-5.6%)), PEPE-USD(weak 3d trend (-0.4%)), SEI-USD(weak 3d trend (-7.1%)), SUI-USD(weak 3d trend (+0.1%)), UNI-USD(weak 3d trend (-2.7%)), XLM-USD(weak 3d trend (-3.1%)), XRP-USD(weak 3d trend (+0.2%)) | warming=3 | neutral=10 | no_data=2
@@ -19998,3 +19904,97 @@ Approved: 1 trades
 2026-06-29 12:27:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 97 low-priority equity names; max 90)
 2026-06-29 12:30:00 | INFO     | trading_bot.engine   | === AUTO-TUNE CYCLE ===
 2026-06-29 12:30:00 | INFO     | trading_bot.learning.auto_tuner | === AUTO-TUNER: Starting autonomous optimization ===
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AI recommendations received: 17 params
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_rvol_momentum: 0.27 -> 0.32 (AI suggested 0.32)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_mean_reversion: 0.212 -> 0.25 (AI suggested 0.25)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_momentum: 0.056 -> 0.1 (AI suggested 0.1)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_smc_forever: 0.121 -> 0.12 (AI suggested 0.12)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_rvol_scalp: 0.074 -> 0.07 (AI suggested 0.07)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_vwap_scalp: 0.065 -> 0.05 (AI suggested 0.05)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_pairs_trading: 0.065 -> 0.05 (AI suggested 0.05)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: alloc_daily_trend_rider: 0.074 -> 0.06 (AI suggested 0.06)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: stop_loss_pct: 0.048 -> 0.043000000000000003 (AI suggested 0.038)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: trailing_stop_pct: 0.044 -> 0.042 (AI suggested 0.042)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mom_adx_threshold: 31 -> 33 (AI suggested 33)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mom_volume_surge: 2.7 -> 2.9 (AI suggested 2.9)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: rvol_min_rvol: 3.0 -> 2.8 (AI suggested 2.8)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: rvol_min_score: 65 -> 62 (AI suggested 62)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mr_entry_zscore: -2.6 -> -2.4 (AI suggested -2.4)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mr_rsi_oversold: 27 -> 28 (AI suggested 28)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: mr_bollinger_std: 2.8 -> 2.6 (AI suggested 2.6)
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | Allocations normalized: {'smc_forever': 0.111, 'mean_reversion': 0.231, 'momentum': 0.092, 'momentum_runner': 0.032, 'rvol_momentum': 0.296, 'rvol_scalp': 0.065, 'vwap_scalp': 0.046, 'pairs_trading': 0.046, 'prebreakout': 0.011, 'premarket_gap': 0.005, 'options_momentum': 0.0, 'short_squeeze': 0.0, 'pead': 0.0, 'daily_trend_rider': 0.055, 'low_float_catalyst': 0.005, 'crypto_runner': 0.005}
+2026-06-29 12:30:04 | INFO     | trading_bot.learning.auto_tuner | AUTO-TUNE: Applied 17 parameter changes
+2026-06-29 12:30:04 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: Auto-Tuner applied 17 improvements:
+  alloc_rvol_momentum: 0.27 -> 0.32
+  alloc_mean_reversion: 0.212 -> 0.25
+  alloc_momentum: 0.056 -> 0.1
+  alloc_smc_forever: 0.121 -> 0.12
+  alloc_r
+2026-06-29 12:30:05 | INFO     | trading_bot.engine   | Auto-Tune applied 17 changes - strategies reloaded
+2026-06-29 12:30:05 | INFO     | trading_bot.notifications | [ALERT] System: ℹ️ **System**: AUTO-TUNE allocation shift:
+  • momentum: $1,151 → $1,887 (+64%)
+  • daily_trend_rider: $1,521 → $1,128 (-26%)
+2026-06-29 12:30:32 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.61, RSI=36, BB=near, Vol=3.8x | TRX-USD @ $0.32
+2026-06-29 12:30:32 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-29 12:30:32 | INFO     | trading_bot.engine   |   -> mean_reversion: buy TRX-USD @ $0.32 conf=0.69
+2026-06-29 12:30:32 | INFO     | trading_bot.risk.manager | APPROVED: buy TRX-USD | Mean reversion BUY: Z=-1.61, RSI=36, BB=near, Vol=3.8x
+2026-06-29 12:30:32 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 866 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ TRX-USD: score 69/100 — Mean reversion BUY: Z=-1.61, RSI=36, BB=near, Vol=3.8x
+Approved: 1 trades
+2026-06-29 12:30:33 | WARNING  | trading_bot.engine   | SLOW CYCLE (165.1s total): update_data=159.7s, discover=5.1s
+2026-06-29 12:30:33 | INFO     | trading_bot.engine   | FALLING KNIFE PASS: TRX-USD no quote in extended/crypto/manual context — fail-open, scanner/source vetted direction | Strategy: mean_reversion
+2026-06-29 12:30:34 | INFO     | trading_bot.engine   | STOP FLOOR APPLIED: TRX-USD entry=$0.3211 stop=$0.3194 (0.53% gap). Setting 5% minimum stop.
+2026-06-29 12:30:34 | INFO     | trading_bot.engine   | VOL REGIME: TRX-USD short=0.0059 long=0.0036 ratio=1.66x → sizing mult 0.95x
+2026-06-29 12:30:34 | INFO     | trading_bot.risk.position_sizer | ADAPTIVE SIZING: base=1.00% → Kelly[mean_reversion] 0.25x × DD 1.00x × Session 1.00x × Conf 1.00x × Regime 1.00x × Vol 0.95x × Slip 1.00x = 0.25% risk
+2026-06-29 12:30:34 | INFO     | trading_bot.risk.position_sizer | Position size (crypto): 3193.53005 TRX-USD @ $0.32 = $1,025.44 | Risk: $51.27 (0.2% of account)
+2026-06-29 12:30:34 | INFO     | trading_bot.engine   | R/R STRETCH: TRX-USD entry=$0.3211 stop=$0.3050 (risk=$0.0161) target=$0.3245 (reward=$0.0034, R/R=0.21) — stretching target to $0.3532 for 2:1 minimum.
+2026-06-29 12:30:34 | INFO     | trading_bot.engine   | Executing TRX-USD via TradersPost (CRYPTO)...
+2026-06-29 12:30:34 | INFO     | trading_bot.broker.traderspost | Routing TRX-USD to CRYPTO webhook
+2026-06-29 12:30:34 | INFO     | trading_bot.broker.traderspost | TradersPost SENDING: URL=...89a87c10d471f8458620eda1d432ba | Payload={"ticker": "TRX-USD", "action": "buy", "sentiment": "bullish", "quantity": 3193.53005, "price": 0.3211, "stopLoss": {"type": "stop", "stopPrice": 0.31}, "takeProfit": {"type": "limit", "limitPrice": 0.35}}
+2026-06-29 12:30:34 | INFO     | trading_bot.broker.traderspost | TradersPost RESPONSE: HTTP 200 | Body={"success":true,"id":"030a2af4-c41d-4fc8-9bc8-031a6f1c71f9","logId":"030a2af4-c41d-4fc8-9bc8-031a6f1c71f9","payload":{"ticker":"TRX-USD","action":"buy","sentiment":"bullish","quantity":3193.53005,"price":0.3211,"stopLoss":{"type":"stop","stopPrice":0.31},"takeProfit":{"type":"limit","limitPrice":0.3
+2026-06-29 12:30:34 | INFO     | trading_bot.broker.traderspost | TradersPost signal sent: BUY TRX-USD | Strategy: unknown | Qty: 3193.53005 @ $0.32 = $1,025.44 | Risk: $51.27 | Reward: $102.54 | R:R 2.0:1 | Response: 200
+2026-06-29 12:30:34 | INFO     | trading_bot.engine   | TradersPost SUBMITTED: TRX-USD qty=3193.53005. SL $0.31 / TP $0.35 managed by bot (no broker-side bracket).
+2026-06-29 12:30:34 | INFO     | trading_bot.engine   | ORDER BUY TRX-USD via TradersPost | Qty: 3193.53005 | Price: $0.32 | Cost: $1,025.44 | Stop: $0.31 (risk $51.27) | Target: $0.35 (reward $102.54) | R:R 2.0:1 | Strategy: mean_reversion
+2026-06-29 12:30:34 | INFO     | trading_bot.notifications | [ALERT] Trade Entry: 🟢 **>>> ENTERING POSITION: TRX-USD**
+```
+  Entry: $0.32 x 3193.53005 shares = $1,025.44
+  Stop:  $0.31 (-$51.27 | -5.0%)
+  Targets: $0.35
+  Risk/Reward: 2.0
+```
+Strategy: **mean_reversion** | Confiden
+2026-06-29 12:30:41 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[30]: AAVE-USD(weak 3d trend (-4.7%)), ADA-USD(weak 3d trend (-2.4%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-2.3%)), BONK-USD(weak 3d trend (+0.2%)), BTC-USD(weak 3d trend (-1.0%)), CRV-USD(weak 3d trend (-2.0%)), DOGE-USD(weak 3d trend (-4.0%)), DOT-USD(weak 3d trend (-2.1%)), ETC-USD(weak 3d trend (+0.4%)), ETH-USD(weak 3d trend (-0.5%)), FET-USD(weak 3d trend (-0.3%)), FLOKI-USD(weak 3d trend (-1.1%)), HBAR-USD(weak 3d trend (-3.3%)), ICP-USD(weak 3d trend (-0.7%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-6.6%)), LINK-USD(weak 3d trend (-1.0%)), MATIC-USD(weak 3d trend (-0.8%)), OP-USD(weak 3d trend (-5.7%)), PEPE-USD(weak 3d trend (-1.7%)), RNDR-USD(weak 3d trend (+0.5%)), SEI-USD(weak 3d trend (-6.2%)), SHIB-USD(weak 3d trend (-0.9%)), SOL-USD(weak 3d trend (+0.0%)), SUI-USD(weak 3d trend (-0.6%)), UNI-USD(weak 3d trend (+0.8%)), WIF-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-3.0%)), XRP-USD(weak 3d trend (-0.4%)) | warming=2 | neutral=8 | no_data=1
+2026-06-29 12:30:48 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 12:30:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 12:30:50 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 12:30:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 12:30:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 12:30:52 | INFO     | trading_bot.engine   | IBKR scanner: 127 unique symbols discovered | 49 gainers, 10 gaps, 20 losers
+2026-06-29 12:30:52 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 12:30:52 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 10 stale symbols across strategies
+2026-06-29 12:30:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 96 low-priority equity names; max 90)
+2026-06-29 12:33:38 | INFO     | trading_bot.strategy.mean_reversion | SIGNAL: Mean reversion BUY: Z=-1.61, RSI=36, BB=near, Vol=3.8x | TRX-USD @ $0.32
+2026-06-29 12:33:38 | INFO     | trading_bot.engine   | SIGNALS GENERATED: 1 signals from strategies
+2026-06-29 12:33:38 | INFO     | trading_bot.engine   |   -> mean_reversion: buy TRX-USD @ $0.32 conf=0.69
+2026-06-29 12:33:38 | INFO     | trading_bot.risk.manager | REJECTED: buy TRX-USD | Already in position: TRX-USD
+2026-06-29 12:33:38 | INFO     | trading_bot.notifications | [ALERT] Scanner Cycle: 📡 **[SCANNER]** Scanning 861 symbols
+Market: 🟡 SIDEWAYS 
+Signals found: 1
+  ✅ TRX-USD: score 69/100 — Mean reversion BUY: Z=-1.61, RSI=36, BB=near, Vol=3.8x
+Filtered: 1 signals rejected by risk manage
+2026-06-29 12:33:39 | WARNING  | trading_bot.engine   | SLOW CYCLE (171.4s total): update_data=166.0s
+2026-06-29 12:33:42 | INFO     | trading_bot.engine   | CRYPTO FAST LANE HEARTBEAT (mean_reversion): universe=41 | WAIT[30]: AAVE-USD(weak 3d trend (-4.7%)), ADA-USD(weak 3d trend (-2.4%)), APT-USD(weak 3d trend (-2.7%)), ATOM-USD(weak 3d trend (-2.3%)), BONK-USD(weak 3d trend (+0.2%)), BTC-USD(weak 3d trend (-1.0%)), CRV-USD(weak 3d trend (-2.0%)), DOGE-USD(weak 3d trend (-4.0%)), DOT-USD(weak 3d trend (-2.1%)), ETC-USD(weak 3d trend (+0.4%)), ETH-USD(weak 3d trend (-0.5%)), FET-USD(weak 3d trend (-0.3%)), FLOKI-USD(weak 3d trend (-1.1%)), HBAR-USD(weak 3d trend (-3.3%)), ICP-USD(weak 3d trend (-0.7%)), IMX-USD(weak 3d trend (-11.0%)), JUP-USD(weak 3d trend (-6.6%)), LINK-USD(weak 3d trend (-1.0%)), MATIC-USD(weak 3d trend (-0.8%)), OP-USD(weak 3d trend (-5.7%)), PEPE-USD(weak 3d trend (-1.7%)), RNDR-USD(weak 3d trend (+0.5%)), SEI-USD(weak 3d trend (-6.2%)), SHIB-USD(weak 3d trend (-0.9%)), SOL-USD(weak 3d trend (+0.0%)), SUI-USD(weak 3d trend (-0.6%)), UNI-USD(weak 3d trend (+0.8%)), WIF-USD(needs vol>=1.1x), XLM-USD(weak 3d trend (-3.0%)), XRP-USD(weak 3d trend (-0.4%)) | warming=2 | neutral=8 | no_data=1
+2026-06-29 12:33:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_GAIN]: 49 results
+2026-06-29 12:33:49 | INFO     | trading_bot.broker.ibkr | IBKR scanner [MOST_ACTIVE]: 30 results
+2026-06-29 12:33:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HOT_BY_VOLUME]: 30 results
+2026-06-29 12:33:51 | INFO     | trading_bot.broker.ibkr | IBKR scanner [HIGH_OPEN_GAP]: 29 results
+2026-06-29 12:33:52 | INFO     | trading_bot.broker.ibkr | IBKR scanner [TOP_PERC_LOSE]: 20 results
+2026-06-29 12:33:52 | INFO     | trading_bot.engine   | IBKR scanner: 126 unique symbols discovered | 49 gainers, 9 gaps, 20 losers
+2026-06-29 12:33:52 | INFO     | trading_bot.engine   | Injected 2 runners into all strategies
+2026-06-29 12:33:52 | INFO     | trading_bot.engine   | SYMBOL PRUNE: removed 14 stale symbols across strategies
+2026-06-29 12:33:52 | INFO     | trading_bot.engine   | UNIVERSE CAP: working set 90 symbols (trimmed 95 low-priority equity names; max 90)
+2026-06-29 12:33:52 | INFO     | trading_bot.data.market_data | Pruned 1 stale IBKR streams — now 47/95
+2026-06-29 12:33:52 | INFO     | trading_bot.broker.ibkr | Subscribed to 1 live market data streams
+2026-06-29 12:33:52 | INFO     | trading_bot.data.market_data | IBKR streaming active for 48 symbols
