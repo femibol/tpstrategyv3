@@ -69,6 +69,31 @@ echo "==> Touching log files so logrotate / future tailing has them"
 touch /var/log/claude-snapshot.log /var/log/claude-cmd-runner.log
 chmod 644 /var/log/claude-snapshot.log /var/log/claude-cmd-runner.log
 
+echo "==> Installing logrotate config (2026-07-09 disk-full incident fix)"
+# copytruncate so the bot / crons keep their open file handles — no
+# service restarts needed on rotation.
+cat > /etc/logrotate.d/trading-bot <<'ROTEOF'
+/opt/trading-bot/logs/*.log {
+    daily
+    rotate 5
+    maxsize 200M
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+/var/log/claude-snapshot.log /var/log/claude-cmd-runner.log {
+    weekly
+    rotate 2
+    maxsize 50M
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+ROTEOF
+chmod 644 /etc/logrotate.d/trading-bot
+
 echo ""
 echo "✓ Installed."
 echo ""

@@ -30,6 +30,13 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     restart: unless-stopped
+    # Cap container logs — part of the 2026-07-09 disk-full incident fix
+    # (unbounded json-file logs are the classic slow disk killer).
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     environment:
       # IBC + IBKR session scheduling uses container-local time. Without
       # this, anything time-based (restart windows, log timestamps) runs in
@@ -98,6 +105,13 @@ services:
   trading-bot:
     build: .
     restart: unless-stopped
+    # Cap container logs (2026-07-09 disk incident fix) — the bot's
+    # heartbeat lines make this the chattiest container on the box.
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
     # NOTE: this service intentionally has no `dns:` block — Docker rejects
     # `dns` together with `network_mode: service:...`. DNS comes from
     # ib-gateway's resolv.conf (which has the 8.8.8.8 / 1.1.1.1 pins).
@@ -220,6 +234,11 @@ services:
   autoheal:
     image: willfarrell/autoheal:latest
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
     environment:
       AUTOHEAL_CONTAINER_LABEL: "autoheal"
       AUTOHEAL_INTERVAL: "30"        # check every 30s
