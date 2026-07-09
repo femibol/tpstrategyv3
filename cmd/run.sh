@@ -1,20 +1,27 @@
 #!/bin/bash
 set +e
 cd /opt/trading-bot
-echo "=== confirm image damage ==="
-docker images
-docker system df
+echo "=== rebuild log so far ==="
+cat /tmp/rebuild.log 2>/dev/null | tail -15
 echo
-echo "=== start background re-pull + rebuild (exceeds 90s runner timeout) ==="
-nohup bash -c '
-  echo "[$(date -u +%H:%M:%S)] pulling ib-gateway image..."
-  docker compose pull ib-gateway 2>&1 | tail -3
-  echo "[$(date -u +%H:%M:%S)] rebuilding trading-bot image..."
-  docker compose build trading-bot 2>&1 | tail -5
-  echo "[$(date -u +%H:%M:%S)] starting stack..."
-  docker compose up -d 2>&1
-  sleep 30
-  docker ps --format "{{.Names}}: {{.Status}}"
-  echo "REBUILD_DONE"
-' > /tmp/rebuild.log 2>&1 &
-echo "rebuild running in background — poll /tmp/rebuild.log with the next command"
+echo "=== containers now ==="
+docker ps --format '{{.Names}}: {{.Status}}'
+echo
+if docker ps --format '{{.Names}} {{.Status}}' | grep -q 'ib-gateway.*Up'; then
+    echo "GATEWAY UP — checking bot"
+    docker logs --tail 10 trading-bot-trading-bot-1 2>&1 | tail -8
+else
+    echo "gateway still down — corrupted layer needs force re-extraction. Starting repair:"
+    nohup bash -c '
+      docker compose stop ib-gateway trading-bot 2>&1
+      docker compose rm -f ib-gateway trading-bot 2>&1
+      docker rmi -f gnzsnz/ib-gateway:10.37.1r 2>&1
+      echo "[repull] fetching fresh gateway image..."
+      docker compose pull ib-gateway 2>&1 | tail -2
+      docker compose up -d 2>&1
+      sleep 40
+      docker ps --format "{{.Names}}: {{.Status}}"
+      echo FORCE_REPAIR_DONE
+    ' > /tmp/repair.log 2>&1 &
+    echo "repair running — poll /tmp/repair.log next"
+fi
