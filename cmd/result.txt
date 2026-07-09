@@ -1,19 +1,27 @@
-=== executed: 0c1342d5a3ed8de60c849dbdc6fa4e0c90b4f520
-=== started:  2026-07-09T22:59:02Z
+=== executed: 9fdf309e1b7d8dc91bfd92e78aea97030929608c
+=== started:  2026-07-09T23:01:01Z
 === exit:     
 === timeout:  90s
 ===
-=== confirm image damage ===
-WARNING: This output is designed for human readability. For machine-readable output, please use --format.
-IMAGE                            ID             DISK USAGE   CONTENT SIZE   EXTRA
-gnzsnz/ib-gateway:10.37.1r       b248e4dad68c       1.31GB          444MB   U    
-trading-bot-trading-bot:latest   71502fb4927d       1.05GB          250MB   U    
-willfarrell/autoheal:latest      69b099649a5c       20.4MB         5.91MB   U    
-TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
-Images          3         3         3.062GB   0B (0%)
-Containers      3         1         98.3kB    90.11kB (91%)
-Local Volumes   1         1         324.7MB   0B (0%)
-Build Cache     13        0         976.7MB   12.62MB
+=== rebuild log so far ===
+ Image gnzsnz/ib-gateway:10.37.1r Pulled 
+[22:59:03] rebuilding trading-bot image...
+#13 DONE 0.1s
 
-=== start background re-pull + rebuild (exceeds 90s runner timeout) ===
-rebuild running in background — poll /tmp/rebuild.log with the next command
+#14 resolving provenance for metadata file
+#14 DONE 0.0s
+ Image trading-bot-trading-bot Built 
+[22:59:03] starting stack...
+ Container trading-bot-trading-bot-1 Recreate 
+ Container trading-bot-autoheal-1 Running 
+ Container trading-bot-trading-bot-1 Recreated 
+ Container trading-bot-ib-gateway-1 Starting 
+Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: "/home/ibgateway/scripts/run.sh": stat /home/ibgateway/scripts/run.sh: no such file or directory
+trading-bot-autoheal-1: Up 8 days (healthy)
+REBUILD_DONE
+
+=== containers now ===
+trading-bot-autoheal-1: Up 8 days (healthy)
+
+gateway still down — corrupted layer needs force re-extraction. Starting repair:
+repair running — poll /tmp/repair.log next
