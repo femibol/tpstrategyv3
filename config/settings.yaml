@@ -43,7 +43,11 @@ risk:
   max_dollar_risk_per_strategy:
     # Tier 1 restructure 2026-06-09 — cap aligned to 30d track record.
     # Proven engines unthrottled, unproven ones held back, bleeders capped tight.
-    mean_reversion: 100           # was $50. Workhorse +$722/30d crypto, 52% WR. Unthrottle.
+    mean_reversion: 150           # 2026-07 review: was $100. Crypto MR is the only proven
+                                  # engine — PF 1.53-1.80 across 7 weeks, +$837 total. Raised
+                                  # 50% so the edge compounds. At a 5% crypto stop this sizes
+                                  # ~$3,000 notional (was ~$2,000, tier-capped to ~$1,050 for
+                                  # sub-$1 coins before the crypto tier-cap exemption).
     rvol_momentum: 50             # neutral cap — 7 trades, near breakeven, needs more data
     momentum_runner: 50           # neutral — silent so far; cap small until track record exists
     prebreakout: 50               # ditto
@@ -158,6 +162,38 @@ risk:
   # This is optimized for momentum stocks that reverse fast.
   profit_taking:
     enabled: true
+    # `targets` is the CRYPTO ladder (and the fallback if equity_targets is
+    # unset). Crypto mean-reversion oscillates fast — banking at +0.5%/+1%
+    # is correct there (PF 1.53 across 7 weeks proves it).
+    #
+    # `equity_targets` (2026-07 review fix): equity momentum designs 2:1 R/R
+    # trades but the sub-+2.5% tiers + early breakeven realized only 0.43:1
+    # — winners chopped into ~$1.82 partials, losers full-size to -$25 stops
+    # (position-level: 38% WR, avgW $11.57 vs $44 needed). Equity now takes
+    # NO partials below +2.5% and arms breakeven at +2.5% (first tier) /
+    # +2% (standalone check below), letting winners reach 1.5-2R first.
+    equity_targets:
+      - pct_from_entry: 0.025      # At +2.5% — first partial, real profit
+        close_pct: 0.10            # Close 10%
+        move_stop: "breakeven"     # Risk-free from here
+      - pct_from_entry: 0.04       # At +4% — strong move
+        close_pct: 0.10
+        tighten_trail: 0.02        # 2% trail (looser than crypto's 1.5%)
+      - pct_from_entry: 0.07       # At +7% — trending
+        close_pct: 0.10
+        tighten_trail: 0.025
+      - pct_from_entry: 0.12       # At +12% — runner confirmed
+        close_pct: 0.10
+        tighten_trail: 0.03
+      - pct_from_entry: 0.20       # At +20% — big winner
+        close_pct: 0.10
+        tighten_trail: 0.035
+      - pct_from_entry: 0.35       # At +35% — monster
+        close_pct: 0.10
+        tighten_trail: 0.04
+      - pct_from_entry: 0.60       # At +60% — extreme runner
+        close_pct: 0.08
+        tighten_trail: 0.05
     targets:
       - pct_from_entry: 0.005      # At +0.5% — scalp the first move
         close_pct: 0.08            # Close 8%
@@ -205,7 +241,9 @@ risk:
   # --- Break Even Stop ---
   breakeven:
     enabled: true
-    trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast
+    trigger_pct: 0.01             # Move stop to BE after just 1% profit — lock it in fast (crypto)
+    equity_trigger_pct: 0.02      # 2026-07 review: equity momentum pulls back 1% routinely —
+                                  # BE at +1% guaranteed near-flat finishes. Equity arms at +2%.
     buffer_pct: 0.005             # 0.5% buffer above entry — gives room for normal noise without getting stopped out
 
   # --- Portfolio-Level Risk Limits ---

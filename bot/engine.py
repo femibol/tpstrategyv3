@@ -3128,7 +3128,8 @@ class TradingEngine:
         # Load profit taking config
         pt_config = self.config.risk_config.get("profit_taking", {})
         pt_enabled = pt_config.get("enabled", False)
-        pt_targets = pt_config.get("targets", [])
+        # NOTE: targets are resolved per-symbol inside the loop via
+        # _pt_targets_for() — equity and crypto use different ladders.
 
         # Check each position for quick exits
         positions_to_close = []
@@ -3219,7 +3220,7 @@ class TradingEngine:
             be_cfg = self.config.risk_config.get("breakeven", {})
             if (be_cfg.get("enabled", True) and
                     not pos.get("breakeven_hit") and
-                    pnl_pct >= be_cfg.get("trigger_pct", 0.01)):
+                    pnl_pct >= self._be_trigger_for(symbol, be_cfg)):
                 be_buf = be_cfg.get("buffer_pct", 0.001)
                 be_stop = entry_price * (1 + be_buf) if direction == "long" else entry_price * (1 - be_buf)
                 old_stop = pos.get("stop_loss", 0)
@@ -3329,7 +3330,7 @@ class TradingEngine:
             # to meaningfully scale out. Let trailing stop manage the full exit.
             if pt_enabled and pos["quantity"] > 3:
                 targets_hit = pos.get("targets_hit", [])
-                for i, target in enumerate(pt_targets):
+                for i, target in enumerate(self._pt_targets_for(symbol, pt_config)):
                     if i in targets_hit:
                         continue
                     target_pct = target.get("pct_from_entry", 0)
@@ -4342,10 +4343,10 @@ class TradingEngine:
         # Load profit taking & break-even config
         pt_config = self.config.risk_config.get("profit_taking", {})
         pt_enabled = pt_config.get("enabled", False)
-        pt_targets = pt_config.get("targets", [])
+        # NOTE: targets + break-even trigger resolved per-symbol in the loop
+        # (_pt_targets_for / _be_trigger_for) — equity and crypto differ.
         be_config = self.config.risk_config.get("breakeven", {})
         be_enabled = be_config.get("enabled", True)
-        be_trigger = be_config.get("trigger_pct", 0.015)
         be_buffer = be_config.get("buffer_pct", 0.002)
 
         # Snapshot for safe iteration
@@ -4385,7 +4386,8 @@ class TradingEngine:
                 continue
 
             # --- Break-Even Stop ---
-            if be_enabled and not pos.get("breakeven_hit") and pnl_pct >= be_trigger:
+            if be_enabled and not pos.get("breakeven_hit") and \
+                    pnl_pct >= self._be_trigger_for(symbol, be_config, 0.015):
                 if direction == "long":
                     new_stop = entry_price * (1 + be_buffer)
                 else:
@@ -4422,7 +4424,7 @@ class TradingEngine:
             is_scalp_pos = pos.get("strategy") in ("rvol_scalp", "vwap_scalp")
             if pt_enabled and pos["quantity"] > 1 and not is_scalp_pos:
                 targets_hit = pos.get("targets_hit", [])
-                for i, target in enumerate(pt_targets):
+                for i, target in enumerate(self._pt_targets_for(symbol, pt_config)):
                     if i in targets_hit:
                         continue
                     target_pct = target.get("pct_from_entry", 0)
@@ -6404,14 +6406,21 @@ class TradingEngine:
             return
 
         # Enforce tier caps even when quantity comes from external signal
-        # Prevents webhook signals from bypassing position sizer limits
-        _, tier_max = self.position_sizer._get_tier_limits(current_price)
-        if qty > tier_max:
-            log.warning(
-                f"TIER CAP: {symbol} signal qty={qty} exceeds tier max={tier_max} "
-                f"for ${current_price:.2f} stock. Capping to {tier_max}."
-            )
-            qty = tier_max
+        # Prevents webhook signals from bypassing position sizer limits.
+        # CRYPTO IS EXEMPT (2026-07 review): the PRICE_TIERS table encodes
+        # per-share liquidity for penny STOCKS; applied to fractional crypto
+        # it silently halved positions — JUP-USD at $0.21 sized to $2,000 by
+        # the sizer (risk $100 / 5% stop) then tier-capped to 5,000 units =
+        # $1,050. The sizer's own crypto path already enforces risk_dollars
+        # and crypto_max_position_pct, which are the correct crypto limits.
+        if not self._is_crypto_symbol(symbol):
+            _, tier_max = self.position_sizer._get_tier_limits(current_price)
+            if qty > tier_max:
+                log.warning(
+                    f"TIER CAP: {symbol} signal qty={qty} exceeds tier max={tier_max} "
+                    f"for ${current_price:.2f} stock. Capping to {tier_max}."
+                )
+                qty = tier_max
 
         # Momentum runner size multiplier (spike entries = 50%, afternoon = 50%)
         size_multiplier = signal.get("size_multiplier", 1.0)
@@ -7076,6 +7085,41 @@ class TradingEngine:
                 log.warning(f"SLIPPAGE CLOSE: Closing {close_sym} — excessive entry slippage")
                 self._close_position(close_sym, "slippage_reject",
                                      "Excessive slippage on entry — R:R invalid")
+
+    def _pt_targets_for(self, symbol, pt_config):
+        """Per-asset profit-taking ladder.
+
+        2026-07 review finding: one global 10-tier ladder (first partials at
+        +0.5%/+1%/+1.5%) applied to BOTH asset classes. For crypto
+        mean-reversion (quick oscillations) banking early is right — crypto
+        ran PF 1.53. For equity momentum it inverted the designed 2:1 R/R
+        into a realized 0.43:1: winners got chopped into ~$1.82 partials
+        while losers rode full-size to -$25 stops (position-level: 38% WR,
+        avgW $11.57 vs the $44 needed to break even). Equity now gets its
+        own ladder (`profit_taking.equity_targets`, first partial +2.5%)
+        while crypto keeps the original `targets`. Falls back to the global
+        list when equity_targets is unset — legacy configs unchanged.
+        """
+        if not self._is_crypto_symbol(symbol):
+            eq = pt_config.get("equity_targets")
+            if eq:
+                return eq
+        return pt_config.get("targets", [])
+
+    def _be_trigger_for(self, symbol, be_cfg, default=0.01):
+        """Per-asset break-even trigger.
+
+        Same review: the standalone break-even block armed at +1% for all
+        assets. Equity momentum names routinely pull back 1% intraday, so
+        any trade that ticked +1% could only ever finish ~flat — another
+        winner-chopper. `breakeven.equity_trigger_pct` (default 2%) lets
+        equity breathe before the stop ratchets; crypto keeps trigger_pct.
+        """
+        if not self._is_crypto_symbol(symbol):
+            t = be_cfg.get("equity_trigger_pct")
+            if t is not None:
+                return float(t)
+        return float(be_cfg.get("trigger_pct", default))
 
     def _sane_exit_price(self, symbol, candidate, pos):
         """Anti-collision guard for the crypto close/record path.
