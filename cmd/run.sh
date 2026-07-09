@@ -1,27 +1,32 @@
 #!/bin/bash
 set +e
 cd /opt/trading-bot
-echo "=== rebuild log so far ==="
-cat /tmp/rebuild.log 2>/dev/null | tail -15
+echo "=== gateway repair log ==="
+tail -6 /tmp/repair.log 2>/dev/null
 echo
-echo "=== containers now ==="
+echo "=== containers ==="
+docker ps --format '{{.Names}}: {{.Status}}'
+if ! docker ps --format '{{.Names}} {{.Status}}' | grep -q 'ib-gateway.*Up'; then
+    echo "GATEWAY STILL DOWN — stopping here, see repair log above"
+    exit 0
+fi
+echo
+echo "=== deploy latest main (PR #248 + #249) ==="
+bash scripts/deploy-vps.sh main 2>&1 | tail -6
+echo "=== recreate containers so compose log caps apply ==="
+docker compose up -d 2>&1 | tail -4
+sleep 20
 docker ps --format '{{.Names}}: {{.Status}}'
 echo
-if docker ps --format '{{.Names}} {{.Status}}' | grep -q 'ib-gateway.*Up'; then
-    echo "GATEWAY UP — checking bot"
-    docker logs --tail 10 trading-bot-trading-bot-1 2>&1 | tail -8
-else
-    echo "gateway still down — corrupted layer needs force re-extraction. Starting repair:"
-    nohup bash -c '
-      docker compose stop ib-gateway trading-bot 2>&1
-      docker compose rm -f ib-gateway trading-bot 2>&1
-      docker rmi -f gnzsnz/ib-gateway:10.37.1r 2>&1
-      echo "[repull] fetching fresh gateway image..."
-      docker compose pull ib-gateway 2>&1 | tail -2
-      docker compose up -d 2>&1
-      sleep 40
-      docker ps --format "{{.Names}}: {{.Status}}"
-      echo FORCE_REPAIR_DONE
-    ' > /tmp/repair.log 2>&1 &
-    echo "repair running — poll /tmp/repair.log next"
-fi
+echo "=== verify PR #248 in container ==="
+docker exec trading-bot-trading-bot-1 bash -c "cd /app && python3 -c \"
+import yaml
+r = yaml.safe_load(open('config/settings.yaml'))['risk']
+eq = r['profit_taking'].get('equity_targets') or []
+print(f'equity ladder: {len(eq)} tiers, first {eq[0][\\\"pct_from_entry\\\"] if eq else None} (expect 7 / 0.025)')
+print(f'BE equity trigger: {r[\\\"breakeven\\\"].get(\\\"equity_trigger_pct\\\")} (expect 0.02)')
+print(f'mean_reversion cap: {r[\\\"max_dollar_risk_per_strategy\\\"][\\\"mean_reversion\\\"]} (expect 150)')
+\" 2>&1"
+docker exec trading-bot-trading-bot-1 grep -c "_pt_targets_for" /app/bot/engine.py 2>&1
+echo "(expect >= 3)"
+df -h / | tail -1
