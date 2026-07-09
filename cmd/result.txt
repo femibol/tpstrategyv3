@@ -1,22 +1,19 @@
-=== executed: 7e4179120b615535bdc6833fb52745e0a7071980
-=== started:  2026-07-09T22:58:02Z
+=== executed: 0c1342d5a3ed8de60c849dbdc6fa4e0c90b4f520
+=== started:  2026-07-09T22:59:02Z
 === exit:     
 === timeout:  90s
 ===
-=== bring the full stack up (gateway died with the disk on 06-30) ===
- Container trading-bot-autoheal-1 Running 
- Container trading-bot-ib-gateway-1 Starting 
-Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: "/home/ibgateway/scripts/run.sh": stat /home/ibgateway/scripts/run.sh: no such file or directory
+=== confirm image damage ===
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+IMAGE                            ID             DISK USAGE   CONTENT SIZE   EXTRA
+gnzsnz/ib-gateway:10.37.1r       b248e4dad68c       1.31GB          444MB   U    
+trading-bot-trading-bot:latest   71502fb4927d       1.05GB          250MB   U    
+willfarrell/autoheal:latest      69b099649a5c       20.4MB         5.91MB   U    
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          3         3         3.062GB   0B (0%)
+Containers      3         1         98.3kB    90.11kB (91%)
+Local Volumes   1         1         324.7MB   0B (0%)
+Build Cache     13        0         976.7MB   12.62MB
 
-=== wait for gateway + bot to come healthy ===
-trading-bot-autoheal-1: Up 8 days (healthy)
-
-=== verify PR #248 config live in container ===
-Error response from daemon: container 3b50ef273472032a46a8a28c5831e4034ea4e4c619fcbd7520259a7210f0b4c5 is not running
-Error response from daemon: container 3b50ef273472032a46a8a28c5831e4034ea4e4c619fcbd7520259a7210f0b4c5 is not running
-(expect >= 6)
-
-=== bot boot log tail ===
-
-=== prevention: docker log caps + logrotate + df ===
-/dev/sda         79G  9.2G   65G  13% /
+=== start background re-pull + rebuild (exceeds 90s runner timeout) ===
+rebuild running in background — poll /tmp/rebuild.log with the next command
