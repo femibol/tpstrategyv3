@@ -1,20 +1,20 @@
-=== executed: b57ecf538759333a20e2c8a9bbb9f9a631795d4f
-=== started:  2026-06-29T12:53:16Z
+=== executed: 0bbbf89183712012c4b28fa6a23a09a927ee5761
+=== started:  2026-07-09T22:53:13Z
 === exit:     
 === timeout:  90s
 ===
 deploy: backed up 11 data/*.json files
-deploy: checked out dbc0ee4d6 on main
-deploy: container trading-bot-trading-bot-1 restarted
-deploy: dashboard ready after 6s
-deploy: ok
+deploy: checked out 45f33bc on main
+Error response from daemon: Cannot restart container trading-bot-trading-bot-1: cannot join network namespace of a non running container: container trading-bot-ib-gateway-1 is exited
 
-=== verify close-path guard is live ===
-5
-(expect >= 3: 1 def + 2 call sites)
+=== verify PR #248 per-asset exits + crypto sizing are live ===
+Error response from daemon: container 5eec029dce251db2bb11e7c145dec3eeb3a6c26acda941960f504f34d087091c is not running
+Error response from daemon: container 5eec029dce251db2bb11e7c145dec3eeb3a6c26acda941960f504f34d087091c is not running
+(expect >= 6: 2 defs + 4 call sites)
 
-=== JUP-USD record still corrected after deploy (data is bind-mounted)? ===
-JUP-USD records with pnl < -50: 0 (expect 0)
+=== how much data accumulated while the bridge was down? ===
+total trades now: 500
+last trade: 2026-06-30T13:09:01.433394-04:00 INTZ
 
-=== account state after restart (drawdown should reflect correction) ===
-  balance=$25,000.00  total_return=+0.00%  drawdown=0.00%  positions=0
+=== containers ===
+trading-bot-autoheal-1: Up 8 days (healthy)
