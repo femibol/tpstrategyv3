@@ -5206,13 +5206,17 @@ class TradingEngine:
             if not self._is_crypto_symbol(sym):
                 continue
             ts = t.get("exit_time")
+            in_window = True  # fail-safe default: an unparseable/naive
+            # timestamp COUNTS toward the loss (a safety guard must fail
+            # toward pausing, never toward more trading). We only EXCLUDE a
+            # trade when we can positively prove it's older than the window.
             try:
                 dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
-                if dt.tzinfo is None:
-                    continue
+                if dt.tzinfo is not None:
+                    in_window = dt >= cutoff
             except Exception:
-                continue
-            if dt >= cutoff:
+                pass
+            if in_window:
                 realized += t.get("pnl") or 0
         if realized <= -cap:
             return (
