@@ -1,24 +1,38 @@
-=== executed: 659fd505f816d2b45dc99ecc4cf79fc4e7fed995
-=== started:  2026-07-10T20:18:16Z
+=== executed: 11f77281c2d3eaa031f9f97b5dd311a10e693083
+=== started:  2026-07-10T21:42:16Z
 === exit:     
 === timeout:  90s
 ===
 deploy: backed up 11 data/*.json files
-deploy: checked out b3d6424 on main
+deploy: checked out 969a607 on main
 deploy: container trading-bot-trading-bot-1 restarted
 deploy: dashboard ready after 6s
 deploy: ok
 
-=== verify PR #251 risk floor live in container ===
-min_dollar_risk_per_strategy = {'mean_reversion': 100} (expect mean_reversion: 100)
-crypto max_position_size_pct = 0.15 (expect 0.15)
-1
-(expect >= 1 — floor code present)
+=== verify PR #252 hardening live in container ===
+crypto.max_daily_loss_dollars = 300 (expect 300)
+premarket_gap.enabled         = False (expect False)
+tradingview_signals.enabled   = False (expect False)
+--- code presence ---
+/app/bot/engine.py:2
+/app/bot/main.py:2
+/app/bot/risk/manager.py:1
+/app/bot/strategies/momentum.py:1
+/app/bot/strategies/momentum_runner.py:2
 
-=== containers ===
+=== momentum_runner: is it NOW passing the score gate? (was 30% dead) ===
+  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
+  ✅ CBRG: score 85/100 — Momentum BUY: 
+  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
+  ✅ CBRG: score 85/100 — Momentum BUY: 
+  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
+  ✅ CBRG: score 85/100 — Momentum BUY: 
+  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
+  ✅ CBRG: score 85/100 — Momentum BUY: 
+--- any 'score X below min' rejections still? ---
+
+=== containers + disk ===
 trading-bot-trading-bot-1: Up 3 seconds (health: starting)
-trading-bot-autoheal-1: Up 16 hours (healthy)
-trading-bot-ib-gateway-1: Up 16 hours (healthy)
-
-=== watch for the first floored crypto sizing (may be empty until next signal) ===
+trading-bot-autoheal-1: Up About an hour (healthy)
+trading-bot-ib-gateway-1: Up About an hour (healthy)
 /dev/sda         79G  9.1G   66G  13% /
