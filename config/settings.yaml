@@ -61,6 +61,17 @@ risk:
     momentum: 50                  # historically -$500/30d but 6/11 was +$170 — cap, don't kill
     rvol_scalp: 40                # HIBS killer in place; cap belt-and-suspenders for the 14% WR profile
 
+  # Per-strategy risk FLOOR (2026-07-10). The $150 mean_reversion ceiling
+  # above never engaged: per-strategy Kelly computes NEGATIVE for the
+  # many-small-wins profile (payoff ratio < 1 → Kelly f < 0 despite +$838
+  # net over 8 weeks), pinning kelly_mult at 0.25x → ~$50 effective risk.
+  # A ceiling above a Kelly-floored value is inert; this floor is the lever
+  # that actually raises spend on the proven engine. Bounded in code by the
+  # 2%-of-balance hard ceiling. ONLY set floors for strategies with a long
+  # profitable track record — a floor on a bleeder scales the bleed.
+  min_dollar_risk_per_strategy:
+    mean_reversion: 100           # 2x current effective ($50). ~$2-2.5K notional at a 4-5% crypto stop.
+
   # Time-of-day equity dead zones (2026-06-09 audit). Hours in ET (24h).
   # Block new equity BUY signals during these windows — the bot consistently
   # loses money in them per 30d data:
@@ -498,7 +509,9 @@ crypto:
   # max_positions cap.
   max_concurrent_positions: 5
   risk:
-    max_position_size_pct: 0.12
+    max_position_size_pct: 0.15  # 2026-07-10: was 0.12 — raised alongside the mean_reversion
+                                 # risk floor so the ~$2.5-3K intended notional isn't clipped
+                                 # by the per-position cap (0.12 × ~$21K ≈ $2.5K was binding).
     stop_loss_pct: 0.04
     trailing_stop_pct: 0.025
 
