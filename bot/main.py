@@ -7,6 +7,7 @@ Usage:
     python -m bot.main --dashboard  # Start dashboard only
 """
 import argparse
+import os
 import sys
 import threading
 
@@ -75,6 +76,34 @@ def main():
 
     # Safety check for live mode
     if config.is_live:
+        # LIVE PREFLIGHT (2026-07-10 go-live audit). The execution stack was
+        # reshaped around the PAPER account's missing market-data subs —
+        # uncapped MARKET-parent brackets + IEX-only routing. Neither reverts
+        # automatically on live; firing uncapped market orders IEX-routed into
+        # thin small-caps with real money is the audit's #1 blocker. Fail
+        # CLOSED unless the operator explicitly acknowledges via env.
+        _ack = os.getenv("LIVE_ALLOW_PAPER_WORKAROUNDS", "").lower() == "yes"
+        _risk_cfg = config.risk_config
+        _problems = []
+        if _risk_cfg.get("use_market_orders_on_bracket", False):
+            _problems.append(
+                "risk.use_market_orders_on_bracket: true — uncapped MARKET "
+                "entries on live money. Set false (needs live data subs)."
+            )
+        if str(_risk_cfg.get("ibkr_routing_exchange", "SMART")).upper() != "SMART":
+            _problems.append(
+                f"risk.ibkr_routing_exchange: {_risk_cfg.get('ibkr_routing_exchange')} "
+                f"— forfeits SMART best-execution on live. Set \"SMART\"."
+            )
+        if _problems and not _ack:
+            print("\n" + "=" * 60)
+            print("  LIVE PREFLIGHT FAILED — paper-account workarounds active:")
+            for pr in _problems:
+                print(f"   ✗ {pr}")
+            print("  Fix config, or set LIVE_ALLOW_PAPER_WORKAROUNDS=yes to override.")
+            print("=" * 60)
+            return
+
         print("\n" + "=" * 60)
         print("  WARNING: LIVE TRADING MODE")
         print("  This will trade with REAL MONEY!")

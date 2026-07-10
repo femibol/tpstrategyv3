@@ -368,6 +368,33 @@ class RiskManager:
         if position_value > available:
             return False, f"Insufficient available capital (${available:.0f} after reserve, order ${position_value:.0f})"
 
+        # --- Rule 8.6: Portfolio-wide risk ceiling (2026-07-10 audit) ---
+        # capital.max_portfolio_risk had been dead config since inception —
+        # read nowhere. Enforce it: the sum of open-position risk (distance
+        # to stop x qty) across the book must stay under the ceiling before
+        # a new entry is allowed. Positions without a stop count at 3% of
+        # their value (the default stop) rather than zero, so a missing
+        # stop can't create invisible risk headroom.
+        max_pf_risk = float(
+            self.config.settings.get("capital", {}).get("max_portfolio_risk", 0) or 0
+        )
+        if max_pf_risk > 0:
+            open_risk = 0.0
+            for p in positions.values():
+                entry = p.get("entry_price", 0) or 0
+                qty = p.get("quantity", 0) or 0
+                stop = p.get("stop_loss", 0) or 0
+                if entry <= 0 or qty <= 0:
+                    continue
+                per_share = (entry - stop) if 0 < stop < entry else entry * 0.03
+                open_risk += max(0.0, per_share) * qty
+            ceiling = balance * max_pf_risk
+            if open_risk >= ceiling:
+                return False, (
+                    f"Portfolio risk ${open_risk:.0f} at/over ceiling "
+                    f"${ceiling:.0f} ({max_pf_risk:.0%} of balance) — no new entries"
+                )
+
         # --- Rule 9: Confidence threshold ---
         confidence = signal.get("confidence", 0)
         # Per-strategy floor wins over global if specified for this strategy.

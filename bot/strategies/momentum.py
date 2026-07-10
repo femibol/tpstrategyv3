@@ -302,7 +302,7 @@ class MomentumStrategy(BaseStrategy):
         # tightened gates. Expected WR per Turtle reference ~40-50%.
         primary_signal = (
             breakout
-            and vol_ratio >= 1.5
+            and vol_ratio >= max(1.5, self.vol_surge)
             and ema_bullish
             and strong_trend  # ADX > threshold from config (35 default)
         )
@@ -315,7 +315,10 @@ class MomentumStrategy(BaseStrategy):
             and len(lows) >= 2
             and current_price >= lows[-2] - 0.005 * current_price  # within 0.5% of prior-bar low
             and adx is not None and adx > 25
-            and vol_ratio >= 1.2
+            # 2026-07-10 audit: this floor was hardcoded 1.2x while the
+            # config volume_surge_multiplier (and the auto-tuner overlay
+            # tuning it) fed a variable that never gated entries.
+            and vol_ratio >= self.vol_surge
         )
 
         if primary_signal or pullback_to_support:
