@@ -84,6 +84,20 @@ class PositionSizer:
         self.max_dollar_risk_per_strategy = (
             config.risk_config.get("max_dollar_risk_per_strategy", {}) or {}
         )
+        # Per-strategy risk FLOOR (2026-07-10). Live-log finding: raising
+        # mean_reversion's CEILING to $150 (PR #248) changed nothing —
+        # crypto trades still sized at ~$50 risk. Root cause: per-strategy
+        # Kelly computes NEGATIVE for mean_reversion's many-small-wins /
+        # fewer-bigger-losses profile (payoff ratio < 1 forces f < 0 even
+        # at positive net EV — the strategy is +$838 over 8 weeks), so
+        # kelly_mult pins at the 0.25x floor → 0.25% × balance ≈ $50, and
+        # a ceiling above a floored value is inert. This floor lifts a
+        # PROVEN strategy to its intended risk after the multiplier stack.
+        # Applied BEFORE the ceiling, so ceiling still wins conflicts, and
+        # always bounded by the 2%-of-balance hard ceiling.
+        self.min_dollar_risk_per_strategy = (
+            config.risk_config.get("min_dollar_risk_per_strategy", {}) or {}
+        )
 
     def update_tier(self, tier):
         """Update sizing parameters from scaling tier."""
@@ -361,6 +375,20 @@ class PositionSizer:
         # here shrinks the share count below; the strategy's own gates
         # remain in force, only the position SIZE on the resulting trade
         # changes.
+        # Per-strategy risk FLOOR first (see __init__ note: Kelly mis-prices
+        # the mean_reversion profile and pins it at ~$50; the floor restores
+        # the intended sizing for proven strategies). Bounded by the 2% hard
+        # ceiling so a fat floor can never out-risk the account rules.
+        strat_floor = self.min_dollar_risk_per_strategy.get(strategy) if strategy else None
+        if strat_floor and strat_floor > 0 and risk_dollars < strat_floor:
+            bounded_floor = min(float(strat_floor), balance * 0.02)
+            if bounded_floor > risk_dollars:
+                log.info(
+                    f"STRATEGY RISK FLOOR: {strategy} risk ${risk_dollars:.2f} → "
+                    f"${bounded_floor:.2f} (per-strategy floor, 2% hard-capped)"
+                )
+                risk_dollars = bounded_floor
+
         strat_cap = self.max_dollar_risk_per_strategy.get(strategy) if strategy else None
         if strat_cap and strat_cap > 0 and risk_dollars > strat_cap:
             log.info(
