@@ -38,7 +38,10 @@ ENGINE = Path(__file__).parent.parent / "bot" / "engine.py"
 
 def _make_engine():
     from bot.engine import TradingEngine
-    stub = SimpleNamespace(crypto_suffixes=["-USD", "-USDT", "-BTC", "-ETH"])
+    stub = SimpleNamespace(
+        crypto_suffixes=["-USD", "-USDT", "-BTC", "-ETH"],
+        config=SimpleNamespace(settings={}),  # _is_crypto_symbol reads config.settings
+    )
     stub._is_crypto_symbol = TradingEngine._is_crypto_symbol.__get__(stub)
     stub._pt_targets_for = TradingEngine._pt_targets_for.__get__(stub)
     stub._be_trigger_for = TradingEngine._be_trigger_for.__get__(stub)
