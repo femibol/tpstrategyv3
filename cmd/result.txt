@@ -1,40 +1,24 @@
-=== executed: 942c36ccfeeae6628a8301d1eca007927b1dd997
-=== started:  2026-07-09T23:06:40Z
+=== executed: 659fd505f816d2b45dc99ecc4cf79fc4e7fed995
+=== started:  2026-07-10T20:18:16Z
 === exit:     
 === timeout:  90s
 ===
-=== gateway repair log ===
- Container trading-bot-trading-bot-1 Starting 
- Container trading-bot-trading-bot-1 Started 
-trading-bot-trading-bot-1: Up 40 seconds (healthy)
-trading-bot-ib-gateway-1: Up 40 seconds (healthy)
-trading-bot-autoheal-1: Up 8 days (healthy)
-FORCE_REPAIR_DONE
-
-=== containers ===
-trading-bot-trading-bot-1: Up 46 seconds (healthy)
-trading-bot-ib-gateway-1: Up 46 seconds (healthy)
-trading-bot-autoheal-1: Up 8 days (healthy)
-
-=== deploy latest main (PR #248 + #249) ===
 deploy: backed up 11 data/*.json files
-deploy: checked out 1b8e9663e on main
+deploy: checked out b3d6424 on main
 deploy: container trading-bot-trading-bot-1 restarted
 deploy: dashboard ready after 6s
 deploy: ok
-=== recreate containers so compose log caps apply ===
- Container trading-bot-trading-bot-1 Running 
- Container trading-bot-autoheal-1 Recreated 
- Container trading-bot-autoheal-1 Starting 
- Container trading-bot-autoheal-1 Started 
-trading-bot-autoheal-1: Up 20 seconds (healthy)
-trading-bot-trading-bot-1: Up 26 seconds (health: starting)
-trading-bot-ib-gateway-1: Up About a minute (healthy)
 
-=== verify PR #248 in container ===
-equity ladder: 7 tiers, first 0.025 (expect 7 / 0.025)
-BE equity trigger: 0.02 (expect 0.02)
-mean_reversion cap: 150 (expect 150)
-5
-(expect >= 3)
-/dev/sda         79G  9.3G   65G  13% /
+=== verify PR #251 risk floor live in container ===
+min_dollar_risk_per_strategy = {'mean_reversion': 100} (expect mean_reversion: 100)
+crypto max_position_size_pct = 0.15 (expect 0.15)
+1
+(expect >= 1 — floor code present)
+
+=== containers ===
+trading-bot-trading-bot-1: Up 3 seconds (health: starting)
+trading-bot-autoheal-1: Up 16 hours (healthy)
+trading-bot-ib-gateway-1: Up 16 hours (healthy)
+
+=== watch for the first floored crypto sizing (may be empty until next signal) ===
+/dev/sda         79G  9.1G   66G  13% /
