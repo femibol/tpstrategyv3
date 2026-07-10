@@ -521,6 +521,12 @@ class TradingEngine:
                         f"(overrides settings.yaml starting_balance ${self.config.starting_balance:,.2f})"
                     )
                 else:
+                    if self.config.is_live:
+                        raise RuntimeError(
+                            "LIVE MODE: IBKR balance sync returned $0 — refusing "
+                            "to size positions off config starting_balance. "
+                            "Fix the gateway connection and restart."
+                        )
                     log.warning("IBKR returned $0 equity — keeping config starting_balance as fallback")
             # Sync existing positions. IBKR's positions() list is populated
             # asynchronously after connect — a single call right after
@@ -3883,7 +3889,9 @@ class TradingEngine:
                     f"Premarket news reversal: {reason}")
             else:
                 # Moderate bearish — tighten stop to 1% below current
-                if symbol in self.positions:
+                with self._positions_lock:
+                    if symbol not in self.positions:
+                        continue
                     tight_stop = current_price * 0.99
                     old_stop = self.positions[symbol].get("stop_loss", 0)
                     if tight_stop > old_stop:
@@ -4021,7 +4029,9 @@ class TradingEngine:
 
         # Execute stop tightening
         for symbol, new_stop, pnl_pct in positions_to_tighten:
-            if symbol in self.positions:
+            with self._positions_lock:
+                if symbol not in self.positions:
+                    continue
                 old_stop = self.positions[symbol].get("stop_loss", 0)
                 self.positions[symbol]["stop_loss"] = new_stop
                 log.warning(
@@ -4270,11 +4280,17 @@ class TradingEngine:
             effective_stop = max(current_stop, current_trail)
 
             if news_stop > effective_stop:
-                self.positions[symbol]["stop_loss"] = news_stop
-                self.positions[symbol]["trailing_stop"] = news_stop
-                # Override the trailing pct so fast_scalp_monitor uses the tight trail
-                self.positions[symbol]["_news_trail_override"] = news_trail_pct
-                self.positions[symbol]["_news_protect_active"] = True
+                # Re-check membership + mutate under the lock — a concurrent
+                # _close_position pop between the outer check and these
+                # writes would resurrect a phantom entry (2026-07-10 audit).
+                with self._positions_lock:
+                    if symbol not in self.positions:
+                        continue
+                    self.positions[symbol]["stop_loss"] = news_stop
+                    self.positions[symbol]["trailing_stop"] = news_stop
+                    # Override the trailing pct so fast_scalp_monitor uses the tight trail
+                    self.positions[symbol]["_news_trail_override"] = news_trail_pct
+                    self.positions[symbol]["_news_protect_active"] = True
 
                 locked_pnl = (news_stop - entry_price) / entry_price
                 log.warning(
@@ -5170,6 +5186,45 @@ class TradingEngine:
     # long-term parameter drift).
     # =====================================================================
 
+    def _gate_crypto_sleeve_daily_loss(self, symbol):
+        """Block new CRYPTO entries when the sleeve's realized P&L over the
+        trailing 24h breaches -crypto.risk.max_daily_loss_dollars (0=off).
+        Bot-side by necessity: the TradersPost/Alpaca crypto account is
+        invisible to the IBKR-based account guards (2026-07-10 audit)."""
+        if not symbol or not self._is_crypto_symbol(symbol):
+            return ""
+        cap = float(
+            (self.config.settings.get("crypto", {}).get("risk", {}) or {})
+            .get("max_daily_loss_dollars", 0) or 0
+        )
+        if cap <= 0:
+            return ""
+        cutoff = datetime.now(self.tz) - timedelta(hours=24)
+        realized = 0.0
+        for t in list(self.trade_history)[-300:]:
+            sym = (t.get("symbol") or "").upper()
+            if not self._is_crypto_symbol(sym):
+                continue
+            ts = t.get("exit_time")
+            in_window = True  # fail-safe default: an unparseable/naive
+            # timestamp COUNTS toward the loss (a safety guard must fail
+            # toward pausing, never toward more trading). We only EXCLUDE a
+            # trade when we can positively prove it's older than the window.
+            try:
+                dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+                if dt.tzinfo is not None:
+                    in_window = dt >= cutoff
+            except Exception:
+                pass
+            if in_window:
+                realized += t.get("pnl") or 0
+        if realized <= -cap:
+            return (
+                f"crypto sleeve daily loss ${realized:.2f} breaches "
+                f"-${cap:.0f} cap — crypto entries paused ~24h"
+            )
+        return ""
+
     def _entry_safety_gates(self, strategy_name, symbol=None):
         """Run all entry gates. Returns "" to allow, or a reason string to block.
 
@@ -5178,6 +5233,10 @@ class TradingEngine:
         max_positions) or auto_tuner (long-term drift); they're complementary.
         """
         try:
+            reason = self._gate_crypto_sleeve_daily_loss(symbol)
+            if reason:
+                self._record_gate_hit("crypto_sleeve_daily_loss", symbol, reason)
+                return reason
             reason = self._gate_spy_circuit_breaker()
             if reason:
                 self._record_gate_hit("spy_circuit_breaker", symbol, reason)

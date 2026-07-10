@@ -510,7 +510,12 @@ class MomentumRunnerStrategy(BaseStrategy):
                     "bar_seconds": 300,
                     "rvol": rvol,
                     "rr_ratio": rr_ratio,
-                    "score": score,
+                    # Engine quality gate expects 0-100 (min_entry_score 50);
+                    # the raw 0-12 composite made every runner signal
+                    # structurally rejectable ("score 6 below min 50") —
+                    # 30% of allocation dead. Normalize at emission
+                    # (2026-07-10 audit).
+                    "score": round(score / 12 * 100),
                     "source": "momentum_runner",
                     "entry_type": entry_type,
                     "size_multiplier": round(size_multiplier, 2),
@@ -670,7 +675,12 @@ class MomentumRunnerStrategy(BaseStrategy):
                     "bar_seconds": 300,
                     "rvol": rvol,
                     "rr_ratio": rr_ratio,
-                    "score": score,
+                    # Engine quality gate expects 0-100 (min_entry_score 50);
+                    # the raw 0-12 composite made every runner signal
+                    # structurally rejectable ("score 6 below min 50") —
+                    # 30% of allocation dead. Normalize at emission
+                    # (2026-07-10 audit).
+                    "score": round(score / 12 * 100),
                     "source": "momentum_runner",
                     "entry_type": entry_type,
                     "size_multiplier": round(size_multiplier, 2),

@@ -255,7 +255,7 @@ prebreakout:
 # Catches the biggest gap-ups before open — extreme gaps only
 # Scanner feeds dynamically — no static watchlist
 premarket_gap:
-  enabled: true
+  enabled: false  # 2026-07-10 go-live audit: needs premarket IBKR bars + 6-way confluence that never fires — silent/untested surface, off for live
   timeframe: "5m"
   min_gap_pct: 0.04               # 4% minimum gap — lowered from 8% to catch more setups in paper
   min_rvol: 3.0                   # 3x relative volume — lowered from 8x for paper mode
@@ -383,7 +383,7 @@ low_float_catalyst:
 
 # --- TradingView Signal Strategy ---
 tradingview_signals:
-  enabled: true
+  enabled: false  # 2026-07-10 go-live audit: live-money webhook whose validate/allowlist config keys are never read (decorative); not in use — off for live
   validate_signals: true
   allowed_actions: ["buy", "sell", "close"]
   require_confirmation: false

@@ -509,6 +509,10 @@ crypto:
   # max_positions cap.
   max_concurrent_positions: 5
   risk:
+    max_daily_loss_dollars: 300  # 2026-07-10 audit: crypto trades on a separate TradersPost
+                                 # account invisible to ALL IBKR-based account guards. Bot-side
+                                 # guard pauses new crypto entries when realized crypto P&L over
+                                 # the trailing 24h is worse than -$300. 0 = disabled.
     max_position_size_pct: 0.15  # 2026-07-10: was 0.12 — raised alongside the mean_reversion
                                  # risk floor so the ~$2.5-3K intended notional isn't clipped
                                  # by the per-position cap (0.12 × ~$21K ≈ $2.5K was binding).

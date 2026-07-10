@@ -29,6 +29,7 @@ def _make_engine():
     from bot.engine import TradingEngine
     stub = SimpleNamespace(
         crypto_suffixes=["-USD", "-USDT", "-BTC", "-ETH"],
+        config=SimpleNamespace(settings={}),  # _is_crypto_symbol reads config.settings
     )
     stub._is_crypto_symbol = TradingEngine._is_crypto_symbol.__get__(stub)
     stub._sane_exit_price = TradingEngine._sane_exit_price.__get__(stub)
