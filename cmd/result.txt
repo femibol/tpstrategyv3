@@ -1,12 +1,23 @@
-=== executed: 191d86a0f7c7a425b3e1ec2f3e158ec592c04d13
-=== started:  2026-07-11T20:12:02Z
+=== executed: 8cce09d47fe8fc8f6d79cf644bd07bcb649f9472
+=== started:  2026-07-11T21:11:10Z
 === exit:     
 === timeout:  90s
 ===
-=== what YOUR DASHBOARD shows for the ALGO position right now ===
-positions: 1
-  ALGO-USD: entry=$0.0862  now=$0.0864  pnl=$+4.41 (+0.22%)  price_source=coinbase_live
+=== 1. close ALGO-USD via dashboard control (clean flatten before paper reset) ===
+{"error":"No position in ALGO-USD"}
 
-=== reference: Coinbase spot for real ALGO ===
-{"data":{"amount":"0.0864","base":"ALGO","currency":"USD"}}
-=== bot's internal mark (from log, last price refs) ===
+=== 2. positions after close ===
+open positions: 0 (expect 0)
+
+=== 3. how did the trade RECORD? (guards should book real ~$4, never $21K) ===
+  2026-07-11T11:18:52  NEAR-USD  pnl=$+30.25  exit=$1.9180  reason=webhook_exit
+  2026-07-11T15:49:31  ETC-USD  pnl=$+0.00  exit=$7.0700  reason=time_exit
+  2026-07-11T17:10:21  ALGO-USD  pnl=$+0.00  exit=$0.0862  reason=time_exit
+
+=== 4. close log lines ===
+2026-07-11 17:10:20 | INFO     | trading_bot.notifications | [ALERT] Trade Exit: 💸 **<<< CLOSED: ALGO-USD** (time_exit)
+2026-07-11 17:10:21 | INFO     | trading_bot.learning.trade_analyzer | Trade persisted: ALGO-USD +0.00 (500 total in history)
+2026-07-11 17:10:23 | INFO     | trading_bot.engine   | POST-TRADE LEARNING [ALGO-USD]: **NO_CHANGE**
+Zero P&L time_exit on ALGO-USD mean_reversion. Neutral scratch trade, not a loss pattern. 68% win rate is solid. Single flat exit after 77min needs no reaction.
+2026-07-11 17:10:28 | INFO     | trading_bot.engine   | EQUITY MARKET CLOSED: dropped 2 buy signal(s) — GMM, CRCA
+172.18.0.1 - - [11/Jul/2026 17:11:02] "[33mPOST /api/control/close/ALGO-USD HTTP/1.1[0m" 404 -
