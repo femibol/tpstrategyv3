@@ -994,6 +994,30 @@ class IBKRBroker(BaseBroker):
                         avg_fill_price = total_cost / total_qty
                         filled_qty = int(total_qty)
 
+            # Resize the GTC stop/target children to the ACTUAL filled
+            # quantity (2026-07-10 go-live audit). They were placed at the
+            # full requested size; after a partial fill an unmodified SELL
+            # stop would close more shares than we own — flipping the
+            # account SHORT when it triggers. Re-placing the same order
+            # object with an updated totalQuantity is ib_async's standard
+            # modify path (same orderId).
+            if 0 < filled_qty < int(quantity):
+                try:
+                    tp_order.totalQuantity = filled_qty
+                    sl_order.totalQuantity = filled_qty
+                    self.ib.placeOrder(contract, tp_order)
+                    self.ib.placeOrder(contract, sl_order)
+                    self.ib.sleep(0.5)
+                    log.warning(
+                        f"BRACKET CHILDREN RESIZED: {symbol} TP/SL "
+                        f"{int(quantity)} → {filled_qty} shares after partial fill"
+                    )
+                except Exception as e:
+                    log.error(
+                        f"BRACKET CHILD RESIZE FAILED for {symbol}: {e} — "
+                        f"TP/SL still sized {int(quantity)}, MANUAL CHECK NEEDED"
+                    )
+
             actual_qty = filled_qty if filled_qty > 0 else quantity
 
             return {

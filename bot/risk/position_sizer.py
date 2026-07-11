@@ -55,6 +55,12 @@ class PositionSizer:
         # Crypto-specific limits
         crypto_risk = config.settings.get("crypto", {}).get("risk", {})
         self.crypto_max_position_pct = crypto_risk.get("max_position_size_pct", 0.10)
+        # Crypto sleeve capital base (2026-07-10 go-live audit): crypto
+        # executes on a separate TradersPost/Alpaca account, but sizing ran
+        # against the IBKR balance — capital crypto cannot draw on. When set
+        # (> 0), ALL crypto sizing math (risk %, max position, floors) uses
+        # this sleeve capital instead. 0 = legacy behavior (paper).
+        self.crypto_capital_base = float(crypto_risk.get("capital_base", 0) or 0)
         self.crypto_suffixes = config.settings.get("crypto", {}).get(
             "symbols_suffix", ["-USD", "-USDT", "-BTC", "-ETH"]
         )
@@ -306,6 +312,12 @@ class PositionSizer:
         """
         if price <= 0 or stop_loss <= 0:
             return 0
+
+        # Crypto sleeve capital swap — see __init__ note. Do it before ANY
+        # balance-derived math so risk %, reserve, caps and floors are all
+        # coherent with the account crypto actually trades on.
+        if symbol and self._is_crypto(symbol) and self.crypto_capital_base > 0:
+            balance = self.crypto_capital_base
 
         # Available capital (after reserve)
         available = balance * (1 - self.reserve_pct)

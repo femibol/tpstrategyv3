@@ -348,7 +348,13 @@ daily_trend_rider:
   entry_pullback_pct: 0.02          # Pullback to within 2% of 9 EMA for entry
   rotation_score_ratio: 1.25        # When at capacity, swap weakest if new candidate scores ≥1.25× higher
   rotation_min_hold_days: 1         # Don't rotate a position that's been held < 1 day (prevents thrash)
-  symbols: []                       # Empty — uses dynamically discovered symbols from IBKR scanner
+  # 2026-07-10 audit: with universe.yaml empty and Polygon removed, this
+  # strategy only saw IBKR *mover*-scan injections — movers, not the steady
+  # multi-day trenders it's built for. It had taken ZERO trades. Static
+  # liquid watchlist gives it a real universe; dynamic injections still add.
+  symbols: ["NVDA", "AMD", "META", "TSLA", "AVGO", "PLTR", "COIN", "MSTR",
+            "HOOD", "SMCI", "NFLX", "UBER", "SHOP", "SOFI", "RKLB", "ARM",
+            "CRWD", "NET", "DDOG", "IONQ"]
 
 # --- Low-Float Catalyst Strategy ---
 # Micro-cap catalyst runners (GOVX/VRAX/SBFM/WGRX-class names).

@@ -509,6 +509,11 @@ crypto:
   # max_positions cap.
   max_concurrent_positions: 5
   risk:
+    capital_base: 0              # 2026-07-10 audit: crypto executes on a separate TradersPost
+                                 # account but was sized against IBKR net-liq. Set this to the
+                                 # crypto account's actual equity BEFORE GOING LIVE — all crypto
+                                 # sizing (risk %, max position, floors) then uses it.
+                                 # 0 = legacy behavior (size against IBKR balance; fine for paper).
     max_daily_loss_dollars: 300  # 2026-07-10 audit: crypto trades on a separate TradersPost
                                  # account invisible to ALL IBKR-based account guards. Bot-side
                                  # guard pauses new crypto entries when realized crypto P&L over
