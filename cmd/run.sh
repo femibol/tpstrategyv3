@@ -1,26 +1,22 @@
 #!/bin/bash
 set +e
 cd /opt/trading-bot
-bash scripts/deploy-vps.sh main 2>&1 | tail -6
+set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
+HOST="https://trading-bot-vps.tail5db65d.ts.net"
+
+echo "=== what YOUR DASHBOARD shows for the ALGO position right now ==="
+curl -s -m 10 -u "admin:$DASHBOARD_SECRET_KEY" "$HOST/api/positions" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'positions: {len(d)}')
+for p in d:
+    print(f'  {p.get(\"symbol\")}: entry=\${p.get(\"entry_price\",0):.4f}  now=\${p.get(\"current_price\",0):.4f}  pnl=\${p.get(\"pnl_dollars\",0):+.2f} ({p.get(\"pnl_pct\",0):+.2f}%)  price_source={p.get(\"price_source\")}')
+" 2>&1
+
 echo
-echo "=== PR #253 verify ==="
-docker exec trading-bot-trading-bot-1 bash -c "cd /app && python3 -c \"
-import yaml
-c = yaml.safe_load(open('config/settings.yaml'))['crypto']['risk']
-st = yaml.safe_load(open('config/strategies.yaml'))
-print(f'crypto.capital_base       = {c.get(\\\"capital_base\\\")} (expect 0 until go-live)')
-print(f'trend_rider universe size = {len(st[\\\"daily_trend_rider\\\"][\\\"symbols\\\"])} (expect 20)')
-\" 2>&1"
-docker exec trading-bot-trading-bot-1 grep -c "BRACKET CHILDREN RESIZED" /app/bot/brokers/ibkr.py 2>&1
-echo "(expect >= 1 — resize guard present)"
-docker exec trading-bot-trading-bot-1 grep -c "crypto_capital_base" /app/bot/risk/position_sizer.py 2>&1
-echo "(expect >= 2 — capital base wired)"
+echo "=== reference: Coinbase spot for real ALGO ==="
+curl -s -m 8 "https://api.coinbase.com/v2/prices/ALGO-USD/spot" 2>&1 | head -2
+
 echo
-echo "=== tonight's fixes in action: floor + runner + trend rider activity (last 8h) ==="
-docker logs --since 8h trading-bot-trading-bot-1 2>&1 | grep -E "STRATEGY RISK FLOOR|momentum_runner.*APPROVED|daily_trend_rider.*SIGNAL|TREND RIDER" | tail -8
-echo "--- crypto sizing sample (should show ~\$100 risk now) ---"
-docker logs --since 12h trading-bot-trading-bot-1 2>&1 | grep "Position size (crypto)" | tail -3
-echo
-echo "=== containers + disk ==="
-docker ps --format '{{.Names}}: {{.Status}}'
-df -h / | tail -1
+echo "=== bot's internal mark (from log, last price refs) ==="
+docker logs --since 2h trading-bot-trading-bot-1 2>&1 | grep -oE "ALGO-USD[^|]*\$0\.[0-9]+" | tail -3
