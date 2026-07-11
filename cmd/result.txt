@@ -1,38 +1,27 @@
-=== executed: 11f77281c2d3eaa031f9f97b5dd311a10e693083
-=== started:  2026-07-10T21:42:16Z
+=== executed: 1f091272c309c1b416a79773a00c371e8e60eac0
+=== started:  2026-07-11T05:41:15Z
 === exit:     
 === timeout:  90s
 ===
 deploy: backed up 11 data/*.json files
-deploy: checked out 969a607 on main
+deploy: checked out eab01ff on main
 deploy: container trading-bot-trading-bot-1 restarted
 deploy: dashboard ready after 6s
 deploy: ok
 
-=== verify PR #252 hardening live in container ===
-crypto.max_daily_loss_dollars = 300 (expect 300)
-premarket_gap.enabled         = False (expect False)
-tradingview_signals.enabled   = False (expect False)
---- code presence ---
-/app/bot/engine.py:2
-/app/bot/main.py:2
-/app/bot/risk/manager.py:1
-/app/bot/strategies/momentum.py:1
-/app/bot/strategies/momentum_runner.py:2
+=== PR #253 verify ===
+crypto.capital_base       = 0 (expect 0 until go-live)
+trend_rider universe size = 20 (expect 20)
+1
+(expect >= 1 — resize guard present)
+3
+(expect >= 2 — capital base wired)
 
-=== momentum_runner: is it NOW passing the score gate? (was 30% dead) ===
-  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
-  ✅ CBRG: score 85/100 — Momentum BUY: 
-  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
-  ✅ CBRG: score 85/100 — Momentum BUY: 
-  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
-  ✅ CBRG: score 85/100 — Momentum BUY: 
-  ✅ CPHI: score 100/100 — Momentum BUY: EMA cross, ADX=82, breakout>0.60, higher lows,
-  ✅ CBRG: score 85/100 — Momentum BUY: 
---- any 'score X below min' rejections still? ---
+=== tonight's fixes in action: floor + runner + trend rider activity (last 8h) ===
+--- crypto sizing sample (should show ~$100 risk now) ---
 
 === containers + disk ===
 trading-bot-trading-bot-1: Up 3 seconds (health: starting)
-trading-bot-autoheal-1: Up About an hour (healthy)
-trading-bot-ib-gateway-1: Up About an hour (healthy)
+trading-bot-autoheal-1: Up 2 hours (healthy)
+trading-bot-ib-gateway-1: Up 2 hours (healthy)
 /dev/sda         79G  9.1G   66G  13% /
