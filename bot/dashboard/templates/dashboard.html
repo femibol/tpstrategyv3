@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0d1117">
-    <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;AlgoBot&quot;,&quot;short_name&quot;:&quot;AlgoBot&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230d1117&quot;,&quot;theme_color&quot;:&quot;%230d1117&quot;}">
+    <meta name="theme-color" content="#060607">
+    <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;AlgoBot&quot;,&quot;short_name&quot;:&quot;AlgoBot&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%23060607&quot;,&quot;theme_color&quot;:&quot;%23060607&quot;}">
     <title>AlgoBot</title>
     <style>
         /* ===================================================================
@@ -15,23 +15,25 @@
          * existing JS data-binding and HTML structure keep working.
          * =================================================================== */
         :root {
-            --bg: #080a0f; --card: #11151d; --surface: #1a1f2b;
-            --border: #232a38; --border-soft: #1b212c;
-            --text: #e6e9ef; --muted: #7e8794; --accent: #5b8cff;
-            --accent2: #9b7dff;
-            --green: #2ecf7d; --red: #ff5d6c; --yellow: #f0b429; --orange: #ff8a4c;
-            --shadow: 0 2px 8px rgba(0,0,0,0.40), 0 1px 2px rgba(0,0,0,0.55);
-            --shadow-lg: 0 8px 28px rgba(0,0,0,0.50);
-            --radius: 14px;
+            /* "Terminal, edited" — true-black ground, cyan brand accent,
+             * P&L green/red reserved, gold for notable stats, editorial serif. */
+            --bg: #060607; --card: #101013; --surface: #16161a;
+            --border: #232329; --border-soft: #1a1a1f;
+            --text: #f3f4f7; --muted: #9296a1; --accent: #4cc9e8;
+            --accent2: #37b3d4;
+            --green: #34d99b; --red: #ff5d6a; --yellow: #e0a83c; --orange: #ff8a4c;
+            --shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 10px 30px -16px rgba(0,0,0,0.80);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.60);
+            --radius: 16px;
             --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+            --serif: ui-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        ::selection { background: rgba(91,140,255,0.30); }
+        ::selection { background: rgba(76,201,232,0.30); }
         body {
             background:
-                radial-gradient(900px 600px at 100% -10%, rgba(91,140,255,0.06), transparent 60%),
-                radial-gradient(700px 500px at -10% 0%, rgba(155,125,255,0.04), transparent 55%),
+                radial-gradient(1100px 640px at 50% -10%, rgba(76,201,232,0.05), transparent 62%),
                 var(--bg);
             background-attachment: fixed;
             color: var(--text);
@@ -52,17 +54,16 @@
             position: sticky; top: 0; z-index: 90;
             display: flex; justify-content: space-between; align-items: center;
             padding: 13px 16px; margin-bottom: 14px;
-            background: rgba(17,21,29,0.82);
-            -webkit-backdrop-filter: saturate(160%) blur(14px);
-            backdrop-filter: saturate(160%) blur(14px);
+            background: rgba(16,16,19,0.74);
+            -webkit-backdrop-filter: saturate(160%) blur(18px);
+            backdrop-filter: saturate(160%) blur(18px);
             border: 1px solid var(--border);
             border-radius: var(--radius); box-shadow: var(--shadow);
         }
         .header h1 {
-            font-size: 1.05em; font-weight: 800; letter-spacing: 1.5px;
-            background: linear-gradient(100deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text; background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: var(--serif); font-size: 1.28em; font-weight: 600; letter-spacing: 0.3px;
+            color: var(--text);
+            -webkit-text-fill-color: var(--text);
         }
         .header-right { display: flex; align-items: center; gap: 7px; }
         .status-dot {
@@ -85,7 +86,7 @@
         .mode-paper     { background: rgba(255,138,76,0.14);  color: var(--orange); border: 1px solid rgba(255,138,76,0.35); }
         .data-live      { background: rgba(46,207,125,0.14);  color: var(--green);  border: 1px solid rgba(46,207,125,0.35); }
         .data-delayed   { background: rgba(255,138,76,0.14);  color: var(--orange); border: 1px solid rgba(255,138,76,0.35); }
-        .data-connected { background: rgba(91,140,255,0.14);  color: var(--accent); border: 1px solid rgba(91,140,255,0.35); }
+        .data-connected { background: rgba(76,201,232,0.14);  color: var(--accent); border: 1px solid rgba(76,201,232,0.35); }
         .mode-live      { background: rgba(255,93,108,0.14);  color: var(--red);    border: 1px solid rgba(255,93,108,0.35); }
 
         /* === STATS GRID — hierarchy: hero / secondary / tertiary ===
@@ -132,6 +133,16 @@
         .negative { color: var(--red); }
         .neutral  { color: var(--muted); }
 
+        /* === TABULAR NUMBERS ===
+         * The terminal signature: every prominent figure is monospaced with
+         * tabular-nums so digits line up in columns and P&L reads at a glance. */
+        .stat-value, .perf-value, .pos-pnl, .pos-symbol, .pos-detail-val,
+        .scan-val, .scan-symbol, .wl-val, .wl-price, .wl-symbol, .mover-change,
+        .strat-pnl, .trade-pnl, .trade-symbol, .sugg-level-val, .sugg-symbol,
+        .rvol-symbol, .mover-sym, .runner-sym {
+            font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.3px;
+        }
+
         /* === EQUITY CHART === */
         .equity-chart {
             background: var(--card); border: 1px solid var(--border);
@@ -151,13 +162,13 @@
             box-shadow: var(--shadow);
         }
         .section h2 {
-            font-size: 0.78em; color: var(--text); margin-bottom: 14px;
-            padding-bottom: 10px; border-bottom: 1px solid var(--border);
+            font-family: var(--serif); font-size: 1.18em; color: var(--text); margin-bottom: 14px;
+            padding-bottom: 11px; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
-            text-transform: uppercase; letter-spacing: 1px; font-weight: 700;
+            letter-spacing: 0.1px; font-weight: 600;
         }
         .section h2 .count {
-            background: rgba(91,140,255,0.16); color: var(--accent);
+            background: rgba(76,201,232,0.16); color: var(--accent);
             padding: 2px 9px; border-radius: 999px; font-size: 0.82em; font-weight: 700;
         }
 
@@ -276,7 +287,7 @@
         .verdict-warming { background: rgba(240,180,41,0.16); color: var(--yellow);border: 1px solid rgba(240,180,41,0.35); }
         .verdict-neutral { background: rgba(126,135,148,0.12);color: var(--muted); border: 1px solid var(--border); }
         .verdict-entry   { background: rgba(46,207,125,0.22); color: var(--green); border: 1px solid var(--green); }
-        .verdict-exit    { background: rgba(91,140,255,0.16); color: var(--accent);border: 1px solid rgba(91,140,255,0.35); }
+        .verdict-exit    { background: rgba(76,201,232,0.16); color: var(--accent);border: 1px solid rgba(76,201,232,0.35); }
         .verdict-stop    { background: rgba(255,93,108,0.22); color: var(--red);   border: 1px solid var(--red); }
         .scan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 0.75em; color: var(--muted); }
         .scan-val { color: var(--text); font-weight: 700; }
@@ -323,7 +334,7 @@
         .wl-val { color: var(--text); font-weight: 700; }
         .wl-be-tag {
             display: inline-block; padding: 2px 7px; border-radius: 7px; font-size: 0.65em;
-            font-weight: 700; background: rgba(91,140,255,0.16); color: var(--accent); margin-left: 6px;
+            font-weight: 700; background: rgba(76,201,232,0.16); color: var(--accent); margin-left: 6px;
         }
         .wl-pos-tag {
             display: inline-block; padding: 2px 7px; border-radius: 7px; font-size: 0.65em;
@@ -368,7 +379,7 @@
             color: var(--text); padding: 7px 10px; font-size: 0.85em; width: 104px;
             text-align: right; font-family: var(--mono);
         }
-        .setting-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(91,140,255,0.15); }
+        .setting-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(76,201,232,0.15); }
         .setting-toggle { position: relative; width: 46px; height: 26px; cursor: pointer; }
         .setting-toggle input { display: none; }
         .toggle-slider {
@@ -391,7 +402,7 @@
             padding: 12px; text-align: center; cursor: pointer; transition: all 0.15s;
         }
         .profile-card:active { transform: scale(0.97); }
-        .profile-card.active { border-color: var(--accent); background: rgba(91,140,255,0.10); }
+        .profile-card.active { border-color: var(--accent); background: rgba(76,201,232,0.10); }
         .profile-name { font-weight: 800; font-size: 0.95em; margin-bottom: 4px; }
         .profile-desc { font-size: 0.7em; color: var(--muted); }
 
@@ -447,13 +458,13 @@
         .sugg-level-val { font-size: 1.1em; font-weight: 800; margin-top: 3px; }
         .sugg-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 0.75em; color: var(--muted); margin-bottom: 10px; }
         .sugg-why {
-            background: rgba(91,140,255,0.07); border: 1px solid rgba(91,140,255,0.18);
+            background: rgba(76,201,232,0.07); border: 1px solid rgba(76,201,232,0.18);
             border-radius: 9px; padding: 11px; margin-bottom: 10px;
         }
         .sugg-why-title { font-size: 0.68em; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         .sugg-reason {
             font-size: 0.8em; color: var(--text); line-height: 1.55;
-            padding-left: 9px; border-left: 2px solid rgba(91,140,255,0.35); margin-bottom: 4px;
+            padding-left: 9px; border-left: 2px solid rgba(76,201,232,0.35); margin-bottom: 4px;
         }
         .sugg-exec-btn {
             background: rgba(46,207,125,0.14); color: var(--green); border: 1px solid rgba(46,207,125,0.35);
@@ -463,7 +474,7 @@
         .sugg-exec-btn:active { background: rgba(46,207,125,0.30); }
 
         /* === BOTTOM CONTROL VARIANTS === */
-        .ctrl-btn.suggest     { color: var(--accent); border-color: rgba(91,140,255,0.40); background: rgba(91,140,255,0.07); }
+        .ctrl-btn.suggest     { color: var(--accent); border-color: rgba(76,201,232,0.40); background: rgba(76,201,232,0.07); }
         .ctrl-btn.rvol-btn    { color: var(--green);  border-color: rgba(46,207,125,0.40); background: rgba(46,207,125,0.07); }
         .ctrl-btn.runners-btn { color: var(--orange); border-color: rgba(255,138,76,0.40); background: rgba(255,138,76,0.07); }
 
@@ -501,14 +512,14 @@
             font-size: 0.9em; font-weight: 700; text-transform: uppercase;
         }
         .add-ticker-input::placeholder { color: var(--muted); text-transform: none; font-weight: 400; }
-        .add-ticker-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(91,140,255,0.15); }
+        .add-ticker-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(76,201,232,0.15); }
         .add-ticker-btn {
-            background: rgba(91,140,255,0.12); color: var(--accent);
-            border: 1px solid rgba(91,140,255,0.32); border-radius: 10px;
+            background: rgba(76,201,232,0.12); color: var(--accent);
+            border: 1px solid rgba(76,201,232,0.32); border-radius: 10px;
             padding: 11px 16px; font-size: 0.85em; font-weight: 700;
             cursor: pointer; white-space: nowrap;
         }
-        .add-ticker-btn:active { background: rgba(91,140,255,0.28); }
+        .add-ticker-btn:active { background: rgba(76,201,232,0.28); }
         .remove-btn {
             background: rgba(255,93,108,0.10); color: var(--red);
             border: 1px solid rgba(255,93,108,0.22); border-radius: 7px;
@@ -557,8 +568,8 @@
         .tab:active { transform: scale(0.95); }
         .tab.active {
             background: linear-gradient(100deg, var(--accent), var(--accent2));
-            color: #fff; border-color: transparent;
-            box-shadow: 0 3px 12px rgba(91,140,255,0.32);
+            color: #06232b; font-weight: 800; border-color: transparent;
+            box-shadow: 0 3px 14px rgba(76,201,232,0.30);
         }
         .tab.more-btn { flex: 0 0 auto; padding: 10px 14px; }
         .tab-content { display: none; animation: fadeIn 0.18s ease; }
@@ -584,7 +595,7 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .more-menu-item:active { background: var(--surface); }
-        .more-menu-item.active { background: rgba(91,140,255,0.16); color: var(--accent); }
+        .more-menu-item.active { background: rgba(76,201,232,0.16); color: var(--accent); }
         .more-menu-backdrop {
             display: none; position: fixed; inset: 0; z-index: 99;
             background: rgba(0,0,0,0.40);
@@ -600,7 +611,7 @@
         .regime-bear     { background: rgba(255,93,108,0.16); color: var(--red); }
         .regime-sideways { background: rgba(126,135,148,0.16);color: var(--muted); }
         .regime-highvol  { background: rgba(255,138,76,0.16);  color: var(--orange); }
-        .regime-lowvol   { background: rgba(91,140,255,0.16);  color: var(--accent); }
+        .regime-lowvol   { background: rgba(76,201,232,0.16);  color: var(--accent); }
         .regime-crisis   { background: rgba(255,93,108,0.30);  color: var(--red); border: 1px solid var(--red); }
 
         /* === PULL TO REFRESH === */
@@ -768,7 +779,7 @@
 
 <!-- HEADER -->
 <div class="header">
-    <h1>ALGOBOT</h1>
+    <h1>AlgoBot</h1>
     <div class="header-right">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText" style="font-size:0.8em">--</span>
@@ -2441,10 +2452,8 @@ function renderCritical(status, positions, trades, notifs, perfData, tradesSumma
         if (stratCount > 0) stratEl.title = status.strategies_active.join(', ');
         document.getElementById('drawdown').innerHTML = '<span class="' + (status.drawdown_pct > 5 ? 'negative' : 'neutral') + '">' + fmt(status.drawdown_pct) + '%</span>';
         document.getElementById('peakBalance').textContent = 'Peak: $' + fmtMoney(status.peak_balance);
-
-        // Update control buttons
-        document.getElementById('btnPause').style.display = status.paused ? 'none' : 'block';
-        document.getElementById('btnResume').style.display = status.paused ? 'block' : 'none';
+        // Pause/resume state is synced on the single #btnPauseResume toggle in updateStatus();
+        // the old btnPause/btnResume elements were removed in the control-bar refactor.
     }
     });
 
@@ -2672,7 +2681,7 @@ function drawEquityChart(data) {
     var range = max - min || 1;
 
     // Grid lines
-    ctx.strokeStyle = '#21262d';
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 0.5;
     for (var i = 0; i <= 4; i++) {
         var y = (i / 4) * h;
@@ -2681,7 +2690,7 @@ function drawEquityChart(data) {
 
     // Line
     var isUp = values[values.length - 1] >= values[0];
-    ctx.strokeStyle = isUp ? '#3fb950' : '#f85149';
+    ctx.strokeStyle = isUp ? '#34d99b' : '#ff5d6a';
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (var j = 0; j < values.length; j++) {
@@ -2699,7 +2708,7 @@ function drawEquityChart(data) {
     ctx.fillStyle = grad; ctx.fill();
 
     // Labels
-    ctx.fillStyle = '#8b949e'; ctx.font = '10px monospace';
+    ctx.fillStyle = '#9296a1'; ctx.font = '10px ui-monospace, monospace';
     ctx.fillText('$' + fmtMoney(max), 4, 12);
     ctx.fillText('$' + fmtMoney(min), 4, h - 4);
 }
