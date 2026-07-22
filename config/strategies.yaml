@@ -191,7 +191,14 @@ rvol_momentum:
   min_rvol: 4.0                    # Raised 3.0→4.0 (2026-06-17). Two weeks of no edge
                                    # (wk1 0% WR/4t, wk2 25% WR/12t, both net negative).
                                    # Demand a stronger volume thrust before committing.
-  min_score: 75                    # Raised 60→75 (2026-06-17). Higher composite bar.
+  min_score: 88                    # Raised 60→75 (2026-06-17), then 75→88 (2026-07-22).
+                                   # Two independent reviews (Fable 5 + Opus 4.8) agreed
+                                   # rvol_momentum is the worst active strategy (29% WR,
+                                   # PF 0.52, net -$224). Fable recommended disabling it;
+                                   # Opus recommended gating to min_score 88. Applied the
+                                   # conservative common ground: gate hard but keep it
+                                   # alive on probation. Cut to enabled:false if it hasn't
+                                   # cleared breakeven in 3-4 weeks (both reviews' fallback).
   min_price: 1.00                  # $1 floor
   max_price: 100.00                # $100 ceiling
   min_volume: 300000               # Lowered from 500K — captures more mid-cap movers

@@ -77,10 +77,14 @@ risk:
   # loses money in them per 30d data:
   #   05:00-06:00 ET  →  premarket dead zone, slippage_reject pattern, -$203
   #   14:00-15:00 ET  →  early afternoon lunch lull, -$133
-  # The 09:30-10:30 open hour stays OPEN — it's where most legit runners fire,
-  # even though WR is mixed.
+  # 2026-07-22: the 09:30-10:00 open hour is now GATED (hour 9 added). Two
+  # independent trade reviews (Fable 5 + Opus 4.8) converged on the open-hour
+  # equity-momentum cohort as the single largest loss concentration: 09:30-10:00
+  # momentum/rvol positions netted roughly -$414 to -$599 over the window, and
+  # were almost entirely the low-confidence subset (conf>=0.90 in-window ≈ breakeven).
+  # Premarket (hour 4) stays open — both reviews found it net-positive.
   # Crypto bypasses this filter entirely (24/7 universe).
-  equity_dead_hours_et: [5, 14]
+  equity_dead_hours_et: [5, 9, 14]
   # 2026-06-05: switch to MARKET-parent server brackets on equity. IBKR
   # paper account lacks Top-of-Book subs for NASDAQ/NYSE/BATS/ARCA, so
   # LIMIT brackets sit in PendingSubmit until the bot's 15s timeout kills
