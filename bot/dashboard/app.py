@@ -379,6 +379,36 @@ class Dashboard:
                 "learning": learning,
             })
 
+        @self.app.route("/api/validation")
+        def validation():
+            """Robustness / go-live report: 'real edge or lucky streak?' per
+            strategy. Scores each against the pre-committed bar (n, expectancy,
+            profit factor, survives removing top trades, recent-third positive)
+            so concentration/decay can't hide behind headline net P&L.
+            Optional query overrides: ?min_trades=&pf_min=&top_pct= .
+            """
+            from flask import request as req
+            from bot.learning.strategy_validator import build_report
+
+            bar = {}
+            for key, cast in (("min_trades", int), ("pf_min", float), ("top_pct", float)):
+                val = req.args.get(key)
+                if val is not None:
+                    try:
+                        bar[key] = cast(val)
+                    except ValueError:
+                        pass
+            try:
+                report = build_report(list(self.engine.trade_history), bar or None)
+                # inf isn't JSON — stringify profit factors defensively
+                for block in [report["overall"], report["crypto"], report["equity"], *report["strategies"]]:
+                    pf = block.get("profit_factor")
+                    if pf == float("inf"):
+                        block["profit_factor"] = None
+                return jsonify(report)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
         @self.app.route("/api/equity")
         def equity():
             return jsonify(self.engine.equity_curve[-500:])
