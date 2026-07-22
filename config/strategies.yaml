@@ -16,7 +16,14 @@ allocation:
                                    # working strategy on a bad week. Per-strategy $50 risk
                                    # cap added below to bound single-trade damage.
   momentum_runner: 0.30            # 30% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
-  rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
+  rvol_momentum: 0.00             # DISABLED 2026-07-22 — the -$152/35t bleeder over
+                                   # the 10 days since 07-12, net-negative every measured
+                                   # window since #237 throttled (not killed) it. Fishes
+                                   # the same illiquid $5-6 penny-runner pond as
+                                   # momentum_runner and slippage-rejects on entry (which
+                                   # is ALSO what session-blocks momentum_runner's fills).
+                                   # Allocation zeroed; `enabled: false` set below.
+                                   # Re-enable only on a backtest showing real edge.
   rvol_scalp: 0.00                # DISABLED 2026-06-17 — 0-for-5 over two weeks, 0% WR.
                                    # The class filter + slippage floor blocked the
                                    # catastrophic tail, but the base signal has no edge:
@@ -186,7 +193,12 @@ momentum_runner:
 # --- RVOL Momentum Strategy (Money Machine) ---
 # Secondary strategy — snapshot fast-path for instant signal generation
 rvol_momentum:
-  enabled: true
+  enabled: false  # DISABLED 2026-07-22 — -$152 over 35 trades in the 10 days since
+                  # 07-12, the single biggest loss source and net-negative in every
+                  # measured window since #237's throttle. Its entries on illiquid
+                  # $5-6 runners slippage-reject and session-block the SAME symbols
+                  # momentum_runner then can't fill. Kelly/tuner already near-zeroed
+                  # its allocation; this makes the cut explicit. Re-enable on backtest proof.
   timeframe: "5m"
   min_rvol: 4.0                    # Raised 3.0→4.0 (2026-06-17). Two weeks of no edge
                                    # (wk1 0% WR/4t, wk2 25% WR/12t, both net negative).
