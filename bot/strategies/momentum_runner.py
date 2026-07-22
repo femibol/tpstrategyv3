@@ -55,6 +55,12 @@ class MomentumRunnerStrategy(BaseStrategy):
         self.min_price = config.get("min_price", 1.00)
         self.max_price = config.get("max_price", 100.00)
         self.min_volume = config.get("min_volume", 500000)
+        # Dollar-liquidity floor (price × avg daily share volume). Share-count
+        # alone let $5-6 penny-runners through (500K shares × $5 = only $2.5M/day
+        # of dollar liquidity) — they slippage-rejected on every entry and the
+        # strategy filled ZERO (2026-07). A real dollar floor targets the thin
+        # spreads directly. 0 = off (legacy default).
+        self.min_dollar_volume = config.get("min_dollar_volume", 0)
         self.max_daily_change_pct = config.get("max_daily_change_pct", 30.0)
         self.max_open_positions = config.get("max_open_positions", 5)
         self.max_trades_per_day = config.get("max_trades_per_day", 10)
@@ -335,6 +341,11 @@ class MomentumRunnerStrategy(BaseStrategy):
         if daily_avg_vol < self.min_volume:
             return None
 
+        # Dollar-liquidity floor — rejects thin low-priced runners that
+        # slippage-reject at entry regardless of share count.
+        if self.min_dollar_volume and daily_avg_vol * current_price < self.min_dollar_volume:
+            return None
+
         # Daily change
         prev_close = float(closes[-2]) if len(closes) >= 2 else current_price
         change_pct = ((current_price - prev_close) / prev_close * 100) if prev_close > 0 else 0
@@ -556,6 +567,12 @@ class MomentumRunnerStrategy(BaseStrategy):
 
         # Volume filter
         if volume < self.min_volume:
+            return None
+
+        # Dollar-liquidity floor — same gate as the bars path. Uses avg daily
+        # share volume × price so a thin $5 runner can't slip through on raw
+        # share count alone.
+        if self.min_dollar_volume and avg_volume * price < self.min_dollar_volume:
             return None
 
         # Skip >30% without catalyst

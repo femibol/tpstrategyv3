@@ -177,9 +177,17 @@ momentum_runner:
   enabled: true
   timeframe: "1m"                    # 1-minute bars for fastest detection
   min_score: 6                       # 6/10 minimum composite score
-  min_price: 0.20                    # Penny tier admitted (was $1); pairs with risk.min_price=0.20
+  min_price: 2.00                    # Raised 0.20→2.00 (2026-07-22). Deep-penny tier
+                                     # had the worst spreads; every fill slippage-rejected.
   max_price: 100.00                  # $100 ceiling
-  min_volume: 500000                 # 500K avg daily volume — real liquidity only
+  min_volume: 500000                 # 500K avg daily volume floor (share count)
+  min_dollar_volume: 10000000        # $10M/day dollar-liquidity floor (2026-07-22). THE
+                                     # fix: momentum_runner fired 11x / filled 0 — every
+                                     # signal was a thin $5-6 runner (CONL @ $5.73 etc.)
+                                     # that slippage-rejected at entry. Share count alone
+                                     # let them through ($5×500K = $2.5M); $10M dollar
+                                     # floor demands real executable liquidity. Tune down
+                                     # to 5M if it over-starves once first fills land.
   max_daily_change_pct: 30.0         # Skip >30% unless fresh catalyst
   max_open_positions: 7              # Max 7 momentum runner positions (up from 5, uses 10-slot capacity)
   max_trades_per_day: 15             # More shots on goal (up from 10)
