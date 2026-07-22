@@ -205,6 +205,18 @@ class AutoTuner:
         if not recommendations:
             return {"applied": False, "reason": "No recommendations from AI"}
 
+        # Strategies that have actually filled a trade. The auto-tuner must
+        # never REWARD a zero-fill strategy with more capital: with no trades
+        # there are no losses for the AI to penalize, so its allocation drifts
+        # upward and starves the strategies that work (daily_trend_rider crept
+        # to 22% while taking ZERO trades — 2026-07). For any allocation param
+        # whose strategy has never filled, we override the AI suggestion toward
+        # the floor below, so a dead strategy decays to its minimum instead of
+        # growing. The guard lifts itself the moment the strategy starts trading.
+        traded_strategies = {
+            t.get("strategy") for t in trade_history if t.get("strategy")
+        }
+
         # Validate and apply each recommendation
         changes_made = []
         for param_key, new_value in recommendations.items():
@@ -214,6 +226,19 @@ class AutoTuner:
             current_value = current_params.get(param_key)
             if current_value is None:
                 continue
+
+            # Zero-fill guard: never let an untraded strategy's allocation grow.
+            if param_key.startswith("alloc_"):
+                strat = param_key[len("alloc_"):]
+                if strat not in traded_strategies:
+                    floor = PARAM_BOUNDS[param_key][0]
+                    if new_value > floor:
+                        log.info(
+                            f"AUTO-TUNE: {param_key} pinned toward floor "
+                            f"{floor} (AI suggested {new_value}) — strategy has "
+                            f"zero fills; not rewarding an untraded strategy"
+                        )
+                        new_value = floor
 
             # Apply safety bounds
             safe_value = self._apply_bounds(param_key, current_value, new_value)

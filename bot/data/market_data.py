@@ -795,6 +795,60 @@ class MarketDataFeed:
             log.debug(f"get_crypto_price failed for {symbol}: {e}")
             return None
 
+    # One-side crypto spread cache: symbol -> (one_side_bps, fetched_at)
+    _CRYPTO_SPREAD_TTL = 60  # seconds — the cost gate refreshes far slower
+
+    def get_crypto_spread_bps(self, symbol):
+        """Live ONE-SIDE cross-spread (bps) for a crypto symbol via the
+        Binance.US bookTicker endpoint (no auth, same API family as the klines
+        source). Returns None if unavailable — callers fall back to the
+        configured `crypto_spread_bps_default`, so a miss is fail-safe.
+
+        Semantics match `cost_model.crypto_spread_bps_default`: the returned
+        value is HALF the full bid-ask spread (mid→ask, the cost of crossing
+        one side), which `round_trip_cost_bps` then doubles via `spread_mult`
+        for the round trip. Cached ~60s to bound API calls (worst case one
+        request per crypto symbol per minute, well under the unauth limit).
+
+        The whole point: the flat 10bps default overstates cost on liquid
+        majors (real spread ~1-5bps), over-rejecting profitable mean_reversion
+        entries at the cost gate. Threading the real spread lets majors pass on
+        true economics while genuinely-wide alts still get rejected correctly.
+        """
+        if not self._is_crypto(symbol):
+            return None
+        if not hasattr(self, "_crypto_spread_cache"):
+            self._crypto_spread_cache = {}
+        now = time.time()
+        cached = self._crypto_spread_cache.get(symbol)
+        if cached and (now - cached[1]) < self._CRYPTO_SPREAD_TTL:
+            return cached[0]
+
+        base = symbol.upper().split("-")[0]
+        base = self._BINANCE_ALIASES.get(base, base)
+        for quote in ("USDT", "USD", "BUSD"):
+            try:
+                resp = _requests.get(
+                    "https://api.binance.us/api/v3/ticker/bookTicker",
+                    params={"symbol": f"{base}{quote}"},
+                    timeout=3,
+                )
+                if resp.status_code != 200:
+                    continue
+                d = resp.json()
+                bid = float(d.get("bidPrice", 0) or 0)
+                ask = float(d.get("askPrice", 0) or 0)
+                if bid <= 0 or ask <= 0 or ask < bid:
+                    continue
+                mid = (bid + ask) / 2.0
+                one_side_bps = (ask - bid) / mid * 10000.0 / 2.0
+                self._crypto_spread_cache[symbol] = (one_side_bps, now)
+                return one_side_bps
+            except Exception as e:
+                log.debug(f"get_crypto_spread_bps failed for {symbol} ({quote}): {e}")
+                continue
+        return None
+
     def get_volume(self, symbol):
         """Get latest volume for a symbol."""
         return self._volume_cache.get(symbol)

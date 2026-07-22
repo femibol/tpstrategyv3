@@ -2121,6 +2121,13 @@ class TradingEngine:
                         )
                         signals.extend(hedge_signals)
 
+                    # 5c. Price crypto buy signals on their REAL spread before
+                    # the cost gate sees them. Without this the gate uses a flat
+                    # 10bps default that overstates cost on liquid majors and
+                    # over-rejects profitable mean_reversion entries (1% fill
+                    # rate). Best-effort — a miss leaves the gate on its default.
+                    self._enrich_crypto_spreads(signals)
+
                     # 6. Filter signals through risk manager
                     approved = self.risk_manager.filter_signals(
                         signals, self.positions, self.current_balance
@@ -4715,6 +4722,28 @@ class TradingEngine:
                 log.debug(f"Skipping full close for {symbol} — partial close already attempted this cycle")
                 continue
             self._close_position(symbol, reason_type, reason_msg)
+
+    def _enrich_crypto_spreads(self, signals):
+        """Attach `live_spread_bps` (one-side, bps) to crypto BUY signals from
+        the live Binance.US book so the cost-vs-edge gate (manager Rule 6.5)
+        prices them on real spread instead of the conservative default.
+
+        Best-effort: `get_crypto_spread_bps` returns None for non-crypto
+        symbols and on any fetch miss, in which case the field is left unset
+        and the gate falls back to `crypto_spread_bps_default`.
+        """
+        md = getattr(self, "market_data", None)
+        if not md or not hasattr(md, "get_crypto_spread_bps"):
+            return
+        for sig in signals:
+            try:
+                if sig.get("action") != "buy" or "live_spread_bps" in sig:
+                    continue
+                spread = md.get_crypto_spread_bps(sig.get("symbol", ""))
+                if spread is not None:
+                    sig["live_spread_bps"] = spread
+            except Exception:
+                continue
 
     def _run_strategies(self):
         """Run all strategies and collect signals."""

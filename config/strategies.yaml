@@ -16,7 +16,14 @@ allocation:
                                    # working strategy on a bad week. Per-strategy $50 risk
                                    # cap added below to bound single-trade damage.
   momentum_runner: 0.30            # 30% — PRIMARY: aggressive runner catching (3 entry types, 7 slots)
-  rvol_momentum: 0.10             # 10% - Money machine backup (snapshot fast path)
+  rvol_momentum: 0.00             # DISABLED 2026-07-22 — the -$152/35t bleeder over
+                                   # the 10 days since 07-12, net-negative every measured
+                                   # window since #237 throttled (not killed) it. Fishes
+                                   # the same illiquid $5-6 penny-runner pond as
+                                   # momentum_runner and slippage-rejects on entry (which
+                                   # is ALSO what session-blocks momentum_runner's fills).
+                                   # Allocation zeroed; `enabled: false` set below.
+                                   # Re-enable only on a backtest showing real edge.
   rvol_scalp: 0.00                # DISABLED 2026-06-17 — 0-for-5 over two weeks, 0% WR.
                                    # The class filter + slippage floor blocked the
                                    # catastrophic tail, but the base signal has no edge:
@@ -170,9 +177,17 @@ momentum_runner:
   enabled: true
   timeframe: "1m"                    # 1-minute bars for fastest detection
   min_score: 6                       # 6/10 minimum composite score
-  min_price: 0.20                    # Penny tier admitted (was $1); pairs with risk.min_price=0.20
+  min_price: 2.00                    # Raised 0.20→2.00 (2026-07-22). Deep-penny tier
+                                     # had the worst spreads; every fill slippage-rejected.
   max_price: 100.00                  # $100 ceiling
-  min_volume: 500000                 # 500K avg daily volume — real liquidity only
+  min_volume: 500000                 # 500K avg daily volume floor (share count)
+  min_dollar_volume: 10000000        # $10M/day dollar-liquidity floor (2026-07-22). THE
+                                     # fix: momentum_runner fired 11x / filled 0 — every
+                                     # signal was a thin $5-6 runner (CONL @ $5.73 etc.)
+                                     # that slippage-rejected at entry. Share count alone
+                                     # let them through ($5×500K = $2.5M); $10M dollar
+                                     # floor demands real executable liquidity. Tune down
+                                     # to 5M if it over-starves once first fills land.
   max_daily_change_pct: 30.0         # Skip >30% unless fresh catalyst
   max_open_positions: 7              # Max 7 momentum runner positions (up from 5, uses 10-slot capacity)
   max_trades_per_day: 15             # More shots on goal (up from 10)
@@ -186,7 +201,12 @@ momentum_runner:
 # --- RVOL Momentum Strategy (Money Machine) ---
 # Secondary strategy — snapshot fast-path for instant signal generation
 rvol_momentum:
-  enabled: true
+  enabled: false  # DISABLED 2026-07-22 — -$152 over 35 trades in the 10 days since
+                  # 07-12, the single biggest loss source and net-negative in every
+                  # measured window since #237's throttle. Its entries on illiquid
+                  # $5-6 runners slippage-reject and session-block the SAME symbols
+                  # momentum_runner then can't fill. Kelly/tuner already near-zeroed
+                  # its allocation; this makes the cut explicit. Re-enable on backtest proof.
   timeframe: "5m"
   min_rvol: 4.0                    # Raised 3.0→4.0 (2026-06-17). Two weeks of no edge
                                    # (wk1 0% WR/4t, wk2 25% WR/12t, both net negative).
@@ -336,9 +356,14 @@ daily_trend_rider:
   min_price: 10.00                  # $10+ only — need stable, liquid stocks
   max_price: 500.00                 # Avoid stocks too expensive for meaningful sizing
   min_avg_volume: 1000000           # 1M avg daily volume — liquid enough for market orders
-  min_green_days: 3                 # 3-day run-up — filters out 2-day noise; raise to 4-5 for stricter quality
+  min_green_days: 2                 # Lowered 3→2 (2026-07-22). At min_green_days:3
+                                    # the strict AND of (3 consecutive green closes
+                                    # + price>20EMA + ADX + SuperTrend-bullish) on the
+                                    # 20-name watchlist qualified ZERO candidates — the
+                                    # strategy took literally zero trades. Loosened to 2
+                                    # to let it produce candidates; raise to 4-5 for stricter quality.
   ema_period: 20                    # Daily 20 EMA — trend floor
-  adx_threshold: 20                 # Lowered from 25 — more setups qualify in sideways markets
+  adx_threshold: 15                 # Lowered 20→15 (2026-07-22, same zero-candidate fix) — more setups qualify
   supertrend_period: 7              # SuperTrend(7,3) — the main trend indicator
   supertrend_multiplier: 3.0        # SuperTrend ATR multiplier
   atr_period: 14                    # ATR(14) for stop calculation
