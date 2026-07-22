@@ -332,8 +332,13 @@ class RiskManager:
                 symbol.upper().endswith(s) for s in self.crypto_suffixes
             )
             _asset_class = "crypto" if _is_crypto_for_cost else "equity"
+            # Live one-side spread (bps), threaded from the engine's Binance.US
+            # book enrichment for crypto. None → cost_model falls back to the
+            # configured default. Prices liquid majors on real spread instead
+            # of the conservative default that was over-rejecting them.
+            _live_spread = signal.get("live_spread_bps")
             _passed_cost, _cost_reason = self.cost_model.passes(
-                signal, _asset_class
+                signal, _asset_class, live_spread_bps=_live_spread
             )
             if not _passed_cost:
                 return False, _cost_reason
