@@ -1,0 +1,178 @@
+//@version=6
+// ============================================================================
+// DAILY TREND RIDER  (tpstrategyv3 companion — swing timeframe)
+// ----------------------------------------------------------------------------
+// Port of bot/strategies/daily_trend_rider.py — the strategy that never fired
+// on the VPS. This backtest answers whether it deserves to exist.
+//
+// Run on a DAILY chart of liquid mid/large caps — the bot's curated list:
+//   NVDA AMD META TSLA AVGO PLTR COIN MSTR HOOD SMCI NFLX UBER SHOP SOFI
+//   RKLB ARM CRWD NET DDOG IONQ
+//
+// Qualify (all): 3+ consecutive green daily closes, close > daily 20 EMA,
+//   ADX(14) > 25, SuperTrend(7,3) bullish, price band.
+// Enter: break of yesterday's high on volume, or pullback-bounce off the 9 EMA.
+// Exit: daily close below SuperTrend, below 20 EMA, first red close after 5+
+//   greens (exhaustion), 1.5×ATR(14) trail from highest close, or max-hold cap.
+// This is swing trading: entries fill at the daily close, positions hold
+// days-to-weeks. Few alerts, no screen-watching.
+// ============================================================================
+
+strategy("Daily Trend Rider", "Trend Rider", overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=25,
+     commission_type=strategy.commission.cash_per_share, commission_value=0.005,
+     slippage=1, calc_on_every_tick=false, process_orders_on_close=true,
+     max_labels_count=500)
+
+// === Preset ===
+preset = input.string("Bot config", "Setting chain",
+     options=["Bot config", "Custom", "Breakout only (tight)", "Loose rider (max runner)", "Conservative"])
+
+// === Backtest window ===
+useRange   = input.bool(false, "Limit backtest to date range", group="Backtest window")
+rangeStart = input.time(timestamp("1 Jan 2024 00:00 +0000"), "Start", group="Backtest window")
+rangeEnd   = input.time(timestamp("1 Jan 2027 00:00 +0000"), "End", group="Backtest window")
+inRange    = not useRange or (time >= rangeStart and time <= rangeEnd)
+
+// === Manual inputs (active when preset = Custom; defaults mirror the bot) ===
+minGreensIn = input.int(3,    "Min consecutive green closes")
+adxMinIn    = input.float(25, "Min ADX(14)")
+trailMultIn = input.float(1.5,"ATR trail multiple", step=0.25)
+maxHoldIn   = input.int(20,   "Max hold (days)")
+usePullbackIn = input.bool(true,  "Allow 9-EMA pullback entries")
+useRedExitIn  = input.bool(true,  "Exit on first red after 5+ greens")
+minPrice    = input.float(10,  "Min price $")
+maxPrice    = input.float(1000,"Max price $")
+
+// Preset chains:
+//  Bot config      — exactly the VPS strategy's defaults.
+//  Breakout only   — no pullback entries, tighter ADX, snug trail. Fewer,
+//                    cleaner trades; exits fast when momentum stalls.
+//  Loose rider     — widest trail, no exhaustion exit, longest hold: pays
+//                    more give-back to catch the full multi-week runner.
+//  Conservative    — stricter qualify (4 greens, ADX 30), 2x trail.
+isBrk  = preset == "Breakout only (tight)"
+isLoose= preset == "Loose rider (max runner)"
+isCons = preset == "Conservative"
+isCust = preset == "Custom"
+
+minGreens  = isCust ? minGreensIn  : isCons ? 4 : 3
+adxMin     = isCust ? adxMinIn     : isBrk ? 30.0 : isCons ? 30.0 : 25.0
+trailMult  = isCust ? trailMultIn  : isBrk ? 1.25 : isLoose ? 3.0 : isCons ? 2.0 : 1.5
+maxHold    = isCust ? maxHoldIn    : isLoose ? 40 : 20
+usePullback= isCust ? usePullbackIn: not isBrk
+useRedExit = isCust ? useRedExitIn : not isLoose
+
+// === Indicators (daily) ===
+ema20 = ta.ema(close, 20)
+ema9  = ta.ema(close, 9)
+atr14 = ta.atr(14)
+[dip, dim, adx] = ta.dmi(14, 14)
+[stLine, stDir] = ta.supertrend(3.0, 7)
+stBull = stDir < 0
+volAvg = ta.sma(volume, 20)
+
+var int greens = 0
+greens := close > open ? greens + 1 : 0
+
+qualified = greens[1] >= minGreens and close > ema20 and adx > adxMin and stBull and
+     close >= minPrice and close <= maxPrice and volAvg * close > 10000000  // ~$10M/day traded
+
+// === Entries ===
+canEnter = qualified and inRange and strategy.position_size == 0
+volOK = volAvg > 0 and volume > volAvg * 1.2
+
+sigBreak = canEnter and high > high[1] and close > high[1] and volOK
+sigPull  = canEnter and usePullback and low <= ema9 and close > ema9 and close > open
+entrySig = sigBreak or sigPull
+
+var float hiClose = na
+var int   entryBar = na
+
+if entrySig
+    hiClose := close
+    entryBar := bar_index
+    strategy.entry("TR", strategy.long,
+         alert_message='{"ticker":"{{ticker}}","action":"buy","price":{{close}}}')
+
+// === Exits ===
+inPos = strategy.position_size > 0
+if inPos
+    hiClose := math.max(nz(hiClose, close), close)
+trailPx = inPos ? hiClose - trailMult * atr14 : na
+heldDays = inPos and not na(entryBar) ? bar_index - entryBar : 0
+
+exitST   = inPos and close < stLine
+exitEMA  = inPos and close < ema20
+exitRed  = inPos and useRedExit and close < open and greens[1] >= 5
+exitTrail= inPos and close < trailPx
+exitTime = inPos and heldDays >= maxHold
+exitRange= inPos and useRange and time > rangeEnd
+
+exitSig = exitST or exitEMA or exitRed or exitTrail or exitTime or exitRange
+if exitSig
+    strategy.close("TR",
+         comment=exitST ? "supertrend" : exitEMA ? "ema20" : exitRed ? "exhaustion" :
+             exitTrail ? "atr_trail" : exitTime ? "max_hold" : "range_end",
+         alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}}}')
+
+// === Trade labels ===
+var string entryWhy = ""
+if entrySig
+    entryWhy := sigBreak ? "BREAKOUT" : "PULLBACK"
+var string exitWhy = ""
+if exitSig
+    exitWhy := exitST ? "supertrend" : exitEMA ? "ema20" : exitRed ? "exhaustion" :
+         exitTrail ? "trail" : exitTime ? "max_hold" : "range_end"
+
+justEntered = strategy.position_size > 0 and strategy.position_size[1] == 0
+justExited  = strategy.position_size == 0 and strategy.position_size[1] > 0
+
+if justEntered
+    label.new(bar_index, low, "▲ RIDE " + entryWhy + "\n@ " + str.tostring(strategy.position_avg_price, format.mintick),
+         style=label.style_label_up, color=color.new(color.green, 10), textcolor=color.white, size=size.small)
+if justExited
+    lastP = strategy.closedtrades > 0 ? strategy.closedtrades.profit(strategy.closedtrades - 1) : na
+    isWin = not na(lastP) and lastP >= 0
+    label.new(bar_index, high,
+         (na(lastP) ? "EXIT" : (isWin ? "✔ WIN +$" : "✖ LOSS -$") + str.tostring(math.abs(lastP), "#.##")) +
+         "\n" + exitWhy + " @ " + str.tostring(close, format.mintick),
+         style=label.style_label_down, color=isWin ? color.new(color.green, 10) : color.new(color.red, 10),
+         textcolor=color.white, size=size.small)
+
+// === Plots ===
+plot(ema20, "EMA20", color=color.new(color.orange, 0), linewidth=2)
+plot(ema9, "EMA9", color=color.new(color.yellow, 50))
+plot(stLine, "SuperTrend", color=stBull ? color.new(color.green, 40) : color.new(color.red, 40), style=plot.style_linebr)
+plot(inPos ? trailPx : na, "Trail", color=color.new(color.purple, 20), style=plot.style_linebr)
+bgcolor(qualified ? color.new(color.green, 92) : na)
+bgcolor(useRange and not inRange ? color.new(color.gray, 94) : na)
+
+// === Dashboard ===
+var table dash = table.new(position.top_right, 2, 10, bgcolor=color.new(color.black, 15),
+     border_width=1, border_color=color.new(color.gray, 70))
+
+cell(int r, string k, string v, color vc) =>
+    table.cell(dash, 0, r, k, text_color=color.new(color.silver, 20), text_size=size.small, text_halign=text.align_left)
+    table.cell(dash, 1, r, v, text_color=vc, text_size=size.small, text_halign=text.align_right)
+
+if barstate.islast
+    cGreen = color.new(color.lime, 0)
+    cRed = color.new(color.red, 0)
+    cWhite = color.new(color.white, 0)
+    cYellow = color.new(color.yellow, 0)
+    wr = strategy.closedtrades > 0 ? strategy.wintrades / strategy.closedtrades * 100 : 0.0
+    pf = strategy.grossloss > 0 ? strategy.grossprofit / strategy.grossloss : 0.0
+
+    table.cell(dash, 0, 0, "TREND RIDER", text_color=cYellow, text_size=size.normal)
+    table.cell(dash, 1, 0, isCust ? "Custom" : preset, text_color=cYellow, text_size=size.normal)
+    cell(1, "Green streak", str.tostring(greens) + " (need " + str.tostring(minGreens) + ")", greens >= minGreens ? cGreen : cWhite)
+    cell(2, "Close vs EMA20", close > ema20 ? "above ▲" : "below ▼", close > ema20 ? cGreen : cRed)
+    cell(3, "ADX(14)", str.tostring(adx, "#.#") + " (need >" + str.tostring(adxMin, "#") + ")", adx > adxMin ? cGreen : cRed)
+    cell(4, "SuperTrend", stBull ? "BULL" : "BEAR", stBull ? cGreen : cRed)
+    cell(5, "QUALIFIED", qualified ? "YES" : "NO", qualified ? cGreen : cRed)
+    cell(6, "Position", inPos ? "LONG @ " + str.tostring(strategy.position_avg_price, format.mintick) : "FLAT", inPos ? cGreen : cWhite)
+    cell(7, "Trail / held", (inPos ? str.tostring(trailPx, format.mintick) : "—") + " / " + str.tostring(heldDays) + "d", cWhite)
+    cell(8, "Net P&L", str.format("${0,number,#.##}", strategy.netprofit), strategy.netprofit >= 0 ? cGreen : cRed)
+    cell(9, "WR / PF", str.format("{0,number,#}% / {1,number,#.##}", wr, pf), pf >= 1 ? cGreen : cRed)
