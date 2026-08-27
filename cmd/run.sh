@@ -1,26 +1,20 @@
 #!/bin/bash
-set +e
-cd /opt/trading-bot
-set -a; source /opt/trading-bot/.env 2>/dev/null; set +a
-HOST="https://trading-bot-vps.tail5db65d.ts.net"
-
-echo "=== 1. close ALGO-USD via dashboard control (clean flatten before paper reset) ==="
-curl -s -m 20 -X POST -u "admin:$DASHBOARD_SECRET_KEY" "$HOST/api/control/close/ALGO-USD" 2>&1 | head -3
-sleep 8
-echo
-echo "=== 2. positions after close ==="
-curl -s -m 10 -u "admin:$DASHBOARD_SECRET_KEY" "$HOST/api/positions" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(f'open positions: {len(d)} (expect 0)')
-for p in d: print(f'  still open: {p.get(\"symbol\")}')"
-echo
-echo "=== 3. how did the trade RECORD? (guards should book real ~\$4, never \$21K) ==="
+echo "=== 1. date/disk ==="
+date -u
+df -h / | tail -1
+echo "=== 2. containers ==="
+docker ps --format '{{.Names}} {{.Status}}'
+echo "=== 3. snapshot cron log tail ==="
+tail -20 /var/log/claude-snapshot.log 2>/dev/null || ls -la /var/log/ | grep -i claude
+echo "=== 4. crontab ==="
+crontab -l 2>/dev/null | grep -i claude
+echo "=== 5. bot log tail ==="
+docker logs --tail 15 tpstrategyv3-bot-1 2>&1 | tail -15
+echo "=== 6. last trades in history ==="
 python3 -c "
 import json
-t = json.load(open('data/trade_history.json'))
-for x in t[-3:]:
-    print(f'  {x.get(\"exit_time\",\"?\")[:19]}  {x.get(\"symbol\")}  pnl=\${x.get(\"pnl\",0):+.2f}  exit=\${x.get(\"exit_price\",0):.4f}  reason={x.get(\"reason\")}')"
-echo
-echo "=== 4. close log lines ==="
-docker logs --since 5m trading-bot-trading-bot-1 2>&1 | grep -E "ALGO|CLOSED|ANTI-COLLISION" | tail -6
+t=json.load(open('/root/tpstrategyv3/data/trade_history.json'))
+print('total:',len(t))
+for x in t[-5:]:
+    print(x.get('exit_time','')[:19], x.get('symbol'), x.get('pnl'))
+" 2>/dev/null || tail -c 800 /root/tpstrategyv3/data/trade_history.json
