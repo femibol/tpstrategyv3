@@ -5,9 +5,15 @@
 // Port of bot/strategies/daily_trend_rider.py — the strategy that never fired
 // on the VPS. This backtest answers whether it deserves to exist.
 //
-// Run on a DAILY chart of liquid mid/large caps — the bot's curated list:
-//   NVDA AMD META TSLA AVGO PLTR COIN MSTR HOOD SMCI NFLX UBER SHOP SOFI
+// Run on a DAILY chart of liquid mid/large caps — the validated list
+// (IBKR 2y backtest 2026-08-27, see results/backtest-results-ibkr.md):
+//   NVDA AMD META TSLA AVGO PLTR HOOD NFLX UBER SHOP SOFI
 //   RKLB ARM CRWD NET DDOG IONQ
+// EXCLUDED: SMCI, MSTR, COIN — net losers under every preset chain
+// (gap-down/crash-prone names break wide-trail trend riding).
+// Default preset is "Loose rider (max runner)" — it beat the bot config
+// 10:1 on identical entries (PF 4.00 vs 1.18 ex-crashers) and held
+// PF 2.28 on the held-out 2026 window.
 //
 // Qualify (all): 3+ consecutive green daily closes, close > daily 20 EMA,
 //   ADX(14) > 25, SuperTrend(7,3) bullish, price band.
@@ -26,7 +32,7 @@ strategy("Daily Trend Rider", "Trend Rider", overlay=true,
      max_labels_count=500)
 
 // === Preset ===
-preset = input.string("Bot config", "Setting chain",
+preset = input.string("Loose rider (max runner)", "Setting chain",
      options=["Bot config", "Custom", "Breakout only (tight)", "Loose rider (max runner)", "Conservative"])
 
 // === Backtest window ===
