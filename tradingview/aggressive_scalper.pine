@@ -1,0 +1,282 @@
+//@version=6
+// ============================================================================
+// AGGRESSIVE SCALPER (open source)  — tpstrategyv3 companion
+// ----------------------------------------------------------------------------
+// Open re-implementation of the closed-source "aggressive scalper" style:
+// fast/slow line momentum scalping on hot intraday runners, 1m-5m charts,
+// with entry / take-profit / stop lines drawn on the chart and a stats panel.
+//
+// Everything the closed version shows, you can read and change here:
+//   Fast Line / Slow Line, Long Entry Line, Take Profit Line, Stop Loss Line,
+//   entry arrows, and the Total Trades / Net Profit / Win Rate / Profit Factor
+//   / Max Loss Streak box.
+//
+// PLUS an "honesty panel" the closed ones never include — because a scalper
+// backtested on one hot stock for one day will ALWAYS look spectacular:
+//   • sample-size warning under 30 trades
+//   • how many distinct days actually traded (one-day results are not results)
+//   • what share of net profit came from the single biggest trade
+//   • a slippage-sensitivity readout (low-float runners eat backtest fills)
+// If those four read badly, the headline PF is fiction. Read them first.
+//
+// Workflow: screener (top gainers / high RVOL, price $2-$50) -> open the
+// runner on a 1m-5m chart with extended hours ON -> this script signals.
+// ============================================================================
+
+strategy("Aggressive Scalper (open)", "Agg Scalper", overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=25,
+     commission_type=strategy.commission.cash_per_share, commission_value=0.005,
+     slippage=5, calc_on_every_tick=false, process_orders_on_close=true,
+     max_labels_count=500)
+
+// === Preset ===
+g0 = "Preset — overrides the settings below (not the date window)"
+preset = input.string("As-seen (aggressive)", "Setting chain", group=g0,
+     options=["As-seen (aggressive)", "Custom", "Balanced", "Conservative",
+              "Runner hunter (max profit)"])
+
+// === Backtest window ===
+gd = "Backtest window"
+useRange   = input.bool(false, "Limit backtest to date range", group=gd)
+rangeStart = input.time(timestamp("1 Jan 2026 00:00 +0000"), "Start", group=gd)
+rangeEnd   = input.time(timestamp("1 Jan 2027 00:00 +0000"), "End", group=gd)
+inRange    = not useRange or (time >= rangeStart and time <= rangeEnd)
+
+// === Manual inputs (used when preset = Custom) ===
+g1 = "Lines"
+fastLenIn = input.int(9,  "Fast line (EMA)", group=g1)
+slowLenIn = input.int(21, "Slow line (EMA)", group=g1)
+
+g2 = "Entry filters"
+volMultIn  = input.float(1.5, "Volume surge (x 20-bar avg)", group=g2, step=0.1)
+momoLenIn  = input.int(5,     "Momentum lookback (bars)", group=g2)
+momoMinIn  = input.float(0.5, "Min momentum over lookback (%)", group=g2, step=0.1)
+useVwapIn  = input.bool(true, "Require price above VWAP", group=g2)
+usePullbackIn = input.bool(true, "Allow pullback-to-fast-line re-entries", group=g2)
+maxTradesIn= input.int(6,     "Max trades per day", group=g2, minval=1, maxval=20)
+
+g3 = "Exits"
+atrMultIn   = input.float(1.5, "Stop: ATR multiple", group=g3, step=0.25)
+rrIn        = input.float(2.0, "Take-profit at R multiple", group=g3, step=0.5)
+partialPctIn= input.int(50,   "% banked at take-profit", group=g3, minval=0, maxval=100)
+trailMultIn = input.float(2.0, "Runner trail: ATR multiple", group=g3, step=0.25)
+maxBarsIn   = input.int(120,  "Max bars in trade", group=g3)
+slowExitIn  = input.bool(true,"Exit if close breaks below slow line", group=g3)
+eodFlatIn   = input.bool(false,"Flatten at 15:55 ET (no overnight)", group=g3)
+
+g4 = "Universe guard"
+minPrice = input.float(1.0,  "Min price $", group=g4)
+maxPrice = input.float(100.0,"Max price $", group=g4)
+
+// === Preset chains ===
+// As-seen      — what the closed script's behaviour looks like: fast lines,
+//                loose filters, generous target, runner trail, holds into
+//                extended hours. Produces the eye-catching numbers.
+// Balanced     — same engine, filters that survive more than one hot stock.
+// Conservative — strict thrust + VWAP, small target, tight trail, flat by EOD.
+// Runner hunter— banks less at target, widest trail, longest hold.
+isAsSeen = preset == "As-seen (aggressive)"
+isBal    = preset == "Balanced"
+isCons   = preset == "Conservative"
+isRunner = preset == "Runner hunter (max profit)"
+isCustom = preset == "Custom"
+
+fastLen    = isCustom ? fastLenIn    : isCons ? 12 : 9
+slowLen    = isCustom ? slowLenIn    : isCons ? 34 : 21
+volMult    = isCustom ? volMultIn    : isAsSeen ? 1.2 : isBal ? 1.8 : isCons ? 2.5 : 1.5
+momoLen    = isCustom ? momoLenIn    : 5
+momoMin    = isCustom ? momoMinIn    : isAsSeen ? 0.2 : isBal ? 0.8 : isCons ? 1.5 : 0.5
+useVwap    = isCustom ? useVwapIn    : not isAsSeen
+usePullback= isCustom ? usePullbackIn: not isCons
+maxTrades  = isCustom ? maxTradesIn  : isAsSeen ? 8 : isBal ? 5 : isCons ? 3 : 4
+atrMult    = isCustom ? atrMultIn    : isCons ? 1.0 : 1.5
+rr         = isCustom ? rrIn         : isAsSeen ? 3.0 : isBal ? 2.0 : isCons ? 1.5 : 3.0
+partialPct = isCustom ? partialPctIn : isRunner ? 25 : isCons ? 75 : 50
+trailMult  = isCustom ? trailMultIn  : isAsSeen ? 2.5 : isBal ? 2.0 : isCons ? 1.25 : 3.5
+maxBars    = isCustom ? maxBarsIn    : isRunner ? 240 : 120
+slowExit   = isCustom ? slowExitIn   : not isRunner
+eodFlat    = isCustom ? eodFlatIn    : isCons
+
+// === Indicators ===
+fastLine = ta.ema(close, fastLen)
+slowLine = ta.ema(close, slowLen)
+atrVal   = ta.atr(14)
+volAvg   = ta.sma(volume, 20)
+vwapVal  = ta.vwap(hlc3)
+momo     = ta.roc(close, momoLen)
+
+trendUp   = fastLine > slowLine
+volOK     = volAvg > 0 and volume > volAvg * volMult
+vwapOK    = not useVwap or close > vwapVal
+momoOK    = momo >= momoMin
+priceOK   = close >= minPrice and close <= maxPrice
+
+// === Day bookkeeping ===
+newDay = ta.change(time("D")) != 0
+var int tradesToday = 0
+var int totalDays = 0
+if newDay
+    tradesToday := 0
+    totalDays += 1
+
+nyH = hour(time, "America/New_York")
+nyM = minute(time, "America/New_York")
+
+// === Entries ===
+canEnter = inRange and priceOK and tradesToday < maxTrades and strategy.position_size == 0
+sigCross = canEnter and ta.crossover(fastLine, slowLine) and volOK and vwapOK and momoOK
+sigPull  = canEnter and usePullback and trendUp and low <= fastLine and close > fastLine
+             and close > open and volOK and vwapOK
+entrySig = sigCross or sigPull
+
+var float entryPx  = na
+var float stopPx   = na
+var float tpPx     = na
+var float trailPx  = na
+var int   entryBar = na
+var string entryWhy = ""
+
+if entrySig
+    entryPx  := close
+    stopPx   := close - atrMult * atrVal
+    tpPx     := close + rr * (close - stopPx)
+    trailPx  := na
+    entryBar := bar_index
+    entryWhy := sigCross ? "CROSS" : "PULLBACK"
+    tradesToday += 1
+    strategy.entry("L", strategy.long,
+         alert_message='{"ticker":"{{ticker}}","action":"buy","price":{{close}}}')
+
+// === Exits ===
+inPos  = strategy.position_size > 0
+riskR  = inPos and not na(entryPx) and not na(stopPx) ? entryPx - stopPx : na
+held   = inPos and not na(entryBar) ? bar_index - entryBar : 0
+
+if inPos and not na(riskR) and riskR > 0
+    if high >= entryPx + riskR
+        cand = close - trailMult * atrVal
+        trailPx := na(trailPx) ? math.max(stopPx, cand) : math.max(trailPx, cand)
+    if partialPct > 0
+        strategy.exit("TP", from_entry="L", qty_percent=partialPct,
+             limit=tpPx, stop=stopPx,
+             alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}},"note":"target"}')
+    strategy.exit("RUN", from_entry="L", qty_percent=100 - partialPct,
+         stop=na(trailPx) ? stopPx : trailPx,
+         alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}},"note":"runner"}')
+
+hardExit = inPos and ((slowExit and close < slowLine) or held >= maxBars
+             or (eodFlat and nyH == 15 and nyM >= 55)
+             or (useRange and time > rangeEnd))
+if hardExit
+    strategy.close("L",
+         comment = close < slowLine and slowExit ? "slow_line" :
+             held >= maxBars ? "max_bars" : eodFlat ? "eod" : "range_end",
+         alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}},"note":"exit"}')
+
+// === Trade labels ===
+justIn  = strategy.position_size > 0 and strategy.position_size[1] == 0
+partOff = strategy.position_size > 0 and strategy.position_size[1] > strategy.position_size
+justOut = strategy.position_size == 0 and strategy.position_size[1] > 0
+
+if justIn
+    label.new(bar_index, low, "▲ LONG " + entryWhy + "\n@ " + str.tostring(strategy.position_avg_price, format.mintick),
+         style=label.style_label_up, color=color.new(color.green, 10),
+         textcolor=color.white, size=size.small)
+if partOff
+    label.new(bar_index, high, "◐ TARGET\n@ " + str.tostring(close, format.mintick),
+         style=label.style_label_down, color=color.new(color.blue, 10),
+         textcolor=color.white, size=size.small)
+if justOut
+    lp = strategy.closedtrades > 0 ? strategy.closedtrades.profit(strategy.closedtrades - 1) : na
+    win = not na(lp) and lp >= 0
+    label.new(bar_index, high,
+         (na(lp) ? "EXIT" : (win ? "✔ WIN +$" : "✖ LOSS -$") + str.tostring(math.abs(lp), "#.##")) +
+         "\n@ " + str.tostring(close, format.mintick),
+         style=label.style_label_down,
+         color=win ? color.new(color.green, 10) : color.new(color.red, 10),
+         textcolor=color.white, size=size.small)
+
+// === Lines (same visual language as the closed script) ===
+plot(fastLine, "Fast Line", color=trendUp ? color.new(color.lime, 0) : color.new(color.red, 0), linewidth=2)
+plot(slowLine, "Slow Line", color=color.new(color.white, 30), linewidth=2)
+plot(inPos ? entryPx : na, "Long Entry Line", color=color.new(color.yellow, 0), style=plot.style_linebr, linewidth=1)
+plot(inPos ? tpPx    : na, "Take Profit Line", color=color.new(color.green, 0), style=plot.style_linebr, linewidth=1)
+plot(inPos and na(trailPx) ? stopPx : na, "Stop Loss Long Line", color=color.new(color.red, 0), style=plot.style_linebr, linewidth=1)
+plot(inPos and not na(trailPx) ? trailPx : na, "Trail Line", color=color.new(color.purple, 0), style=plot.style_linebr, linewidth=1)
+plotshape(sigCross, "Cross entry", shape.triangleup, location.belowbar, color.new(color.lime, 0), size=size.tiny)
+plotshape(sigPull,  "Pullback entry", shape.triangleup, location.belowbar, color.new(color.teal, 0), size=size.tiny)
+plotshape(hardExit, "Exit", shape.triangledown, location.abovebar, color.new(color.red, 0), size=size.tiny)
+bgcolor(useRange and not inRange ? color.new(color.gray, 94) : na)
+
+// === Stats (computed, not borrowed) ===
+var int lossStreak = 0
+var int maxLossStreak = 0
+var int daysWithTrades = 0
+var int lastTradeDay = 0
+
+if strategy.closedtrades > nz(strategy.closedtrades[1])
+    for i = nz(strategy.closedtrades[1]) to strategy.closedtrades - 1
+        p = strategy.closedtrades.profit(i)
+        lossStreak := p < 0 ? lossStreak + 1 : 0
+        maxLossStreak := math.max(maxLossStreak, lossStreak)
+    d = year * 10000 + month * 100 + dayofmonth
+    if d != lastTradeDay
+        lastTradeDay := d
+        daysWithTrades += 1
+
+// === Dashboard ===
+var table dash = table.new(position.top_right, 2, 17, bgcolor=color.new(color.black, 12),
+     border_width=1, border_color=color.new(color.gray, 70))
+
+cell(int r, string k, string v, color vc) =>
+    table.cell(dash, 0, r, k, text_color=color.new(color.silver, 20), text_size=size.small, text_halign=text.align_left)
+    table.cell(dash, 1, r, v, text_color=vc, text_size=size.small, text_halign=text.align_right)
+
+if barstate.islast
+    cG = color.new(color.lime, 0), cR = color.new(color.red, 0)
+    cW = color.new(color.white, 0), cY = color.new(color.yellow, 0)
+    cO = color.new(color.orange, 0)
+
+    n   = strategy.closedtrades
+    net = strategy.netprofit
+    wr  = n > 0 ? strategy.wintrades / n * 100 : 0.0
+    pf  = strategy.grossloss > 0 ? strategy.grossprofit / strategy.grossloss : 0.0
+    endEq = strategy.initial_capital + net
+
+    // biggest single winner and its share of net profit — the concentration tell
+    float best = 0.0
+    if n > 0
+        for i = 0 to n - 1
+            best := math.max(best, strategy.closedtrades.profit(i))
+    concShare = net > 0 ? best / net * 100 : 0.0
+
+    // slippage sensitivity: what N cents per side per trade would cost
+    slipCost = n * 2 * syminfo.mintick * 5 * (strategy.initial_capital * 0.25 / math.max(close, 0.01))
+
+    table.cell(dash, 0, 0, "AGG SCALPER", text_color=cY, text_size=size.normal)
+    table.cell(dash, 1, 0, isCustom ? "Custom" : preset, text_color=cY, text_size=size.normal)
+    cell(1,  "Total trades",    str.tostring(n), cW)
+    cell(2,  "Starting",        str.format("${0,number,#}", strategy.initial_capital), cW)
+    cell(3,  "Ending",          str.format("${0,number,#.##}", endEq), endEq >= strategy.initial_capital ? cG : cR)
+    cell(4,  "Net profit",      str.format("${0,number,#.##}", net), net >= 0 ? cG : cR)
+    cell(5,  "Net %",           str.format("{0,number,#.##}%", net / strategy.initial_capital * 100), net >= 0 ? cG : cR)
+    cell(6,  "Win rate",        str.format("{0,number,#.#}%", wr), wr >= 50 ? cG : cO)
+    cell(7,  "Profit factor",   str.format("{0,number,#.###}", pf), pf >= 1.3 ? cG : cR)
+    cell(8,  "Max loss streak", str.tostring(maxLossStreak), maxLossStreak <= 3 ? cW : cO)
+    cell(9,  "Position / trade", str.format("{0,number,#}% equity", 25), cW)
+
+    table.cell(dash, 0, 10, "— REALITY CHECK —", text_color=cY, text_size=size.small)
+    table.cell(dash, 1, 10, "", text_color=cY, text_size=size.small)
+    cell(11, "Sample size",     n >= 30 ? str.tostring(n) + " ✓" : str.tostring(n) + " ✗ TOO SMALL", n >= 30 ? cG : cR)
+    cell(12, "Days traded",     str.tostring(daysWithTrades) + " of " + str.tostring(totalDays) +
+             (daysWithTrades <= 2 ? " ✗ ONE-OFF" : " ✓"), daysWithTrades <= 2 ? cR : cG)
+    cell(13, "Best trade / net", str.format("{0,number,#}%", concShare) +
+             (concShare > 40 ? " ✗ CARRIED" : " ✓"), concShare > 40 ? cR : cG)
+    cell(14, "Est. slippage hit", str.format("${0,number,#.##}", slipCost) +
+             (slipCost > math.abs(net) * 0.3 and net > 0 ? " ✗ FRAGILE" : " ✓"),
+             slipCost > math.abs(net) * 0.3 and net > 0 ? cR : cG)
+    cell(15, "Verdict",
+             n < 30 or daysWithTrades <= 2 or concShare > 40 ? "NOT EVIDENCE YET" : "worth walk-forward",
+             n < 30 or daysWithTrades <= 2 or concShare > 40 ? cR : cG)
+    cell(16, "Next", "test 10+ symbols, 2+ months", cW)
