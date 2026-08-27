@@ -1,0 +1,276 @@
+//@version=6
+// ============================================================================
+// PREMARKET GAP SCALPER + DASHBOARD  (tpstrategyv3 companion)  — v2
+// ----------------------------------------------------------------------------
+// v2 adds:
+//   • Backtest date window — limit the tester to any range (compare quarters,
+//     isolate regimes, do walk-forward: tune on one window, validate on the next)
+//   • PRESETS — one dropdown applies a whole chain of settings modeled on
+//     documented trading styles. Pick a preset, read the tester, compare.
+//     "Custom" uses your manual inputs; any other preset OVERRIDES them.
+//
+// Morning routine:
+//   1. TradingView screener: Stocks > Premarket Gainers (price $2-$100,
+//      premarket volume > 500K, gap > 4%). Pick top 3 WITH a news catalyst.
+//   2. Open each on a 1m/5m chart WITH EXTENDED HOURS ON.
+//   3. Script qualifies the gap, times entries (max N/day), banks half at 1R,
+//      trails the runner. Dashboard top-right.
+// ============================================================================
+
+strategy("Premarket Gap Scalper", "PM Scalper", overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=25,
+     commission_type=strategy.commission.cash_per_share, commission_value=0.005,
+     slippage=2, calc_on_every_tick=false, process_orders_on_close=true,
+     max_labels_count=500)
+
+// === Preset ===
+g0 = "Preset — overrides everything below except the date window"
+preset = input.string("Custom", "Setting chain", group=g0,
+     options=["Custom",
+              "Classic ORB (academic)",
+              "Gap-and-Go (small-cap momentum)",
+              "Conservative large-cap",
+              "Runner hunter (max profit)"])
+
+// === Backtest window ===
+gd = "Backtest window"
+useRange = input.bool(false, "Limit backtest to date range", group=gd)
+rangeStart = input.time(timestamp("1 Jan 2025 00:00 +0000"), "Start", group=gd)
+rangeEnd   = input.time(timestamp("1 Jan 2027 00:00 +0000"), "End", group=gd)
+inRange = not useRange or (time >= rangeStart and time <= rangeEnd)
+
+// === Manual inputs (active when preset = Custom) ===
+g1 = "Qualification"
+minGapIn   = input.float(4.0,  "Min gap %",               group=g1, step=0.5)
+maxGapIn   = input.float(60.0, "Max gap % (blowoff cap)",  group=g1, step=1.0)
+minPriceIn = input.float(2.0,  "Min price $",              group=g1)
+maxPriceIn = input.float(100.0,"Max price $",              group=g1)
+minPmRvolIn= input.float(2.0,  "Min PM volume vs 20d PM avg (x)", group=g1, step=0.5,
+     tooltip="Falls open until the chart accumulates premarket history")
+
+g2 = "Entries"
+orMinutesIn  = input.int(5,  "Opening range (minutes)", group=g2, options=[5, 15, 30])
+maxTradesIn  = input.int(3,  "Max trades per day",      group=g2, minval=1, maxval=10)
+lastEntryHIn = input.int(11, "No entries after (ET hour)", group=g2, minval=10, maxval=15)
+volSurgeIn   = input.float(1.5, "Entry volume surge (x 20-bar avg)", group=g2, step=0.1)
+
+g3 = "Exits"
+atrMultIn   = input.float(1.5, "Initial stop: ATR multiple", group=g3, step=0.25)
+trailMultIn = input.float(2.0, "Runner trail: ATR multiple", group=g3, step=0.25)
+useOrLowIn  = input.bool(true, "Stop no lower than OR low",  group=g3)
+
+// === Preset chains ===
+// Classic ORB      — the Zarattini/Aziz-style shape: one shot per day at the
+//                    5-min OR break, wide gap tolerance, loose trail, ride to EOD.
+// Gap-and-Go       — small-cap momentum school (Warrior-style): big gaps only,
+//                    cheap fast names, tight stops, done by 10:30.
+// Conservative     — liquid mid/large caps, modest gaps, 15m OR, roomier
+//                    trail, 2 trades max. Slippage-friendly; closest to live-able.
+// Runner hunter    — max-profit shape: fewer entries, smallest partial-off,
+//                    widest trail. Lives or dies by catching the day's monster.
+isORB  = preset == "Classic ORB (academic)"
+isGnG  = preset == "Gap-and-Go (small-cap momentum)"
+isCons = preset == "Conservative large-cap"
+isRun  = preset == "Runner hunter (max profit)"
+custom = preset == "Custom"
+
+minGap    = custom ? minGapIn    : isORB ? 2.0  : isGnG ? 10.0 : isCons ? 3.0   : 5.0
+maxGap    = custom ? maxGapIn    : isORB ? 100.0: isGnG ? 100.0: isCons ? 15.0  : 80.0
+minPrice  = custom ? minPriceIn  : isORB ? 5.0  : isGnG ? 2.0  : isCons ? 20.0  : 2.0
+maxPrice  = custom ? maxPriceIn  : isORB ? 1000.0: isGnG ? 20.0 : isCons ? 1000.0: 50.0
+minPmRvol = custom ? minPmRvolIn : isORB ? 1.0  : isGnG ? 3.0  : isCons ? 1.5   : 2.5
+orMinutes = custom ? orMinutesIn : isORB ? 5    : isGnG ? 5    : isCons ? 15    : 5
+maxTrades = custom ? maxTradesIn : isORB ? 1    : isGnG ? 3    : isCons ? 2     : 2
+lastEntryH= custom ? lastEntryHIn: isORB ? 10   : isGnG ? 10   : isCons ? 11    : 11
+volSurge  = custom ? volSurgeIn  : isORB ? 1.2  : isGnG ? 2.0  : isCons ? 1.5   : 1.5
+atrMult   = custom ? atrMultIn   : isORB ? 10.0 : isGnG ? 1.0  : isCons ? 1.5   : 1.5
+trailMult = custom ? trailMultIn : isORB ? 10.0 : isGnG ? 1.5  : isCons ? 2.5   : 3.0
+useOrLow  = custom ? useOrLowIn  : true
+// Runner hunter keeps only 25% off at 1R; everyone else banks half.
+partialPct = isRun ? 25 : 50
+// Classic ORB uses the OR low as the whole stop (atrMult 10 = effectively off).
+
+// === Session / day state ===
+nyH = hour(time, "America/New_York")
+nyM = minute(time, "America/New_York")
+newDay = ta.change(time("D")) != 0
+
+prevClose = request.security(syminfo.tickerid, "D", close[1],
+     lookahead=barmerge.lookahead_on)
+
+var float pmHigh = na
+var float pmVol = 0.0
+var float orHigh = na
+var float orLow = na
+var int   orEndTime = na
+var float dayGap = na
+var int   tradesToday = 0
+var float dayStartNet = 0.0
+var array<float> pmVolHist = array.new<float>()
+
+if newDay
+    pmHigh := na
+    pmVol := 0.0
+    orHigh := na
+    orLow := na
+    orEndTime := na
+    dayGap := na
+    tradesToday := 0
+    dayStartNet := strategy.netprofit
+
+if session.ispremarket
+    pmHigh := na(pmHigh) ? high : math.max(pmHigh, high)
+    pmVol += volume
+
+firstRthBar = session.ismarket and (not session.ismarket[1] or newDay)
+if firstRthBar
+    orEndTime := time + orMinutes * 60000
+    dayGap := prevClose > 0 ? (open - prevClose) / prevClose * 100 : na
+    array.unshift(pmVolHist, pmVol)
+    if array.size(pmVolHist) > 20
+        array.pop(pmVolHist)
+
+inOR = session.ismarket and not na(orEndTime) and time < orEndTime
+if inOR
+    orHigh := na(orHigh) ? high : math.max(orHigh, high)
+    orLow := na(orLow) ? low : math.min(orLow, low)
+orDone = session.ismarket and not na(orEndTime) and time >= orEndTime
+
+// === Qualification ===
+liveGap = prevClose > 0 ? (close - prevClose) / prevClose * 100 : na
+gapNow = session.ismarket and not na(dayGap) ? dayGap : liveGap
+avgPmVol = array.size(pmVolHist) >= 5 ? array.avg(pmVolHist) : na
+pmRvol = not na(avgPmVol) and avgPmVol > 0 ? pmVol / avgPmVol : na
+
+gapOK   = not na(gapNow) and gapNow >= minGap and gapNow <= maxGap
+priceOK = close >= minPrice and close <= maxPrice
+rvolOK  = na(pmRvol) or pmRvol >= minPmRvol   // falls open without history
+qualified = gapOK and priceOK and rvolOK
+
+// === Indicators ===
+vwapVal = ta.vwap(hlc3)
+atrVal  = ta.atr(14)
+volAvg  = ta.sma(volume, 20)
+volOK   = volAvg > 0 and volume > volAvg * volSurge
+
+// === Entry signals ===
+entryWindow = session.ismarket and orDone and nyH < lastEntryH
+canEnter = entryWindow and inRange and qualified and tradesToday < maxTrades and strategy.position_size == 0
+
+sigORB = canEnter and not na(orHigh) and close > orHigh and close[1] <= orHigh and close > vwapVal and volOK
+sigPMH = canEnter and not na(pmHigh) and close > pmHigh and close[1] <= pmHigh and close > vwapVal and volOK
+sigVWAP = canEnter and not isORB and low <= vwapVal * 1.001 and close > vwapVal and close > open and close > nz(orLow, close - 1)
+entrySig = sigORB or sigPMH or sigVWAP
+
+var float stopPx = na
+var float entryPx = na
+var float trailStop = na
+
+if entrySig
+    rawStop = close - atrMult * atrVal
+    stopPx := useOrLow and not na(orLow) ? math.max(rawStop, math.min(orLow, close * 0.995)) : rawStop
+    entryPx := close
+    trailStop := na
+    tradesToday += 1
+    strategy.entry("L", strategy.long,
+         alert_message='{"ticker":"{{ticker}}","action":"buy","price":{{close}}}')
+
+// === Exit management ===
+inPos = strategy.position_size > 0
+riskR = inPos and not na(entryPx) ? entryPx - stopPx : na
+
+if inPos and not na(riskR) and riskR > 0
+    if high >= entryPx + riskR
+        candidate = close - trailMult * atrVal
+        trailStop := na(trailStop) ? math.max(stopPx, candidate) : math.max(trailStop, candidate)
+    strategy.exit("TP1", from_entry="L", qty_percent=partialPct,
+         limit=entryPx + riskR, stop=stopPx,
+         alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}},"note":"partial at 1R"}')
+    strategy.exit("RUN", from_entry="L", qty_percent=100 - partialPct,
+         stop=na(trailStop) ? stopPx : trailStop,
+         alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}},"note":"runner"}')
+
+// hard flatten 15:50 ET — scalps never hold overnight; also flatten if the
+// backtest window ends while holding
+if inPos and ((nyH == 15 and nyM >= 50) or (useRange and time > rangeEnd))
+    strategy.close_all(comment="eod_flatten",
+         alert_message='{"ticker":"{{ticker}}","action":"sell","price":{{close}},"note":"eod"}')
+
+// === Plots ===
+plot(vwapVal, "VWAP", color=color.new(color.orange, 0), linewidth=2)
+plot(session.ismarket ? orHigh : na, "OR High", color=color.new(color.aqua, 20), style=plot.style_linebr)
+plot(session.ismarket ? orLow : na, "OR Low", color=color.new(color.aqua, 60), style=plot.style_linebr)
+plot(pmHigh, "PM High", color=color.new(color.yellow, 40), style=plot.style_circles)
+plot(inPos ? stopPx : na, "Stop", color=color.new(color.red, 20), style=plot.style_linebr)
+plot(inPos and not na(trailStop) ? trailStop : na, "Trail", color=color.new(color.purple, 20), style=plot.style_linebr)
+plotshape(sigORB, "ORB", shape.triangleup, location.belowbar, color.green, text="ORB", size=size.small)
+plotshape(sigPMH, "PMH", shape.triangleup, location.belowbar, color.lime, text="PMH", size=size.small)
+plotshape(sigVWAP, "VWAP", shape.triangleup, location.belowbar, color.teal, text="VW", size=size.small)
+bgcolor(qualified and session.ispremarket ? color.new(color.green, 92) : na)
+bgcolor(useRange and not inRange ? color.new(color.gray, 94) : na)
+
+// === Trade labels (visible entries / exits) ===
+var string entryReason = ""
+if entrySig
+    entryReason := sigORB ? "ORB" : sigPMH ? "PM-HIGH" : "VWAP"
+
+justEntered = strategy.position_size > 0 and strategy.position_size[1] == 0
+partialOff  = strategy.position_size > 0 and strategy.position_size[1] > strategy.position_size
+justExited  = strategy.position_size == 0 and strategy.position_size[1] > 0
+
+if justEntered
+    label.new(bar_index, low, "▲ LONG " + entryReason + "\n@ " + str.tostring(strategy.position_avg_price, format.mintick),
+         style=label.style_label_up, color=color.new(color.green, 10),
+         textcolor=color.white, size=size.small)
+if partialOff
+    label.new(bar_index, high, "◐ PARTIAL +1R\n@ " + str.tostring(close, format.mintick),
+         style=label.style_label_down, color=color.new(color.blue, 10),
+         textcolor=color.white, size=size.small)
+if justExited
+    lastP = strategy.closedtrades > 0 ? strategy.closedtrades.profit(strategy.closedtrades - 1) : na
+    isWin = not na(lastP) and lastP >= 0
+    label.new(bar_index, high,
+         (na(lastP) ? "EXIT" : (isWin ? "✔ WIN +$" : "✖ LOSS -$") + str.tostring(math.abs(lastP), "#.##")) +
+         "\n@ " + str.tostring(close, format.mintick),
+         style=label.style_label_down,
+         color=isWin ? color.new(color.green, 10) : color.new(color.red, 10),
+         textcolor=color.white, size=size.small)
+
+// === Dashboard ===
+var table dash = table.new(position.top_right, 2, 14, bgcolor=color.new(color.black, 15),
+     border_width=1, border_color=color.new(color.gray, 70))
+
+cell(int r, string k, string v, color vc) =>
+    table.cell(dash, 0, r, k, text_color=color.new(color.silver, 20), text_size=size.small, text_halign=text.align_left)
+    table.cell(dash, 1, r, v, text_color=vc, text_size=size.small, text_halign=text.align_right)
+
+if barstate.islast
+    cGreen = color.new(color.lime, 0)
+    cRed = color.new(color.red, 0)
+    cWhite = color.new(color.white, 0)
+    cYellow = color.new(color.yellow, 0)
+
+    sess = session.ispremarket ? "PRE-MARKET" : session.ismarket ? (inOR ? "OPENING RANGE" : "RTH") : "CLOSED"
+    dayPnl = strategy.netprofit - dayStartNet
+    wr = strategy.closedtrades > 0 ? strategy.wintrades / strategy.closedtrades * 100 : 0.0
+    pf = strategy.grossloss > 0 ? strategy.grossprofit / strategy.grossloss : 0.0
+    curR = inPos and not na(riskR) and riskR > 0 ? (close - entryPx) / riskR : na
+    sigTxt = entrySig ? (sigORB ? "ORB BREAK ▲" : sigPMH ? "PM-HIGH BREAK ▲" : "VWAP RECLAIM ▲") :
+         inPos ? "MANAGING" : canEnter ? "ARMED — waiting" : "STAND DOWN"
+
+    table.cell(dash, 0, 0, "PM SCALPER", text_color=cYellow, text_size=size.normal)
+    table.cell(dash, 1, 0, sess, text_color=session.ismarket ? cGreen : cYellow, text_size=size.normal)
+    cell(1, "Preset", custom ? "Custom" : preset, cYellow)
+    cell(2, "Gap vs prev close", (na(gapNow) ? "—" : str.format("{0,number,#.#}%", gapNow)), gapOK ? cGreen : cRed)
+    cell(3, "PM high / volume", (na(pmHigh) ? "—" : str.tostring(pmHigh, format.mintick)) + " / " + str.tostring(pmVol, format.volume), cWhite)
+    cell(4, "PM RVOL (20d)", na(pmRvol) ? "building…" : str.format("{0,number,#.#}x", pmRvol), rvolOK ? cGreen : cRed)
+    cell(5, "OR " + str.tostring(orMinutes) + "m H/L", (na(orHigh) ? "—" : str.tostring(orHigh, format.mintick)) + " / " + (na(orLow) ? "—" : str.tostring(orLow, format.mintick)), cWhite)
+    cell(6, "VWAP", str.tostring(vwapVal, format.mintick) + (close > vwapVal ? " ▲" : " ▼"), close > vwapVal ? cGreen : cRed)
+    cell(7, "QUALIFIED", qualified ? "YES" : (not gapOK ? "no: gap" : not priceOK ? "no: price" : "no: rvol"), qualified ? cGreen : cRed)
+    cell(8, "Trades today", str.tostring(tradesToday) + " / " + str.tostring(maxTrades), tradesToday < maxTrades ? cWhite : cRed)
+    cell(9, "Position", inPos ? "LONG @ " + str.tostring(entryPx, format.mintick) : "FLAT", inPos ? cGreen : cWhite)
+    cell(10, "Open R-multiple", na(curR) ? "—" : str.format("{0,number,#.##}R", curR), na(curR) ? cWhite : curR >= 0 ? cGreen : cRed)
+    cell(11, "Day P&L", str.format("${0,number,#.##}", dayPnl), dayPnl >= 0 ? cGreen : cRed)
+    cell(12, "All-time WR / PF", str.format("{0,number,#}% / {1,number,#.##}", wr, pf), pf >= 1 ? cGreen : cRed)
+    cell(13, "Signal", sigTxt, entrySig ? cGreen : cWhite)
